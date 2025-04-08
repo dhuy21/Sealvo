@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{title}}</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    .vocabulary-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .level-container {
+      margin-bottom: 30px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    
+    .level-header {
+      padding: 15px 20px;
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      color: white;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .level-badge {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50px;
+      padding: 5px 12px;
+      font-size: 14px;
+    }
+    
+    .words-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .words-table th, .words-table td {
+      padding: 15px;
+      text-align: left;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .words-table th {
+      background: rgba(106, 17, 203, 0.05);
+      font-weight: 600;
+      color: #444;
+    }
+    
+    .words-table tr:hover {
+      background: rgba(37, 117, 252, 0.05);
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .action-buttons a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      color: white;
+      transition: all 0.3s ease;
+    }
+    
+    .edit-btn {
+      background: #2575fc;
+    }
+    
+    .delete-btn {
+      background: #ff4b2b;
+    }
+    
+    .action-buttons a:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .add-word-btn {
+      display: inline-flex;
+      align-items: center;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      color: white;
+      border-radius: 50px;
+      font-weight: 600;
+      margin-bottom: 30px;
+      box-shadow: 0 8px 15px rgba(106, 17, 203, 0.2);
+      transition: all 0.3s ease;
+    }
+    
+    .add-word-btn i {
+      margin-right: 8px;
+    }
+    
+    .add-word-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 20px rgba(106, 17, 203, 0.3);
+    }
+    
+    .no-words {
+      text-align: center;
+      padding: 50px 20px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      margin-bottom: 30px;
+    }
+    
+    .no-words i {
+      font-size: 64px;
+      color: #ccc;
+      margin-bottom: 20px;
+    }
+    
+    .no-words h3 {
+      font-size: 24px;
+      margin-bottom: 15px;
+      color: #444;
+    }
+    
+    .no-words p {
+      color: #666;
+      margin-bottom: 30px;
+    }
+
+    .word-item {
+      position: relative;
+    }
+    
+    .word-info {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 300px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      padding: 15px;
+      z-index: 10;
+    }
+    
+    .word-item:hover .word-info {
+      display: block;
+    }
+    
+    .word-info h4 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      color: #333;
+      border-bottom: 2px solid #6a11cb;
+      padding-bottom: 5px;
+    }
+    
+    .word-info p {
+      margin: 8px 0;
+      font-size: 14px;
+    }
+    
+    .word-info .label {
+      font-weight: 600;
+      color: #6a11cb;
+    }
+  </style>
+</head>
+<body>
+  <div class="vocabulary-container">
+    <h1>{{title}}</h1>
+    
+    {{#if error}}
+    <div class="alert alert-error">
+      {{error}}
+    </div>
+    {{/if}}
+    
+    {{#if success}}
+    <div class="alert alert-success">
+      {{success}}
+    </div>
+    {{/if}}
+    
+    <a href="/dashboard/add" class="add-word-btn">
+      <i class="fas fa-plus"></i> Ajouter un nouveau mot
+    </a>
+    
+    {{#if hasWords}}
+      {{#each wordsByLevel as |levelWords level|}}
+      <div class="level-container">
+        <div class="level-header">
+          <span>Niveau {{level}}</span>
+          <span class="level-badge">{{levelWords.length}} mot(s)</span>
+        </div>
+        <table class="words-table">
+          <thead>
+            <tr>
+              <th width="35%">Mot</th>
+              <th width="35%">Traduction</th>
+              <th width="15%">Date d'ajout</th>
+              <th width="15%">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each levelWords}}
+            <tr>
+              <td class="word-item">
+                {{word}}
+                <div class="word-info">
+                  <h4>{{word}}</h4>
+                  <p><span class="label">Traduction:</span> {{translation}}</p>
+                  {{#if definition}}
+                  <p><span class="label">Définition:</span> {{definition}}</p>
+                  {{/if}}
+                  {{#if example}}
+                  <p><span class="label">Exemple:</span> {{example}}</p>
+                  {{/if}}
+                </div>
+              </td>
+              <td>{{translation}}</td>
+              <td>{{created_at}}</td>
+              <td>
+                <div class="action-buttons">
+                  <a href="/dashboard/edit/{{id}}" class="edit-btn" title="Modifier">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <a href="/dashboard/delete/{{id}}" class="delete-btn" title="Supprimer" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce mot?');">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+      {{/each}}
+    {{else}}
+      <div class="no-words">
+        <i class="fas fa-book"></i>
+        <h3>Aucun mot dans votre vocabulaire</h3>
+        <p>Commencez à ajouter des mots pour enrichir votre vocabulaire.</p>
+        <a href="/dashboard/add" class="btn">Ajouter votre premier mot</a>
+      </div>
+    {{/if}}
+    
+    <div class="home-cta" style="margin-top: 40px;">
+      <a href="/" class="btn">Retour à l'accueil</a>
+    </div>
+  </div>
+</body>
+</html>
