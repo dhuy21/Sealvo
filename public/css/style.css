@@ -10,9 +10,7 @@ body {
   background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
   
   
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   
   color: #333;
   
@@ -20,7 +18,6 @@ body {
 
 /* App container */
 .app {
-  
   
   margin: 0 auto;
   
@@ -175,7 +172,24 @@ footer p {
 }
 
 /* Container styles */
-.container, .home-container, .login-container, .register-container, .logout-container {
+.container {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 35px 45px;
+  
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 130000px;
+  text-align: center;
+  animation: fadeIn 0.8s ease forwards;
+  opacity: 0;
+  transform: translateY(20px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  margin-left: 0; /* Hoặc bạn có thể thay bằng giá trị khác để căn vào bên trái */
+  margin-right: auto;
+}
+.home-container, .login-container, .register-container, .logout-container {
   background: rgba(255, 255, 255, 0.95);
   padding: 35px 45px;
   border-radius: 16px;
