@@ -1,26 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard</title>
+  <title>{{title}}</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <div class="home-container">
-    <h1>Welcome, {{user.username}}!</h1>
+    <h1>Bienvenue, {{user.username}}!</h1>
     
     <div class="dashboard-content">
-      <p>You have successfully logged in to your account.</p>
+      <p>Vous êtes connecté à votre compte avec succès.</p>
       
       <div class="feature-card">
-        <h3>Your Account Details</h3>
-        <p><strong>Username:</strong> {{user.username}}</p>
+        <h3>Vos informations</h3>
+        <p><strong>Nom d'utilisateur:</strong> {{user.username}}</p>
         <p><strong>Email:</strong> {{user.email}}</p>
       </div>
-      
+      <div class="feature-card">
+        <a href="/monVocabs" class="btn">My Vocabulaire</a>
+      </div>
       <div class="home-cta">
-        <a href="/logout" class="btn">Logout</a>
+        <a href="/logout" class="btn">Se déconnecter</a>
       </div>
     </div>
   </div>

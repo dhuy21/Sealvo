@@ -1,20 +1,19 @@
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 
-// Configuration de la connexion à la base de données
-const db = mysql.createConnection({
-  host: 'localhost', // Remplacez par l'hôte de votre base de données
-  user: 'root',      // Remplacez par votre nom d'utilisateur MySQL
-  password: '123456789',      // Remplacez par votre mot de passe MySQL
-  database: 'web_db' // Nom de la base de données
-});
+async function connect() {
 
-// Établir la connexion
-db.connect((err) => {
-  if (err) {
-    console.error('Erreur de connexion à la base de données :', err.message);
-    return;
+  try {// Configuration de la connexion à la base de données
+    const db = await mysql.createConnection({
+      host: 'localhost', // Remplacez par l'hôte de votre base de données
+      user: 'root',      // Remplacez par votre nom d'utilisateur MySQL
+      password: '123456789',      // Remplacez par votre mot de passe MySQL
+      database: 'web_db' // Nom de la base de données
+    });
+    console.log('Connecté à la base de données MySQL.');
+    return db;
+  } catch (error) {
+    console.error('Erreur de connexion à la base de données :', error.message);
+    throw error;
   }
-  console.log('Connecté à la base de données MySQL.');
-});
-
-module.exports = db;
+}
+module.exports = { connect };

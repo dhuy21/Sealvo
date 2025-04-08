@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS words (
     PRIMARY KEY (word_id)
 
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+INSERT INTO words (word, subject) VALUES ('Present', 'Daily words');
 
 CREATE TABLE IF NOT EXISTS learning (
     user_id CHAR(7) NOT NULL,
@@ -42,6 +43,7 @@ CREATE TABLE IF NOT EXISTS learning (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+INSERT INTO learning (user_id, word_id, level) VALUES ('95a916c', '1', '0');
 
 CREATE TABLE IF NOT EXISTS word_details (
     detail_id INT NOT NULL AUTO_INCREMENT,
@@ -57,10 +59,8 @@ CREATE TABLE IF NOT EXISTS word_details (
     FOREIGN KEY (word_id) REFERENCES words(word_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE
-
-
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+INSERT INTO word_details (word_id, type, meaning, synonyms, antonyms, example, grammar) VALUES ('1', 'noun', 'Present', 'Present', 'Present', 'Present', 'Present');
 CREATE TABLE IF NOT EXISTS word_pronunciations (
     pronun_id INT NOT NULL AUTO_INCREMENT,
     detail_id INT NOT NULL,
@@ -70,3 +70,4 @@ CREATE TABLE IF NOT EXISTS word_pronunciations (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+INSERT INTO word_pronunciations (detail_id, pronunciation) VALUES ('1', 'Present');

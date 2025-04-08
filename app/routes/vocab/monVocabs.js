@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-
-const siteController = require('../../app/controllers/SiteController');
+const wordController = require('../../controllers/WordController');
 
 // Middleware d'authentification
 const isAuthenticated = (req, res, next) => {
@@ -11,13 +10,9 @@ const isAuthenticated = (req, res, next) => {
     res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
 };
 
-// Page d'accueil
-router.get('/', siteController.index);
+// Afficher tous les mots (tableau de bord)
+router.get('/', isAuthenticated, wordController.monVocabs);
 
-// Page "À propos de moi"
-router.get('/aboutme', siteController.aboutme);
 
-// Tableau de bord (protégé)
-router.get('/dashboard', isAuthenticated, siteController.dashboard);
 
 module.exports = router;
