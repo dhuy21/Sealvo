@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +8,7 @@
 </head>
 <body>
   <div class="register-container">
-    <h1>Register</h1>
+    <h1>Inscription</h1>
     
     {{#if error}}
     <div class="alert alert-error">
@@ -18,7 +18,7 @@
     
     <form action="/registre" method="POST">
       <div class="form-group">
-        <label for="username">Username:</label>
+        <label for="username">Nom d'utilisateur:</label>
         <input type="text" id="username" name="username" required>
       </div>
       <div class="form-group">
@@ -26,18 +26,18 @@
         <input type="email" id="email" name="email" required>
       </div>
       <div class="form-group">
-        <label for="password">Password:</label>
+        <label for="password">Mot de passe:</label>
         <input type="password" id="password" name="password" required minlength="6">
       </div>
       <div class="form-group">
-        <label for="password2">Confirm Password:</label>
+        <label for="password2">Confirmer le mot de passe:</label>
         <input type="password" id="password2" name="password2" required minlength="6">
       </div>
-      <button type="submit">Register</button>
+      <button type="submit">S'inscrire</button>
     </form>
     
     <div class="login-register-links">
-      <p>Already have an account? <a href="/login">Login here</a></p>
+      <p>Vous avez déjà un compte? <a href="/login">Se connecter ici</a></p>
     </div>
   </div>
 </body>
