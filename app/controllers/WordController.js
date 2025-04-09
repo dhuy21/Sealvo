@@ -15,10 +15,13 @@ class WordController {
             // Grouper les mots par niveau
             const wordsByLevel = {};
             words.forEach(word => {
-                if (!wordsByLevel[word.level]) {
-                    wordsByLevel[word.level] = [];
+                // S'assurer que level est une clé valide (0, 1, 2, x)
+                const level = word.level || '0';
+                
+                if (!wordsByLevel[level]) {
+                    wordsByLevel[level] = [];
                 }
-                wordsByLevel[word.level].push(word);
+                wordsByLevel[level].push(word);
             });
 
             res.render('monVocabs', {
@@ -37,8 +40,6 @@ class WordController {
             });
         }
     }
-
-    
 }
 
 module.exports = new WordController();

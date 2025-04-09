@@ -5,11 +5,10 @@ class Word {
     async findWordsByUserId(userId) {
         try {
             const [rows] = await global.dbConnection.execute(
-                'SELECT *' +
-                'FROM learning ' +
-                'JOIN words ON learning.word_id = words.word_id ' +
-                'WHERE learning.user_id = ? ' +
-                'ORDER BY words.word ASC',
+                'SELECT w.word, wd.meaning, wd.type, wd.synonyms, wd.antonyms, wd.example, wd.grammar, wp.pronunciation ' +
+                'FROM word_details wd natural join learning ln natural join words w natural join word_pronunciations wp ' +
+                'WHERE ln.user_id = ? ' +
+                'ORDER BY w.word ASC',
                 [userId]
             );
             return rows;
