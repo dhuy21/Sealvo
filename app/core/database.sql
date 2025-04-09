@@ -71,3 +71,5 @@ CREATE TABLE IF NOT EXISTS word_pronunciations (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 INSERT INTO word_pronunciations (detail_id, pronunciation) VALUES ('1', 'Present');
+
+
