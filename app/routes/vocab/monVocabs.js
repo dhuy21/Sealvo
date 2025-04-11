@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const wordController = require('../../controllers/WordController');
+const importFile = require('../../services/importFile');
 
 // Middleware d'authentification
 const isAuthenticated = (req, res, next) => {
@@ -9,10 +10,20 @@ const isAuthenticated = (req, res, next) => {
     }
     res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
 };
+// Routes pour l'ajout de mots
+router.get('/add', isAuthenticated, wordController.addWord);
+router.post('/add', isAuthenticated, wordController.addWordPost);
+
+// Route pour l'importation de mots depuis un fichier
+router.post('/add/import', isAuthenticated, importFile.importWords);
+
+// Route pour la suppression de tous les mots
+router.post('/deleteAll', isAuthenticated, wordController.deleteAllWords);
+
+// Route pour la suppression d'un mot individuel
+router.post('/delete/:id', isAuthenticated, wordController.deleteWord);
 
 // Afficher tous les mots (tableau de bord)
 router.get('/', isAuthenticated, wordController.monVocabs);
-
-
 
 module.exports = router;

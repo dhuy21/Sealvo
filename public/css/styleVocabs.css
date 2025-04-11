@@ -75,6 +75,25 @@
     background: #ff4b2b;
   }
   
+  button.delete-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    cursor: pointer;
+    border-radius: 8px;
+    color: white;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  
+  button.delete-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+  }
+  
   .action-buttons a:hover {
     transform: translateY(-3px);
     box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
@@ -168,4 +187,24 @@
   .word-info .label {
     font-weight: 600;
     color: #6a11cb;
+  }
+
+
+  .btn-danger {
+    background: linear-gradient(135deg, #ff416c, #ff4b2b);
+    color: white;
+    box-shadow: 0 4px 12px rgba(255, 75, 43, 0.3);
+    margin-bottom: 20px;
+    margin-left: 10px;
+  }
+
+  .btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(255, 75, 43, 0.4);
+    background: linear-gradient(135deg, #ff224a, #e73c20);
+  }
+
+  .btn-danger i {
+    margin-right: 8px;
+    font-size: 16px;
   }

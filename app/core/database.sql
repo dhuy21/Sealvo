@@ -28,12 +28,12 @@ CREATE TABLE IF NOT EXISTS words (
     PRIMARY KEY (word_id)
 
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-INSERT INTO words (word, subject) VALUES ('Present', 'Daily words');
+/*INSERT INTO words (word, subject) VALUES ('Present', 'Daily words');*/
 
 CREATE TABLE IF NOT EXISTS learning (
     user_id CHAR(7) NOT NULL,
     word_id INT NOT NULL,
-    level ENUM('0', '1', '2','x') NOT NULL DEFAULT '0',
+    level ENUM('0', '1', '2','x') NOT NULL,
     date_memorized TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, word_id),
     FOREIGN KEY (user_id) REFERENCES users(id)
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS learning (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-INSERT INTO learning (user_id, word_id, level) VALUES ('95a916c', '1', '0');
+/*INSERT INTO learning (user_id, word_id, level) VALUES ('95a916c', '1', '0');*/
 
 CREATE TABLE IF NOT EXISTS word_details (
     detail_id INT NOT NULL AUTO_INCREMENT,
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS word_details (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-INSERT INTO word_details (word_id, type, meaning, synonyms, antonyms, example, grammar) VALUES ('1', 'noun', 'Present', 'Present', 'Present', 'Present', 'Present');
+/*INSERT INTO word_details (word_id, type, meaning, synonyms, antonyms, example, grammar) VALUES ('1', 'noun', 'Present', 'Present', 'Present', 'Present', 'Present');*/
 CREATE TABLE IF NOT EXISTS word_pronunciations (
     pronun_id INT NOT NULL AUTO_INCREMENT,
     detail_id INT NOT NULL,
@@ -70,6 +70,6 @@ CREATE TABLE IF NOT EXISTS word_pronunciations (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-INSERT INTO word_pronunciations (detail_id, pronunciation) VALUES ('1', 'Present');
+/*INSERT INTO word_pronunciations (detail_id, pronunciation) VALUES ('1', 'Present');*/
 
 
