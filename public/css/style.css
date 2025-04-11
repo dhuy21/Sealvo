@@ -8,7 +8,7 @@
 
 body {
   background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
-  min-height: 100vh;
+  
   display: flex;
   flex-direction: column;
   color: #333;
@@ -18,7 +18,7 @@ body {
 .app {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  
 }
 
 /* Content wrapper */
@@ -307,7 +307,7 @@ header nav .dropdown-content a:hover {
 .container {
   background: rgba(255, 255, 255, 0.95);
   padding: 35px 45px;
-  
+  border-radius: 20px;
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 130000px;
@@ -380,9 +380,7 @@ a:hover {
 }
 
 /* Form styles */
-form {
-  margin-top: 25px;
-}
+
 
 .form-group {
   margin-bottom: 22px;
@@ -516,7 +514,7 @@ button:active, .btn:active {
   
   .container, .home-container, .login-container, .register-container, .logout-container {
     padding: 25px 20px;
-    max-width: 100%;
+    max-width: 50;
   }
   
   .navigation {
