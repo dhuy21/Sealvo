@@ -586,7 +586,7 @@ button:active, .btn:active {
 .alert {
   padding: 12px 15px;
   margin-bottom: 20px;
-  border-radius: 8px;
+  border-radius: 20px;
   color: #fff;
   font-weight: 500;
   animation: slideIn 0.5s ease forwards;

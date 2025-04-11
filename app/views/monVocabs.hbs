@@ -64,12 +64,14 @@
             <td>{{example}}</td>
             <td>{{grammar}}</td>
             <td>
-              <div class="action-buttons">
-                <a href="/monVocabs/edit/{{id}}" class="edit-btn" title="Modifier">
-                  <i class="fas fa-edit"></i>
-                </a>
-                <form action="/monVocabs/delete/{{id}}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce mot?');">
-                  <button type="submit" class="delete-btn" title="Supprimer">
+                <form action="/monVocabs/edit/{{id}}" method="POST" class="edit-form" onsubmit="return false;">
+                  <button type="submit" class="edit-btn" title="Modifier" data-id="{{id}}">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                </form>
+
+                <form action="/monVocabs/delete/{{id}}" method="POST" class="delete-form" onsubmit="return false;">
+                  <button type="submit" class="delete-btn" title="Supprimer" data-id="{{id}}">
                     <i class="fas fa-trash"></i>
                   </button>
                 </form>
@@ -94,4 +96,5 @@
     <a href="/" class="btn">Retour à l'accueil</a>
   </div>
 </div>
-  
+<script src="/js/vocabs.js"></script>
+

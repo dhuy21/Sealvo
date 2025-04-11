@@ -23,6 +23,10 @@ router.post('/deleteAll', isAuthenticated, wordController.deleteAllWords);
 // Route pour la suppression d'un mot individuel
 router.post('/delete/:id', isAuthenticated, wordController.deleteWord);
 
+// Routes pour la modification d'un mot
+router.get('/edit/:id', isAuthenticated, wordController.editWord);
+router.post('/edit/:id', isAuthenticated, wordController.editWordPost);
+
 // Afficher tous les mots (tableau de bord)
 router.get('/', isAuthenticated, wordController.monVocabs);
 
