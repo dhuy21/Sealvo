@@ -16,7 +16,9 @@
   <a href="/monVocabs/add" class="add-word-btn">
     <i class="fas fa-plus"></i> Ajouter un nouveau mot
   </a>
-    
+  <form action="/monVocabs/deleteAll" method="POST" onsubmit="return confirm('ATTENTION: Cette action supprimera TOUS vos mots de vocabulaire. Cette action est irréversible. Êtes-vous vraiment sûr de vouloir continuer?');">
+    <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Supprimer tous les mots</button>
+  </form>
   {{#if hasWords}}
     {{#each wordsByLevel as |levelWords level|}}
     <div class="level-container">
@@ -63,12 +65,14 @@
             <td>{{grammar}}</td>
             <td>
               <div class="action-buttons">
-                <a href="/dashboard/edit/{{id}}" class="edit-btn" title="Modifier">
+                <a href="/monVocabs/edit/{{id}}" class="edit-btn" title="Modifier">
                   <i class="fas fa-edit"></i>
                 </a>
-                <a href="/dashboard/delete/{{id}}" class="delete-btn" title="Supprimer" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce mot?');">
-                  <i class="fas fa-trash"></i>
-                </a>
+                <form action="/monVocabs/delete/{{id}}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce mot?');">
+                  <button type="submit" class="delete-btn" title="Supprimer">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </form>
               </div>
             </td>
           </tr>
@@ -82,7 +86,7 @@
       <i class="fas fa-book"></i>
       <h3>Aucun mot dans votre vocabulaire</h3>
       <p>Commencez à ajouter des mots pour enrichir votre vocabulaire.</p>
-      <a href="/dashboard/add" class="btn">Ajouter votre premier mot</a>
+      <a href="/monVocabs/add" class="btn">Ajouter votre premier mot</a>
     </div>
   {{/if}}
     
