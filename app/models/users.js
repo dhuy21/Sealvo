@@ -8,15 +8,24 @@ class User {
         return crypto.randomBytes(4).toString('hex').substring(0, 7);
     }
 
-    async findById(id) {
+    async findById(user_id) {
         try {
-            const [rows] = await global.dbConnection.execute('SELECT * FROM users WHERE id = ?', [id]);
+            const [rows] = await global.dbConnection.execute('SELECT * FROM users WHERE id = ?', [user_id]);
             return rows[0] || null;
         } catch (error) {
             console.error('Erreur lors de la recherche de l\'utilisateur par ID :', error);
             throw error;
         }
     }
+    async findEmailById(user_id) {
+        try {
+            const [rows] = await global.dbConnection.execute('SELECT email FROM users WHERE id = ?', [user_id]);
+            return rows[0] || null;
+        } catch (error) {       
+            console.error('Erreur lors de la recherche de l\'email de l\'utilisateur par ID :', error);
+            throw error;
+        }
+    }   
     async findByEmail(email) {
         try {
             const [rows] = await global.dbConnection.execute('SELECT * FROM users WHERE email = ?', [email]);

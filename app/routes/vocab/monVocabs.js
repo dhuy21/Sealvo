@@ -27,6 +27,9 @@ router.post('/delete/:id', isAuthenticated, wordController.deleteWord);
 router.get('/edit/:id', isAuthenticated, wordController.editWord);
 router.post('/edit/:id', isAuthenticated, wordController.editWordPost);
 
+//Route pour apprendre un vocabulaire
+router.get('/learn', isAuthenticated, wordController.learnVocabs);
+
 // Afficher tous les mots (tableau de bord)
 router.get('/', isAuthenticated, wordController.monVocabs);
 

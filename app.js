@@ -49,7 +49,15 @@ route(app);
 
 app.use(morgan('combined'));
 //Template engine
-app.engine('hbs', engine({ extname: '.hbs' })); // Sử dụng engine thay vì handlebars
+app.engine('hbs', engine({ 
+  extname: '.hbs',
+  // Register Handlebars helpers
+  helpers: {
+    json: function(context) {
+      return JSON.stringify(context);
+    }
+  }
+}));
 app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'app/views'));
 
