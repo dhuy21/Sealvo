@@ -1,4 +1,4 @@
-  // Fonction pour supprimer un mot sans recharger la page
+  /* // Fonction pour supprimer un mot sans recharger la page
   function deleteWord(wordId, wordText, buttonElement) {
     
     
@@ -100,4 +100,122 @@
         notification.remove();
       }, 500);
     }, 3000);
-  }
+  }*/
+
+// Fonction pour supprimer un mot sans recharger la page
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const wordId = this.getAttribute('data-id');
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                fetch(`/monVocabs/delete/${wordId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Supprimer la ligne du tableau
+                        const row = this.closest('tr');
+                        
+                        if (row) {
+                            row.remove();
+                        }
+    
+                        // Afficher un message de succès en haut de la page
+                        const vocabContainer = document.querySelector('.vocabulary-container');
+                        if (vocabContainer) {
+                            const successMessage = document.createElement('div');
+                            successMessage.className = 'alert alert-success';
+                            successMessage.textContent = data.message;
+                            
+                            // Insérer après le titre (H1)
+                            const h1 = vocabContainer.querySelector('h1');
+                            if (h1) {
+                                vocabContainer.insertBefore(successMessage, h1.nextSibling);
+                            } else {
+                                vocabContainer.insertBefore(successMessage, vocabContainer.firstChild);
+                            }
+                            
+                            // Supprimer après 3 secondes
+                            setTimeout(() => {
+                                successMessage.remove();
+                            }, 3000);
+                        }
+                    } else {
+                        alert(data.message || 'Erreur lors de la suppression du mot');
+                    }
+                })
+                .catch(error => {
+                    console.log('Error:', error);
+                    alert('Une erreur est survenue lors de la suppression du mot');
+                });
+            });
+        });
+    });
+
+// Fonction pour modifier un mot sans recharger la page
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('.edit-btn').forEach(button => {
+          button.addEventListener('click', function(e) {
+              e.preventDefault();
+              const wordId = this.getAttribute('data-id');
+              const row = this.closest('tr');
+              if (!row.dataset.editing) {
+                for (let i = 0; i < 7; i++) {
+                  const text = row.cells[i].textContent;
+                  row.cells[i].innerHTML = `<input value="${text}" />`; 
+                }
+                row.cells[4].innerHTML = `
+                  <i class="fas fa-times"></i>
+                  <i class="fas fa-check"></i>
+                `;
+
+                row.dataset.editing = "true";
+              }
+              fetch(`/monVocabs/edit/${wordId}`, {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json'
+                  }
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      // Supprimer la ligne du tableau
+                      
+  
+                      // Afficher un message de succès en haut de la page
+                      const vocabContainer = document.querySelector('.vocabulary-container');
+                      if (vocabContainer) {
+                          const successMessage = document.createElement('div');
+                          successMessage.className = 'alert alert-success';
+                          successMessage.textContent = data.message;
+                          
+                          // Insérer après le titre (H1)
+                          const h1 = vocabContainer.querySelector('h1');
+                          if (h1) {
+                              vocabContainer.insertBefore(successMessage, h1.nextSibling);
+                          } else {
+                              vocabContainer.insertBefore(successMessage, vocabContainer.firstChild);
+                          }
+                          
+                          // Supprimer après 3 secondes
+                          setTimeout(() => {
+                              successMessage.remove();
+                          }, 3000);
+                      }
+                  } else {
+                      alert(data.message || 'Erreur lors de la suppression du mot');
+                  }
+              })
+              .catch(error => {
+                  console.log('Error:', error);
+                  alert('Une erreur est survenue lors de la suppression du mot');
+              });
+          });
+      });
+  });

@@ -14,7 +14,6 @@ class Word {
                 'ORDER BY w.word ASC',
                 [userId]
             );
-            console.log("Mots récupérés:", rows.map(r => `${r.word} (niveau: ${r.level})`));
             return rows;
         } catch (error) {
             console.error('Erreur lors de la récupération des mots:', error);
@@ -89,6 +88,8 @@ class Word {
     }
     async deleteWord(wordId, userId) {
         try {
+            console.log('Word ID:', wordId);
+            console.log('User ID:', userId);
             await global.dbConnection.execute(
                 'DELETE FROM learning WHERE word_id = ? AND user_id = ?',
                 [wordId, userId]
@@ -103,7 +104,7 @@ class Word {
 
     async deleteAllWords(userId) {
         try {
-            await global.dbConnection.execute('DELETE FROM learning WHERE user_id = ?', [userId]);s
+            await global.dbConnection.execute('DELETE FROM learning WHERE user_id = ?', [userId]);
             console.log('Tous les mots ont été supprimés avec succès');
             return true;
         } catch (error) {
@@ -112,7 +113,105 @@ class Word {
         }
     }
 
-   
+    async findUsersByWordId(word_id) {
+        try {
+            const [rows] = await global.dbConnection.execute(
+                'SELECT * FROM learning WHERE word_id = ?',
+                [word_id]
+            );
+            return rows[0] || null;
+        } catch (error) {
+            console.error('Erreur lors de la recherche du mot:', error);
+            throw error;
+        }
+    }
+    async findWordById(word_id) {
+        try {
+            const [rows] = await global.dbConnection.execute(
+                'SELECT * FROM words WHERE word_id = ?',
+                [word_id]
+            );
+            return rows[0] || null;
+        } catch (error) {
+            console.error('Erreur lors de la recherche du mot:', error);
+            throw error;
+        }
+    }
+
+    // Trouver un mot par son ID avec tous les détails
+    async findById(wordId) {
+        try {
+            const [rows] = await global.dbConnection.execute(
+                'SELECT w.word_id as id, w.word, w.subject, wd.type, wd.meaning, wd.synonyms, wd.antonyms, ' +
+                'wd.example, wd.grammar, wp.pronunciation, ln.level, ln.user_id ' +
+                'FROM words w ' +
+                'JOIN word_details wd ON w.word_id = wd.word_id ' +
+                'JOIN word_pronunciations wp ON wd.detail_id = wp.detail_id ' +
+                'JOIN learning ln ON w.word_id = ln.word_id ' +
+                'WHERE w.word_id = ?',
+                [wordId]
+            );
+            return rows[0] || null;
+        } catch (error) {
+            console.error('Erreur lors de la recherche du mot par ID:', error);
+            throw error;
+        }
+    }
+
+    async updateWord(wordData, wordId, userId) {
+        try {
+            await global.dbConnection.beginTransaction();
+            // Mettre à jour le mot dans la table words
+            console.log(`Mise à jour du mot dans words: ${wordData.word}, ${wordData.subject}`);
+            const [result] = await global.dbConnection.execute(
+                'UPDATE words SET word = ?, subject = ? WHERE word_id = ?',
+                [wordData.word, wordData.subject, wordId]
+            );
+            console.log(`Mot mis à jour avec succès: ${wordId}`);
+            // Mettre à jour les détails du mot
+            console.log(`Mise à jour des détails du mot pour word_id: ${wordId}`);
+            await global.dbConnection.execute(
+                'UPDATE word_details SET type = ?, meaning = ?, synonyms = ?, antonyms = ?, example = ?, grammar = ? WHERE word_id = ?',
+                [
+                    wordData.type,
+                    wordData.meaning,
+                    wordData.synonyms,
+                    wordData.antonyms,
+                    wordData.example,
+                    wordData.grammar,
+                    wordId
+                ]
+            );
+            // Mettre à jour la prononciation
+            console.log(`Mise à jour de la prononciation pour detail_id: ${wordId}`);
+            await global.dbConnection.execute(
+                'UPDATE word_pronunciations SET pronunciation = ? WHERE detail_id = ?',
+                [wordData.pronunciation, wordId]
+            );
+            // Mettre à jour l'association avec l'utilisateur
+            console.log(`Mise à jour de l'association avec l'utilisateur pour word_id: ${wordId}`);
+            await global.dbConnection.execute(
+                'UPDATE learning SET level = ? WHERE word_id = ? AND user_id = ?',
+                [wordData.level, wordId, userId]
+            );
+            // Valider la transaction
+            console.log(`Commit de la transaction pour le mot: ${wordData.word}`);  
+            await global.dbConnection.commit();
+            console.log(`Transaction validée avec succès pour le mot: ${wordData.word}`);
+            return wordId;  
+            await global.dbConnection.execute(
+                'UPDATE words SET word = ?, subject = ? WHERE word_id = ?',
+                [wordData.word, wordData.subject, wordId]
+            );
+            return true;
+        } catch (error) {
+            // Annuler la transaction en cas d'erreur
+            console.error(`ROLLBACK pour le mot ${wordData.word}:`, error);
+            await global.dbConnection.rollback(); 
+            console.error('Erreur lors de la mise à jour du mot:', error);
+            throw error;
+        }
+    }
 }
 
-module.exports = new Word(); 
+module.exports = new Word();

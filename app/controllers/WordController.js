@@ -128,29 +128,145 @@ class WordController {
 
     async deleteWord(req, res) {
         try {
+            const wordId = req.params.id;
+            const userId = req.session.user.id;
+
+            // Vérifier si le mot appartient à l'utilisateur
+            const word = await wordModel.findUsersByWordId(wordId);
+            if (!word) {
+                return res.status(404).json({ 
+                    success: false, 
+                    message: 'Mot non trouvé' 
+                });
+            }
+
+            if (word.user_id !== userId) {
+                return res.status(403).json({ 
+                    success: false, 
+                    message: 'Vous n\'êtes pas autorisé à supprimer ce mot' 
+                });
+            }
+
+            // Supprimer le mot
+            await wordModel.deleteWord(wordId, userId);
+
+            res.json({ 
+                success: true, 
+                message: 'Mot supprimé avec succès' 
+            });
+        } catch (error) {
+            console.error('Erreur lors de la suppression du mot:', error);
+            res.status(500).json({ 
+                success: false, 
+                message: 'Erreur lors de la suppression du mot' 
+            });
+        }
+    }
+
+    // Afficher le formulaire d'édition de mot
+    async editWord(req, res) {
+        try {
+            // Vérifier si l'utilisateur est connecté
+            if (!req.session.user) {
+                return res.redirect('/login?error=Vous devez être connecté pour modifier un mot');
+            }
+            
+            const wordId = req.params.id;
+            const userId = req.session.user.id;
+            
+            // Récupérer les informations du mot
+            const word = await wordModel.findById(wordId);
+            
+            // Vérifier si le mot existe et appartient à l'utilisateur
+            if (!word) {
+                return res.redirect('/monVocabs?error=Mot introuvable');
+            }
+            
+            if (word.user_id !== userId) {
+                return res.status(403).render('error', {
+                    title: 'Accès refusé',
+                    user: req.session.user,
+                    error: 'Vous n\'êtes pas autorisé à modifier ce mot'
+                });
+            }
+            
+            res.render('editVocabs', {
+                title: 'Modifier un mot',
+                user: req.session.user,
+                word: word
+            });
+        } catch (error) {
+            console.error('Erreur lors de la récupération du mot:', error);
+            res.redirect('/monVocabs?error=Une erreur est survenue lors de la récupération du mot');
+        }
+    }
+
+    async editWordPost(req, res) {
+        try {
+            const wordId = req.params.id;
+            const userId = req.session.user.id;
+
             // Vérifier si l'utilisateur est connecté
             if (!req.session.user) {
                 return res.redirect('/login?error=Vous devez être connecté pour effectuer cette action');
             }
 
-            const wordId = req.params.id;
-            if (!wordId) {
-                return res.redirect('/monVocabs?error=ID du mot manquant');
+            // Vérifier si le mot appartient à l'utilisateur
+            const wordCheck = await wordModel.findById(wordId);
+            
+            if (!wordCheck) {
+                return res.status(404).json({ 
+                    success: false, 
+                    message: 'Mot non trouvé' 
+                });
+            }
+            
+            if (wordCheck.user_id !== userId) {
+                return res.status(403).json({ 
+                    success: false, 
+                    message: 'Vous n\'êtes pas autorisé à modifier ce mot' 
+                });
             }
 
-            console.log(`Tentative de suppression du mot ID: ${wordId} par l'utilisateur: ${req.session.user.id}`);
-            
-            // Vérifier si le mot appartient à l'utilisateur
-            const result = await wordModel.deleteWord(wordId, req.session.user.id);
-            
-            if (result) {
-                res.redirect('/monVocabs?success=Mot supprimé avec succès');
-            } else {
-                res.redirect('/monVocabs?error=Impossible de supprimer ce mot');
+            // Récupérer les données du formulaire
+            const { word, subject, type, meaning, pronunciation, synonyms, antonyms, example, grammar, level } = req.body;
+
+            // Vérifier que les champs obligatoires sont présents
+            if (!word || !subject || !type || !meaning || !example) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Veuillez remplir tous les champs obligatoires'
+                });
             }
+
+            // Mettre à jour le mot dans la base de données
+            const wordData = {
+                word,
+                subject,
+                type,
+                meaning,
+                pronunciation: pronunciation || '', // Valeur par défaut si vide
+                synonyms: synonyms || '',
+                antonyms: antonyms || '',
+                example,
+                grammar: grammar || '',
+                level
+            };
+
+            await wordModel.updateWord(wordData, wordId, userId);
+
+            // Rediriger vers la page de vocabulaire avec un message de succès
+            res.json({
+                success: true,
+                message: 'Mot modifié avec succès'
+            });
+
         } catch (error) {
-            console.error('Erreur lors de la suppression du mot:', error);
-            res.redirect('/monVocabs?error=Une erreur est survenue lors de la suppression du mot');
+            console.error('Erreur lors de la modification du mot:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Une erreur est survenue lors de la modification du mot'
+            });
         }
     }
     
