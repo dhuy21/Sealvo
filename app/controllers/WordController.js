@@ -269,6 +269,27 @@ class WordController {
             });
         }
     }
+
+    async learnVocabs(req, res) {
+        try {
+            // Vérifier si l'utilisateur est connecté
+            if (!req.session.user) {
+                return res.redirect('/login?error=Vous devez être connecté pour apprendre des mots');
+            }
+
+            // Récupérer les mots de l'utilisateur
+            const words = await wordModel.findWordsByUserId(req.session.user.id);
+
+            res.render('learnVocabs', {
+                title: 'Apprendre des mots',
+                user: req.session.user,
+                words: words
+            });
+        } catch (error) {
+            console.error('Erreur lors de la récupération des mots à apprendre:', error);
+            res.redirect('/monVocabs?error=Une erreur est survenue lors de la récupération des mots à apprendre');
+        }
+    }
     
 }
 
