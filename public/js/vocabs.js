@@ -60,7 +60,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 
                                 const container = document.querySelector('.vocabulary-container');
                                 const homeCta = container.querySelector('.home-cta');
-                                container.insertBefore(noWordsDiv, homeCta);
+                                if (homeCta) {
+                                    container.insertBefore(noWordsDiv, homeCta);
+                                } else {
+                                    container.appendChild(noWordsDiv);
+                                }
                             }
                         }
                     }, 500);
