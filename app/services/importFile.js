@@ -59,7 +59,7 @@ const processExcelFile = async (filePath) => {
                     synonyms: row[6] || '',
                     antonyms: row[7] || '',
                     grammar: row[8] || '',
-                    level: row[9] !== undefined ? parseInt(row[9]) : 0
+                    level: row[9] || 'x' // Niveau par défaut
                 });
             }
         }
@@ -160,7 +160,7 @@ class ImportFile {
                         // Assurer que level est défini
                         if (wordData.level === undefined || wordData.level === null) {
                             console.log(`Niveau non défini pour le mot: ${wordData.word}, utilisation du niveau par défaut`);
-                            wordData.level = 0; // Niveau par défaut
+                            wordData.level = 'x'; // Niveau par défaut
                         }
                         
                         console.log(`Tentative d'ajout du mot: ${wordData.word}, niveau: ${wordData.level}`);

@@ -64,11 +64,12 @@ class Word {
 
             // 4. Associer le mot à l'utilisateur avec le niveau spécifié
             console.log(`Insertion dans learning pour user_id: ${userId}, word_id: ${wordId}, level: ${wordData.level}`);
+            console.log(typeof wordData.level);
             await global.dbConnection.execute(
                 'INSERT INTO learning (user_id, word_id, level) VALUES (?, ?, ?)',
                 [userId, wordId,wordData.level.toString()]
             );
-            console.log(typeof wordData.level);
+            
             // Valider la transaction
             console.log(`Commit de la transaction pour le mot: ${wordData.word}`);
             await global.dbConnection.commit();
