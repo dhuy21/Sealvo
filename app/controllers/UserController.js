@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const User = require('../models/users');
+const userModel = require('../models/users');
 
 class UserController {
     // Afficher la page de connexion
@@ -21,8 +21,6 @@ class UserController {
                 return res.redirect('/login?error=Veuillez remplir tous les champs');
             }
 
-            // Instancier le modèle User
-            const userModel = new User();
             
             // Rechercher l'utilisateur par username
             const user = await userModel.findByUsername(username);
@@ -81,9 +79,6 @@ class UserController {
                 return res.redirect('/registre?error=Le mot de passe doit contenir au moins 6 caractères');
             }
             
-            // Instancier le modèle User
-            const userModel = new User();
-            
             // Vérifier si l'username existe déjà
             const existingUser = await userModel.findByUsername(username);
             
@@ -117,6 +112,7 @@ class UserController {
             if (err) {
                 console.error('Erreur lors de la déconnexion:', err);
             }
+            
             res.redirect('/');
         });
     }

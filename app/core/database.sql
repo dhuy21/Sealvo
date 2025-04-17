@@ -2,6 +2,7 @@ SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
 
+DROP DATABASE IF EXISTS web_db;
 CREATE DATABASE IF NOT EXISTS web_db;
 USE web_db
 
@@ -13,6 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(255) UNIQUE NOT NULL,
   role ENUM('Admin', 'User') NOT NULL DEFAULT 'User',
   password VARCHAR(255) NOT NULL,
+  streak INT NOT NULL DEFAULT 0,
+  last_login TIMESTAMP NULL DEFAULT NULL,
   created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
@@ -26,15 +29,14 @@ CREATE TABLE IF NOT EXISTS words (
     subject VARCHAR(255) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (word_id)
-
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*INSERT INTO words (word, subject) VALUES ('Present', 'Daily words');*/
 
 CREATE TABLE IF NOT EXISTS learning (
     user_id CHAR(7) NOT NULL,
     word_id INT NOT NULL,
-    level ENUM('0', '1', '2','x') NOT NULL,
-    date_memorized TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    level ENUM('x', '0', '1', '2', 'v') NOT NULL,
+    date_memorized TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,  -- Sửa từ TIMESTAMP sang DATE
     PRIMARY KEY (user_id, word_id),
     FOREIGN KEY (user_id) REFERENCES users(id)
         ON DELETE CASCADE
@@ -43,6 +45,7 @@ CREATE TABLE IF NOT EXISTS learning (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 /*INSERT INTO learning (user_id, word_id, level) VALUES ('95a916c', '1', '0');*/
 
 CREATE TABLE IF NOT EXISTS word_details (

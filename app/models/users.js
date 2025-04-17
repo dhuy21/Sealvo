@@ -7,13 +7,30 @@ class User {
         // Générer une chaîne aléatoire hexadécimale et prendre les 7 premiers caractères
         return crypto.randomBytes(4).toString('hex').substring(0, 7);
     }
-
+    async getAllUsers() {
+        try {
+            const [rows] = await global.dbConnection.execute('SELECT * FROM users');
+            return rows;        
+        } catch (error) {
+            console.error('Erreur lors de la récupération de tous les utilisateurs :', error);
+            throw error;
+        }
+    }
     async findById(user_id) {
         try {
             const [rows] = await global.dbConnection.execute('SELECT * FROM users WHERE id = ?', [user_id]);
             return rows[0] || null;
         } catch (error) {
             console.error('Erreur lors de la recherche de l\'utilisateur par ID :', error);
+            throw error;
+        }
+    }
+    async findUsernameById(user_id) {
+        try {
+            const [rows] = await global.dbConnection.execute('SELECT username FROM users WHERE id = ?', [user_id]);
+            return rows[0] || null;
+        } catch (error) {
+            console.error('Erreur lors de la recherche du nom d\'utilisateur par ID :', error);
             throw error;
         }
     }
@@ -45,6 +62,15 @@ class User {
         }
     }
 
+    async findStreakById(user_id) {
+        try {
+            const [rows] = await global.dbConnection.execute('SELECT streak FROM users WHERE id = ?', [user_id]);
+            return rows[0] || null;
+        }catch (error) {
+            console.error('Erreur lors de la recherche de la série de l\'utilisateur par ID :', error);
+            throw error;
+        }
+    }
     
     async create(userData) {
         try {
@@ -95,4 +121,4 @@ class User {
     }
 }
 
-module.exports = User;
+module.exports = new User();

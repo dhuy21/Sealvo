@@ -9,6 +9,7 @@ const passport = require('passport');
 const app = express();
 const port = 8080;
 const crypto = require('crypto');
+const Reminder = require('./app/services/reminder');
 
 
 app.use(express.urlencoded({ extended: true }));
@@ -60,6 +61,8 @@ app.engine('hbs', engine({
 }));
 app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'app/views'));
+
+Reminder.scheduleReminder();
 
 app.listen(port, () =>
     console.log(`App listening at http://localhost:${port}`),
