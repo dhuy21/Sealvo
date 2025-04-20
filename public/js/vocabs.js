@@ -1,190 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Fonction pour gérer le clic sur le bouton de suppression
-    function handleDeleteClick(e) {
-        e.preventDefault();
-        const wordId = this.getAttribute('data-id');
-        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        
-        fetch(`/monVocabs/delete/${wordId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Supprimer la ligne du tableau
-                const row = this.closest('tr');
-                
-                if (row) {
-                    // Trouver le niveau du mot
-                    const levelContainer = row.closest('.level-container');
-                    
-                    // Supprimer la ligne avec animation
-                    row.style.transition = 'all 0.5s ease';
-                    row.style.opacity = '0';
-                    row.style.height = '0';
-                    
-                    setTimeout(() => {
-                        row.remove();
-                        
-                        // Mettre à jour le compteur de mots pour ce niveau
-                        if (levelContainer) {
-                            const badge = levelContainer.querySelector('.level-badge');
-                            const tbody = levelContainer.querySelector('tbody');
-                            const count = tbody.querySelectorAll('tr').length;
-                            
-                            badge.textContent = `${count} mot(s)`;
-                            
-                            // Si plus de mots dans ce niveau, masquer le conteneur
-                            if (count === 0) {
-                                levelContainer.style.display = 'none';
-                            }
-                            
-                            // Vérifier s'il reste des niveaux visibles
-                            const visibleLevels = Array.from(document.querySelectorAll('.level-container')).filter(
-                                container => container.style.display !== 'none'
-                            );
-                            
-                            // S'il n'y a plus de mots, afficher le message "aucun mot"
-                            if (visibleLevels.length === 0) {
-                                const noWordsDiv = document.createElement('div');
-                                noWordsDiv.className = 'no-words';
-                                noWordsDiv.innerHTML = `
-                                    <i class="fas fa-book"></i>
-                                    <h3>Aucun mot dans votre vocabulaire</h3>
-                                    <p>Commencez à ajouter des mots pour enrichir votre vocabulaire.</p>
-                                    <a href="/monVocabs/add" class="btn">Ajouter votre premier mot</a>
-                                `;
-                                
-                                const container = document.querySelector('.vocabulary-container');
-                                const homeCta = container.querySelector('.home-cta');
-                                if (homeCta) {
-                                    container.insertBefore(noWordsDiv, homeCta);
-                                } else {
-                                    container.appendChild(noWordsDiv);
-                                }
-                            }
-                        }
-                    }, 500);
-                }
-
-                // Afficher un message de succès en haut de la page
-                showNotification(data.message, 'success');
-            } else {
-                // Restaurer le bouton de suppression
-                this.innerHTML = '<i class="fas fa-trash"></i>';
-                showNotification(data.message || 'Erreur lors de la suppression du mot', 'error');
-            }
-        })
-        .catch(error => {
-            console.log('Error:', error);
-            // Restaurer le bouton de suppression
-            this.innerHTML = '<i class="fas fa-trash"></i>';
-            showNotification('Une erreur est survenue lors de la suppression du mot', 'error');
-        });
-    }
-
-    // Fonction pour gérer le clic sur le bouton d'édition
-    function handleEditClick(e) {
-        e.preventDefault();
-        const wordId = this.getAttribute('data-id');
-        const row = this.closest('tr');
-        
-        if (!row.dataset.editing) {
-            // Sauvegarder les valeurs originales pour pouvoir annuler
-            const originalValues = [];
-            for (let i = 0; i < 8; i++) {
-                originalValues.push(row.cells[i].textContent.trim());
-            }
-            row.dataset.originalValues = JSON.stringify(originalValues);
-            
-            // Extraire le niveau du mot depuis son conteneur parent
-            const levelContainer = row.closest('.level-container');
-            const levelText = levelContainer ? levelContainer.querySelector('.level-header span').textContent : '';
-            const level = levelText.replace('Niveau ', '').trim();
-            row.dataset.level = level;
-            
-            // Transformer les cellules en inputs
-            let cellContents = [];
-            
-            // Mot (cell 0)
-            const wordCell = row.cells[0];
-            const wordText = wordCell.querySelector('h4').textContent.trim();
-            cellContents.push(`<input type="text" class="edit-input" value="${wordText}" required>`);
-            
-            // Type (cell 1)
-            const typeText = row.cells[1].textContent.trim();
-            cellContents.push(`
-                <select class="edit-input" required>
-                    <option value="noun" ${typeText === 'noun' ? 'selected' : ''}>Nom</option>
-                    <option value="verb" ${typeText === 'verb' ? 'selected' : ''}>Verbe</option>
-                    <option value="adjective" ${typeText === 'adjective' ? 'selected' : ''}>Adjectif</option>
-                    <option value="adverb" ${typeText === 'adverb' ? 'selected' : ''}>Adverbe</option>
-                    <option value="ph.v" ${typeText === 'ph.v' ? 'selected' : ''}>Ph.V</option>
-                    <option value="idiom" ${typeText === 'idiom' ? 'selected' : ''}>Idiom</option>
-                    <option value="collocation" ${typeText === 'collocation' ? 'selected' : ''}>Colloc</option>
-                </select>
-            `);
-            
-            // Meaning (cell 2)
-            cellContents.push(`<input type="text" class="edit-input" value="${row.cells[2].textContent.trim()}" required>`);
-            
-            // Pronunciation (cell 3)
-            cellContents.push(`<input type="text" class="edit-input" value="${row.cells[3].textContent.trim()}">`);
-            
-            // Synonyms (cell 4)
-            cellContents.push(`<input type="text" class="edit-input" value="${row.cells[4].textContent.trim()}">`);
-            
-            // Antonyms (cell 5)
-            cellContents.push(`<input type="text" class="edit-input" value="${row.cells[5].textContent.trim()}">`);
-            
-            // Example (cell 6)
-            cellContents.push(`<input type="text" class="edit-input" value="${row.cells[6].textContent.trim()}" required>`);
-            
-            // Grammar (cell 7)
-            cellContents.push(`<input type="text" class="edit-input" value="${row.cells[7].textContent.trim()}">`);
-            
-            // Appliquer les inputs aux cellules
-            for (let i = 0; i < cellContents.length; i++) {
-                row.cells[i].innerHTML = cellContents[i];
-            }
-            
-            // Remplacer les boutons d'action
-            row.cells[8].innerHTML = `
-                <div class="action-buttons">
-                    <button type="button" class="save-btn" title="Valider" data-id="${wordId}">
-                        <i class="fas fa-check"></i>
-                    </button>
-                
-                    <button type="button" class="cancel-btn" title="Annuler">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            `;
-            
-            // Ajouter le champ de niveau caché
-            row.querySelector('.action-buttons').insertAdjacentHTML('beforeend', `
-                <div style="display:none;">
-                    <select class="level-select">
-                        <option value="0" ${level === '0' ? 'selected' : ''}>Niveau 0</option>
-                        <option value="1" ${level === '1' ? 'selected' : ''}>Niveau 1</option>
-                        <option value="2" ${level === '2' ? 'selected' : ''}>Niveau 2</option>
-                    </select>
-                </div>
-            `);
-            
-            // Marquer la ligne comme étant en cours d'édition
-            row.dataset.editing = "true";
-            
-            // Ajouter l'event listener pour le bouton de sauvegarde
-            row.querySelector('.save-btn').addEventListener('click', saveWord);
-            
-            // Ajouter l'event listener pour le bouton d'annulation
-            row.querySelector('.cancel-btn').addEventListener('click', cancelEdit);
-        }
-    }
 
     // Attacher les gestionnaires d'événements aux boutons existants
     document.querySelectorAll('.delete-btn').forEach(button => {
@@ -194,239 +8,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.edit-btn').forEach(button => {
         button.addEventListener('click', handleEditClick);
     });
-    
-    // Fonction pour annuler l'édition
-    function cancelEdit() {
-        const row = this.closest('tr');
-        
-        // Restaurer les valeurs originales
-        if (row.dataset.originalValues) {
-            const originalValues = JSON.parse(row.dataset.originalValues);
-            
-            // Mot (cell 0) - structure spéciale avec div.word-info
-            const wordCell = row.cells[0];
-            const wordInfo = wordCell.querySelector('.word-info');
-            if (!wordInfo) {
-                // Si word-info n'existe pas, recréer la structure
-                wordCell.innerHTML = `
-                    ${originalValues[0]}
-                    <div class="word-info">
-                        <h4>${originalValues[0]}</h4>
-                        <p><span class="label">Traduction:</span> ${originalValues[2]}</p>
-                        <p><span class="label">Exemple:</span> ${originalValues[6]}</p>
-                    </div>
-                `;
-            } else {
-                // Sinon, mettre à jour les valeurs
-                wordCell.firstChild.textContent = originalValues[0];
-                wordInfo.querySelector('h4').textContent = originalValues[0];
-                
-                // Mettre à jour la traduction
-                const traduction = wordInfo.querySelector('p:nth-child(2)');
-                if (traduction) {
-                    traduction.innerHTML = `<span class="label">Traduction:</span> ${originalValues[2]}`;
-                }
-                
-                // Mettre à jour l'exemple
-                const exemple = wordInfo.querySelector('p:nth-child(3)');
-                if (exemple) {
-                    exemple.innerHTML = `<span class="label">Exemple:</span> ${originalValues[6]}`;
-                }
-            }
-            
-            // Restaurer les autres cellules
-            for (let i = 1; i < originalValues.length; i++) {
-                row.cells[i].textContent = originalValues[i];
-            }
-            
-            // Récupérer l'ID du mot
-            const wordId = row.querySelector('.save-btn')?.getAttribute('data-id') || 
-                          this.closest('.action-buttons')?.querySelector('.save-btn')?.getAttribute('data-id');
-            
-            // Restaurer les boutons d'action
-            row.cells[8].innerHTML = `
-                <div class="action-buttons">
-                    <form action="/monVocabs/edit/${wordId}" method="POST" class="edit-form" onsubmit="return false;">
-                        <button type="submit" class="edit-btn" title="Modifier" data-id="${wordId}">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                    </form>
-
-                    <form action="/monVocabs/delete/${wordId}" method="POST" class="delete-form" onsubmit="return false;">
-                        <button type="submit" class="delete-btn" title="Supprimer" data-id="${wordId}">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </form>
-                </div>
-            `;
-            
-            // Réattacher les événements aux nouveaux boutons
-            row.querySelector('.edit-btn')?.addEventListener('click', handleEditClick);
-            row.querySelector('.delete-btn')?.addEventListener('click', handleDeleteClick);
-        }
-        
-        // Supprimer le marqueur d'édition
-        delete row.dataset.editing;
-        delete row.dataset.originalValues;
-    }
-    
-    // Fonction pour enregistrer les modifications
-    function saveWord() {
-        const row = this.closest('tr');
-        const wordId = this.getAttribute('data-id');
-        
-        // Collecter les données du formulaire
-        const word = row.cells[0].querySelector('input').value.trim();
-        const type = row.cells[1].querySelector('select').value;
-        const meaning = row.cells[2].querySelector('input').value.trim();
-        const pronunciation = row.cells[3].querySelector('input').value.trim();
-        const synonyms = row.cells[4].querySelector('input').value.trim();
-        const antonyms = row.cells[5].querySelector('input').value.trim();
-        const example = row.cells[6].querySelector('input').value.trim();
-        const grammar = row.cells[7].querySelector('input').value.trim();
-        const level = row.querySelector('.level-select').value;
-        
-        // Valider les champs obligatoires
-        if (!word || !type || !meaning || !example) {
-            showNotification('Veuillez remplir tous les champs obligatoires', 'error');
-            return;
-        }
-        
-        // Préparation des données pour l'envoi
-        const wordData = {
-            word,
-            type,
-            meaning,
-            pronunciation,
-            synonyms,
-            antonyms,
-            example,
-            grammar,
-            level,
-            subject: 'General' // Valeur par défaut pour le sujet, à adapter si nécessaire
-        };
-        
-        // Afficher un indicateur de chargement
-        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        this.disabled = true;
-        
-        // Envoyer les données au serveur
-        fetch(`/monVocabs/edit/${wordId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(wordData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Si le niveau a changé, recharger la page
-                if (level !== row.dataset.level) {
-                    window.location.reload();
-                    return;
-                }
-                
-                // Mettre à jour la ligne du tableau
-                
-                // Mot (cell 0) - structure spéciale avec div.word-info
-                const wordCell = row.cells[0];
-                wordCell.innerHTML = `
-                    ${word}
-                    <div class="word-info">
-                        <h4>${word}</h4>
-                        <p><span class="label">Traduction:</span> ${meaning}</p>
-                        <p><span class="label">Exemple:</span> ${example}</p>
-                    </div>
-                `;
-                
-                // Mettre à jour les autres cellules
-                row.cells[1].textContent = type;
-                row.cells[2].textContent = meaning;
-                row.cells[3].textContent = pronunciation;
-                row.cells[4].textContent = synonyms;
-                row.cells[5].textContent = antonyms;
-                row.cells[6].textContent = example;
-                row.cells[7].textContent = grammar;
-                
-                // Restaurer les boutons d'action
-                row.cells[8].innerHTML = `
-                    <div class="action-buttons">
-                        <form action="/monVocabs/edit/${wordId}" method="POST" class="edit-form" onsubmit="return false;">
-                            <button type="submit" class="edit-btn" title="Modifier" data-id="${wordId}">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                        </form>
-
-                        <form action="/monVocabs/delete/${wordId}" method="POST" class="delete-form" onsubmit="return false;">
-                            <button type="submit" class="delete-btn" title="Supprimer" data-id="${wordId}">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </form>
-                    </div>
-                `;
-                
-                // Réattacher les événements aux nouveaux boutons
-                row.querySelector('.edit-btn')?.addEventListener('click', handleEditClick);
-                row.querySelector('.delete-btn')?.addEventListener('click', handleDeleteClick);
-                
-                // Supprimer le marqueur d'édition
-                delete row.dataset.editing;
-                delete row.dataset.originalValues;
-                
-                // Afficher le message de succès
-                showNotification(data.message || 'Mot modifié avec succès', 'success');
-            } else {
-                // Réactiver le bouton en cas d'erreur
-                this.innerHTML = '<i class="fas fa-check"></i>';
-                this.disabled = false;
-                
-                showNotification(data.message || 'Erreur lors de la modification du mot', 'error');
-            }
-        })
-        .catch(error => {
-            console.log('Error:', error);
-            
-            // Réactiver le bouton en cas d'erreur
-            this.innerHTML = '<i class="fas fa-check"></i>';
-            this.disabled = false;
-            
-            showNotification('Une erreur est survenue lors de la modification du mot', 'error');
-        });
-    }
-    
-    // Fonction pour afficher une notification
-    function showNotification(message, type) {
-        // Supprimer les notifications existantes
-        const existingNotifications = document.querySelectorAll('.alert');
-        existingNotifications.forEach(notif => notif.remove());
-        
-        // Créer la nouvelle notification
-        const notification = document.createElement('div');
-        notification.className = `alert alert-${type}`;
-        notification.textContent = message;
-        
-        // Ajouter la notification au début du conteneur
-        const container = document.querySelector('.vocabulary-container');
-        const title = container.querySelector('h1');
-        
-        if (title) {
-            container.insertBefore(notification, title.nextSibling);
-        } else {
-            container.insertBefore(notification, container.firstChild);
-        }
-        
-        // Faire disparaître après 3 secondes
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            notification.style.transition = 'opacity 0.5s ease';
-            
-            // Supprimer complètement après la transition
-            setTimeout(() => {
-                notification.remove();
-            }, 500);
-        }, 1000);
-    }
     
     // Ajouter des styles pour les inputs d'édition
     const style = document.createElement('style');
@@ -497,5 +78,375 @@ document.addEventListener('DOMContentLoaded', function() {
     document.head.appendChild(style);
 });
 
+function handleDeleteClick(e) {
+    e.preventDefault();
+    const wordId = this.getAttribute('data-id');
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    
+    fetch(`/monVocabs/delete/${wordId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Supprimer la ligne du tableau
+            const row = this.closest('tr');
+            
+            if (row) {
+                // Trouver le niveau du mot
+                const levelContainer = row.closest('.level-container');
+                
+                // Supprimer la ligne avec animation
+                row.style.transition = 'all 0.5s ease';
+                row.style.opacity = '0';
+                row.style.height = '0';
+                
+                setTimeout(() => {
+                    row.remove();
+                    
+                    // Mettre à jour le compteur de mots pour ce niveau
+                    if (levelContainer) {
+                        const badge = levelContainer.querySelector('.level-badge');
+                        const tbody = levelContainer.querySelector('tbody');
+                        const count = tbody.querySelectorAll('tr').length;
+                        
+                        badge.textContent = `${count} mot(s)`;
+                        
+                        // Si plus de mots dans ce niveau, masquer le conteneur
+                        if (count === 0) {
+                            levelContainer.style.display = 'none';
+                        }
+                        
+                        // Vérifier s'il reste des niveaux visibles
+                        const visibleLevels = Array.from(document.querySelectorAll('.level-container')).filter(
+                            container => container.style.display !== 'none'
+                        );
+                        
+                        // S'il n'y a plus de mots, afficher le message "aucun mot"
+                        if (visibleLevels.length === 0) {
+                            const noWordsDiv = document.createElement('div');
+                            noWordsDiv.className = 'no-words';
+                            noWordsDiv.innerHTML = `
+                                <i class="fas fa-book"></i>
+                                <h3>Aucun mot dans votre vocabulaire</h3>
+                                <p>Commencez à ajouter des mots pour enrichir votre vocabulaire.</p>
+                                <a href="/monVocabs/add" class="btn">Ajouter votre premier mot</a>
+                            `;
+                            
+                            const container = document.querySelector('.vocabulary-container');
+                            const homeCta = container.querySelector('.home-cta');
+                            if (homeCta) {
+                                container.insertBefore(noWordsDiv, homeCta);
+                            } else {
+                                container.appendChild(noWordsDiv);
+                            }
+                        }
+                    }
+                }, 500);
+            }
+
+            // Afficher un message de succès en haut de la page
+            showNotification(data.message, 'success');
+        } else {
+            // Restaurer le bouton de suppression
+            this.innerHTML = '<i class="fas fa-trash"></i>';
+            showNotification(data.message || 'Erreur lors de la suppression du mot', 'error');
+        }
+    })
+    .catch(error => {
+        console.log('Error:', error);
+        // Restaurer le bouton de suppression
+        this.innerHTML = '<i class="fas fa-trash"></i>';
+        showNotification('Une erreur est survenue lors de la suppression du mot', 'error');
+    });
+}
 
 
+function handleEditClick(e) {
+    e.preventDefault();
+    const wordId = this.getAttribute('data-id');
+    const row = this.closest('tr');
+    
+    if (!row.dataset.editing) {
+        // Sauvegarder les valeurs originales pour pouvoir annuler
+        const originalValues = [];
+        for (let i = 0; i < 8; i++) {
+            originalValues.push(row.cells[i].textContent.trim());
+        }
+        row.dataset.originalValues = JSON.stringify(originalValues);
+        
+        // Extraire le niveau du mot depuis son conteneur parent
+        const levelContainer = row.closest('.level-container');
+        const levelText = levelContainer ? levelContainer.querySelector('.level-header span').textContent : '';
+        const level = levelText.replace('Niveau ', '').trim();
+        row.dataset.level = level;
+        
+        // Transformer les cellules en inputs
+        let cellContents = [];
+        
+        // Mot (cell 0)
+        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[0].textContent.trim()}" required>`);
+        
+        // Type (cell 1)
+        const typeText = row.cells[1].textContent.trim();
+        cellContents.push(`
+            <select class="edit-input" required>
+                <option value="noun" ${typeText === 'noun' ? 'selected' : ''}>Nom</option>
+                <option value="verb" ${typeText === 'verb' ? 'selected' : ''}>Verbe</option>
+                <option value="adjective" ${typeText === 'adjective' ? 'selected' : ''}>Adjectif</option>
+                <option value="adverb" ${typeText === 'adverb' ? 'selected' : ''}>Adverbe</option>
+                <option value="ph.v" ${typeText === 'ph.v' ? 'selected' : ''}>Ph.V</option>
+                <option value="idiom" ${typeText === 'idiom' ? 'selected' : ''}>Idiom</option>
+                <option value="collocation" ${typeText === 'collocation' ? 'selected' : ''}>Colloc</option>
+            </select>
+        `);
+        
+        // Meaning (cell 2)
+        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[2].textContent.trim()}" required>`);
+        
+        // Pronunciation (cell 3)
+        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[3].textContent.trim()}">`);
+        
+        // Synonyms (cell 4)
+        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[4].textContent.trim()}">`);
+        
+        // Antonyms (cell 5)
+        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[5].textContent.trim()}">`);
+        
+        // Example (cell 6)
+        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[6].textContent.trim()}" required>`);
+        
+        // Grammar (cell 7)
+        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[7].textContent.trim()}">`);
+        
+        // Appliquer les inputs aux cellules
+        for (let i = 0; i < cellContents.length; i++) {
+            row.cells[i].innerHTML = cellContents[i];
+        }
+        
+        // Remplacer les boutons d'action
+        row.cells[8].innerHTML = `
+            <div class="action-buttons">
+                <button type="button" class="save-btn" title="Valider" data-id="${wordId}">
+                    <i class="fas fa-check"></i>
+                </button>
+            
+                <button type="button" class="cancel-btn" title="Annuler">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        // Ajouter le champ de niveau caché
+        row.querySelector('.action-buttons').insertAdjacentHTML('beforeend', `
+            <div style="display:none;">
+                <select class="level-select">
+                    <option value="x" ${level === 'x' ? 'selected' : ''}>Niveau x</option>
+                    <option value="0" ${level === '0' ? 'selected' : ''}>Niveau 0</option>
+                    <option value="1" ${level === '1' ? 'selected' : ''}>Niveau 1</option>
+                    <option value="2" ${level === '2' ? 'selected' : ''}>Niveau 2</option>
+                    <option value="v" ${level === 'v' ? 'selected' : ''}>Niveau v</option>
+                </select>
+            </div>
+        `);
+        
+        // Marquer la ligne comme étant en cours d'édition
+        row.dataset.editing = "true";
+        
+        // Ajouter l'event listener pour le bouton de sauvegarde
+        row.querySelector('.save-btn').addEventListener('click', saveWord);
+        
+        // Ajouter l'event listener pour le bouton d'annulation
+        row.querySelector('.cancel-btn').addEventListener('click', cancelEdit);
+    }
+}
+
+function cancelEdit() {
+    const row = this.closest('tr');
+    
+    // Restaurer les valeurs originales
+    if (row.dataset.originalValues) {
+        const originalValues = JSON.parse(row.dataset.originalValues);
+        
+        // Restaurer les cellules
+        for (let i = 0; i < originalValues.length; i++) {
+            row.cells[i].textContent = originalValues[i];
+        }
+        
+        // Récupérer l'ID du mot
+        const wordId = row.querySelector('.save-btn')?.getAttribute('data-id') || 
+                      this.closest('.action-buttons')?.querySelector('.save-btn')?.getAttribute('data-id');
+        
+        // Restaurer les boutons d'action
+        row.cells[8].innerHTML = `
+            <div class="action-buttons">
+                <form action="/monVocabs/edit/${wordId}" method="POST" class="edit-form" onsubmit="return false;">
+                    <button type="submit" class="edit-btn" title="Modifier" data-id="${wordId}">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </form>
+
+                <form action="/monVocabs/delete/${wordId}" method="POST" class="delete-form" onsubmit="return false;">
+                    <button type="submit" class="delete-btn" title="Supprimer" data-id="${wordId}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </form>
+            </div>
+        `;
+        
+        // Réattacher les événements aux nouveaux boutons
+        row.querySelector('.edit-btn')?.addEventListener('click', handleEditClick);
+        row.querySelector('.delete-btn')?.addEventListener('click', handleDeleteClick);
+    }
+    
+    // Supprimer le marqueur d'édition
+    delete row.dataset.editing;
+    delete row.dataset.originalValues;
+}
+
+function saveWord() {
+    const row = this.closest('tr');
+    const wordId = this.getAttribute('data-id');
+    
+    // Collecter les données du formulaire
+    const word = row.cells[0].querySelector('input').value.trim();
+    const type = row.cells[1].querySelector('select').value;
+    const meaning = row.cells[2].querySelector('input').value.trim();
+    const pronunciation = row.cells[3].querySelector('input').value.trim();
+    const synonyms = row.cells[4].querySelector('input').value.trim();
+    const antonyms = row.cells[5].querySelector('input').value.trim();
+    const example = row.cells[6].querySelector('input').value.trim();
+    const grammar = row.cells[7].querySelector('input').value.trim();
+    const level = row.querySelector('.level-select').value;
+    
+    // Valider les champs obligatoires
+    if (!word || !type || !meaning || !example) {
+        showNotification('Veuillez remplir tous les champs obligatoires', 'error');
+        return;
+    }
+    
+    // Préparation des données pour l'envoi
+    const wordData = {
+        word,
+        type,
+        meaning,
+        pronunciation,
+        synonyms,
+        antonyms,
+        example,
+        grammar,
+        level,
+        subject: 'General' // Valeur par défaut pour le sujet, à adapter si nécessaire
+    };
+    
+    // Afficher un indicateur de chargement
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    this.disabled = true;
+    
+    // Envoyer les données au serveur
+    fetch(`/monVocabs/edit/${wordId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(wordData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Si le niveau a changé, recharger la page
+            if (level !== row.dataset.level) {
+                window.location.reload();
+                return;
+            }
+            
+            // Mettre à jour les cellules
+            row.cells[0].textContent = word;
+            row.cells[1].textContent = type;
+            row.cells[2].textContent = meaning;
+            row.cells[3].textContent = pronunciation;
+            row.cells[4].textContent = synonyms;
+            row.cells[5].textContent = antonyms;
+            row.cells[6].textContent = example;
+            row.cells[7].textContent = grammar;
+            
+            // Restaurer les boutons d'action
+            row.cells[8].innerHTML = `
+                <div class="action-buttons">
+                    <form action="/monVocabs/edit/${wordId}" method="POST" class="edit-form" onsubmit="return false;">
+                        <button type="submit" class="edit-btn" title="Modifier" data-id="${wordId}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </form>
+
+                    <form action="/monVocabs/delete/${wordId}" method="POST" class="delete-form" onsubmit="return false;">
+                        <button type="submit" class="delete-btn" title="Supprimer" data-id="${wordId}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            `;
+            
+            // Réattacher les événements aux nouveaux boutons
+            row.querySelector('.edit-btn')?.addEventListener('click', handleEditClick);
+            row.querySelector('.delete-btn')?.addEventListener('click', handleDeleteClick);
+            
+            // Supprimer le marqueur d'édition
+            delete row.dataset.editing;
+            delete row.dataset.originalValues;
+            
+            // Afficher le message de succès
+            showNotification(data.message || 'Mot modifié avec succès', 'success');
+        } else {
+            // Réactiver le bouton en cas d'erreur
+            this.innerHTML = '<i class="fas fa-check"></i>';
+            this.disabled = false;
+            
+            showNotification(data.message || 'Erreur lors de la modification du mot', 'error');
+        }
+    })
+    .catch(error => {
+        console.log('Error:', error);
+        
+        // Réactiver le bouton en cas d'erreur
+        this.innerHTML = '<i class="fas fa-check"></i>';
+        this.disabled = false;
+        
+        showNotification('Une erreur est survenue lors de la modification du mot', 'error');
+    });
+}
+
+function showNotification(message, type) {
+    // Supprimer les notifications existantes
+    const existingNotifications = document.querySelectorAll('.alert');
+    existingNotifications.forEach(notif => notif.remove());
+    
+    // Créer la nouvelle notification
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type}`;
+    notification.textContent = message;
+    
+    // Ajouter la notification au début du conteneur
+    const container = document.querySelector('.vocabulary-container');
+    const title = container.querySelector('h1');
+    
+    if (title) {
+        container.insertBefore(notification, title.nextSibling);
+    } else {
+        container.insertBefore(notification, container.firstChild);
+    }
+    
+    // Faire disparaître après 3 secondes
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transition = 'opacity 0.5s ease';
+        
+        // Supprimer complètement après la transition
+        setTimeout(() => {
+            notification.remove();
+        }, 500);
+    }, 1000);
+}

@@ -47,19 +47,7 @@
         <tbody>
           {{#each levelWords}}
           <tr>
-            <td class="word-item">
-              {{word}}
-              <div class="word-info">
-                <h4>{{word}}</h4>
-                <p><span class="label">Traduction:</span> {{meaning}}</p>
-                {{#if definition}}
-                <p><span class="label">Définition:</span> {{definition}}</p>
-                {{/if}}
-                {{#if example}}
-                <p><span class="label">Exemple:</span> {{example}}</p>
-                {{/if}}
-              </div>
-            </td>
+            <td>{{word}}</td>
             <td>{{type}}</td> 
             <td>{{meaning}}</td>
             <td>{{pronunciation}}</td>
@@ -69,14 +57,14 @@
             <td>{{grammar}}</td>
             <td>
               <div class="action-buttons">
-                <form action="/monVocabs/edit/{{id}}" method="POST" class="edit-form" onsubmit="return false;">
-                  <button type="submit" class="edit-btn" title="Modifier" data-id="{{id}}">
+                <form action="/monVocabs/edit/{{word_id}}" method="POST" class="edit-form" onsubmit="return false;">
+                  <button type="submit" class="edit-btn" title="Modifier" data-id="{{word_id}}">
                     <i class="fas fa-edit"></i>
                   </button>
                 </form>
 
-                <form action="/monVocabs/delete/{{id}}" method="POST" class="delete-form" onsubmit="return false;">
-                  <button type="submit" class="delete-btn" title="Supprimer" data-id="{{id}}">
+                <form action="/monVocabs/delete/{{word_id}}" method="POST" class="delete-form" onsubmit="return false;">
+                  <button type="submit" class="delete-btn" title="Supprimer" data-id="{{word_id}}">
                     <i class="fas fa-trash"></i>
                   </button>
                 </form>

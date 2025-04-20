@@ -1,0 +1,381 @@
+<div class="games-container">
+    <div class="games-header">
+        <h1>Jeux Éducatifs</h1>
+        <p class="games-description">
+            Améliorez votre vocabulaire en jouant à ces jeux éducatifs conçus pour renforcer votre apprentissage de manière ludique.
+        </p>
+    </div>
+    
+    <div class="games-stats">
+        <h2>Vos statistiques</h2>
+        <div class="stats-grid">
+            {{#each stats}}
+            <div class="stat-card">
+                <h3>{{#if @key}}{{@key}}{{else}}Aucun jeu{{/if}}</h3>
+                <div class="stat-details">
+                    <div class="stat-item">
+                        <span class="stat-label">Meilleur score</span>
+                        <span class="stat-value">{{this.high_score}}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Parties jouées</span>
+                        <span class="stat-value">{{this.play_count}}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Dernière partie</span>
+                        <span class="stat-value">{{#if this.last_played}}{{this.last_played}}{{else}}Jamais{{/if}}</span>
+                    </div>
+                </div>
+            </div>
+            {{else}}
+            <div class="no-stats">
+                <p>Vous n'avez pas encore de statistiques. Jouez à quelques jeux pour les voir apparaître ici !</p>
+            </div>
+            {{/each}}
+        </div>
+    </div>
+    
+    <div class="games-grid">
+        <div class="game-card">
+            <div class="game-icon">
+                <i class="fas fa-random"></i>
+            </div>
+            <div class="game-info">
+                <h3>Mots Mélangés</h3>
+                <p>Trouvez les mots corrects à partir de lettres mélangées. Mettez votre vocabulaire à l'épreuve !</p>
+                <a href="/games/word-scramble" class="game-btn">Jouer</a>
+            </div>
+        </div>
+        
+        <div class="game-card">
+            <div class="game-icon">
+                <i class="fas fa-th"></i>
+            </div>
+            <div class="game-info">
+                <h3>Memory Match</h3>
+                <p>Associez les mots à leurs définitions dans ce jeu de mémoire classique.</p>
+                <a href="/games/flash-match" class="game-btn">Jouer</a>
+            </div>
+        </div>
+        
+        <div class="game-card">
+            <div class="game-icon">
+                <i class="fas fa-stopwatch"></i>
+            </div>
+            <div class="game-info">
+                <h3>Vitesse Vocab</h3>
+                <p>Tapez les mots qui s'affichent le plus rapidement possible. Testez votre vitesse de frappe !</p>
+                <a href="/games/speed-vocab" class="game-btn">Jouer</a>
+            </div>
+        </div>
+        
+        <div class="game-card">
+            <div class="game-icon">
+                <i class="fas fa-question-circle"></i>
+            </div>
+            <div class="game-info">
+                <h3>Quiz de Vocabulaire</h3>
+                <p>Testez vos connaissances avec ce quiz. Choisissez la bonne définition pour chaque mot.</p>
+                <a href="/games/vocab-quiz" class="game-btn">Jouer</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="games-info">
+        <h2>Comment ça marche ?</h2>
+        <div class="info-grid">
+            <div class="info-card">
+                <i class="fas fa-book"></i>
+                <h3>Apprenez en jouant</h3>
+                <p>Nos jeux sont conçus pour renforcer votre apprentissage du vocabulaire de manière ludique et efficace.</p>
+            </div>
+            
+            <div class="info-card">
+                <i class="fas fa-brain"></i>
+                <h3>Stimulez votre mémoire</h3>
+                <p>Les jeux font appel à différentes facultés cognitives pour une meilleure rétention du vocabulaire.</p>
+            </div>
+            
+            <div class="info-card">
+                <i class="fas fa-chart-line"></i>
+                <h3>Suivez vos progrès</h3>
+                <p>Consultez vos statistiques pour voir votre progression et améliorer constamment vos scores.</p>
+            </div>
+            
+            <div class="info-card">
+                <i class="fas fa-trophy"></i>
+                <h3>Relevez des défis</h3>
+                <p>Défiez-vous avec différents niveaux de difficulté et battez vos records personnels.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="games-footer">
+        <a href="/monVocabs/learn" class="btn learn-btn">
+            <i class="fas fa-book"></i> Retour à l'apprentissage
+        </a>
+        <a href="/games/history" class="btn history-btn">
+            <i class="fas fa-history"></i> Historique des parties
+        </a>
+    </div>
+</div>
+
+<style>
+.games-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.games-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.games-header h1 {
+    font-size: 2.5rem;
+    color: #333;
+    margin-bottom: 1rem;
+}
+
+.games-description {
+    font-size: 1.1rem;
+    color: #666;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.games-stats {
+    margin-bottom: 3rem;
+    background-color: #f9fafb;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.games-stats h2 {
+    font-size: 1.8rem;
+    color: #333;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.stat-card {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card h3 {
+    font-size: 1.2rem;
+    color: #3b82f6;
+    margin-bottom: 1rem;
+    text-transform: capitalize;
+}
+
+.stat-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+}
+
+.stat-label {
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.stat-value {
+    font-weight: 600;
+    color: #333;
+}
+
+.no-stats {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #6b7280;
+    padding: 2rem;
+    background-color: #fff;
+    border-radius: 8px;
+}
+
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.game-card {
+    background-color: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.game-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.game-icon {
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    color: #fff;
+}
+
+.game-icon i {
+    font-size: 3rem;
+}
+
+.game-info {
+    padding: 1.5rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.game-info h3 {
+    font-size: 1.5rem;
+    color: #333;
+    margin-bottom: 0.8rem;
+}
+
+.game-info p {
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+    flex-grow: 1;
+}
+
+.game-btn {
+    display: inline-block;
+    background-color: #3b82f6;
+    color: #fff;
+    padding: 0.8rem 1.5rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
+
+.game-btn:hover {
+    background-color: #2563eb;
+}
+
+.games-info {
+    margin-bottom: 3rem;
+}
+
+.games-info h2 {
+    font-size: 1.8rem;
+    color: #333;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+.info-card {
+    text-align: center;
+    padding: 2rem;
+    background-color: #f9fafb;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.info-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+}
+
+.info-card i {
+    font-size: 2.5rem;
+    color: #3b82f6;
+    margin-bottom: 1rem;
+}
+
+.info-card h3 {
+    font-size: 1.2rem;
+    color: #333;
+    margin-bottom: 0.8rem;
+}
+
+.info-card p {
+    color: #6b7280;
+}
+
+.games-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 3rem;
+}
+
+.games-footer .btn {
+    padding: 0.8rem 1.5rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+
+.games-footer .btn i {
+    margin-right: 0.5rem;
+}
+
+.games-footer .learn-btn {
+    background-color: #3b82f6;
+    color: #fff;
+}
+
+.games-footer .history-btn {
+    background-color: #f3f4f6;
+    color: #4b5563;
+}
+
+@media (max-width: 768px) {
+    .games-grid,
+    .stats-grid,
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .games-footer {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .games-footer .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+</style>
