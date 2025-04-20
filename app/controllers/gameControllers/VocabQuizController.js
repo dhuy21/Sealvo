@@ -1,4 +1,5 @@
 const gameScoresModel = require('../../models/game_scores');
+const wordModel = require('../../models/words');
 
 class VocabQuizController {
     constructor() {
@@ -10,7 +11,7 @@ class VocabQuizController {
 
 
     async index(req, res) {
-        res.render('games/vocab-quiz', {
+        res.render('games/vocabQuiz', {
             title: 'Vocab Quiz',
             user: req.session.user
         });

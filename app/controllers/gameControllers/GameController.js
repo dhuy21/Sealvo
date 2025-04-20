@@ -43,13 +43,13 @@ class GameController {
             const gameType = req.params.gameType;
             
             // Vérifier si le type de jeu est valide
-            const validGames = ['word-scramble', 'flash-match', 'speed-vocab', 'vocab-quiz'];
+            const validGames = ['wordScramble', 'flashMatch', 'speedVocab', 'vocabQuiz', 'phraseCompletion', 'wordSearch'];
             if (!validGames.includes(gameType)) {
                 return res.redirect('/games?error=Type de jeu invalide');
             }
             
-            // Convertir le format d'URL en format de base de données
-            const dbGameType = gameType.replace(/-/g, '_');
+            // Convertir le format camelCase en format snake_case pour la base de données
+            const dbGameType = gameType.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '');
             
             // Récupérer le meilleur score de l'utilisateur pour ce jeu
             const highScore = await gameScoresModel.getHighScore(req.session.user.id, dbGameType);
@@ -71,7 +71,7 @@ class GameController {
             
             // Vérifier si l'utilisateur a suffisamment de mots pour jouer
             let minWordsRequired = 5;
-            if (gameType === 'flash-match') minWordsRequired = 4;
+            if (gameType === 'flashMatch') minWordsRequired = 4;
             
             let errorMessage = null;
             if (wordCount < minWordsRequired) {
@@ -80,17 +80,22 @@ class GameController {
             
             // Récupérer le titre et la description du jeu
             const gameTitles = {
-                'word-scramble': 'Mots Mélangés',
-                'flash-match': 'Memory Match',
-                'speed-vocab': 'Vitesse Vocab',
-                'vocab-quiz': 'Quiz de Vocabulaire'
+                'wordScramble': 'Mots Mélangés',
+                'flashMatch': 'Memory Match',
+                'speedVocab': 'Vitesse Vocab',
+                'vocabQuiz': 'Quiz de Vocabulaire',
+                'phraseCompletion': 'Complétion de Phrase',
+                'wordSearch': 'Mots Cachés'
+                
             };
             
             const gameDescriptions = {
-                'word-scramble': 'Retrouvez les mots dont les lettres ont été mélangées.',
-                'flash-match': 'Associez les mots à leurs définitions dans ce jeu de mémoire.',
-                'speed-vocab': 'Tapez les mots qui s\'affichent le plus rapidement possible.',
-                'vocab-quiz': 'Testez vos connaissances avec ce quiz de vocabulaire.'
+                'wordScramble': 'Retrouvez les mots dont les lettres ont été mélangées.',
+                'flashMatch': 'Associez les mots à leurs définitions dans ce jeu de mémoire.',
+                'speedVocab': 'Tapez les mots qui s\'affichent le plus rapidement possible.',
+                'vocabQuiz': 'Testez vos connaissances avec ce quiz de vocabulaire.',
+                'phraseCompletion': 'Complétez les phrases avec les mots appropriés.',
+                'wordSearch': 'Trouvez les mots cachés dans la grille.'
             };
             
             return res.render(`games/${gameType}`, {
@@ -126,7 +131,7 @@ class GameController {
             const { game_type, score, details } = req.body;
             
             // Vérifier si le type de jeu est valide
-            const validGames = ['word_scramble', 'flash_match', 'speed_vocab', 'vocab_quiz'];
+            const validGames = ['word_scramble', 'flash_match', 'speed_vocab', 'vocab_quiz', 'phrase_completion', 'word_search'];
             if (!validGames.includes(game_type)) {
                 return res.status(400).json({ error: 'Type de jeu invalide' });
             }

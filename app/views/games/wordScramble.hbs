@@ -1,0 +1,120 @@
+<link rel="stylesheet" href="/css/games/wordScramble.css">
+<div class="game-container">
+    <div class="game-header">
+        <h1>{{gameTitle}}</h1>
+        <p class="game-description">{{gameDescription}}</p>
+    </div>
+    
+    {{#if errorMessage}}
+    <div class="error-box">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>{{errorMessage}}</p>
+        <a href="/monVocabs/add" class="btn add-words-btn">Ajouter des mots</a>
+    </div>
+    {{else}}
+    
+    <div class="game-stats">
+        <div class="stat-box">
+            <span class="stat-label">Votre meilleur score</span>
+            <span class="stat-value">{{#if highScore}}{{highScore.score}}{{else}}0{{/if}}</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Mots disponibles</span>
+            <span class="stat-value">{{wordCount}}</span>
+        </div>
+    </div>
+    
+    <div class="game-area">
+        <div id="game-screen" class="game-screen">
+            <div class="pre-game-screen active">
+                <h2>Règles du jeu</h2>
+                <ul class="rules-list">
+                    <li>Les lettres des mots ont été mélangées</li>
+                    <li>Retrouvez les mots originaux en réorganisant les lettres</li>
+                    <li>Obtenez 10 points pour chaque mot correct</li>
+                    <li>Vous avez 60 secondes pour trouver le plus de mots possible</li>
+                </ul>
+                <button id="start-game" class="start-btn">Commencer à jouer</button>
+            </div>
+            
+            <div class="active-game-screen">
+                <div class="game-info">
+                    <div class="score-display">
+                        <span class="score-label">Score</span>
+                        <span id="current-score" class="score-value">0</span>
+                    </div>
+                    <div class="timer-display">
+                        <span class="timer-label">Temps</span>
+                        <span id="timer" class="timer-value">200</span>
+                    </div>
+                </div>
+                
+                <div class="scrambled-word-container">
+                    <h3>Mot mélangé</h3>
+                    <div id="scrambled-word" class="scrambled-word">DLNMOE</div>
+                    <div id="word-meaning" class="word-meaning">Adjectif : Qui sert de modèle, de référence</div>
+                </div>
+                
+                <div class="answer-container">
+                    <input type="text" id="word-input" class="word-input" placeholder="Votre réponse" autocomplete="off">
+                    <button id="submit-answer" class="submit-btn">Valider</button>
+                    <button id="skip-word" class="skip-btn">Passer</button>
+                </div>
+                
+                <div id="result-message" class="result-message"></div>
+            </div>
+            
+            <div class="post-game-screen">
+                <h2>Partie terminée !</h2>
+                <div class="final-score-container">
+                    <span class="final-score-label">Score final</span>
+                    <span id="final-score" class="final-score">0</span>
+                </div>
+                
+                <div class="game-summary">
+                    <div class="summary-item">
+                        <span class="summary-label">Mots trouvés</span>
+                        <span id="words-found" class="summary-value">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Précision</span>
+                        <span id="accuracy" class="summary-value">0%</span>
+                    </div>
+                </div>
+                
+                <div id="high-score-message" class="high-score-message"></div>
+                
+                <div class="action-buttons">
+                    <button id="play-again" class="play-again-btn">Rejouer</button>
+                    <a href="/games" class="back-btn">Retour aux jeux</a>
+                </div>
+            </div>
+        </div>
+        
+        {{#if leaderboard.length}}
+        <div class="leaderboard">
+            <h3>Classement</h3>
+            <div class="leaderboard-list">
+                {{#each leaderboard}}
+                <div class="leaderboard-item">
+                    <span class="leaderboard-rank">{{@index}}</span>
+                    <span class="leaderboard-user">{{this.username}}</span>
+                    <span class="leaderboard-score">{{this.score}}</span>
+                </div>
+                {{/each}}
+            </div>
+            <a href="/games/leaderboard/wordScramble" class="view-all-btn">Voir tout le classement</a>
+        </div>
+        {{/if}}
+    </div>
+    {{/if}}
+    
+    <div class="game-footer">
+        <a href="/games" class="btn back-btn">
+            <i class="fas fa-arrow-left"></i> Retour aux jeux
+        </a>
+        <a href="/monVocabs/learn" class="btn learn-btn">
+            <i class="fas fa-book"></i> Apprendre
+        </a>
+    </div>
+</div>

@@ -1,0 +1,146 @@
+<link rel="stylesheet" href="css/games/vocabQuiz.css">
+<div class="game-container">
+    <div class="game-header">
+        <h1>{{gameTitle}}</h1>
+        <p class="game-description">{{gameDescription}}</p>
+    </div>
+    
+    {{#if errorMessage}}
+    <div class="error-box">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>{{errorMessage}}</p>
+        <a href="/monVocabs/add" class="btn add-words-btn">Ajouter des mots</a>
+    </div>
+    {{else}}
+    
+    <div class="game-stats">
+        <div class="stat-box">
+            <span class="stat-label">Votre meilleur score</span>
+            <span class="stat-value">{{#if highScore}}{{highScore.score}}{{else}}0{{/if}}</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Mots disponibles</span>
+            <span class="stat-value">{{wordCount}}</span>
+        </div>
+    </div>
+    
+    <div class="game-area">
+        <div id="game-screen" class="game-screen">
+            <div class="pre-game-screen active">
+                <h2>Règles du jeu</h2>
+                <ul class="rules-list">
+                    <li>Choisissez la bonne définition pour chaque mot</li>
+                    <li>Obtenez 10 points pour chaque bonne réponse</li>
+                    <li>Perdez 5 points pour chaque réponse erronée</li>
+                    <li>Répondez à 10 questions pour terminer le quiz</li>
+                </ul>
+                <div class="difficulty-selector">
+                    <h3>Choisissez la difficulté</h3>
+                    <div class="difficulty-options">
+                        <button class="difficulty-btn active" data-difficulty="easy">
+                            <i class="fas fa-star"></i>
+                            <span>Facile</span>
+                            <small>4 options</small>
+                        </button>
+                        <button class="difficulty-btn" data-difficulty="medium">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <span>Moyen</span>
+                            <small>6 options</small>
+                        </button>
+                        <button class="difficulty-btn" data-difficulty="hard">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <span>Difficile</span>
+                            <small>8 options</small>
+                        </button>
+                    </div>
+                </div>
+                <button id="start-game" class="start-btn">Commencer le quiz</button>
+            </div>
+            
+            <div class="active-game-screen">
+                <div class="game-info">
+                    <div class="score-display">
+                        <span class="score-label">Score</span>
+                        <span id="current-score" class="score-value">0</span>
+                    </div>
+                    <div class="progress-display">
+                        <span class="progress-label">Question</span>
+                        <span id="progress" class="progress-value">1/10</span>
+                    </div>
+                </div>
+                
+                <div class="quiz-question-container">
+                    <div class="quiz-word-container">
+                        <h3>Quel est le sens de ce mot ?</h3>
+                        <div id="quiz-word" class="quiz-word">Exemple</div>
+                    </div>
+                    
+                    <div id="options-container" class="options-container">
+                        <!-- Les options seront générées dynamiquement ici -->
+                    </div>
+                </div>
+                
+                <div id="result-message" class="result-message"></div>
+                
+                <div class="quiz-footer">
+                    <button id="next-question" class="next-btn" disabled>Question suivante</button>
+                </div>
+            </div>
+            
+            <div class="post-game-screen">
+                <h2>Quiz terminé !</h2>
+                <div class="final-score-container">
+                    <span class="final-score-label">Score final</span>
+                    <span id="final-score" class="final-score">0</span>
+                </div>
+                
+                <div class="game-summary">
+                    <div class="summary-item">
+                        <span class="summary-label">Réponses correctes</span>
+                        <span id="correct-answers" class="summary-value">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Précision</span>
+                        <span id="accuracy" class="summary-value">0%</span>
+                    </div>
+                </div>
+                
+                <div id="high-score-message" class="high-score-message"></div>
+                
+                <div class="action-buttons">
+                    <button id="play-again" class="play-again-btn">Rejouer</button>
+                    <a href="/games" class="back-btn">Retour aux jeux</a>
+                </div>
+            </div>
+        </div>
+        
+        {{#if leaderboard.length}}
+        <div class="leaderboard">
+            <h3>Classement</h3>
+            <div class="leaderboard-list">
+                {{#each leaderboard}}
+                <div class="leaderboard-item">
+                    <span class="leaderboard-rank">{{@index}}</span>
+                    <span class="leaderboard-user">{{this.username}}</span>
+                    <span class="leaderboard-score">{{this.score}}</span>
+                </div>
+                {{/each}}
+            </div>
+            <a href="/games/leaderboard/vocabQuiz" class="view-all-btn">Voir tout le classement</a>
+        </div>
+        {{/if}}
+    </div>
+    {{/if}}
+    
+    <div class="game-footer">
+        <a href="/games" class="btn back-btn">
+            <i class="fas fa-arrow-left"></i> Retour aux jeux
+        </a>
+        <a href="/monVocabs/learn" class="btn learn-btn">
+            <i class="fas fa-book"></i> Apprendre
+        </a>
+    </div>
+</div>
