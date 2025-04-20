@@ -1,0 +1,925 @@
+<div class="game-container">
+    <div class="game-header">
+        <h1>{{gameTitle}}</h1>
+        <p class="game-description">{{gameDescription}}</p>
+    </div>
+    
+    {{#if errorMessage}}
+    <div class="error-box">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>{{errorMessage}}</p>
+        <a href="/monVocabs/add" class="btn add-words-btn">Ajouter des mots</a>
+    </div>
+    {{else}}
+    
+    <div class="game-stats">
+        <div class="stat-box">
+            <span class="stat-label">Votre meilleur score</span>
+            <span class="stat-value">{{#if highScore}}{{highScore.score}}{{else}}0{{/if}}</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Mots disponibles</span>
+            <span class="stat-value">{{wordCount}}</span>
+        </div>
+    </div>
+    
+    <div class="game-area">
+        <div id="game-screen" class="game-screen">
+            <div class="pre-game-screen active">
+                <h2>Règles du jeu</h2>
+                <ul class="rules-list">
+                    <li>Choisissez la bonne définition pour chaque mot</li>
+                    <li>Obtenez 10 points pour chaque bonne réponse</li>
+                    <li>Perdez 5 points pour chaque réponse erronée</li>
+                    <li>Répondez à 10 questions pour terminer le quiz</li>
+                </ul>
+                <div class="difficulty-selector">
+                    <h3>Choisissez la difficulté</h3>
+                    <div class="difficulty-options">
+                        <button class="difficulty-btn active" data-difficulty="easy">
+                            <i class="fas fa-star"></i>
+                            <span>Facile</span>
+                            <small>4 options</small>
+                        </button>
+                        <button class="difficulty-btn" data-difficulty="medium">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <span>Moyen</span>
+                            <small>6 options</small>
+                        </button>
+                        <button class="difficulty-btn" data-difficulty="hard">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <span>Difficile</span>
+                            <small>8 options</small>
+                        </button>
+                    </div>
+                </div>
+                <button id="start-game" class="start-btn">Commencer le quiz</button>
+            </div>
+            
+            <div class="active-game-screen">
+                <div class="game-info">
+                    <div class="score-display">
+                        <span class="score-label">Score</span>
+                        <span id="current-score" class="score-value">0</span>
+                    </div>
+                    <div class="progress-display">
+                        <span class="progress-label">Question</span>
+                        <span id="progress" class="progress-value">1/10</span>
+                    </div>
+                </div>
+                
+                <div class="quiz-question-container">
+                    <div class="quiz-word-container">
+                        <h3>Quel est le sens de ce mot ?</h3>
+                        <div id="quiz-word" class="quiz-word">Exemple</div>
+                    </div>
+                    
+                    <div id="options-container" class="options-container">
+                        <!-- Les options seront générées dynamiquement ici -->
+                    </div>
+                </div>
+                
+                <div id="result-message" class="result-message"></div>
+                
+                <div class="quiz-footer">
+                    <button id="next-question" class="next-btn" disabled>Question suivante</button>
+                </div>
+            </div>
+            
+            <div class="post-game-screen">
+                <h2>Quiz terminé !</h2>
+                <div class="final-score-container">
+                    <span class="final-score-label">Score final</span>
+                    <span id="final-score" class="final-score">0</span>
+                </div>
+                
+                <div class="game-summary">
+                    <div class="summary-item">
+                        <span class="summary-label">Réponses correctes</span>
+                        <span id="correct-answers" class="summary-value">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Précision</span>
+                        <span id="accuracy" class="summary-value">0%</span>
+                    </div>
+                </div>
+                
+                <div id="high-score-message" class="high-score-message"></div>
+                
+                <div class="action-buttons">
+                    <button id="play-again" class="play-again-btn">Rejouer</button>
+                    <a href="/games" class="back-btn">Retour aux jeux</a>
+                </div>
+            </div>
+        </div>
+        
+        {{#if leaderboard.length}}
+        <div class="leaderboard">
+            <h3>Classement</h3>
+            <div class="leaderboard-list">
+                {{#each leaderboard}}
+                <div class="leaderboard-item">
+                    <span class="leaderboard-rank">{{@index}}</span>
+                    <span class="leaderboard-user">{{this.username}}</span>
+                    <span class="leaderboard-score">{{this.score}}</span>
+                </div>
+                {{/each}}
+            </div>
+            <a href="/games/leaderboard/vocab-quiz" class="view-all-btn">Voir tout le classement</a>
+        </div>
+        {{/if}}
+    </div>
+    {{/if}}
+    
+    <div class="game-footer">
+        <a href="/games" class="btn back-btn">
+            <i class="fas fa-arrow-left"></i> Retour aux jeux
+        </a>
+        <a href="/monVocabs/learn" class="btn learn-btn">
+            <i class="fas fa-book"></i> Apprendre
+        </a>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Variables du jeu
+    let currentQuestion = null;
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let correctAnswers = 0;
+    let totalQuestions = 10;
+    let gameActive = false;
+    let selectedDifficulty = 'easy';
+    let optionsCount = 4; // Par défaut: facile
+    let currentSelectedOption = null;
+    
+    // Éléments DOM
+    const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+    const startGameBtn = document.getElementById('start-game');
+    const nextQuestionBtn = document.getElementById('next-question');
+    const playAgainBtn = document.getElementById('play-again');
+    const quizWordDisplay = document.getElementById('quiz-word');
+    const optionsContainer = document.getElementById('options-container');
+    const resultMessage = document.getElementById('result-message');
+    const currentScoreDisplay = document.getElementById('current-score');
+    const progressDisplay = document.getElementById('progress');
+    const finalScoreDisplay = document.getElementById('final-score');
+    const correctAnswersDisplay = document.getElementById('correct-answers');
+    const accuracyDisplay = document.getElementById('accuracy');
+    const highScoreMessage = document.getElementById('high-score-message');
+    
+    // Écrans de jeu
+    const preGameScreen = document.querySelector('.pre-game-screen');
+    const activeGameScreen = document.querySelector('.active-game-screen');
+    const postGameScreen = document.querySelector('.post-game-screen');
+    
+    // Initialisation de la difficulté
+    difficultyBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            difficultyBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            selectedDifficulty = this.dataset.difficulty;
+            
+            switch(selectedDifficulty) {
+                case 'easy':
+                    optionsCount = 4;
+                    break;
+                case 'medium':
+                    optionsCount = 6;
+                    break;
+                case 'hard':
+                    optionsCount = 8;
+                    break;
+            }
+        });
+    });
+    
+    // Fonction pour démarrer le jeu
+    function startGame() {
+        // Réinitialiser les variables
+        score = 0;
+        correctAnswers = 0;
+        currentQuestionIndex = 0;
+        gameActive = true;
+        
+        // Mettre à jour l'affichage
+        currentScoreDisplay.textContent = score;
+        progressDisplay.textContent = `1/${totalQuestions}`;
+        
+        // Charger la première question
+        loadNextQuestion();
+        
+        // Afficher l'écran de jeu actif
+        preGameScreen.classList.remove('active');
+        activeGameScreen.classList.add('active');
+        postGameScreen.classList.remove('active');
+    }
+    
+    // Fonction pour charger la prochaine question
+    function loadNextQuestion() {
+        // Réinitialiser l'état des boutons
+        nextQuestionBtn.disabled = true;
+        resultMessage.textContent = '';
+        resultMessage.className = 'result-message';
+        
+        // Simuler une requête à l'API pour obtenir une question
+        // Dans une vraie implémentation, vous feriez un appel fetch à votre API
+        fetch(`/games/vocab-quiz/question?difficulty=${selectedDifficulty}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error(data.error);
+                return;
+            }
+            
+            currentQuestion = data.question;
+            
+            // Mettre à jour l'affichage de la question
+            quizWordDisplay.textContent = data.question.word;
+            
+            // Générer les options
+            generateOptions(data.question.options, data.question.correctIndex);
+            
+            // Mettre à jour la progression
+            currentQuestionIndex++;
+            progressDisplay.textContent = `${currentQuestionIndex}/${totalQuestions}`;
+        })
+        .catch(error => {
+            console.error('Erreur lors du chargement de la question:', error);
+        });
+    }
+    
+    // Fonction pour générer les options
+    function generateOptions(options, correctIndex) {
+        optionsContainer.innerHTML = '';
+        
+        options.forEach((option, index) => {
+            const optionBtn = document.createElement('button');
+            optionBtn.className = 'option-btn';
+            optionBtn.textContent = option;
+            optionBtn.dataset.index = index;
+            
+            optionBtn.addEventListener('click', function() {
+                if (nextQuestionBtn.disabled) {
+                    // Désélectionner toute option précédemment sélectionnée
+                    document.querySelectorAll('.option-btn').forEach(btn => {
+                        btn.classList.remove('selected');
+                    });
+                    
+                    // Sélectionner cette option
+                    this.classList.add('selected');
+                    currentSelectedOption = index;
+                    
+                    // Vérifier la réponse
+                    checkAnswer(index, correctIndex);
+                }
+            });
+            
+            optionsContainer.appendChild(optionBtn);
+        });
+    }
+    
+    // Fonction pour vérifier la réponse
+    function checkAnswer(selectedIndex, correctIndex) {
+        const options = document.querySelectorAll('.option-btn');
+        
+        // Marquer la bonne réponse
+        options[correctIndex].classList.add('correct');
+        
+        if (selectedIndex === correctIndex) {
+            // Réponse correcte
+            score += 10;
+            correctAnswers++;
+            resultMessage.textContent = 'Correct !';
+            resultMessage.className = 'result-message correct';
+        } else {
+            // Réponse incorrecte
+            options[selectedIndex].classList.add('incorrect');
+            score = Math.max(0, score - 5); // Éviter un score négatif
+            resultMessage.textContent = 'Incorrect !';
+            resultMessage.className = 'result-message incorrect';
+        }
+        
+        // Mettre à jour le score
+        currentScoreDisplay.textContent = score;
+        
+        // Activer le bouton suivant
+        nextQuestionBtn.disabled = false;
+        
+        // Si c'est la dernière question, changer le texte du bouton
+        if (currentQuestionIndex === totalQuestions) {
+            nextQuestionBtn.textContent = 'Voir les résultats';
+        }
+    }
+    
+    // Fonction pour passer à la question suivante
+    function goToNextQuestion() {
+        if (currentQuestionIndex < totalQuestions) {
+            loadNextQuestion();
+        } else {
+            endGame();
+        }
+    }
+    
+    // Fonction pour terminer le jeu
+    function endGame() {
+        gameActive = false;
+        
+        // Mettre à jour l'écran de fin de jeu
+        finalScoreDisplay.textContent = score;
+        correctAnswersDisplay.textContent = correctAnswers;
+        
+        const accuracy = Math.round((correctAnswers / totalQuestions) * 100);
+        accuracyDisplay.textContent = `${accuracy}%`;
+        
+        // Vérifier si c'est un nouveau record
+        const currentHighScore = {{#if highScore}}{{highScore.score}}{{else}}0{{/if}};
+        if (score > currentHighScore) {
+            highScoreMessage.textContent = 'Nouveau record personnel !';
+            highScoreMessage.classList.add('new-record');
+            
+            // Enregistrer le score
+            saveScore(score);
+        }
+        
+        // Afficher l'écran de fin de jeu
+        activeGameScreen.classList.remove('active');
+        postGameScreen.classList.add('active');
+    }
+    
+    // Fonction pour enregistrer le score
+    function saveScore(score) {
+        // Simuler l'enregistrement du score
+        // Dans une vraie implémentation, vous feriez un appel fetch à votre API
+        fetch('/games/score', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                game_type: 'vocab_quiz',
+                score: score,
+                details: {
+                    difficulty: selectedDifficulty,
+                    correct_answers: correctAnswers,
+                    total_questions: totalQuestions,
+                    accuracy: Math.round((correctAnswers / totalQuestions) * 100)
+                }
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Score enregistré avec succès:', data);
+        })
+        .catch(error => {
+            console.error('Erreur lors de l\'enregistrement du score:', error);
+        });
+    }
+    
+    // Événements
+    startGameBtn.addEventListener('click', startGame);
+    
+    nextQuestionBtn.addEventListener('click', goToNextQuestion);
+    
+    playAgainBtn.addEventListener('click', startGame);
+});
+</script>
+
+<style>
+.game-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.game-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.game-header h1 {
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.game-description {
+    color: #666;
+    font-size: 1.1rem;
+}
+
+.error-box {
+    background-color: #fff5f5;
+    border-left: 4px solid #e53e3e;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.error-box i {
+    font-size: 2rem;
+    color: #e53e3e;
+    margin-bottom: 1rem;
+}
+
+.add-words-btn {
+    margin-top: 1rem;
+    background-color: #3b82f6;
+    color: #fff;
+    padding: 0.6rem 1.2rem;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.game-stats {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 2rem;
+}
+
+.stat-box {
+    text-align: center;
+    background-color: #f3f4f6;
+    padding: 1rem;
+    border-radius: 8px;
+    width: 45%;
+}
+
+.stat-label {
+    display: block;
+    color: #4b5563;
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #3b82f6;
+}
+
+.game-area {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.game-screen {
+    flex: 1;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    min-height: 400px;
+    position: relative;
+}
+
+.pre-game-screen,
+.active-game-screen,
+.post-game-screen {
+    display: none;
+}
+
+.pre-game-screen.active,
+.active-game-screen.active,
+.post-game-screen.active {
+    display: block;
+}
+
+.rules-list {
+    margin: 1.5rem 0;
+    padding-left: 1.5rem;
+}
+
+.rules-list li {
+    margin-bottom: 0.5rem;
+    color: #4b5563;
+}
+
+.difficulty-selector {
+    margin: 2rem 0;
+    text-align: center;
+}
+
+.difficulty-selector h3 {
+    margin-bottom: 1rem;
+    color: #4b5563;
+}
+
+.difficulty-options {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.difficulty-btn {
+    flex: 1;
+    background-color: #f3f4f6;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.difficulty-btn.active {
+    background-color: #dbeafe;
+    border-color: #3b82f6;
+}
+
+.difficulty-btn i {
+    color: #fbbf24;
+    margin-bottom: 0.5rem;
+}
+
+.difficulty-btn span {
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+}
+
+.difficulty-btn small {
+    color: #6b7280;
+    font-size: 0.8rem;
+}
+
+.start-btn {
+    display: block;
+    width: 100%;
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    color: #fff;
+    padding: 1rem;
+    border: none;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.start-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(106, 17, 203, 0.4);
+}
+
+.game-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+}
+
+.score-display,
+.progress-display {
+    background-color: #f3f4f6;
+    padding: 0.8rem 1.5rem;
+    border-radius: 50px;
+    text-align: center;
+}
+
+.score-label,
+.progress-label {
+    display: block;
+    font-size: 0.8rem;
+    color: #4b5563;
+}
+
+.score-value,
+.progress-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #3b82f6;
+}
+
+.quiz-question-container {
+    margin-bottom: 2rem;
+}
+
+.quiz-word-container {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.quiz-word-container h3 {
+    color: #4b5563;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.quiz-word {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 1rem;
+}
+
+.options-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.option-btn {
+    background-color: #f3f4f6;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.2rem 1rem;
+    font-size: 1rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.option-btn:hover {
+    background-color: #e5e7eb;
+}
+
+.option-btn.selected {
+    border-color: #3b82f6;
+    background-color: #dbeafe;
+}
+
+.option-btn.correct {
+    border-color: #10b981;
+    background-color: #d1fae5;
+}
+
+.option-btn.incorrect {
+    border-color: #ef4444;
+    background-color: #fee2e2;
+}
+
+.result-message {
+    text-align: center;
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.result-message.correct {
+    background-color: #f0fdf4;
+    color: #16a34a;
+    border-left: 4px solid #16a34a;
+}
+
+.result-message.incorrect {
+    background-color: #fef2f2;
+    color: #dc2626;
+    border-left: 4px solid #dc2626;
+}
+
+.quiz-footer {
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.next-btn {
+    background-color: #3b82f6;
+    color: #fff;
+    padding: 0.8rem 2rem;
+    border: none;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.next-btn:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.next-btn:not(:disabled):hover {
+    background-color: #2563eb;
+}
+
+.final-score-container {
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.final-score-label {
+    display: block;
+    color: #4b5563;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.final-score {
+    font-size: 3.5rem;
+    font-weight: bold;
+    color: #3b82f6;
+}
+
+.game-summary {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 2rem;
+}
+
+.summary-item {
+    text-align: center;
+}
+
+.summary-label {
+    display: block;
+    color: #4b5563;
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+}
+
+.summary-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.high-score-message {
+    text-align: center;
+    margin: 1.5rem 0;
+    padding: 1rem;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.high-score-message.new-record {
+    background-color: #fef3c7;
+    border-radius: 8px;
+    color: #d97706;
+    font-weight: 500;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.play-again-btn,
+.back-btn {
+    flex: 1;
+    padding: 1rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+}
+
+.play-again-btn {
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    color: #fff;
+}
+
+.back-btn {
+    background-color: #e5e7eb;
+    color: #4b5563;
+}
+
+.leaderboard {
+    flex: 0 0 300px;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+}
+
+.leaderboard h3 {
+    text-align: center;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.leaderboard-item {
+    display: flex;
+    align-items: center;
+    padding: 0.8rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.leaderboard-rank {
+    width: 30px;
+    height: 30px;
+    background-color: #f3f4f6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #4b5563;
+    margin-right: 0.8rem;
+}
+
+.leaderboard-item:nth-child(1) .leaderboard-rank {
+    background-color: #fef3c7;
+    color: #d97706;
+}
+
+.leaderboard-item:nth-child(2) .leaderboard-rank {
+    background-color: #f1f5f9;
+    color: #64748b;
+}
+
+.leaderboard-item:nth-child(3) .leaderboard-rank {
+    background-color: #fff7ed;
+    color: #c2410c;
+}
+
+.leaderboard-user {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #333;
+    font-weight: 500;
+}
+
+.leaderboard-score {
+    font-weight: bold;
+    color: #3b82f6;
+}
+
+.view-all-btn {
+    display: block;
+    text-align: center;
+    margin-top: 1rem;
+    color: #3b82f6;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.game-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2rem;
+}
+
+.game-footer .btn {
+    padding: 0.8rem 1.5rem;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+
+.game-footer .btn i {
+    margin-right: 0.5rem;
+}
+
+.game-footer .back-btn {
+    background-color: #f3f4f6;
+    color: #4b5563;
+}
+
+.game-footer .learn-btn {
+    background-color: #3b82f6;
+    color: #fff;
+}
+
+@media (max-width: 768px) {
+    .game-area {
+        flex-direction: column;
+    }
+    
+    .leaderboard {
+        flex: auto;
+    }
+    
+    .difficulty-options {
+        flex-direction: column;
+    }
+    
+    .options-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .game-footer {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .game-footer .btn {
+        text-align: center;
+        justify-content: center;
+    }
+}
+</style> 

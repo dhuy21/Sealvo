@@ -5,7 +5,7 @@ class Word {
     async findWordsByUserId(userId) {
         try {
             const [rows] = await global.dbConnection.execute(
-                'SELECT w.word_id as id, w.word, wd.meaning, wd.type, wd.synonyms, wd.antonyms, wd.example, wd.grammar, wp.pronunciation, ln.level ' +
+                'SELECT w.word_id, w.word, wd.meaning, wd.type, wd.synonyms, wd.antonyms, wd.example, wd.grammar, wp.pronunciation, ln.level ' +
                 'FROM words w ' +
                 'JOIN word_details wd ON w.word_id = wd.word_id ' +
                 'JOIN word_pronunciations wp ON wd.detail_id = wp.detail_id ' +
@@ -18,6 +18,33 @@ class Word {
         } catch (error) {
             console.error('Erreur lors de la récupération des mots:', error);
             throw error;
+        }
+    }
+
+    /**
+     * Compte le nombre de mots dans le vocabulaire d'un utilisateur
+     * @param {string|number} userId - L'ID de l'utilisateur
+     * @returns {Promise<number>} Le nombre de mots
+     */
+    async countUserWords(userId) {
+        try {
+            // Ensure userId is treated as a string since user_id is CHAR(7) in the database
+            const userIdStr = String(userId);
+            console.log(`Counting words for user: ${userIdStr} (type: ${typeof userIdStr})`);
+            
+            const [rows] = await global.dbConnection.execute(
+                'SELECT COUNT(*) as count FROM learning WHERE user_id = ?',
+                [userIdStr]
+            );
+            
+            console.log(`Found ${rows[0].count} words for user ${userIdStr}`);
+            return rows[0].count;
+        } catch (error) {
+            console.error('Erreur lors du comptage des mots de l\'utilisateur:', error);
+            console.error('Stack trace:', error.stack);
+            // Return 0 as a fallback instead of throwing the error
+            // This prevents the game page from crashing if there's a DB issue
+            return 0;
         }
     }
 

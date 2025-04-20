@@ -1,0 +1,145 @@
+<div class="error-container">
+    <div class="error-box">
+        <h1>{{title}}</h1>
+        <div class="error-message">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>{{message}}</p>
+        </div>
+        
+        {{#if error}}
+        <div class="error-details">
+            <h3>Détails techniques</h3>
+            <pre>{{error}}</pre>
+        </div>
+        {{/if}}
+        
+        <div class="error-actions">
+            <a href="javascript:history.back()" class="btn back-btn">
+                <i class="fas fa-arrow-left"></i> Retour
+            </a>
+            <a href="/" class="btn home-btn">
+                <i class="fas fa-home"></i> Accueil
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .error-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 70vh;
+        padding: 2rem;
+    }
+    
+    .error-box {
+        max-width: 800px;
+        width: 100%;
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .error-box h1 {
+        color: #333;
+        margin-bottom: 1.5rem;
+    }
+    
+    .error-message {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background-color: #fff5f5;
+        border-radius: 8px;
+        border-left: 4px solid #e53e3e;
+    }
+    
+    .error-message i {
+        font-size: 3rem;
+        color: #e53e3e;
+        margin-bottom: 1rem;
+    }
+    
+    .error-message p {
+        color: #333;
+        font-size: 1.1rem;
+        margin: 0;
+    }
+    
+    .error-details {
+        margin-bottom: 2rem;
+        text-align: left;
+        background-color: #f3f4f6;
+        border-radius: 8px;
+        padding: 1rem;
+        overflow: auto;
+    }
+    
+    .error-details h3 {
+        color: #333;
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+    }
+    
+    .error-details pre {
+        margin: 0;
+        white-space: pre-wrap;
+        font-size: 0.9rem;
+        color: #555;
+    }
+    
+    .error-actions {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+    }
+    
+    .btn {
+        padding: 0.6rem 1.2rem;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: bold;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.2s;
+    }
+    
+    .btn i {
+        margin-right: 0.5rem;
+    }
+    
+    .back-btn {
+        background-color: #f3f4f6;
+        color: #4b5563;
+    }
+    
+    .home-btn {
+        background-color: #3b82f6;
+        color: white;
+    }
+    
+    .back-btn:hover {
+        background-color: #e5e7eb;
+    }
+    
+    .home-btn:hover {
+        background-color: #2563eb;
+    }
+    
+    @media (max-width: 640px) {
+        .error-actions {
+            flex-direction: column;
+        }
+        
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style> 
