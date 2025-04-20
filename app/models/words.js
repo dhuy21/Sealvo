@@ -240,6 +240,195 @@ class Word {
             throw error;
         }
     }
+
+    // Récupérer un nombre spécifique de mots aléatoires
+    async findRandomWords(userId, limit = 1) {
+        try {
+            const [words] = await global.dbConnection.execute(
+                'SELECT w.word_id, w.word, wd.meaning, wd.type, wd.synonyms, wd.antonyms, wd.example, wd.grammar, wp.pronunciation, ln.level ' +
+                'FROM words w ' +
+                'JOIN word_details wd ON w.word_id = wd.word_id ' +
+                'JOIN word_pronunciations wp ON wd.detail_id = wp.detail_id ' +
+                'JOIN learning ln ON w.word_id = ln.word_id ' +
+                'WHERE ln.user_id = ? ' +
+                'ORDER BY RAND() LIMIT 1', 
+                [userId]
+            );
+            return words;
+        } catch (error) {
+            console.error('Error in findRandomWords:', error);
+            throw error;
+        }
+    }
+
+    // Récupérer des mots aléatoires en fonction de leur longueur
+    async findRandomWordsByLength(userId, minLength, maxLength, limit = 1) {
+        try {
+            // Convertir explicitement les paramètres en entiers
+            const minLengthInt = parseInt(minLength, 10);
+            const maxLengthInt = parseInt(maxLength, 10);
+            const limitInt = parseInt(limit, 10);
+            
+            console.log(`findRandomWordsByLength - userId: ${userId}, minLength: ${minLengthInt}, maxLength: ${maxLengthInt}, limit: ${limitInt}`);
+            
+            // Approche alternative: utiliser une chaîne de requête statique pour la clause LIMIT
+            const query = 
+                'SELECT w.word_id, w.word, wd.meaning, wd.type, wd.synonyms, wd.antonyms, wd.example, wd.grammar, wp.pronunciation, ln.level ' +
+                'FROM words w ' +
+                'JOIN word_details wd ON w.word_id = wd.word_id ' +
+                'JOIN word_pronunciations wp ON wd.detail_id = wp.detail_id ' +
+                'JOIN learning ln ON w.word_id = ln.word_id ' +
+                'WHERE ln.user_id = ? AND LENGTH(w.word) BETWEEN ? AND ? ' +
+                'ORDER BY RAND() LIMIT 1';
+            
+            const [words] = await global.dbConnection.execute(
+                query,
+                [userId, minLengthInt, maxLengthInt]
+            );
+            
+            return words;
+        } catch (error) {
+            console.error('Error in findRandomWordsByLength:', error);
+            throw error;
+        }
+    }
+
+    // Récupérer des mots aléatoires en fonction de leur longueur, en excluant un mot spécifique
+    async findRandomWordsByLengthExcluding(userId, minLength, maxLength, excludeWordId, limit = 1) {
+        try {
+            // Convertir explicitement les paramètres en entiers
+            const minLengthInt = parseInt(minLength, 10);
+            const maxLengthInt = parseInt(maxLength, 10);
+            const limitInt = parseInt(limit, 10);
+            
+            console.log(`findRandomWordsByLengthExcluding - userId: ${userId}, minLength: ${minLengthInt}, maxLength: ${maxLengthInt}, exclude: ${excludeWordId}, limit: ${limitInt}`);
+            
+            let query;
+            let params;
+            
+            if (excludeWordId) {
+                // Requête avec exclusion d'un mot spécifique
+                query = 'SELECT w.word_id, w.word, wd.meaning, wd.type, wd.synonyms, wd.antonyms, wd.example, wd.grammar, wp.pronunciation, ln.level ' +
+                        'FROM words w ' +
+                        'JOIN word_details wd ON w.word_id = wd.word_id ' +
+                        'JOIN word_pronunciations wp ON wd.detail_id = wp.detail_id ' +
+                        'JOIN learning ln ON w.word_id = ln.word_id ' +
+                        'WHERE ln.user_id = ? AND LENGTH(w.word) BETWEEN ? AND ? AND w.word_id != ? ' +
+                        'ORDER BY RAND() LIMIT 1';
+                params = [userId, minLengthInt, maxLengthInt, excludeWordId];
+            } else {
+                // Requête sans exclusion
+                query = 'SELECT w.word_id, w.word, wd.meaning, wd.type, wd.synonyms, wd.antonyms, wd.example, wd.grammar, wp.pronunciation, ln.level ' +
+                        'FROM words w ' +
+                        'JOIN word_details wd ON w.word_id = wd.word_id ' +
+                        'JOIN word_pronunciations wp ON wd.detail_id = wp.detail_id ' +
+                        'JOIN learning ln ON w.word_id = ln.word_id ' +
+                        'WHERE ln.user_id = ? AND LENGTH(w.word) BETWEEN ? AND ? ' +
+                        'ORDER BY RAND() LIMIT 1';
+                params = [userId, minLengthInt, maxLengthInt];
+            }
+            
+            const [words] = await global.dbConnection.execute(query, params);
+            
+            return words;
+        } catch (error) {
+            console.error('Error in findRandomWordsByLengthExcluding:', error);
+            throw error;
+        }
+    }
+
+    // Récupérer des mots aléatoires en excluant un mot spécifique
+    async findRandomWordsExcluding(userId, excludeWordId, limit = 1) {
+        try {
+            // Convertir explicitement les paramètres en entiers
+            const limitInt = parseInt(limit, 10);
+            
+            console.log(`findRandomWordsExcluding - userId: ${userId}, exclude: ${excludeWordId}, limit: ${limitInt}`);
+            
+            let query;
+            let params;
+            
+            if (excludeWordId) {
+                // Requête avec exclusion d'un mot spécifique
+                query = 'SELECT w.word_id, w.word, wd.meaning, wd.type, wd.synonyms, wd.antonyms, wd.example, wd.grammar, wp.pronunciation, ln.level ' +
+                        'FROM words w ' +
+                        'JOIN word_details wd ON w.word_id = wd.word_id ' +
+                        'JOIN word_pronunciations wp ON wd.detail_id = wp.detail_id ' +
+                        'JOIN learning ln ON w.word_id = ln.word_id ' +
+                        'WHERE ln.user_id = ? AND w.word_id != ? ' +
+                        'ORDER BY RAND() LIMIT 1';
+                params = [userId, excludeWordId];
+            } else {
+                // Requête sans exclusion
+                query = 'SELECT w.word_id, w.word, wd.meaning, wd.type, wd.synonyms, wd.antonyms, wd.example, wd.grammar, wp.pronunciation, ln.level ' +
+                        'FROM words w ' +
+                        'JOIN word_details wd ON w.word_id = wd.word_id ' +
+                        'JOIN word_pronunciations wp ON wd.detail_id = wp.detail_id ' +
+                        'JOIN learning ln ON w.word_id = ln.word_id ' +
+                        'WHERE ln.user_id = ? ' +
+                        'ORDER BY RAND() LIMIT 1';
+                params = [userId];
+            }
+            
+            const [words] = await global.dbConnection.execute(query, params);
+            
+            return words;
+        } catch (error) {
+            console.error('Error in findRandomWordsExcluding:', error);
+            throw error;
+        }
+    }
+
+    // Récupérer des mots aléatoires pour servir de distracteurs
+    async findRandomDistractors(userId, excludeWordId, count = 3) {
+        try {
+            console.log(`findRandomDistractors - userId: ${userId}, excludeWordId: ${excludeWordId}, count: ${count}`);
+            
+            const query = 'SELECT w.word_id, w.word ' +
+                        'FROM words w ' +
+                        'JOIN learning ln ON w.word_id = ln.word_id ' +
+                        'WHERE ln.user_id = ? AND w.word_id != ? ' +
+                        'ORDER BY RAND() LIMIT 1';
+            
+            const [words] = await global.dbConnection.execute(
+                query, 
+                [userId, excludeWordId]
+            );
+            
+            return words;
+        } catch (error) {
+            console.error('Error in findRandomDistractors:', error);
+            throw error;
+        }
+    }
+
+    // Récupérer plusieurs mots aléatoires pour le jeu Word Search
+    async getRandomUserWords(userId, limit = 5) {
+        try {
+            // Convertir explicitement les paramètres en entiers
+            const limitInt = parseInt(limit, 10);
+            
+            console.log(`getRandomUserWords - userId: ${userId}, limit: ${limitInt}`);
+            
+            // Requête pour récupérer plusieurs mots aléatoires
+            // Avec MySQL, on ne peut pas utiliser ? pour LIMIT dans les requêtes préparées
+            // On va donc intégrer directement la valeur dans la requête
+            const query = `SELECT w.word_id, w.word, wd.meaning, wd.type, wd.synonyms, wd.antonyms, wd.example, wd.grammar, wp.pronunciation, ln.level 
+                    FROM words w 
+                    JOIN word_details wd ON w.word_id = wd.word_id 
+                    JOIN word_pronunciations wp ON wd.detail_id = wp.detail_id 
+                    JOIN learning ln ON w.word_id = ln.word_id 
+                    WHERE ln.user_id = ? 
+                    ORDER BY RAND() LIMIT ${limitInt}`;
+            
+            const [words] = await global.dbConnection.execute(query, [userId]);
+            
+            return words;
+        } catch (error) {
+            console.error('Error in getRandomUserWords:', error);
+            throw error;
+        }
+    }
 }
 
 module.exports = new Word();

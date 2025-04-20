@@ -1,0 +1,138 @@
+ <link rel="stylesheet" href="/css/games/phraseCompletion.css">
+<div class="game-container"  data-high-score="{{highScore}}">
+    <h1>{{gameTitle}}</h1>
+    {{#if errorMessage}}
+        <div class="error-message">
+            <i class="fas fa-exclamation-circle"></i>
+            <p>{{errorMessage}}</p>
+        </div>
+    {{else}}
+        <p class="game-description">{{gameDescription}}</p>
+        
+        <!-- Écran de pré-jeu -->
+        <div class="screen pre-game-screen active">
+            <div class="difficulty-selector">
+                <h3>Choisissez une difficulté</h3>
+                <div class="difficulty-btn-group">
+                    <button class="difficulty-btn active" data-difficulty="easy">Facile</button>
+                    <button class="difficulty-btn" data-difficulty="medium">Moyen</button>
+                    <button class="difficulty-btn" data-difficulty="hard">Difficile</button>
+                </div>
+            </div>
+            
+            <div class="difficulty-info">
+                <ul>
+                    <li><strong>Facile:</strong> Phrases simples avec indices visuels</li>
+                    <li><strong>Moyen:</strong> Phrases de complexité moyenne</li>
+                    <li><strong>Difficile:</strong> Phrases complexes sans indice</li>
+                </ul>
+            </div>
+            
+            <button id="start-game" class="start-btn">
+                <i class="fas fa-play"></i> Commencer
+            </button>
+        </div>
+        
+        <!-- Écran de jeu actif -->
+        <div class="screen active-game-screen">
+            <div class="game-stats">
+                <div class="stat">
+                    <div class="stat-label">Score</div>
+                    <div id="score" class="stat-value">0</div>
+                </div>
+                
+                <div class="stat">
+                    <div class="stat-label">Questions</div>
+                    <div id="question-count" class="stat-value">0/10</div>
+                </div>
+                
+                <div class="stat">
+                    <div class="stat-label">Temps</div>
+                    <div id="timer" class="stat-value">300</div>
+                </div>
+            </div>
+            
+            <div class="phrase-container">
+                <p id="phrase-display" class="phrase-text">Chargement de votre phrase...</p>
+                <div class="input-container">
+                    <input type="text" id="word-input" placeholder="Tapez le mot manquant ici" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                    <button id="submit-answer" class="submit-btn">Valider</button>
+                </div>
+                <p id="word-meaning" class="word-meaning"></p>
+                
+                <!-- Affichage des indices en fonction de la difficulté -->
+                <div id="hint-container" class="hint-container">
+                    <p id="hint-text" class="hint-text"></p>
+                </div>
+            </div>
+            
+            <div class="feedback-container">
+                <div id="feedback-message" class="feedback-message"></div>
+                <button id="next-phrase-btn" class="next-btn" disabled>Suivant</button>
+            </div>
+        </div>
+        
+        <!-- Écran post-jeu -->
+        <div class="screen post-game-screen">
+            <h2>Partie terminée !</h2>
+            <div class="final-score">
+                <span id="final-score">0</span>
+            </div>
+            <p id="high-score-message" class="high-score-message"></p>
+            
+            <div class="game-stats-grid">
+                <div class="stat-card">
+                    <h3>Réponses correctes</h3>
+                    <p id="correct-answers">0</p>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>Précision</h3>
+                    <p id="accuracy">0%</p>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>Meilleure série</h3>
+                    <p id="best-streak">0</p>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>Temps moyen</h3>
+                    <p id="avg-time">0s</p>
+                </div>
+            </div>
+            
+            <button id="play-again" class="play-again-btn">
+                <i class="fas fa-redo"></i> Rejouer
+            </button>
+        </div>
+        
+        <!-- Leaderboard -->
+        <div class="leaderboard">
+            <h3>Meilleurs scores</h3>
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>Rang</th>
+                        <th>Joueur</th>
+                        <th>Score</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each leaderboard}}
+                    <tr>
+                        <td>{{inc @index}}</td>
+                        <td>{{this.username}}</td>
+                        <td>{{this.score}}</td>
+                        <td>{{formatDate this.created_at}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+    {{/if}}
+</div>
+
+<link rel="stylesheet" href="/css/games/phraseCompletion.css">
+<script src="/js/games/phraseCompletion.js"></script>

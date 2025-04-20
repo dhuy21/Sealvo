@@ -14,7 +14,7 @@ class WordScrambleController {
      * Récupérer un mot aléatoire pour le jeu Word Scramble
      */
     async index(req, res) {
-        res.render('games/word-scramble', {
+        res.render('games/wordScramble', {
             title: 'Word Scramble',
             user: req.session.user
         });

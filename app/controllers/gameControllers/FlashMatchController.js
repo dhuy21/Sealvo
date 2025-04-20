@@ -8,7 +8,7 @@ class FlashMatchController {
     }
 
     async index(req, res) {
-        res.render('games/flash-match', {
+        res.render('games/flashMatch', {
             title: 'Flash Match',
             user: req.session.user
         });

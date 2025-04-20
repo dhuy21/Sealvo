@@ -186,7 +186,7 @@ class GameScores {
             const stats = {};
             
             // Initialiser les types de jeux
-            const gameTypes = ['word_scramble', 'flash_match', 'speed_vocab', 'vocab_quiz'];
+            const gameTypes = ['word_scramble', 'flash_match', 'speed_vocab', 'vocab_quiz', 'phrase_completion', 'word_search'];
             for (const type of gameTypes) {
                 stats[type] = {
                     play_count: 0,
