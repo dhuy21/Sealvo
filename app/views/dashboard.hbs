@@ -7,23 +7,419 @@
 </head>
 <body>
   <div class="home-container">
-    <h1>Bienvenue, {{user.username}}!</h1>
-    
-    <div class="dashboard-content">
-      <p>Vous êtes connecté à votre compte avec succès.</p>
+    <div class="dashboard-container">
+      <div class="dashboard-header">
+        <h1>Tableau de Bord</h1>
+      </div>
       
-      <div class="feature-card">
-        <h3>Vos informations</h3>
-        <p><strong>Nom d'utilisateur:</strong> {{user.username}}</p>
-        <p><strong>Email:</strong> {{user.email}}</p>
+      <div class="dashboard-welcome">
+        Bienvenue {{user.username}}, voici le résumé de votre progression en vocabulaire.
       </div>
-      <div class="feature-card">
-        <a href="/monVocabs" class="btn">My Vocabulaire</a>
+      
+      <div class="dashboard-grid">
+        <div class="dashboard-card">
+          <h2>Mes Statistiques</h2>
+          <div class="stats">
+            <div class="stat-item">
+              <div class="stat-number">{{stats.totalWords}}</div>
+              <div class="stat-label">Mots Totaux</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number">{{stats.masteredWords}}</div>
+              <div class="stat-label">Mots Maîtrisés</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number">{{stats.learningWords}}</div>
+              <div class="stat-label">En Apprentissage</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number">{{stats.newWords}}</div>
+              <div class="stat-label">Nouveaux Mots</div>
+            </div>
+          </div>
+          <div class="text-center" style="margin-top: 20px;">
+            <h3>Séries d'Apprentissage</h3>
+            <div class="streak-display">
+              {{#each stats.weekStreak}}
+                <div class="streak-day {{#if this}}active{{/if}}">
+                  {{@index}}
+                </div>
+              {{/each}}
+            </div>
+          </div>
+        </div>
+        
+        <div class="dashboard-card">
+          <h2>Informations Utilisateur</h2>
+          {{#if notifications}}
+            <span class="notification-badge">{{notifications.length}}</span>
+          {{/if}}
+          <div class="user-info">
+            <div class="info-row">
+              <div class="info-label">Nom d'utilisateur:</div>
+              <div class="info-value">{{user.username}}</div>
+            </div>
+            <div class="info-row">
+              <div class="info-label">Email:</div>
+              <div class="info-value">{{user.email}}</div>
+            </div>
+            <div class="info-row">
+              <div class="info-label">Membre depuis:</div>
+              <div class="info-value">{{user.joinDate}}</div>
+            </div>
+            <div class="info-row">
+              <div class="info-label">Dernière connexion:</div>
+              <div class="info-value">{{user.lastLogin}}</div>
+            </div>
+          </div>
+          <div class="text-center" style="margin-top: 20px;">
+            <a href="/user/profile" class="dashboard-btn dashboard-btn-primary">
+              <i class="fas fa-user-edit"></i> Modifier mon profil
+            </a>
+          </div>
+        </div>
       </div>
-      <div class="home-cta">
-        <a href="/logout" class="btn">Se déconnecter</a>
+      
+      <div class="progress-container">
+        <h3>Ma Progression</h3>
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" data-width="{{stats.progressPercentage}}"></div>
+        </div>
+        <div class="progress-bar-labels">
+          <span>Progression</span>
+          <span id="progress-percentage">{{stats.progressPercentage}}%</span>
+        </div>
+      </div>
+      
+      <div class="dashboard-actions">
+        <div class="action-card">
+          <i class="fas fa-book-open"></i>
+          <h3>Apprendre</h3>
+          <p>Réviser votre vocabulaire avec des cartes mémoire personnalisées.</p>
+          <a href="/monVocabs/learn" class="dashboard-btn dashboard-btn-primary">
+            Commencer l'apprentissage
+          </a>
+        </div>
+        
+        <div class="action-card">
+          <i class="fas fa-plus-circle"></i>
+          <h3>Ajouter</h3>
+          <p>Enrichissez votre base de connaissances avec de nouveaux mots.</p>
+          <a href="/monVocabs/add" class="dashboard-btn dashboard-btn-primary">
+            Ajouter des mots
+          </a>
+        </div>
+        
+        <div class="action-card">
+          <i class="fas fa-gamepad"></i>
+          <h3>Jouer</h3>
+          <p>Apprenez tout en vous amusant avec nos jeux éducatifs.</p>
+          <a href="/games" class="dashboard-btn dashboard-btn-primary">
+            Explorer les jeux
+          </a>
+        </div>
+      </div>
+      
+      <div class="recent-activity">
+        <h3>Activité Récente</h3>
+        {{#if activities.length}}
+          <ul class="activity-list">
+            {{#each activities}}
+              <li class="activity-item">
+                <div class="activity-icon {{this.iconClass}}">
+                  <i class="fas {{this.icon}}"></i>
+                </div>
+                <div class="activity-content">
+                  <div class="activity-title">{{this.title}}</div>
+                  <div class="activity-time">{{this.time}}</div>
+                </div>
+              </li>
+            {{/each}}
+          </ul>
+        {{else}}
+          <div class="no-activity">
+            <p>Aucune activité récente. Commencez à explorer l'application!</p>
+          </div>
+        {{/if}}
+      </div>
+      
+      <div class="text-center">
+        <a href="/" class="dashboard-btn dashboard-btn-primary">
+          <i class="fas fa-home"></i> Retour à l'accueil
+        </a>
       </div>
     </div>
+    
+    <!-- Mouse tracker -->
+    <div class="mouse-tracker" id="mouse-tracker"></div>
+    
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Initialiser l'effet de suivi de souris
+        initMouseTracker();
+        
+        // Animer les statistiques
+        animateStats();
+        
+        // Initialiser l'affichage des séries
+        initStreakDisplay();
+        
+        // Charger les données de progression
+        loadProgressData();
+        
+        // Charger les activités récentes
+        loadRecentActivities();
+    
+        // Ajouter des effets d'interaction aux cartes d'action
+        initActionCards();
+      });
+    
+      function initMouseTracker() {
+        const tracker = document.getElementById('mouse-tracker');
+        let mouseX = 0;
+        let mouseY = 0;
+        let trackerX = 0;
+        let trackerY = 0;
+    
+        document.addEventListener('mousemove', (e) => {
+          mouseX = e.clientX;
+          mouseY = e.clientY;
+          
+          // Afficher le tracker
+          if (tracker.style.opacity === '0' || tracker.style.opacity === '') {
+            tracker.style.opacity = '1';
+          }
+        });
+    
+        // Animation fluide du tracker
+        function updateTracker() {
+          // Interpolation linéaire pour un mouvement plus fluide
+          trackerX += (mouseX - trackerX) * 0.1;
+          trackerY += (mouseY - trackerY) * 0.1;
+          
+          tracker.style.left = `${trackerX}px`;
+          tracker.style.top = `${trackerY}px`;
+          
+          requestAnimationFrame(updateTracker);
+        }
+        
+        updateTracker();
+      }
+    
+      function animateStats() {
+        // Exemple de données pour la démonstration
+        const stats = {
+          totalWords: 42,
+          masteredWords: 28,
+          learningStreak: 5,
+          lastActivity: 3
+        };
+    
+        animateCounter('total-words', stats.totalWords);
+        animateCounter('mastered-words', stats.masteredWords);
+        animateCounter('learning-streak', stats.learningStreak);
+        animateCounter('last-activity', stats.lastActivity);
+    
+        // Animer la barre de progression
+        setTimeout(() => {
+          const progressBar = document.getElementById('weekly-progress');
+          const progressPercentage = document.getElementById('progress-percentage');
+          const percentage = 65; // Exemple de pourcentage
+          
+          progressBar.style.width = `${percentage}%`;
+          progressPercentage.textContent = `${percentage}%`;
+        }, 500);
+      }
+    
+      function animateCounter(id, target) {
+        const element = document.getElementById(id);
+        const duration = 2000; // 2 secondes
+        const start = 0;
+        const increment = 1;
+        
+        let current = start;
+        const stepTime = Math.abs(Math.floor(duration / (target - start)));
+        
+        const timer = setInterval(() => {
+          current += increment;
+          element.textContent = current;
+          
+          if (current >= target) {
+            element.textContent = target;
+            clearInterval(timer);
+          }
+        }, stepTime);
+      }
+    
+      function initStreakDisplay() {
+        const container = document.getElementById('streak-display');
+        const daysOfWeek = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+        const activeDays = [1, 2, 5]; // Exemple de jours actifs
+        
+        for (let i = 0; i < daysOfWeek.length; i++) {
+          const dayElement = document.createElement('div');
+          dayElement.className = 'streak-day';
+          if (activeDays.includes(i)) {
+            dayElement.className += ' active';
+          }
+          dayElement.textContent = daysOfWeek[i];
+          
+          container.appendChild(dayElement);
+          
+          // Décalage pour l'animation
+          setTimeout(() => {
+            dayElement.style.opacity = '1';
+            dayElement.style.transform = 'scale(1)';
+          }, i * 100);
+        }
+      }
+    
+      function loadProgressData() {
+        // Cette fonction chargerait normalement des données depuis le serveur
+        // Pour la démonstration, nous utilisons des données statiques
+        
+        // Formater la date d'adhésion
+        const memberSince = document.getElementById('member-since');
+        if (memberSince.textContent) {
+          const date = new Date(memberSince.textContent);
+          memberSince.textContent = date.toLocaleDateString('fr-FR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+        }
+      }
+    
+      function loadRecentActivities() {
+        // Exemples d'activités récentes
+        const activities = [
+          {
+            type: 'learn',
+            title: 'Session d\'apprentissage',
+            time: 'Il y a 2 heures',
+            icon: 'fa-graduation-cap',
+            iconClass: 'blue'
+          },
+          {
+            type: 'add',
+            title: 'Nouveaux mots ajoutés',
+            time: 'Hier',
+            icon: 'fa-plus-circle',
+            iconClass: 'green'
+          },
+          {
+            type: 'game',
+            title: 'Jeu: Memory Match',
+            time: 'Il y a 3 jours',
+            icon: 'fa-gamepad',
+            iconClass: 'orange'
+          }
+        ];
+    
+        const activityList = document.getElementById('activity-list');
+        
+        // Supprimez le message "aucune activité"
+        const noActivity = activityList.querySelector('.no-activity');
+        if (noActivity && activities.length > 0) {
+          activityList.removeChild(noActivity);
+        }
+    
+        // Ajouter les activités avec animation décalée
+        activities.forEach((activity, index) => {
+          setTimeout(() => {
+            const li = document.createElement('li');
+            li.className = 'activity-item';
+            
+            li.innerHTML = `
+              <div class="activity-icon ${activity.iconClass}">
+                <i class="fas ${activity.icon}"></i>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">${activity.title}</div>
+                <div class="activity-time">${activity.time}</div>
+              </div>
+            `;
+            
+            activityList.appendChild(li);
+            
+            // Animation d'apparition
+            setTimeout(() => {
+              li.style.opacity = '1';
+              li.style.transform = 'translateX(0)';
+            }, 50);
+          }, index * 200);
+        });
+      }
+    
+      function initActionCards() {
+        const actionCards = document.querySelectorAll('.action-card');
+        
+        actionCards.forEach(card => {
+          card.addEventListener('mouseenter', () => {
+            card.classList.add('hover-effect');
+          });
+          
+          card.addEventListener('mouseleave', () => {
+            card.classList.remove('hover-effect');
+          });
+          
+          // Effet de clic
+          card.addEventListener('click', (e) => {
+            // Ne déclenchez pas l'effet si on clique sur le bouton
+            if (e.target.classList.contains('dashboard-btn')) return;
+            
+            const button = card.querySelector('.dashboard-btn');
+            if (button) {
+              // Ajoutez un effet de pulse au bouton
+              button.classList.add('pulse-animation');
+              
+              // Redirection après une courte pause pour voir l'animation
+              setTimeout(() => {
+                window.location.href = button.getAttribute('href');
+              }, 300);
+            }
+          });
+        });
+      }
+    </script>
+    
+    <style>
+      /* Styles additionnels pour les animations spécifiques à cette page */
+      .text-center {
+        text-align: center;
+      }
+    
+      .pulse-animation {
+        animation: pulse-btn 0.3s ease-in-out;
+      }
+    
+      @keyframes pulse-btn {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+      }
+    
+      .hover-effect {
+        animation: hover-glow 1s infinite alternate;
+      }
+    
+      @keyframes hover-glow {
+        from { box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1); }
+        to { box-shadow: 0 20px 40px rgba(106, 17, 203, 0.2); }
+      }
+    
+      .activity-item {
+        opacity: 0;
+        transform: translateX(-20px);
+        transition: all 0.3s ease;
+      }
+    
+      .streak-day {
+        opacity: 0;
+        transform: scale(0.8);
+        transition: all 0.3s ease;
+      }
+    </style>
   </div>
 </body>
-</html> 
+</html>
