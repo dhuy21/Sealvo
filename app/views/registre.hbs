@@ -3,41 +3,161 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{title}}</title>
+  <title>Inscription - VocabBoost</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-  <div class="register-container">
-    <h1>Inscription</h1>
-    
-    {{#if error}}
-    <div class="alert alert-error">
-      {{error}}
+  <div class="auth-page">
+    <div class="auth-background">
+      <div class="auth-bg-shape shape-1"></div>
+      <div class="auth-bg-shape shape-2"></div>
+      <div class="auth-bg-shape shape-3"></div>
+      <div class="floating-card card-1">
+        <i class="fas fa-book-open"></i>
+        <span>Enrichissez votre vocabulaire</span>
+      </div>
+      <div class="floating-card card-2">
+        <i class="fas fa-chart-line"></i>
+        <span>Suivez votre progression</span>
+      </div>
     </div>
-    {{/if}}
-    
-    <form action="/registre" method="POST">
-      <div class="form-group">
-        <label for="username">Nom d'utilisateur:</label>
-        <input type="text" id="username" name="username" required>
+
+    <div class="auth-container">
+      <div class="auth-header">
+        <div class="logo-icon">
+          <i class="fas fa-graduation-cap"></i>
+        </div>
+        <h1>Vocab<span class="highlight">Boost</span></h1>
+        <p class="auth-subtitle">Créez votre compte pour commencer votre apprentissage</p>
       </div>
-      <div class="form-group">
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required>
+
+      {{#if error}}
+      <div class="alert alert-error">
+        <i class="fas fa-exclamation-circle"></i>
+        {{error}}
       </div>
-      <div class="form-group">
-        <label for="password">Mot de passe:</label>
-        <input type="password" id="password" name="password" required minlength="6">
+      {{/if}}
+
+      {{#if success}}
+      <div class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        {{success}}
       </div>
-      <div class="form-group">
-        <label for="password2">Confirmer le mot de passe:</label>
-        <input type="password" id="password2" name="password2" required minlength="6">
+      {{/if}}
+
+      <form action="/registre" method="POST" class="auth-form">
+        <div class="form-group" data-delay="100">
+          <div class="input-icon-wrapper">
+            <input type="text" id="username" name="username" placeholder="Nom d'utilisateur" required>
+            <i class="input-icon fas fa-user"></i>
+            <span class="focus-border"></span>
+          </div>
+        </div>
+        <div class="form-group" data-delay="200">
+          <div class="input-icon-wrapper">
+            <input type="email" id="email" name="email" placeholder="Adresse email" required>
+            <i class="input-icon fas fa-envelope"></i>
+            <span class="focus-border"></span>
+          </div>
+        </div>
+        <div class="form-group" data-delay="300">
+          <div class="input-icon-wrapper">
+            <input type="password" id="password" name="password" placeholder="Mot de passe" required>
+            <i class="input-icon fas fa-lock"></i>
+            <button type="button" class="password-toggle" id="togglePassword">
+              <i class="far fa-eye"></i>
+            </button>
+            <span class="focus-border"></span>
+          </div>
+        </div>
+        <div class="form-group" data-delay="400">
+          <div class="input-icon-wrapper">
+            <input type="password" id="password2" name="password2" placeholder="Confirmer le mot de passe" required>
+            <i class="input-icon fas fa-lock"></i>
+            <button type="button" class="password-toggle" id="toggleConfirmPassword">
+              <i class="far fa-eye"></i>
+            </button>
+            <span class="focus-border"></span>
+          </div>
+        </div>
+        <div class="form-options" data-delay="500">
+          <div class="terms">
+            <input type="checkbox" id="terms" name="terms" required>
+            <label for="terms">J'accepte les <a href="/terms" class="terms-link">conditions d'utilisation</a></label>
+          </div>
+        </div>
+        <button type="submit" class="btn-submit" data-delay="600">
+          S'inscrire <i class="fas fa-arrow-right"></i>
+        </button>
+      </form>
+
+      <div class="auth-separator" data-delay="700">
+        <span>ou</span>
       </div>
-      <button type="submit">S'inscrire</button>
-    </form>
-    
-    <div class="login-register-links">
-      <p>Vous avez déjà un compte? <a href="/login">Se connecter ici</a></p>
+
+      <div class="social-login" data-delay="800">
+        <a href="/auth/google" class="social-btn google-btn">
+          <i class="fab fa-google"></i> Continuer avec Google
+        </a>
+      </div>
+
+      <div class="auth-footer" data-delay="900">
+        Déjà un compte? <a href="/login" class="auth-link">Se connecter</a>
+      </div>
     </div>
   </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Password visibility toggle
+      const togglePassword = document.getElementById('togglePassword');
+      const password = document.getElementById('password');
+      const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+      const confirmPassword = document.getElementById('password2');
+
+      if (togglePassword && password) {
+        togglePassword.addEventListener('click', function() {
+          const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+          password.setAttribute('type', type);
+          this.querySelector('i').classList.toggle('fa-eye');
+          this.querySelector('i').classList.toggle('fa-eye-slash');
+        });
+      }
+
+      if (toggleConfirmPassword && confirmPassword) {
+        toggleConfirmPassword.addEventListener('click', function() {
+          const type = confirmPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+          confirmPassword.setAttribute('type', type);
+          this.querySelector('i').classList.toggle('fa-eye');
+          this.querySelector('i').classList.toggle('fa-eye-slash');
+        });
+      }
+
+      // Password match validation
+      if (password && confirmPassword) {
+        function validatePassword() {
+          if (password.value !== confirmPassword.value) {
+            confirmPassword.setCustomValidity("Les mots de passe ne correspondent pas");
+          } else {
+            confirmPassword.setCustomValidity('');
+          }
+        }
+        
+        password.addEventListener('change', validatePassword);
+        confirmPassword.addEventListener('keyup', validatePassword);
+      }
+
+      // Animate form elements sequentially
+      const animatedElements = document.querySelectorAll('.form-group, .form-options, .btn-submit, .auth-separator, .social-login, .auth-footer');
+      
+      animatedElements.forEach(function(element) {
+        const delay = element.dataset.delay || 0;
+        setTimeout(function() {
+          element.classList.add('animate-in');
+        }, delay);
+      });
+    });
+  </script>
 </body>
 </html>
