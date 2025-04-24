@@ -1,38 +1,104 @@
 document.addEventListener('DOMContentLoaded', function() {
 
-    // Attacher les gestionnaires d'événements aux boutons existants
+    // Add pulsing effect to the learn button
+    
+
+    // 3D button hover effect enhancement
+    const buttons = document.querySelectorAll('.add-word-btn, .learn-btn, .btn-danger, .home-cta .btn, .no-words .btn');
+    buttons.forEach(button => {
+        // Add subtle mouse movement effect on hover
+        button.addEventListener('mousemove', function(e) {
+            const rect = button.getBoundingClientRect();
+            const x = e.clientX - rect.left; 
+            const y = e.clientY - rect.top;
+            
+            // Calculate rotations (very slight)
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            // Limit the rotation to a tiny angle (0.5 degrees max)
+            const rotateY = ((x - centerX) / centerX) * 0.5; 
+            const rotateX = -((y - centerY) / centerY) * 0.5;
+            
+            // Apply subtle rotation
+            button.style.transform = `translate(0, 0.25em) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+        });
+        
+        // Reset on mouse leave
+        button.addEventListener('mouseleave', function() {
+            button.style.transform = '';
+        });
+    });
+
+    // Apply data attributes to level containers for styling
+    document.querySelectorAll('.level-container').forEach(container => {
+        const levelText = container.querySelector('.level-header span').textContent;
+        const level = levelText.replace('Niveau ', '').trim();
+        container.setAttribute('data-level', level);
+    });
+
+    // Attach event listeners to edit and delete buttons
     document.querySelectorAll('.delete-btn').forEach(button => {
         button.addEventListener('click', handleDeleteClick);
+        
+        // Add enhanced 3D effect to small buttons
+        button.addEventListener('mousemove', handleButtonMouseMove);
+        button.addEventListener('mouseleave', handleButtonMouseLeave);
     });
 
     document.querySelectorAll('.edit-btn').forEach(button => {
         button.addEventListener('click', handleEditClick);
+        
+        // Add enhanced 3D effect to small buttons
+        button.addEventListener('mousemove', handleButtonMouseMove);
+        button.addEventListener('mouseleave', handleButtonMouseLeave);
     });
     
-    // Ajouter des styles pour les inputs d'édition
+    // Function to handle mouse movement on small buttons
+    function handleButtonMouseMove(e) {
+        const button = this;
+        const rect = button.getBoundingClientRect();
+        const x = e.clientX - rect.left; 
+        const y = e.clientY - rect.top;
+        
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        
+        const rotateY = ((x - centerX) / centerX) * 1; 
+        const rotateX = -((y - centerY) / centerY) * 1;
+        
+        button.style.transform = `translate(0, 0.25em) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    }
+    
+    function handleButtonMouseLeave() {
+        this.style.transform = '';
+    }
+    
+    // Ajouter des styles pour les inputs d'édition et animations
     const style = document.createElement('style');
     style.textContent = `
         .edit-input {
             width: 100%;
-            padding: 5px;
+            padding: 8px 12px;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 8px;
             font-size: 14px;
+            transition: all 0.2s ease;
         }
         
         .edit-input:focus {
             border-color: #2575fc;
             outline: none;
-            box-shadow: 0 0 0 2px rgba(37, 117, 252, 0.2);
+            box-shadow: 0 0 0 3px rgba(37, 117, 252, 0.15);
         }
         
         .save-btn, .cancel-btn {
             background: none;
             border: none;
             cursor: pointer;
-            padding: 5px;
-            border-radius: 4px;
-            transition: background-color 0.2s;
+            padding: 6px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
         }
         
         .save-btn {
@@ -45,34 +111,61 @@ document.addEventListener('DOMContentLoaded', function() {
         
         .save-btn:hover {
             background-color: rgba(40, 167, 69, 0.1);
+            transform: translateY(-2px);
         }
         
         .cancel-btn:hover {
             background-color: rgba(220, 53, 69, 0.1);
+            transform: translateY(-2px);
         }
         
         .alert {
-            padding: 10px 15px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            animation: fadeIn 0.3s ease;
+            padding: 16px 24px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            animation: fadeIn 0.4s ease;
         }
         
         .alert-success {
             background-color: #d4edda;
-            border: 1px solid #c3e6cb;
+            border-left: 4px solid #28a745;
             color: #155724;
         }
         
         .alert-error {
             background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
+            border-left: 4px solid #dc3545;
             color: #721c24;
         }
         
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulseEffect {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse-animation {
+            animation: pulseEffect 2s infinite;
+        }
+        
+        .row-highlight {
+            background-color: rgba(37, 117, 252, 0.05);
+            transition: background-color 0.5s ease;
+        }
+        
+        .row-deleted {
+            animation: rowDeletedAnimation 0.8s ease forwards;
+        }
+        
+        @keyframes rowDeletedAnimation {
+            0% { opacity: 1; transform: translateX(0); }
+            20% { opacity: 1; transform: translateX(-10px); }
+            100% { opacity: 0; transform: translateX(30px); height: 0; margin: 0; padding: 0; }
         }
     `;
     document.head.appendChild(style);
@@ -83,6 +176,9 @@ function handleDeleteClick(e) {
     const wordId = this.getAttribute('data-id');
     this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     
+    // Add visual feedback
+    const row = this.closest('tr');
+    
     fetch(`/monVocabs/delete/${wordId}`, {
         method: 'POST',
         headers: {
@@ -92,17 +188,13 @@ function handleDeleteClick(e) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Supprimer la ligne du tableau
-            const row = this.closest('tr');
-            
+            // Supprimer la ligne du tableau avec animation améliorée
             if (row) {
                 // Trouver le niveau du mot
                 const levelContainer = row.closest('.level-container');
                 
-                // Supprimer la ligne avec animation
-                row.style.transition = 'all 0.5s ease';
-                row.style.opacity = '0';
-                row.style.height = '0';
+                // Animer la suppression avec un effet de glissement
+                row.classList.add('row-deleted');
                 
                 setTimeout(() => {
                     row.remove();
@@ -113,11 +205,24 @@ function handleDeleteClick(e) {
                         const tbody = levelContainer.querySelector('tbody');
                         const count = tbody.querySelectorAll('tr').length;
                         
-                        badge.textContent = `${count} mot(s)`;
+                        // Animer le changement de nombre
+                        badge.style.transform = 'scale(1.2)';
+                        badge.style.transition = 'transform 0.3s ease';
                         
-                        // Si plus de mots dans ce niveau, masquer le conteneur
+                        setTimeout(() => {
+                            badge.textContent = `${count} mot(s)`;
+                            badge.style.transform = 'scale(1)';
+                        }, 300);
+                        
+                        // Si plus de mots dans ce niveau, masquer le conteneur avec animation
                         if (count === 0) {
-                            levelContainer.style.display = 'none';
+                            levelContainer.style.transition = 'all 0.5s ease';
+                            levelContainer.style.opacity = '0';
+                            levelContainer.style.transform = 'translateY(-20px)';
+                            
+                            setTimeout(() => {
+                                levelContainer.style.display = 'none';
+                            }, 500);
                         }
                         
                         // Vérifier s'il reste des niveaux visibles
@@ -136,6 +241,10 @@ function handleDeleteClick(e) {
                                 <a href="/monVocabs/add" class="btn">Ajouter votre premier mot</a>
                             `;
                             
+                            noWordsDiv.style.opacity = '0';
+                            noWordsDiv.style.transform = 'translateY(20px)';
+                            noWordsDiv.style.transition = 'all 0.5s ease';
+                            
                             const container = document.querySelector('.vocabulary-container');
                             const homeCta = container.querySelector('.home-cta');
                             if (homeCta) {
@@ -143,9 +252,15 @@ function handleDeleteClick(e) {
                             } else {
                                 container.appendChild(noWordsDiv);
                             }
+                            
+                            // Animation d'entrée
+                            setTimeout(() => {
+                                noWordsDiv.style.opacity = '1';
+                                noWordsDiv.style.transform = 'translateY(0)';
+                            }, 50);
                         }
                     }
-                }, 500);
+                }, 800);
             }
 
             // Afficher un message de succès en haut de la page
@@ -163,7 +278,6 @@ function handleDeleteClick(e) {
         showNotification('Une erreur est survenue lors de la suppression du mot', 'error');
     });
 }
-
 
 function handleEditClick(e) {
     e.preventDefault();
@@ -439,14 +553,24 @@ function showNotification(message, type) {
         container.insertBefore(notification, container.firstChild);
     }
     
+    // Animation d'entrée
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateY(-10px)';
+    
+    setTimeout(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateY(0)';
+        notification.style.transition = 'all 0.4s ease';
+    }, 10);
+    
     // Faire disparaître après 3 secondes
     setTimeout(() => {
         notification.style.opacity = '0';
-        notification.style.transition = 'opacity 0.5s ease';
+        notification.style.transform = 'translateY(-10px)';
         
         // Supprimer complètement après la transition
         setTimeout(() => {
             notification.remove();
-        }, 500);
-    }, 1000);
+        }, 400);
+    }, 3000);
 }
