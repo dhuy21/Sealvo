@@ -1,3 +1,4 @@
+
 <div class="vocabulary-container">
   <h1>{{title}}</h1>
     
@@ -12,20 +13,22 @@
     {{success}}
   </div>
   {{/if}}
-  <div>
-  <a href="/monVocabs/add" class="add-word-btn">
-    <i class="fas fa-plus"></i> Ajouter un nouveau mot
-  </a>
-  <a href="/monVocabs/learn" class="learn-btn">
-    <i class="fas fa-book-open"></i> Apprendre
-  </a>
-  <form action="/monVocabs/deleteAll" method="POST" onsubmit="return confirm('ATTENTION: Cette action supprimera TOUS vos mots de vocabulaire. Cette action est irréversible. Êtes-vous vraiment sûr de vouloir continuer?');">
-    <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Supprimer tous les mots</button>
-  </form>
+  <div class="action-container">
+    <a href="/monVocabs/add" class="add-word-btn">
+      <i class="fas fa-plus"></i> Ajouter un nouveau mot
+    </a>
+    
+    <a href="/monVocabs/learn" class="learn-btn">
+      <i class="fas fa-book-open"></i> Apprendre
+    </a>
+    
+    <form action="/monVocabs/deleteAll" method="POST" onsubmit="return confirm('ATTENTION: Cette action supprimera TOUS vos mots de vocabulaire. Cette action est irréversible. Êtes-vous vraiment sûr de vouloir continuer?');">
+      <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Supprimer tous les mots</button>
+    </form>
   </div>
   {{#if hasWords}}
     {{#each wordsByLevel as |levelWords level|}}
-    <div class="level-container">
+    <div class="level-container" data-level="{{level}}">
       <div class="level-header">
         <span>Niveau {{level}}</span>
         <span class="level-badge">{{levelWords.length}} mot(s)</span>
@@ -89,5 +92,5 @@
     <a href="/" class="btn">Retour à l'accueil</a>
   </div>
 </div>
-<script src="/js/vocabs.js"></script>
+
 
