@@ -29,27 +29,3 @@
     max-width: 1400px;
     margin: 0 auto;
   }
-  /* Animation d'onde au clic */
-.wave-effect {
-  position: absolute;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.7);
-  width: 100px;
-  height: 100px;
-  margin-top: -50px;
-  margin-left: -50px;
-  animation: wave 1s forwards cubic-bezier(0, 0.5, 0.5, 1);
-  pointer-events: none;
-  opacity: 0;
-}
-
-@keyframes wave {
-  from {
-    transform: scale(0);
-    opacity: 1;
-  }
-  to {
-    transform: scale(4);
-    opacity: 0;
-  }
-}
