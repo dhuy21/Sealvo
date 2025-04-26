@@ -1,6 +1,7 @@
 /* Vocab Quiz Game - Modern Elegant Design */
 .game-container {
     max-width: 1000px;
+    min-width: 1000px;  
     margin: 0 auto;
     padding: 2rem;
     font-family: 'Poppins', sans-serif;

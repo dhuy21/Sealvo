@@ -4,6 +4,7 @@
 
 .game-container {
     max-width: 1100px;
+    min-width: 1100px;
     margin: 0 auto;
     padding: 25px;
     font-family: 'Poppins', sans-serif;
