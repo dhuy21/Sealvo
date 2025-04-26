@@ -63,6 +63,21 @@ document.addEventListener('DOMContentLoaded', function() {
     ];
     const modeRadios = document.querySelectorAll('input[name="mode"]');
     
+    // Animation pour les boutons
+    const animateButtonPress = (button) => {
+      button.classList.add('button-press');
+      setTimeout(() => {
+        button.classList.remove('button-press');
+      }, 150);
+    };
+    
+    // Ajouter des animations aux boutons
+    document.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('mousedown', function() {
+        animateButtonPress(this);
+      });
+    });
+    
     // Initialiser les progrès
     function initProgress() {
       progress = new Array(currentWords.length).fill(-1); // -1 = non vu
@@ -78,18 +93,48 @@ document.addEventListener('DOMContentLoaded', function() {
       
       const progressPercent = currentWords.length > 0 ? Math.round((seen / currentWords.length) * 100) : 0;
       
-      // Mettre à jour la barre de progression
+      // Mettre à jour la barre de progression avec animation
+      progressBar.style.transition = 'width 0.7s cubic-bezier(0.19, 1, 0.22, 1)';
       progressBar.style.width = `${progressPercent}%`;
       progressText.textContent = `${progressPercent}%`;
       
-      // Mettre à jour les compteurs
-      notKnownCountEl.textContent = notKnown;
-      uncertainCountEl.textContent = uncertain;
-      masteredCountEl.textContent = known;
-      knownCountEl.textContent = known;
+      // Mettre à jour les compteurs avec animation
+      animateCounter(notKnownCountEl, notKnown);
+      animateCounter(uncertainCountEl, uncertain);
+      animateCounter(masteredCountEl, known);
+      animateCounter(knownCountEl, known);
       
       // Vérifier les réalisations
       checkAchievements(known);
+    }
+    
+    // Animation pour les compteurs
+    function animateCounter(element, targetValue) {
+      const currentValue = parseInt(element.textContent);
+      if (isNaN(currentValue) || currentValue === targetValue) {
+        element.textContent = targetValue;
+        return;
+      }
+      
+      let startValue = currentValue;
+      const duration = 500; // ms
+      const startTime = performance.now();
+      
+      function updateCounter(timestamp) {
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const value = Math.floor(startValue + (targetValue - startValue) * progress);
+        
+        element.textContent = value;
+        
+        if (progress < 1) {
+          requestAnimationFrame(updateCounter);
+        } else {
+          element.textContent = targetValue;
+        }
+      }
+      
+      requestAnimationFrame(updateCounter);
     }
     
     // Vérifier et afficher les réalisations
@@ -103,6 +148,15 @@ document.addEventListener('DOMContentLoaded', function() {
       } else if (knownCount === currentWords.length && currentWords.length > 0 && !achievements.allWords) {
         achievements.allWords = true;
         showAchievement('Félicitations ! Vous avez maîtrisé tous les mots !');
+        
+        // Ajout de confettis pour la réussite complète
+        if (typeof confetti !== 'undefined') {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+          });
+        }
       }
     }
     
@@ -112,7 +166,18 @@ document.addEventListener('DOMContentLoaded', function() {
       achievementPopup.classList.add('show');
       
       // Jouer un son de réussite si disponible
+      try {
+        const successSound = new Audio('/sounds/achievement.mp3');
+        successSound.volume = 0.5;
+        successSound.play();
+      } catch (e) {
+        console.log('Son non disponible');
+      }
       
+      // Masquer automatiquement après 5 secondes
+      setTimeout(() => {
+        achievementPopup.classList.remove('show');
+      }, 5000);
     }
     
     
@@ -153,54 +218,58 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       // Mettre à jour la carte avec une animation
-      flashcard.classList.add('wiggle');
+      flashcard.classList.add('updating');
+      
       setTimeout(() => {
-        flashcard.classList.remove('wiggle');
-      }, 500);
-      
-      // Mettre à jour le contenu de la carte
-      flashcard.innerHTML = `
-        <div class="flashcard-inner">
-          <div class="flashcard-front">
-            <span class="card-type">${word.type}</span>
-            <h2 class="card-content">${frontContent}</h2>
-            <div class="hint-container">
-              <button id="hint-button" class="hint-btn"><i class="fas fa-lightbulb"></i> Indice</button>
-              <p id="hint-text" class="hint-text"></p>
+        // Mettre à jour le contenu de la carte
+        flashcard.innerHTML = `
+          <div class="flashcard-inner">
+            <div class="flashcard-front">
+              <span class="card-type">${word.type}</span>
+              <h2 class="card-content">${frontContent}</h2>
+              <div class="hint-container">
+                <button id="hint-button" class="hint-btn"><i class="fas fa-lightbulb"></i> Indice</button>
+                <p id="hint-text" class="hint-text"></p>
+              </div>
+              <p class="card-prompt">Cliquez pour voir la traduction</p>
             </div>
-            <p class="card-prompt">Cliquez pour voir la traduction</p>
-          </div>
-          <div class="flashcard-back">
-            <span class="card-type">${word.type}</span>
-            <h2 class="card-content">${backContent}</h2>
-            <div class="card-details">
-              <p><strong>Exemple:</strong> <span class="example-text">${word.example}</span></p>
-              ${word.pronunciation ? `
-                <p><strong>Prononciation:</strong> <span class="pronunciation-text">${word.pronunciation}</span></p>
-                <button class="pronunciation-btn" data-text="${word.word}">
-                  <i class="fas fa-volume-up"></i> Écouter
-                </button>
-              ` : ''}
-              ${word.synonyms ? `<p><strong>Synonymes:</strong> ${word.synonyms}</p>` : ''}
-              ${word.antonyms ? `<p><strong>Antonymes:</strong> ${word.antonyms}</p>` : ''}
+            <div class="flashcard-back">
+              <span class="card-type">${word.type}</span>
+              <h2 class="card-content">${backContent}</h2>
+              <div class="card-details">
+                <p><strong>Exemple:</strong> <span class="example-text">${word.example}</span></p>
+                ${word.pronunciation ? `
+                  <p><strong>Prononciation:</strong> <span class="pronunciation-text">${word.pronunciation}</span></p>
+                  <button class="pronunciation-btn" data-text="${word.word}">
+                    <i class="fas fa-volume-up"></i> Écouter
+                  </button>
+                ` : ''}
+                ${word.synonyms ? `<p><strong>Synonymes:</strong> ${word.synonyms}</p>` : ''}
+                ${word.antonyms ? `<p><strong>Antonymes:</strong> ${word.antonyms}</p>` : ''}
+              </div>
             </div>
           </div>
-        </div>
-      `;
-      
-      // Rétablir les écouteurs d'événements pour les nouveaux éléments
-      setupCardListeners();
-      
-      // Mettre à jour l'indice de carte courant
-      currentCardEl.textContent = currentIndex + 1;
-      totalCardsEl.textContent = currentWords.length;
-      
-      // Mettre à jour les boutons de navigation
-      prevBtn.disabled = currentIndex === 0;
-      nextBtn.disabled = currentIndex === currentWords.length - 1;
-      
-      // S'assurer que la carte est sur le côté question
-      flashcard.classList.remove('flipped');
+        `;
+        
+        // Rétablir les écouteurs d'événements pour les nouveaux éléments
+        setupCardListeners();
+        
+        // Mettre à jour l'indice de carte courant avec animation
+        animateCounter(currentCardEl, currentIndex + 1);
+        totalCardsEl.textContent = currentWords.length;
+        
+        // Mettre à jour les boutons de navigation
+        prevBtn.disabled = currentIndex === 0;
+        nextBtn.disabled = currentIndex === currentWords.length - 1;
+        
+        // S'assurer que la carte est sur le côté question
+        flashcard.classList.remove('flipped');
+        
+        // Retirer la classe d'animation après mise à jour
+        setTimeout(() => {
+          flashcard.classList.remove('updating');
+        }, 50);
+      }, 150);
     }
     
     // Configurer les écouteurs d'événements pour les éléments de la carte
@@ -216,6 +285,15 @@ document.addEventListener('DOMContentLoaded', function() {
       newFlashcard.addEventListener('click', function() {
         if (currentWords.length > 0) {
           this.classList.toggle('flipped');
+          
+          // Jouer un son léger de retournement
+          try {
+            const flipSound = new Audio('/sounds/flip.mp3');
+            flipSound.volume = 0.2;
+            flipSound.play();
+          } catch (e) {
+            console.log('Son non disponible');
+          }
         }
       });
       
@@ -232,6 +310,12 @@ document.addEventListener('DOMContentLoaded', function() {
           
           const word = currentWords[currentIndex];
           const mode = document.querySelector('input[name="mode"]:checked').value;
+          
+          // Animation du bouton d'indice
+          this.classList.add('pulse');
+          setTimeout(() => {
+            this.classList.remove('pulse');
+          }, 500);
           
           if (mode === 'word-to-meaning') {
             // Donner un indice sur la signification
@@ -250,6 +334,16 @@ document.addEventListener('DOMContentLoaded', function() {
               hintText.textContent = 'Indice non disponible pour ce mot';
             }
           }
+          
+          // Animation d'apparition du texte d'indice
+          hintText.style.opacity = '0';
+          hintText.style.transform = 'translateY(-10px)';
+          hintText.style.display = 'block';
+          
+          setTimeout(() => {
+            hintText.style.opacity = '1';
+            hintText.style.transform = 'translateY(0)';
+          }, 10);
         });
       }
       
@@ -258,6 +352,12 @@ document.addEventListener('DOMContentLoaded', function() {
       if (pronunciationBtn) {
         pronunciationBtn.addEventListener('click', function(e) {
           e.stopPropagation(); // Empêcher la propagation au flashcard
+          
+          // Animation du bouton
+          this.classList.add('pulse');
+          setTimeout(() => {
+            this.classList.remove('pulse');
+          }, 500);
           
           const text = this.getAttribute('data-text');
           speakText(text);
@@ -270,6 +370,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'en-US'; // Langue anglaise
+        utterance.rate = 0.9; // Légèrement plus lent que la normale
         speechSynthesis.speak(utterance);
       }
     }
@@ -360,8 +461,13 @@ document.addEventListener('DOMContentLoaded', function() {
       currentIndex = 0;
       initProgress();
       
-      // Mettre à jour l'affichage
-      updateCardDisplay();
+      // Animation de mélange
+      document.querySelector('.flashcard-container').classList.add('shuffle-animation');
+      setTimeout(() => {
+        document.querySelector('.flashcard-container').classList.remove('shuffle-animation');
+        // Mettre à jour l'affichage
+        updateCardDisplay();
+      }, 600);
     }
     
     // Mettre à jour le chronomètre de session
@@ -386,8 +492,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         localStorage.setItem('flashcards_progress', JSON.stringify(progressData));
         
-        // Afficher un message de confirmation
-        showAchievement('Progrès sauvegardé avec succès !');
+        // Animation de sauvegarde
+        saveBtn.classList.add('saving');
+        setTimeout(() => {
+          saveBtn.classList.remove('saving');
+          // Afficher un message de confirmation
+          showAchievement('Progrès sauvegardé avec succès !');
+        }, 500);
       } catch (e) {
         console.error('Erreur lors de la sauvegarde des progrès', e);
       }
@@ -424,15 +535,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // Navigation entre les cartes
     prevBtn.addEventListener('click', function() {
       if (currentIndex > 0) {
-        currentIndex--;
-        updateCardDisplay();
+        // Animation de glissement
+        flashcard.classList.add('slide-right');
+        setTimeout(() => {
+          currentIndex--;
+          updateCardDisplay();
+          flashcard.classList.remove('slide-right');
+        }, 200);
       }
     });
     
     nextBtn.addEventListener('click', function() {
       if (currentIndex < currentWords.length - 1) {
-        currentIndex++;
-        updateCardDisplay();
+        // Animation de glissement
+        flashcard.classList.add('slide-left');
+        setTimeout(() => {
+          currentIndex++;
+          updateCardDisplay();
+          flashcard.classList.remove('slide-left');
+        }, 200);
       }
     });
     
@@ -452,20 +573,28 @@ document.addEventListener('DOMContentLoaded', function() {
         // Mettre à jour l'affichage des progrès
         updateProgressDisplay();
         
-        // Animation de feedback
-        flashcard.classList.add('wiggle');
-        setTimeout(() => {
-          flashcard.classList.remove('wiggle');
-        }, 500);
+        // Animation de feedback en fonction du niveau
+        let animationClass = 'correct-answer';
+        if (level === 0) animationClass = 'wrong-answer';
+        else if (level === 1) animationClass = 'uncertain-answer';
         
-        // Passer à la carte suivante s'il y en a une
-        if (currentIndex < currentWords.length - 1) {
-          currentIndex++;
-          updateCardDisplay();
-        } else {
-          // C'était la dernière carte
-          showAchievement('Vous avez terminé cette série !');
-        }
+        flashcard.classList.add(animationClass);
+        setTimeout(() => {
+          flashcard.classList.remove(animationClass);
+          
+          // Passer à la carte suivante s'il y en a une
+          if (currentIndex < currentWords.length - 1) {
+            flashcard.classList.add('slide-left');
+            setTimeout(() => {
+              currentIndex++;
+              updateCardDisplay();
+              flashcard.classList.remove('slide-left');
+            }, 200);
+          } else {
+            // C'était la dernière carte
+            showAchievement('Vous avez terminé cette série !');
+          }
+        }, 500);
       });
     });
     
@@ -479,14 +608,20 @@ document.addEventListener('DOMContentLoaded', function() {
       radio.addEventListener('change', function() {
         const mode = this.value;
         
-        if (mode === 'spaced-repetition') {
-          // Activer le mode répétition espacée
-          filterWords();
-        } else {
-          // Désactiver le mode répétition espacée
-          spacedRepetition.enabled = false;
-          filterWords();
-        }
+        // Animation de transition
+        document.querySelector('.flashcard-container').classList.add('mode-change');
+        setTimeout(() => {
+          document.querySelector('.flashcard-container').classList.remove('mode-change');
+          
+          if (mode === 'spaced-repetition') {
+            // Activer le mode répétition espacée
+            filterWords();
+          } else {
+            // Désactiver le mode répétition espacée
+            spacedRepetition.enabled = false;
+            filterWords();
+          }
+        }, 400);
       });
     });
     
@@ -497,9 +632,14 @@ document.addEventListener('DOMContentLoaded', function() {
     resetBtn.addEventListener('click', function() {
       // Demander confirmation
       if (confirm('Êtes-vous sûr de vouloir réinitialiser votre progression ?')) {
-        currentIndex = 0;
-        initProgress();
-        updateCardDisplay();
+        // Animation de réinitialisation
+        document.querySelector('.progress-container').classList.add('reset-animation');
+        setTimeout(() => {
+          document.querySelector('.progress-container').classList.remove('reset-animation');
+          currentIndex = 0;
+          initProgress();
+          updateCardDisplay();
+        }, 500);
       }
     });
     
@@ -511,11 +651,9 @@ document.addEventListener('DOMContentLoaded', function() {
       if (currentWords.length === 0) return;
       
       if (e.code === 'ArrowLeft' && currentIndex > 0) {
-        currentIndex--;
-        updateCardDisplay();
+        prevBtn.click();
       } else if (e.code === 'ArrowRight' && currentIndex < currentWords.length - 1) {
-        currentIndex++;
-        updateCardDisplay();
+        nextBtn.click();
       } else if (e.code === 'Space') {
         flashcard.classList.toggle('flipped');
         e.preventDefault(); // Empêcher le défilement de la page
@@ -544,9 +682,136 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
     
+    // Ajouter des styles pour les nouvelles animations
+    const style = document.createElement('style');
+    style.textContent = `
+      .button-press {
+        transform: scale(0.95);
+      }
+      
+      .pulse {
+        animation: pulse-animation 0.5s cubic-bezier(0.455, 0.03, 0.515, 0.955);
+      }
+      
+      @keyframes pulse-animation {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+      }
+      
+      .updating {
+        opacity: 0.5;
+        transform: scale(0.98);
+        transition: all 0.15s ease;
+      }
+      
+      .slide-left {
+        animation: slide-left-anim 0.2s forwards;
+      }
+      
+      @keyframes slide-left-anim {
+        0% { transform: translateX(0); opacity: 1; }
+        100% { transform: translateX(-50px); opacity: 0; }
+      }
+      
+      .slide-right {
+        animation: slide-right-anim 0.2s forwards;
+      }
+      
+      @keyframes slide-right-anim {
+        0% { transform: translateX(0); opacity: 1; }
+        100% { transform: translateX(50px); opacity: 0; }
+      }
+      
+      .shuffle-animation {
+        animation: shuffle-anim 0.6s ease;
+      }
+      
+      @keyframes shuffle-anim {
+        0% { transform: translateY(0) rotate(0); }
+        33% { transform: translateY(-15px) rotate(-2deg); }
+        66% { transform: translateY(10px) rotate(2deg); }
+        100% { transform: translateY(0) rotate(0); }
+      }
+      
+      .mode-change {
+        animation: mode-change-anim 0.4s ease;
+      }
+      
+      @keyframes mode-change-anim {
+        0% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(0.95); }
+        100% { opacity: 1; transform: scale(1); }
+      }
+      
+      .reset-animation {
+        animation: reset-anim 0.5s ease;
+      }
+      
+      @keyframes reset-anim {
+        0% { transform: scale(1); }
+        50% { transform: scale(0.95); }
+        100% { transform: scale(1); }
+      }
+      
+      .saving {
+        animation: saving-anim 0.5s ease;
+      }
+      
+      @keyframes saving-anim {
+        0% { transform: scale(1); }
+        50% { transform: scale(0.95); background-position: right bottom; }
+        100% { transform: scale(1); }
+      }
+      
+      .wrong-answer {
+        animation: wrong-anim 0.5s ease;
+      }
+      
+      @keyframes wrong-anim {
+        0%, 100% { transform: translateX(0); }
+        20%, 60% { transform: translateX(-5px); }
+        40%, 80% { transform: translateX(5px); }
+      }
+      
+      .uncertain-answer {
+        animation: uncertain-anim 0.5s ease;
+      }
+      
+      @keyframes uncertain-anim {
+        0% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+        100% { transform: translateY(0); }
+      }
+      
+      .correct-answer {
+        animation: correct-anim 0.5s ease;
+      }
+      
+      @keyframes correct-anim {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+      }
+    `;
+    document.head.appendChild(style);
+    
     // Initialisation
     initProgress();
     updateCardDisplay();
     loadProgress(); // Essayer de charger les progrès sauvegardés
     setupCardListeners();
+    
+    // Animation d'entrée initiale
+    document.querySelectorAll('.stat-card, .flashcard-filters, .mode-selector, .flashcard-container, .progress-container, .flashcard-actions').forEach((element, index) => {
+      element.style.opacity = '0';
+      element.style.transform = 'translateY(20px)';
+      element.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      element.style.transitionDelay = `${index * 0.1}s`;
+      
+      setTimeout(() => {
+        element.style.opacity = '1';
+        element.style.transform = 'translateY(0)';
+      }, 100);
+    });
   });
