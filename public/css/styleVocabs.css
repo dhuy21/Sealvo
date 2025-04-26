@@ -152,14 +152,6 @@
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
 }
 
-.edit-btn {
-  background: linear-gradient(135deg, #3498db, #2575fc);
-}
-
-.delete-btn {
-  background: linear-gradient(135deg, #ff416c, #ff4b2b);
-}
-
 .action-buttons a:hover, 
 .action-buttons button:hover {
   transform: translateY(-3px) scale(1.05);
@@ -458,9 +450,7 @@
 .learn-btn,
 .btn-danger,
 .home-cta .btn,
-.no-words .btn,
-.edit-btn,
-.delete-btn {
+.no-words .btn {
   touch-action: manipulation;
   position: relative;
   display: inline-flex;
@@ -480,9 +470,7 @@
 .learn-btn::before,
 .btn-danger::before,
 .home-cta .btn::before,
-.no-words .btn::before,
-.edit-btn::before,
-.delete-btn::before {
+.no-words .btn::before {
   position: absolute;
   content: "";
   width: 100%;
@@ -500,9 +488,7 @@
 .learn-btn:hover,
 .btn-danger:hover,
 .home-cta .btn:hover,
-.no-words .btn:hover,
-.edit-btn:hover,
-.delete-btn:hover {
+.no-words .btn:hover {
   transform: translate(0, 0.25em);
 }
 
@@ -510,9 +496,7 @@
 .learn-btn:hover::before,
 .btn-danger:hover::before,
 .home-cta .btn:hover::before,
-.no-words .btn:hover::before,
-.edit-btn:hover::before,
-.delete-btn:hover::before {
+.no-words .btn:hover::before {
   transform: translate3d(0, 0.5em, -1em);
 }
 
@@ -520,9 +504,7 @@
 .learn-btn:active,
 .btn-danger:active,
 .home-cta .btn:active,
-.no-words .btn:active,
-.edit-btn:active,
-.delete-btn:active {
+.no-words .btn:active {
   transform: translate(0em, 0.75em);
 }
 
@@ -530,9 +512,7 @@
 .learn-btn:active::before,
 .btn-danger:active::before,
 .home-cta .btn:active::before,
-.no-words .btn:active::before,
-.edit-btn:active::before,
-.delete-btn:active::before {
+.no-words .btn:active::before {
   box-shadow: 0 0 0 2px, 0 0;
   transform: translate3d(0, 0, -1em);
 }
@@ -634,33 +614,33 @@
 }
 
 .edit-btn {
-  background: #f0f8ff;
-  border-color: #3498db;
+  background: #2046b7;
+  border-color: #2046b7;
   color: white;
 }
 
 .edit-btn::before {
-  background: #85c6f7;
-  box-shadow: 0 0 0 2px #3498db, 0 0.625em 0 0 #e2f4ff;
+  background: #2046b7;
+  box-shadow: 0 0 0 2px #2046b7, 0 0.625em 0 0 #e2f4ff;
 }
 
 .edit-btn:hover {
-  background: #e7f4fd;
+  background: #2046b7;
 }
 
 .delete-btn {
-  background: #fff0f0;
+  background: #f01818;
   border-color: #ff4b2b;
   color: white;
 }
 
 .delete-btn::before {
-  background: #ffb1a0;
-  box-shadow: 0 0 0 2px #ff4b2b, 0 0.625em 0 0 #ffe9e5;
+  background: #f01818;
+  box-shadow: 0 0 0 2px #f01818, 0 0.625em 0 0 #ffe9e5;
 }
 
 .delete-btn:hover {
-  background: #ffe5e3;
+  background: #f01818;
 }
 
 /* Responsive adjustments */

@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', function() {
     initWordCards();
     animateCounters();
     setupScrollEffects();
-    initParallaxEffect();
     initStaggeredAnimations();
     addMouseFollowEffect();
 });
@@ -251,64 +250,7 @@ function smoothScrollWithEasing(distance, duration) {
 /**
  * Enhanced parallax effect with smoother motion
  */
-function initParallaxEffect() {
-    const parallaxElements = document.querySelectorAll('.shape, .floating-element');
-    const featuredSection = document.querySelector('.showcase-section');
-    const hero = document.querySelector('.hero-banner');
-    
-    if (!parallaxElements.length) return;
-    
-    // Add parallax class for better targeting
-    parallaxElements.forEach(element => {
-        element.classList.add('parallax');
-        
-        // Assign random parallax speeds for varied movement
-        const speed = (Math.random() * 0.4 + 0.1).toFixed(2);
-        element.setAttribute('data-speed', speed);
-    });
-    
-    // Use requestAnimationFrame for smoother parallax
-    let ticking = false;
-    let lastScrollY = window.scrollY;
-    
-    function updateParallax() {
-        const scrollY = window.scrollY;
-        
-        // Only update if we've scrolled
-        if (scrollY !== lastScrollY) {
-            parallaxElements.forEach(element => {
-                const speed = parseFloat(element.getAttribute('data-speed')) || 0.2;
-                const direction = element.getAttribute('data-direction') === 'up' ? -1 : 1;
-                const yOffset = scrollY * speed * direction;
-                
-                // Apply transform using translate3d for better performance
-                element.style.transform = `translate3d(0, ${yOffset}px, 0)`;
-            });
-            
-            // Apply parallax to featured section for depth
-            if (featuredSection) {
-                featuredSection.style.backgroundPositionY = `${-scrollY * 0.1}px`;
-            }
-            
-            // Hero section parallax effect
-            if (hero) {
-                hero.style.transform = `translateY(${scrollY * 0.3}px)`;
-                hero.style.opacity = 1 - (scrollY * 0.002);
-            }
-            
-            lastScrollY = scrollY;
-        }
-        
-        ticking = false;
-    }
-    
-    window.addEventListener('scroll', () => {
-        if (!ticking) {
-            window.requestAnimationFrame(updateParallax);
-            ticking = true;
-        }
-    });
-}
+
 
 /**
  * Initialize staggered animations for list items

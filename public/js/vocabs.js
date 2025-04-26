@@ -41,38 +41,12 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.delete-btn').forEach(button => {
         button.addEventListener('click', handleDeleteClick);
         
-        // Add enhanced 3D effect to small buttons
-        button.addEventListener('mousemove', handleButtonMouseMove);
-        button.addEventListener('mouseleave', handleButtonMouseLeave);
     });
 
     document.querySelectorAll('.edit-btn').forEach(button => {
         button.addEventListener('click', handleEditClick);
         
-        // Add enhanced 3D effect to small buttons
-        button.addEventListener('mousemove', handleButtonMouseMove);
-        button.addEventListener('mouseleave', handleButtonMouseLeave);
     });
-    
-    // Function to handle mouse movement on small buttons
-    function handleButtonMouseMove(e) {
-        const button = this;
-        const rect = button.getBoundingClientRect();
-        const x = e.clientX - rect.left; 
-        const y = e.clientY - rect.top;
-        
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-        
-        const rotateY = ((x - centerX) / centerX) * 1; 
-        const rotateX = -((y - centerY) / centerY) * 1;
-        
-        button.style.transform = `translate(0, 0.25em) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-    }
-    
-    function handleButtonMouseLeave() {
-        this.style.transform = '';
-    }
     
     // Ajouter des styles pour les inputs d'édition et animations
     const style = document.createElement('style');

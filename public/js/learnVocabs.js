@@ -115,10 +115,6 @@ document.addEventListener('DOMContentLoaded', function() {
       
     }
     
-    // Fermer la popup de réalisation
-    closeAchievementBtn.addEventListener('click', function() {
-      achievementPopup.classList.remove('show');
-    });
     
     // Mettre à jour l'affichage de la carte
     function updateCardDisplay() {
