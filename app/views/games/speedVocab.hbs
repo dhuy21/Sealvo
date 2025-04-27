@@ -1,24 +1,60 @@
 <link rel="stylesheet" href="/css/games/speedVocab.css">
-<div class="game-container" id="speed-vocab" data-high-score="{{highScore}}">
-    <h1>{{gameTitle}}</h1>
+<div class="game-container" id="speed-vocab">
+    <div class="game-header">
+        <h1>{{gameTitle}}</h1>
+        <p class="game-description">{{gameDescription}}</p>
+    </div>
     
     {{#if errorMessage}}
-        <div class="error-message">
-            <i class="fas fa-exclamation-circle"></i>
-            <p>{{errorMessage}}</p>
-        </div>
+    <div class="error-box">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>{{errorMessage}}</p>
+        <a href="/monVocabs/add" class="btn add-words-btn">Ajouter des mots</a>
+    </div>
     {{else}}
-        <p class="game-description">{{gameDescription}}</p>
+    
+        <div class="game-stats">
+            <div class="stat-box">
+                <span class="stat-label">Votre meilleur score</span>
+                <span class="stat-value">{{#if highScore}}{{highScore.score}}{{else}}0{{/if}}</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Mots disponibles</span>
+                <span class="stat-value">{{wordCount}}</span>
+            </div>
+        </div>
         
         <!-- Écran de pré-jeu -->
         <div class="screen pre-game-screen active">
+            <h2>Règles du jeu</h2>
+            <ul class="rules-list">
+                <li>Choisissez la bonne définition pour chaque mot</li>
+                <li>Obtenez 10 points pour chaque bonne réponse</li>
+                <li>Perdez 5 points pour chaque réponse erronée</li>
+            </ul>
+
             <div class="difficulty-selector">
-                <h3>Choisissez une difficulté</h3>
-                <div class="difficulty-btn-group">
-                    <button class="difficulty-btn active" data-difficulty="easy">Facile</button>
-                    <button class="difficulty-btn" data-difficulty="medium">Moyen</button>
-                    <button class="difficulty-btn" data-difficulty="hard">Difficile</button>
-                </div>
+                    <h3>Choisissez la difficulté</h3>
+                    <div class="difficulty-options">
+                        <button class="difficulty-btn active" data-difficulty="easy">
+                            <i class="fas fa-star"></i>
+                            <span>Facile</span>
+                            
+                        </button>
+                        <button class="difficulty-btn" data-difficulty="medium">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <span>Moyen</span>
+                           
+                        </button>
+                        <button class="difficulty-btn" data-difficulty="hard">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <span>Difficile</span>
+                            
+                        </button>
+                    </div>
             </div>
             
             <div class="difficulty-info">
@@ -98,33 +134,18 @@
                 <i class="fas fa-redo"></i> Rejouer
             </button>
         </div>
-        
-        <!-- Leaderboard -->
-        <div class="leaderboard">
-            <h3>Meilleurs scores</h3>
-            <table class="leaderboard-table">
-                <thead>
-                    <tr>
-                        <th>Rang</th>
-                        <th>Joueur</th>
-                        <th>Score</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{#each leaderboard}}
-                    <tr>
-                        <td>{{inc @index}}</td>
-                        <td>{{this.username}}</td>
-                        <td>{{this.score}}</td>
-                        <td>{{formatDate this.created_at}}</td>
-                    </tr>
-                    {{/each}}
-                </tbody>
-            </table>
-        </div>
     {{/if}}
-</div>
 
-<link rel="stylesheet" href="/css/games/speedVocab.css">
+    <div class="game-footer">
+        <a href="/games" class="btn back-btn">
+            <i class="fas fa-arrow-left"></i> Retour aux jeux
+        </a>
+        <a href="/monVocabs/learn" class="btn learn-btn">
+            <i class="fas fa-book"></i> Apprendre
+        </a>
+        <a href="/games/vocabQuiz" class="btn next-btn">
+            <i class="fas fa-arrow-right"></i> Jeu suivant
+        </a>
+    </div>
+</div>
 <script src="/js/games/speedVocab.js"></script>

@@ -163,7 +163,8 @@
     .dashboard-card h2, .dashboard-card h3 {
       color: var(--primary-color);
       margin-bottom: 1.25rem;
-      font-weight: 700;
+      font-weight: 500;
+      font-size: 30px;
       position: relative;
       display: inline-block;
     }
@@ -426,6 +427,7 @@
       transition: var(--transition);
       font-weight: 600;
       font-size: 0.875rem;
+      gap: 20px;
     }
     
     .dashboard-btn-primary {
@@ -433,6 +435,7 @@
       color: white;
       border: none;
       box-shadow: 0 4px 6px -1px rgba(65, 88, 208, 0.3), 0 2px 4px -1px rgba(65, 88, 208, 0.06);
+      gap: 20px;
     }
     
     .dashboard-btn-primary:hover {

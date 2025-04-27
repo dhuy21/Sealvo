@@ -1,132 +1,111 @@
-
 <link rel="stylesheet" href="/css/games/wordSearch.css">
-<div class="game-container" id="word-search" data-high-score="{{highScore.score}}">
-    <h1 class="game-title">{{gameTitle}}</h1>
-    <p class="game-description">{{gameDescription}}</p>
+<div class="game-container">
+    <div class="game-header">
+        <h1>{{gameTitle}}</h1>
+        <p class="game-description">{{gameDescription}}</p>
+    </div>
 
     <!-- Écran de pré-jeu -->
-    <div class="screen pre-game-screen active">
-        {{#if errorMessage}}
-            <div class="error-message">
-                <p>{{errorMessage}}</p>
-                <a href="/monVocabs" class="btn btn-primary">Ajouter des mots</a>
+    <div class="game-screen" id="game-screen">
+        <div class="screen pre-game-screen active">
+            {{#if errorMessage}}
+                <div class="error-message">
+                    <p>{{errorMessage}}</p>
+                    <a href="/monVocabs/add" class="btn add-words-btn">Ajouter des mots</a>
+                </div>
+            {{else}}
+            <div class="game-stats">
+                <div class="stat-box">
+                    <span class="stat-label">Votre meilleur score</span>
+                    <span class="stat-value">{{#if highScore}}{{highScore.score}}{{else}}0{{/if}}</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Mots disponibles</span>
+                    <span class="stat-value">{{wordCount}}</span>
+                </div>
             </div>
-        {{else}}
             <div class="game-instructions">
-                <h3>Comment jouer</h3>
-                <p>Trouvez tous les mots de vocabulaire cachés dans la grille. Les mots peuvent être placés horizontalement, verticalement ou en diagonale, dans n'importe quelle direction.</p>
-                <ol>
-                    <li>Cliquez et faites glisser pour sélectionner les lettres qui forment un mot.</li>
-                    <li>Lorsque vous trouvez un mot, il sera marqué dans la liste de droite.</li>
-                    <li>Trouvez tous les mots avant la fin du temps pour maximiser votre score !</li>
-                </ol>
+                    <h3>Règles du jeu</h3>
+                    <p>Trouvez tous les mots de vocabulaire cachés dans la grille. Les mots peuvent être placés horizontalement, verticalement ou en diagonale, dans n'importe quelle direction.</p>
+                    <ul class="rules-list">
+                        <li>Cliquez et faites glisser pour sélectionner les lettres qui forment un mot.</li>
+                        <li>Lorsque vous trouvez un mot, il sera marqué dans la liste de droite.</li>
+                        <li>Trouvez tous les mots avant la fin du temps pour maximiser votre score !</li>
+                    </ul>
             </div>
 
             <div class="difficulty-selector">
-                <h3>Choisissez la difficulté</h3>
-                <div class="difficulty-btns">
-                    <button class="difficulty-btn active" data-difficulty="easy">Facile</button>
-                    <button class="difficulty-btn" data-difficulty="medium">Moyen</button>
-                    <button class="difficulty-btn" data-difficulty="hard">Difficile</button>
-                </div>
+                        <h3>Choisissez la difficulté</h3>
+                        <div class="difficulty-options">
+                            <button class="difficulty-btn active" data-difficulty="easy">
+                                <i class="fas fa-star"></i>
+                                <span>Facile</span>
+                                <small>4 options</small>
+                            </button>
+                            <button class="difficulty-btn" data-difficulty="medium">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <span>Moyen</span>
+                                <small>6 options</small>
+                            </button>
+                            <button class="difficulty-btn" data-difficulty="hard">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <span>Difficile</span>
+                                <small>8 options</small>
+                            </button>
+                        </div>
+                        <button id="start-game" class="start-btn">Commencer le jeu</button>
             </div>
-
-            <button id="start-game" class="start-btn">Commencer le jeu</button>
-
-            <div class="leaderboard-container">
-                <h3>Meilleurs scores</h3>
-                <table class="leaderboard">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Joueur</th>
-                            <th>Score</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{#each leaderboard}}
-                            <tr>
-                                <td>{{inc @index}}</td>
-                                <td>{{this.username}}</td>
-                                <td>{{this.score}}</td>
-                            </tr>
-                        {{else}}
-                            <tr>
-                                <td colspan="3">Aucun score enregistré</td>
-                            </tr>
-                        {{/each}}
-                    </tbody>
-                </table>
-            </div>
-        {{/if}}
-    </div>
-
-    <!-- Écran de jeu actif -->
-    <div class="screen active-game-screen">
-        <div class="game-board">
-            <div class="word-search-grid" id="word-search-grid">
-                <!-- La grille sera générée dynamiquement en JavaScript -->
-            </div>
+            {{/if}}
         </div>
 
-        <div class="game-info-panel">
-            <div class="game-status">
-                <div class="status-item">
-                    <span>Score:</span>
-                    <span id="score">0</span>
-                </div>
-                <div class="status-item">
-                    <span>Temps:</span>
-                    <span id="timer">600</span>s
-                </div>
-                <div class="status-item">
-                    <span>Mots trouvés:</span>
-                    <span id="words-found">0</span>/<span id="total-words">0</span>
-                </div>
-            </div>
-
-            <div class="word-list-container">
-                <h3 class="word-list-title">Mots à trouver</h3>
-                <ul class="word-list" id="word-list">
-                    <!-- La liste de mots sera générée dynamiquement en JavaScript -->
-                </ul>
-            </div>
-
+        <!-- Écran de jeu actif -->
+        <div class="screen active-game-screen">
             <button id="show-hint" class="hint-btn">Afficher un indice</button>
-        </div>
-    </div>
-
-    <!-- Écran de fin de jeu -->
-    <div class="screen post-game-screen">
-        <div class="game-results">
-            <h2 class="result-title">Partie terminée !</h2>
-            
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <div class="stat-label">Score final</div>
-                    <div id="final-score" class="stat-value">0</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Mots trouvés</div>
-                    <div class="stat-value"><span id="final-words-found">0</span>/<span id="final-total-words">0</span></div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Précision</div>
-                    <div id="accuracy" class="stat-value">0%</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Temps moyen par mot</div>
-                    <div id="avg-time" class="stat-value">0s</div>
+            <div class="game-board">
+                <div class="word-search-grid" id="word-search-grid">
+                    <!-- La grille sera générée dynamiquement en JavaScript -->
                 </div>
             </div>
-            
-            <div id="high-score-message" class="high-score-message"></div>
+
+            <div class="game-info-panel">
+                <div class="game-status">
+                    <div class="status-item">
+                        <span>Score:</span>
+                        <span id="score">0</span>
+                    </div>
+                    <div class="status-item">
+                        <span>Temps:</span>
+                        <span id="timer">600</span>s
+                    </div>
+                    <div class="status-item">
+                        <span>Mots trouvés:</span>
+                        <span id="words-found">0</span>/<span id="total-words">0</span>
+                    </div>
+                </div>
+                
+                <div class="word-list-container">
+                    <h3 class="word-list-title">Mots à trouver</h3>
+                    <ul class="word-list" id="word-list">
+                        <!-- La liste de mots sera générée dynamiquement en JavaScript -->
+                    </ul>
+                </div>
+            </div>
         </div>
-        
-        <button id="play-again" class="play-again-btn">Jouer à nouveau</button>
-        <a href="/games" class="btn">Retour aux jeux</a>
+    </div>
+    <div class="game-footer">
+        <a href="/games" class="btn back-btn">
+            <i class="fas fa-arrow-left"></i> Retour aux jeux
+        </a>
+        <a href="/monVocabs/learn" class="btn learn-btn">
+            <i class="fas fa-book"></i> Apprendre
+        </a>
+        <a href="/games/wordScramble" class="btn next-btn">
+            <i class="fas fa-arrow-right"></i> Jeu suivant
+        </a>
     </div>
 </div>
 
-<link rel="stylesheet" href="/css/games/wordSearch.css">
 <script src="/js/games/wordSearch.js"></script>

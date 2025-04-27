@@ -107,22 +107,6 @@
                 </div>
             </div>
         </div>
-        
-        {{#if leaderboard.length}}
-        <div class="leaderboard">
-            <h3>Classement</h3>
-            <div class="leaderboard-list">
-                {{#each leaderboard}}
-                <div class="leaderboard-item">
-                    <span class="leaderboard-rank">{{@index}}</span>
-                    <span class="leaderboard-user">{{this.username}}</span>
-                    <span class="leaderboard-score">{{this.score}}</span>
-                </div>
-                {{/each}}
-            </div>
-            <a href="/games/leaderboard/flashMatch" class="view-all-btn">Voir tout le classement</a>
-        </div>
-        {{/if}}
     </div>
     {{/if}}
     
@@ -132,6 +116,9 @@
         </a>
         <a href="/monVocabs/learn" class="btn learn-btn">
             <i class="fas fa-book"></i> Apprendre
+        </a>
+        <a href="/games/speedVocab" class="btn next-btn">
+            <i class="fas fa-arrow-right"></i> Jeu suivant
         </a>
     </div>
 </div>

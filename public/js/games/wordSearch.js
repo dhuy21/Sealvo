@@ -5,7 +5,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Vérifier si nous sommes sur la page du jeu Word Search
     // On vérifie un élément unique qui n'existe que sur cette page
-    if (!document.getElementById('word-search')) {
+    if (!document.getElementById('word-search-grid')) {
         // Nous ne sommes pas sur la page Word Search, ne pas exécuter le script
         return;
     }
@@ -64,7 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function init() {
         // Ajouter les événements
         startGameBtn.addEventListener('click', startGame);
-        playAgainBtn.addEventListener('click', resetGame);
         showHintBtn.addEventListener('click', showHint);
         
         // Gérer la sélection de difficulté
