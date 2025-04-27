@@ -56,8 +56,8 @@
 }
 
 label {
-  display: block;
-  margin-bottom: 10px;
+  display: inline-block;
+  
   font-size: 15px;
   color: #444;
   font-weight: 500;
@@ -2178,6 +2178,16 @@ section.animate-in {
   
 }
 
+.auth-background {
+  position: absolute;
+  max-width: 1200px;
+  min-width: 1200px;
+  
+  padding: 50px 20px;
+  background: transparent;
+  border-radius: 12px;
+}
+
 .auth-container {
   width: 100%;
   max-width: 480px;
@@ -2255,10 +2265,17 @@ section.animate-in {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 57px;
-  width: 1000px;
-  right: 20px;
-  
+  position: absolute;
+  height: 100%; /* Cho bằng chiều cao của input */
+  width: 40px; /* Chỉ đủ để bấm con mắt */
+  right: 10px; /* Đẩy sát bên phải */
+  top: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  z-index: 2;
+  pointer-events: auto;
+
 }
 
 /* Input wrapper with icon - adjusted for icon alignment */
@@ -2284,7 +2301,9 @@ section.animate-in {
   padding-left: 50px;
   padding-right: 45px; /* Add space for the eye icon */
   /* Make the input field more longer */
-  width: 10000px
+  width: 1000px;
+  outline: none;
+  background: transparent;
 }
 
 .input-icon-wrapper input:focus ~ .input-icon {
@@ -2298,12 +2317,6 @@ section.animate-in {
   background-color: #fff;
 }
 
-.input-icon-wrapper input:focus {
-  border-color: #2575fc;
-  outline: none;
-  box-shadow: 0 0 10px rgba(37, 117, 252, 0.2);
-  background-color: #fff;
-}
 
 .form-options {
   display: flex;
@@ -2313,9 +2326,12 @@ section.animate-in {
   font-size: 14px;
 }
 
+
 .remember-me, .terms-check {
   display: flex;
   align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
 
 .remember-me input, .terms-check input {
@@ -2508,11 +2524,13 @@ section.animate-in {
 .floating-card {
   position: absolute;
   padding: 15px 20px;
-  background: white;
+  width: 300px;
+  background: none;
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  text-align: center;
   display: flex;
   align-items: center;
+  justify-content: center;
   z-index: 1;
 }
 
@@ -2528,21 +2546,31 @@ section.animate-in {
 }
 
 .card-1 {
-  top: 20%;
+  top: 100%;
   left: 15%;
   animation: floatCard 10s infinite alternate ease-in-out;
 }
 
 .card-2 {
   bottom: 20%;
-  right: 15%;
+  right: 90%;
   animation: floatCard 13s infinite alternate-reverse ease-in-out;
 }
 
 .card-3 {
-  bottom: 15%;
-  left: 20%;
+  bottom: 50%;
+  left: 90%;
   animation: floatCard 12s infinite alternate ease-in-out;
+}
+.card-4 {
+  top: 20%;
+  right: 100%;
+  animation: floatCard 15s infinite alternate-reverse ease-in-out;
+}
+.card-5 {
+  top: 10%;
+  left: 100%;
+  animation: floatCard 18s infinite alternate ease-in-out;
 }
 
 @keyframes floatCard {

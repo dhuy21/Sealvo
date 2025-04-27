@@ -785,6 +785,88 @@
     background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
 }
 
+.next-btn {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: #fff;
+    padding: 1rem 2.5rem;
+    border: none;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.next-btn::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: 0.5s;
+}
+
+.next-btn:disabled {
+    background: linear-gradient(135deg, #9ca3af, #d1d5db);
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.next-btn:not(:disabled):hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+}
+
+.next-btn:not(:disabled):hover::before {
+    left: 100%;
+}
+.game-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 3rem;
+    align-items: center;
+}
+
+.game-footer .btn {
+    padding: 0.8rem 1.5rem;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.game-footer .btn i {
+    margin-right: 0.5rem;
+}
+
+.game-footer .back-btn {
+    background-color: #f3f4f6;
+    color: #4b5563;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
+}
+
+.game-footer .back-btn:hover {
+    background-color: #e5e7eb;
+    transform: translateX(-3px);
+}
+
+.game-footer .learn-btn {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: #fff;
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+}
+
+.game-footer .learn-btn:hover {
+    transform: translateX(3px);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+}
 /* Responsive design */
 @media (max-width: 768px) {
     .game-area {

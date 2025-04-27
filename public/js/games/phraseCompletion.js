@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
             correctWord = data.word;
             
             // Formater la phrase avec un espace pour saisir le mot
-            const formattedPhrase = data.phrase.replace('_____', '<span class="blank">_____</span>');
+            const formattedPhrase = data.phrase;
             phraseDisplay.innerHTML = formattedPhrase;
             
             // Afficher un indice en fonction de la difficulté
@@ -173,8 +173,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function checkAnswer() {
         if (!gameActive || !currentPhrase) return;
         
-        const userInput = wordInput.value.trim().toLowerCase();
-        const answer = correctWord.toLowerCase();
+        const userInput = wordInput.value.trim();
+        
         attempts++;
         
         // Si l'utilisateur a soumis une réponse vide, ne rien faire
@@ -201,66 +201,86 @@ document.addEventListener('DOMContentLoaded', function() {
             wordMeaning.textContent = `Signification: ${currentPhrase.meaning}`;
         }
         
-        const isCorrect = userInput === answer;
-        
-        if (isCorrect) {
-            // Réponse correcte
-            correctAnswers++;
-            streak++;
-            bestStreak = Math.max(bestStreak, streak);
-            
-            // Calcul du score
-            let basePoints = 10;
-            
-            // Bonus pour la difficulté
-            if (selectedDifficulty === 'medium') {
-                basePoints = 15;
-            } else if (selectedDifficulty === 'hard') {
-                basePoints = 20;
+        fetch(`/games/phraseCompletion/check`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ userInput, correctWord })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error(data.error);
+                return;
             }
+        
+            const isCorrect = data.correct;
+        
+            if (isCorrect) {
+                // Réponse correcte
+                correctAnswers++;
+                streak++;
+                bestStreak = Math.max(bestStreak, streak);
             
-            // Bonus pour la rapidité (max 5 points bonus)
-            const timeBonus = Math.max(0, Math.min(5, Math.round(10 - questionTime)));
-            
-            // Bonus pour la série
-            const streakBonus = Math.floor(streak / 3) * 5; // 5 points tous les 3 mots consécutifs
-            
-            // Malus pour tentatives multiples
-            const attemptsPenalty = Math.max(0, attempts - 1) * 2;
-            
-            const totalPoints = basePoints + timeBonus + streakBonus - attemptsPenalty;
-            score += totalPoints;
-            
-            // Mettre à jour l'affichage
-            scoreDisplay.textContent = score;
-            
-            // Feedback
-            feedbackMessage.textContent = `Correct ! +${totalPoints} points`;
-            feedbackMessage.className = 'feedback-message correct';
-            wordInput.classList.add('correct');
-            
-            // Remplacer le blanc par le mot correct en vert
-            phraseDisplay.innerHTML = currentPhrase.phrase.replace('_____', `<span class="blank correct">${correctWord}</span>`);
-        } else {
+                // Calcul du score
+                let basePoints = 10;
+                
+                // Bonus pour la difficulté
+                if (selectedDifficulty === 'medium') {
+                    basePoints = 15;
+                } else if (selectedDifficulty === 'hard') {
+                    basePoints = 20;
+                }
+                
+                // Bonus pour la rapidité (max 5 points bonus)
+                const timeBonus = Math.max(0, Math.min(5, Math.round(10 - questionTime)));
+                
+                // Bonus pour la série
+                const streakBonus = Math.floor(streak / 3) * 5; // 5 points tous les 3 mots consécutifs
+                
+                // Malus pour tentatives multiples
+                const attemptsPenalty = Math.max(0, attempts - 1) * 2;
+                
+                const totalPoints = basePoints + timeBonus + streakBonus - attemptsPenalty;
+                score += totalPoints;
+                
+                // Mettre à jour l'affichage
+                scoreDisplay.textContent = score;
+                
+                // Feedback
+                feedbackMessage.textContent = `Correct ! +${totalPoints} points`;
+                feedbackMessage.className = 'feedback-message correct';
+                wordInput.classList.remove('incorrect', 'correct');
+                wordInput.classList.add('correct');
+                
+                // Remplacer le blanc par le mot correct en vert
+                phraseDisplay.innerHTML = currentPhrase.phrase.replace('_____', `<span class="blank correct">${correctWord}</span>`);
+            } else {
             // Réponse incorrecte
-            streak = 0;
-            
-            // Feedback
-            feedbackMessage.textContent = `Incorrect. La bonne réponse était "${correctWord}"`;
-            feedbackMessage.className = 'feedback-message incorrect';
-            wordInput.classList.add('incorrect');
-            
-            // Remplacer le blanc par le mot correct en rouge
-            phraseDisplay.innerHTML = currentPhrase.phrase.replace('_____', `<span class="blank incorrect">${correctWord}</span>`);
-        }
+                streak = 0;
+                
+                // Feedback
+                feedbackMessage.textContent = `Incorrect. La bonne réponse était "${correctWord}"`;
+                feedbackMessage.className = 'feedback-message incorrect';
+                wordInput.classList.remove('incorrect', 'correct');
+                wordInput.classList.add('incorrect');
+                
+                // Remplacer le blanc par le mot correct en rouge
+                phraseDisplay.innerHTML = currentPhrase.phrase.replace('_____', `<span class="blank incorrect">${correctWord}</span>`);
+            }
         
         // Activer le bouton Suivant
-        nextPhraseBtn.disabled = false;
-        
-        // Si c'est la dernière question, changer le texte du bouton
-        if (questionsAnswered >= totalQuestions) {
-            nextPhraseBtn.textContent = 'Voir les résultats';
-        }
+            nextPhraseBtn.disabled = false;
+            
+            // Si c'est la dernière question, changer le texte du bouton
+            if (questionsAnswered >= totalQuestions) {
+                nextPhraseBtn.textContent = 'Voir les résultats';
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors de la vérification de la réponse:', error);
+        });
     }
     
     // Fonction pour passer à la phrase suivante
