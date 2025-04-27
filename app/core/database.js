@@ -1,13 +1,13 @@
 const mysql = require('mysql2/promise');
 
 async function connect() {
-
-  try {// Configuration de la connexion à la base de données
+  try {
+    // Configuration de la connexion à la base de données
     const db = await mysql.createConnection({
-      host: 'localhost', // Remplacez par l'hôte de votre base de données
-      user: 'root',      // Remplacez par votre nom d'utilisateur MySQL
-      password: '123456789',      // Remplacez par votre mot de passe MySQL
-      database: 'web_db' // Nom de la base de données
+      host: process.env.DB_HOST || 'localhost', 
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || '123456789',
+      database: process.env.DB_DATABASE || 'web_db'
     });
     console.log('Connecté à la base de données MySQL.');
     return db;
