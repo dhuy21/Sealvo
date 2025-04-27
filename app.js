@@ -7,7 +7,7 @@ const { engine } = require('express-handlebars'); // Sử dụng cú pháp mới
 const session = require('express-session');
 const passport = require('passport');
 const app = express();
-const port = 8080;
+const port = process.env.PORT || 8080;
 const crypto = require('crypto');
 const Reminder = require('./app/services/reminder');
 
