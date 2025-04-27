@@ -1,4 +1,5 @@
 const db = require('./app/core/database.js');
+const config = require('./app/config/env');
 const path = require('path');
 const express = require('express');
 const route = require('./app/routes');
@@ -7,7 +8,7 @@ const { engine } = require('express-handlebars'); // Sử dụng cú pháp mới
 const session = require('express-session');
 const passport = require('passport');
 const app = express();
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || config.PORT;
 const crypto = require('crypto');
 const Reminder = require('./app/services/reminder');
 
@@ -28,7 +29,8 @@ app.use(express.static(path.join(__dirname, 'public')));
   }
 })();
 
-const secret = crypto.randomBytes(64).toString('hex');
+// Use session secret from config
+const secret = process.env.SESSION_SECRET || config.SESSION_SECRET;
 app.use(session({
     secret: secret,
     resave: false,
