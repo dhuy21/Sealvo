@@ -29,8 +29,8 @@ app.use(express.static(path.join(__dirname, 'public')));
   }
 })();
 
-// Use session secret from config
-const secret = process.env.SESSION_SECRET || config.SESSION_SECRET;
+// Generate a random secret on each server start
+const secret = crypto.randomBytes(64).toString('hex');
 app.use(session({
     secret: secret,
     resave: false,
