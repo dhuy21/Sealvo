@@ -9,8 +9,6 @@ module.exports = {
     // Server Configuration
     PORT: 8080,
 
-    
-
     // Application Environment
     NODE_ENV: 'development'
 }; 
