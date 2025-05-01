@@ -38,21 +38,31 @@
       <div class="flashcard-filters">
         <h3>Niveaux</h3>
         <div class="filter-options">
-          <label class="filter-label">
-            <input type="checkbox" id="level0" checked>
-            <span class="custom-checkbox"></span>
-            Niveau 0
-          </label>
-          <label class="filter-label">
-            <input type="checkbox" id="level1" checked>
-            <span class="custom-checkbox"></span>
-            Niveau 1
-          </label>
-          <label class="filter-label">
-            <input type="checkbox" id="level2" checked>
-            <span class="custom-checkbox"></span>
-            Niveau 2
-          </label>
+          <div class="filter-row">
+            <label class="filter-label">
+              <input type="checkbox" id="levelx" checked>
+              <span class="custom-checkbox"></span>
+              Niveau x
+            </label>
+
+            <label class="filter-label">
+              <input type="checkbox" id="level0" checked>
+              <span class="custom-checkbox"></span>
+              Niveau 0
+            </label>
+          </div>
+          <div class="filter-row">  
+            <label class="filter-label">
+              <input type="checkbox" id="level1" checked>
+              <span class="custom-checkbox"></span>
+              Niveau 1
+            </label>
+            <label class="filter-label">
+              <input type="checkbox" id="level2" checked>
+              <span class="custom-checkbox"></span>
+              Niveau 2
+            </label>
+          </div>
         </div>
       </div>
       <div class="mode-selector">
@@ -67,11 +77,6 @@
             <input type="radio" name="mode" value="meaning-to-word">
             <span class="custom-radio"></span>
             Signification → Mot
-          </label>
-          <label class="mode-label">
-            <input type="radio" name="mode" value="spaced-repetition">
-            <span class="custom-radio"></span>
-            Répétition espacée
           </label>
         </div>
       </div>
