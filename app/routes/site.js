@@ -11,13 +11,15 @@ const isAuthenticated = (req, res, next) => {
     res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
 };
 
-// Page d'accueil
-router.get('/', siteController.index);
-
 // Page "À propos de moi"
 router.get('/aboutme', siteController.aboutme);
+//Page "Feedback"
+router.get('/feedback', siteController.feedback);
+router.post('/feedback', siteController.feedbackPost);
 
 // Tableau de bord (protégé)
 router.get('/dashboard', isAuthenticated, siteController.dashboard);
+// Page d'accueil
+router.get('/', siteController.index);
 
 module.exports = router;

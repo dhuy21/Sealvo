@@ -11,6 +11,7 @@ header {
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.18);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    width: 100%;
   }
   
   header:hover {
@@ -128,6 +129,7 @@ header {
     justify-content: center;
     gap: 15px;
     margin-top: 25px;
+    flex-wrap: wrap;
   }
   
   .navigation a.btn {
@@ -143,6 +145,7 @@ header {
     box-shadow: 0 5px 15px rgba(106, 17, 203, 0.3);
     flex: 1;
     max-width: 200px;
+    text-align: center;
   }
   
   .navigation a.btn:hover {
@@ -161,7 +164,6 @@ header {
     background-clip: text;
     -webkit-text-fill-color: transparent;
   }
-  
   
   p {
     margin-top: 15px;
@@ -236,7 +238,6 @@ header {
     text-decoration: none !important;
   }
 
-
   /* Button styles */
   .btn-outline-success {
     display: inline-block;
@@ -249,21 +250,182 @@ header {
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    text-align: center;
-    text-decoration: none;
     transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 5px 15px rgba(106, 17, 203, 0.3);
+    box-shadow: 0 8px 15px rgba(106, 17, 203, 0.2);
   }
   
   .btn-outline-success:hover {
-    background: linear-gradient(135deg, #2575fc, #6a11cb);
     transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(106, 17, 203, 0.4);
+    box-shadow: 0 12px 20px rgba(106, 17, 203, 0.3);
+    background: linear-gradient(135deg, #2575fc, #6a11cb);
   }
   
   .btn-outline-success:active {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 10px rgba(106, 17, 203, 0.2);
+  }
+
+  /* Navbar specific styles */
+  .navbar {
+    padding: 0.5rem 1rem;
+  }
+
+  .navbar-brand {
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: white;
+    transition: all 0.3s ease;
+    padding: 5px 10px;
+    text-decoration: none;
+  }
+
+  .logo-img {
+    width: 50px;
+    height: 50px;
+    margin-right: 15px;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    object-fit: contain;
+  }
+
+  .brand-text {
+    display: inline-block;
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+  }
+
+  .navbar-brand:hover .logo-img {
+    transform: scale(1.05);
+  }
+
+  .navbar-toggler {
+    border: none;
+    padding: 0.4rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+  }
+
+  .navbar-toggler:focus {
+    box-shadow: 0 0 0 0.2rem rgba(106, 17, 203, 0.2);
+    outline: none;
+  }
+
+  /* Enhance mobile responsiveness */
+  @media (max-width: 992px) {
+    .navbar-collapse {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.05);
+    }
     
-    box-shadow: 0 3px 10px rgba(106, 17, 203, 0.3);
+    .navbar-nav {
+      margin-bottom: 10px;
+    }
+    
+    .sign-in, .sign-out {
+      margin-top: 10px;
+    }
+    
+    .d-flex.me-auto {
+      flex-direction: column;
+    }
+    
+    .navbar-brand {
+      font-size: 1.3rem;
+    }
+    
+    .logo-img {
+      width: 40px;
+      height: 40px;
+      margin-right: 10px;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .navbar-brand {
+      font-size: 1.2rem;
+      max-width: 200px;
+      overflow: hidden;
+    }
+    
+    .logo-img {
+      width: 36px;
+      height: 36px;
+      margin-right: 8px;
+    }
+    
+    .brand-text {
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      max-width: 150px;
+      overflow: hidden;
+    }
+    
+    .navbar form {
+      width: 100%;
+      margin-top: 10px;
+    }
+    
+    .btn-outline-success {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      font-size: 14px;
+    }
+  }
+
+  /* iPhone specific fixes */
+  @media (max-width: 480px) {
+    .navbar-brand {
+      font-size: 1rem;
+      max-width: 160px;
+    }
+    
+    .logo-img {
+      width: 30px;
+      height: 30px;
+      margin-right: 5px;
+    }
+    
+    .brand-text {
+      max-width: 120px;
+    }
+    
+    .navbar-toggler {
+      padding: 5px 8px;
+    }
+    
+    .navbar-toggler-icon {
+      width: 1em;
+      height: 1em;
+    }
+  }
+
+  /* Form in navbar */
+  .navbar .d-flex.form {
+    margin-left: auto;
+  }
+
+  .navbar .form-control {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    transition: all 0.3s ease;
+  }
+
+  .navbar .form-control:focus {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+
+  .navbar .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.5);
   }
