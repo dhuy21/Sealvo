@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
+    console.log('PhraseCompletion script initialized');
+    
     // Variables du jeu
     let currentPhrase = null;
     let correctWord = null;
@@ -22,6 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let timePerQuestion = [];
     let startQuestionTime = null;
     let attempts = 0; // nombre de tentatives sur la question actuelle
+    let isLoadingPhrase = false; // Guard to prevent multiple simultaneous loadNewPhrase calls
     
     // Éléments DOM
     const difficultyBtns = document.querySelectorAll('.difficulty-btn');
@@ -79,6 +82,8 @@ document.addEventListener('DOMContentLoaded', function() {
         questionCountDisplay.textContent = `0/${totalQuestions}`;
         timerDisplay.textContent = timer;
         
+        console.log('Starting game, loading first phrase');
+        
         // Charger la première phrase
         loadNewPhrase();
         
@@ -96,6 +101,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour charger une nouvelle phrase
     function loadNewPhrase() {
+        // Guard to prevent multiple simultaneous calls
+        if (isLoadingPhrase) {
+            console.log('Already loading a phrase, ignoring duplicate call');
+            return;
+        }
+        
+        isLoadingPhrase = true;
+        console.log('loadNewPhrase - starting request');
+        
         // Réinitialiser l'état de la question
         wordInput.value = '';
         wordInput.classList.remove('correct', 'incorrect');
@@ -122,6 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.error) {
                 console.error(data.error);
+                isLoadingPhrase = false;
                 return;
             }
             
@@ -139,9 +154,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Focus sur l'input
             wordInput.focus();
+            isLoadingPhrase = false;
         })
         .catch(error => {
             console.error('Erreur lors du chargement de la phrase:', error);
+            isLoadingPhrase = false;
         });
     }
     
@@ -171,6 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour vérifier la réponse
     function checkAnswer() {
+        console.log('checkAnswer');
         if (!gameActive || !currentPhrase) return;
         
         const userInput = wordInput.value.trim();
@@ -285,11 +303,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour passer à la phrase suivante
     function goToNextPhrase() {
+        console.log('Going to next phrase');
+        
+        // Si c'est la dernière question, terminer le jeu
         if (questionsAnswered >= totalQuestions) {
             endGame();
-        } else {
-            loadNewPhrase();
+            return;
         }
+        
+        // Sinon, charger une nouvelle phrase
+        loadNewPhrase();
     }
     
     // Fonction pour mettre à jour le timer
@@ -383,8 +406,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     if (wordInput) {
-        wordInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !wordInput.disabled) {
+        wordInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
                 checkAnswer();
             }
         });

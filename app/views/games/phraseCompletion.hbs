@@ -26,7 +26,7 @@
         
         <!-- Écran de pré-jeu -->
         <div class="screen pre-game-screen active">
-            <h2>Règles du jeu</h2>
+                <h2><i class="fas fa-bolt" style="color: #e9e919;"></i> Règles du jeu</h2>
                 <ul class="rules-list">
                     <li>Choisissez la bonne définition pour chaque mot</li>
                     <li>Obtenez 10 points pour chaque bonne réponse</li>
@@ -94,6 +94,7 @@
                 <div class="input-container">
                     <input type="text" id="word-input" placeholder="Tapez le mot manquant ici" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                     <button id="submit-answer" class="submit-btn">Valider</button>
+                    <button id="next-phrase-btn" class="next-btn" disabled>Suivant</button>
                 </div>
                 <p id="word-meaning" class="word-meaning"></p>
                 
@@ -105,7 +106,6 @@
             
             <div class="feedback-container">
                 <div id="feedback-message" class="feedback-message"></div>
-                <button id="next-phrase-btn" class="next-btn" disabled>Suivant</button>
             </div>
         </div>
         
@@ -157,4 +157,3 @@
         </a>
     </div>
 </div>
-<script src="/js/games/phraseCompletion.js"></script>
