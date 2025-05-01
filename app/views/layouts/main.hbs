@@ -2,35 +2,45 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
         <title>{{title}}</title>
         <!-- Favicon links -->
         <link rel="icon" href="/images/logo.png" type="image/png">
         <link rel="apple-touch-icon" href="/images/logo.png">
         <meta name="msapplication-TileImage" content="/images/logo.png">
         <meta name="theme-color" content="#2575fc">
+        <!-- Bootstrap CSS -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+        <!-- Font Awesome -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <!-- Custom CSS -->
         <link rel="stylesheet" href="/css/common/main.css">
+        <link rel="stylesheet" href="/css/common/responsive.css">
+        <!-- Game responsive CSS (loads last to override game-specific styles) -->
+        <link rel="stylesheet" href="/css/games/responsive-games.css">
     </head>
 
     <body>
+        <div class="app">
             {{> header}}
-            <div class="content">
-                    {{{body}}}
-            </div>
+            <main class="content">
+                {{{body}}}
+            </main>
             {{> footer}}
-    </body>
+        </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/js/home.js"></script>
-    <script src="/js/vocabs.js"></script>
-    <script src="/js/aboutme.js"></script>
-    <script src="/js/games/flashMatch.js"></script>
-    <script src="/js/games/wordScramble.js"></script>
-    <script src="/js/games/vocabQuiz.js"></script>
-    <script src="/js/games/speedVocab.js"></script>ss
-    <script src="/js/games/wordSearch.js"></script>
-    <script src="/js/games/phraseCompletion.js"></script>
-    
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- App scripts -->
+        <script src="/js/home.js"></script>
+        <script src="/js/vocabs.js"></script>
+        <script src="/js/aboutme.js"></script>
+        <script src="/js/games/flashMatch.js"></script>
+        <script src="/js/games/wordScramble.js"></script>
+        <script src="/js/games/vocabQuiz.js"></script>
+        <script src="/js/games/speedVocab.js"></script>
+        <script src="/js/games/wordSearch.js"></script>
+        <script src="/js/games/phraseCompletion.js"></script>
+    </body>
 </html>

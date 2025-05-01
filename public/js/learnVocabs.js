@@ -27,6 +27,11 @@ document.addEventListener('DOMContentLoaded', function() {
       allWords: false
     };
     
+    // Streak update variables
+    let streakUpdateTimeout = null;
+    let streakUpdated = false;
+    const STREAK_UPDATE_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
+    
     // Données pour la répétition espacée
     const spacedRepetition = {
       enabled: false,
@@ -430,6 +435,11 @@ document.addEventListener('DOMContentLoaded', function() {
       const seconds = (elapsedTime % 60).toString().padStart(2, '0');
       
       sessionTimeEl.textContent = `${minutes}:${seconds}`;
+      
+      // Check if we've reached 5 minutes (300 seconds) and haven't updated streak yet
+      if (elapsedTime >= 300 && !streakUpdated) {
+          updateUserStreak();
+      }
     }
     
     // Sauvegarder les progrès dans le localStorage
@@ -480,6 +490,45 @@ document.addEventListener('DOMContentLoaded', function() {
       } catch (e) {
         console.error('Erreur lors du chargement des progrès', e);
       }
+    }
+    
+    // Function to update streak after 5 minutes
+    function setupStreakUpdate() {
+        // Clear any existing timeout
+        if (streakUpdateTimeout) {
+            clearTimeout(streakUpdateTimeout);
+        }
+        
+        // Set a new timeout for 5 minutes
+        streakUpdateTimeout = setTimeout(() => {
+            // Only update once per session
+            if (!streakUpdated) {
+                updateUserStreak();
+            }
+        }, STREAK_UPDATE_TIME);
+    }
+    
+    // Function to call the API to update streak
+    function updateUserStreak() {
+        fetch('/api/update-streak', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Streak update response:', data);
+            
+            if (data.updated) {
+                streakUpdated = true;
+                // Show achievement notification for updated streak
+                showAchievement(`🔥 Série de ${data.newStreak} jours! Continuez comme ça!`);
+            }
+        })
+        .catch(error => {
+            console.error('Error updating streak:', error);
+        });
     }
     
     // Gestion des événements
@@ -753,6 +802,15 @@ document.addEventListener('DOMContentLoaded', function() {
     updateCardDisplay();
     loadProgress(); // Essayer de charger les progrès sauvegardés
     setupCardListeners();
+    setupStreakUpdate(); // Start the streak update timer
+    
+    // Ajouter des écouteurs d'événements pour réinitialiser le minuteur de streak
+    // quand l'utilisateur interagit avec la page
+    document.querySelectorAll('.knowledge-btn, #next-card, #prev-card, #shuffle-cards').forEach(btn => {
+        btn.addEventListener('click', function() {
+            setupStreakUpdate();
+        });
+    });
     
     // Animation d'entrée initiale
     document.querySelectorAll('.stat-card, .flashcard-filters, .mode-selector, .flashcard-container, .progress-container, .flashcard-actions').forEach((element, index) => {
