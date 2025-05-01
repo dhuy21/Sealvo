@@ -145,7 +145,6 @@
 <style>
 .games-container {
     max-width: 1200px;
-    min-width: 1200px;
     margin: 0 auto;
     padding: 2rem;
 }
@@ -388,7 +387,7 @@
     .games-grid,
     .stats-grid,
     .info-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     }
     
     .games-footer {
@@ -399,6 +398,118 @@
     .games-footer .btn {
         width: 100%;
         justify-content: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .games-container {
+        padding: 1rem;
+        overflow-x: hidden;
+        width: 100%;
+    }
+    
+    .games-header h1 {
+        font-size: 2rem;
+    }
+    
+    .games-description {
+        font-size: 1rem;
+    }
+    
+    .games-stats {
+        padding: 1.5rem;
+    }
+    
+    .game-card .game-icon {
+        height: 100px;
+    }
+    
+    .game-card .game-icon i {
+        font-size: 2.5rem;
+    }
+    
+    .game-card .game-info {
+        padding: 1.2rem;
+    }
+    
+    .game-card .game-info h3 {
+        font-size: 1.3rem;
+    }
+    
+    .info-card {
+        padding: 1.5rem;
+    }
+    
+    .info-card i {
+        font-size: 2rem;
+    }
+}
+
+/* iPhone specific fixes */
+@media only screen and (max-width: 414px) {
+    .games-container {
+        padding: 0.75rem;
+    }
+
+    .games-header h1 {
+        font-size: 1.75rem;
+    }
+
+    .games-grid {
+        gap: 1rem;
+    }
+
+    .game-card {
+        margin-bottom: 0.5rem;
+    }
+
+    .games-stats, .games-info {
+        padding: 1.25rem;
+        margin-bottom: 2rem;
+    }
+
+    .info-grid {
+        gap: 1rem;
+    }
+
+    .info-card {
+        padding: 1rem;
+    }
+
+    .games-footer {
+        margin-top: 2rem;
+    }
+}
+
+/* Small iPhone screens (SE, 5, etc.) */
+@media only screen and (max-width: 375px) {
+    .games-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .game-card .game-icon {
+        height: 80px;
+    }
+
+    .game-card .game-icon i {
+        font-size: 2rem;
+    }
+
+    .stat-card {
+        padding: 1rem;
+    }
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+    .games-container, .games-grid, .game-card {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    .game-card .game-btn {
+        -webkit-appearance: none;
+        padding: 0.8rem 1.2rem;
     }
 }
 </style>
