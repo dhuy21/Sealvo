@@ -50,11 +50,12 @@ class WordController {
         
         res.render('addWord', {
             title: 'Ajouter un mot',
-            user: req.session.user
+            user: req.session.user,
+            multipleWords: req.query.multiple === 'true' // Pass flag for multiple words view
         });
     }
     
-    // Traiter la soumission du formulaire d'ajout de mot
+    // Traiter la soumission du formulaire d'ajout de mot(s)
     async addWordPost(req, res) {
         try {
             // Vérifier si l'utilisateur est connecté
@@ -62,45 +63,114 @@ class WordController {
                 return res.redirect('/login?error=Vous devez être connecté pour ajouter un mot');
             }
             
-            // Récupérer les données du formulaire
-            const { word, subject, type, meaning, pronunciation, synonyms, antonyms, example, grammar, level } = req.body;
+            // Déterminer si c'est un envoi de plusieurs mots
+            const isMultipleWords = req.body.isMultipleWords === 'true';
             
-            // Vérifier que les champs obligatoires sont présents
-            if (!word || !subject || !type || !meaning || !example || level === undefined) {
-                return res.render('addWord', {
-                    title: 'Ajouter un mot',
-                    user: req.session.user,
-                    error: 'Veuillez remplir tous les champs obligatoires',
-                    formData: req.body // Pour conserver les valeurs saisies
-                });
+            if (isMultipleWords) {
+                // Traitement de plusieurs mots
+                const { words, subjects, types, meanings, pronunciations, synonyms, antonyms, examples, grammars, levels } = req.body;
+                
+                // Vérifier que les tableaux sont bien définis et ont la même longueur
+                if (!words || !Array.isArray(words) || words.length === 0) {
+                    return res.render('addWord', {
+                        title: 'Ajouter des mots',
+                        user: req.session.user,
+                        multipleWords: true,
+                        error: 'Veuillez ajouter au moins un mot',
+                        formData: req.body
+                    });
+                }
+                
+                const wordCount = words.length;
+                let successCount = 0;
+                let errors = [];
+                
+                // Traiter chaque mot
+                for (let i = 0; i < wordCount; i++) {
+                    // Vérifier les champs obligatoires pour chaque mot
+                    if (!words[i] || !subjects[i] || !types[i] || !meanings[i] || !examples[i] || levels[i] === undefined) {
+                        errors.push(`Ligne ${i+1}: Veuillez remplir tous les champs obligatoires`);
+                        continue;
+                    }
+                    
+                    // Créer le mot dans la base de données
+                    const wordData = {
+                        word: words[i],
+                        subject: subjects[i],
+                        type: types[i],
+                        meaning: meanings[i],
+                        pronunciation: pronunciations[i] || '',
+                        synonyms: synonyms[i] || '',
+                        antonyms: antonyms[i] || '',
+                        example: examples[i],
+                        grammar: grammars[i] || '',
+                        level: levels[i]
+                    };
+                    
+                    try {
+                        await wordModel.create(wordData, req.session.user.id);
+                        successCount++;
+                    } catch (err) {
+                        errors.push(`Erreur lors de l'ajout du mot "${words[i]}": ${err.message}`);
+                    }
+                }
+                
+                // Rediriger avec les résultats
+                if (successCount > 0) {
+                    const message = `${successCount} mot(s) ajouté(s) avec succès${errors.length > 0 ? '. Certaines erreurs sont survenues.' : ''}`;
+                    return res.redirect(`/monVocabs?success=${encodeURIComponent(message)}`);
+                } else {
+                    return res.render('addWord', {
+                        title: 'Ajouter des mots',
+                        user: req.session.user,
+                        multipleWords: true,
+                        error: 'Aucun mot n\'a pu être ajouté. ' + errors.join('. '),
+                        formData: req.body
+                    });
+                }
+            } else {
+                // Traitement d'un seul mot (fonctionnalité existante)
+                // Récupérer les données du formulaire
+                const { word, subject, type, meaning, pronunciation, synonyms, antonyms, example, grammar, level } = req.body;
+                
+                // Vérifier que les champs obligatoires sont présents
+                if (!word || !subject || !type || !meaning || !example || level === undefined) {
+                    return res.render('addWord', {
+                        title: 'Ajouter un mot',
+                        user: req.session.user,
+                        error: 'Veuillez remplir tous les champs obligatoires',
+                        formData: req.body
+                    });
+                }
+                
+                // Créer le mot dans la base de données
+                const wordData = {
+                    word,
+                    subject,
+                    type,
+                    meaning,
+                    pronunciation: pronunciation || '',
+                    synonyms: synonyms || '',
+                    antonyms: antonyms || '',
+                    example,
+                    grammar: grammar || '',
+                    level
+                };
+                
+                await wordModel.create(wordData, req.session.user.id);
+                
+                // Rediriger vers la page de vocabulaire avec un message de succès
+                res.redirect('/monVocabs?success=Mot ajouté avec succès');
             }
-            
-            // Créer le mot dans la base de données
-            const wordData = {
-                word,
-                subject,
-                type,
-                meaning,
-                pronunciation: pronunciation || '', // Valeur par défaut si vide
-                synonyms: synonyms || '',
-                antonyms: antonyms || '',
-                example,
-                grammar: grammar || '',
-                level
-            };
-            
-            await wordModel.create(wordData, req.session.user.id);
-            
-            // Rediriger vers la page de vocabulaire avec un message de succès
-            res.redirect('/monVocabs?success=Mot ajouté avec succès');
             
         } catch (error) {
             console.error('Erreur lors de l\'ajout du mot:', error);
             res.render('addWord', {
                 title: 'Ajouter un mot',
                 user: req.session.user,
+                multipleWords: req.body.isMultipleWords === 'true',
                 error: 'Une erreur est survenue lors de l\'ajout du mot',
-                formData: req.body // Pour conserver les valeurs saisies
+                formData: req.body
             });
         }
     }

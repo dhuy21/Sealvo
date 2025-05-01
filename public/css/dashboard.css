@@ -9,6 +9,8 @@
       --tertiary-color: #7c5cf5;
       --quaternary-color: #53a9ff;
       --accent-color: #FFCC70;
+      --streak-color-primary: #f2960b;
+      --streak-color-secondary: #fb6f24;
       --bg-color: #fafafa;
       --card-bg: #ffffff;
       --text-primary: #334155;
@@ -323,7 +325,7 @@
     
     .progress-bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+      background: linear-gradient(90deg, var(--streak-color-secondary), var(--streak-color-primary), var(--accent-color));
       border-radius: 1rem;
       width: 0;
       transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);

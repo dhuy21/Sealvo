@@ -1,5 +1,8 @@
 const bcrypt = require('bcryptjs');
 const userModel = require('../models/users');
+const wordModel = require('../models/words');
+const learningModel = require('../models/learning');
+const { last } = require('pdf-lib');
 
 class UserController {
     // Afficher la page de connexion
@@ -37,11 +40,24 @@ class UserController {
                 return res.redirect('/login?error=Nom d\'utilisateur ou mot de passe incorrect');
             }
             
+            const totalWords = await wordModel.countUserWords(user.id);
+            const learnedWords = await learningModel.getNumWordsByLevel(user.id, 'v');
+            const newWords = await learningModel.getNumWordsByLevel(user.id, 'x');
+            const islearningWords = await learningModel.getNumWordsByLevel(user.id, '0') + await learningModel.getNumWordsByLevel(user.id, '1') + await learningModel.getNumWordsByLevel(user.id, '2');
+            console.log('islearningWords', islearningWords);
             // Créer une session utilisateur (sans stocker le mot de passe)
             req.session.user = {
                 id: user.id,
-                username: user.username,
-                email: user.email
+                username: user.username, 
+                streak: user.streak,
+                last_login: user.last_login, //convertir en date dd/mm/yyyy
+                created_at: user.created_at,
+                email: user.email,
+                totalWords,
+                learnedWords,
+                newWords,
+                islearningWords
+
             };
             
             // Rediriger vers le tableau de bord
@@ -107,14 +123,30 @@ class UserController {
     }
 
     // Déconnexion
-    logout(req, res) {
-        req.session.destroy((err) => {
-            if (err) {
-                console.error('Erreur lors de la déconnexion:', err);
+    async logout(req, res) {
+        try {
+            // Check if user session exists
+            if (!req.session.user) {
+                return res.redirect('/login');
             }
             
+            try {
+                // Update last login time
+                await userModel.updateLastLogin(req.session.user.id);
+            } catch (err) {
+                console.error('Erreur lors de la mise à jour de la dernière connexion:', err);
+                // Continue with logout even if update fails
+            }
+            
+            // Destroy the session
+            await req.session.destroy();
+            
+            // Redirect to homepage
             res.redirect('/');
-        });
+        } catch (error) {
+            console.error('Erreur lors de la déconnexion:', error);
+            res.redirect('/dashboard?error=Une erreur est survenue. Veuillez réessayer plus tard.');
+        }
     }
 }
 
