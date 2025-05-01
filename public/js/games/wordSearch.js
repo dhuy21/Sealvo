@@ -45,6 +45,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let attempts = 0;
     let selectedCells = [];
     let gameActive = false;
+    // Détection du type d'appareil mobile
+    let isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    let isSelecting = false;
     // Récupération du high score en sécurisant l'accès à gameContainer
     let highScore = gameContainer && gameContainer.dataset ? (gameContainer.dataset.highScore || 0) : 0;
     
@@ -239,147 +242,180 @@ document.addEventListener('DOMContentLoaded', () => {
                 cell.addEventListener('mouseover', handleMouseOver);
                 cell.addEventListener('mouseup', endSelection);
                 
+                // Ajouter les événements tactiles pour mobiles
+                if (isTouchDevice) {
+                    cell.addEventListener('touchstart', handleTouchStart, { passive: false });
+                    cell.addEventListener('touchmove', handleTouchMove, { passive: false });
+                    cell.addEventListener('touchend', handleTouchEnd, { passive: false });
+                }
+                
                 wordSearchGrid.appendChild(cell);
             }
         }
         
         // Ajouter un événement pour annuler la sélection si on sort de la grille
         document.addEventListener('mouseup', endSelection);
-    }
-    
-    // Afficher la liste des mots à trouver
-    function displayWordList() {
-        wordList.innerHTML = '';
         
-        for (const wordObj of words) {
-            const listItem = document.createElement('li');
-            listItem.classList.add('word-list-item');
-            listItem.dataset.id = wordObj.id;
-            listItem.dataset.word = wordObj.word.toUpperCase().replace(/[^A-Z]/g, '');
-            listItem.textContent = wordObj.word;
-            
-            wordList.appendChild(listItem);
+        // Pour les appareils tactiles
+        if (isTouchDevice) {
+            document.addEventListener('touchend', handleTouchEnd);
+        }
+
+        // Prévenir le zoom ou le scroll lors du toucher sur la grille
+        if (isTouchDevice) {
+            wordSearchGrid.addEventListener('touchmove', function(e) {
+                if (isSelecting) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
         }
     }
     
-    // Démarrer la sélection des lettres
+    // Gestion des événements tactiles
+    function handleTouchStart(event) {
+        event.preventDefault();
+        isSelecting = true;
+        
+        const touch = event.touches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        
+        if (element && element.classList.contains('grid-cell')) {
+            startSelection({
+                target: element,
+                preventDefault: () => {}
+            });
+        }
+    }
+    
+    function handleTouchMove(event) {
+        if (!isSelecting) return;
+        event.preventDefault();
+        
+        const touch = event.touches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        
+        if (element && element.classList.contains('grid-cell')) {
+            handleMouseOver({
+                target: element,
+                preventDefault: () => {}
+            });
+        }
+    }
+    
+    function handleTouchEnd(event) {
+        event.preventDefault();
+        isSelecting = false;
+        endSelection();
+    }
+    
+    // Commencer la sélection
     function startSelection(event) {
         if (!gameActive) return;
         
-        // Vider les cellules sélectionnées
+        // Effacer les sélections précédentes
         clearSelectedCells();
         
-        const cell = event.target;
-        const row = parseInt(cell.dataset.row);
-        const col = parseInt(cell.dataset.col);
+        // Obtenir la position de la cellule
+        const row = parseInt(event.target.dataset.row);
+        const col = parseInt(event.target.dataset.col);
         
         // Ajouter la cellule à la sélection
-        selectedCells.push({ row, col, element: cell });
-        cell.classList.add('selected');
+        selectedCells.push({ row, col, element: event.target });
+        event.target.classList.add('selected');
     }
     
-    // Gérer le survol des cellules pendant la sélection
+    // Gérer le survol des cellules
     function handleMouseOver(event) {
         if (!gameActive || selectedCells.length === 0) return;
         
-        const cell = event.target;
-        const row = parseInt(cell.dataset.row);
-        const col = parseInt(cell.dataset.col);
+        // Obtenir la position de la cellule
+        const row = parseInt(event.target.dataset.row);
+        const col = parseInt(event.target.dataset.col);
         
-        // Vérifier si on est dans la même ligne, colonne ou diagonale que la cellule initiale
-        const startCell = selectedCells[0];
-        const dx = Math.sign(row - startCell.row);
-        const dy = Math.sign(col - startCell.col);
+        // Vérifier si cette cellule est adjacente à la dernière sélectionnée
+        const lastCell = selectedCells[selectedCells.length - 1];
         
-        // Si on est dans la même direction, on peut sélectionner la cellule
-        if (
-            (dx === 0 && dy === 0) ||  // Même cellule
-            (dx === 0 && dy !== 0) ||  // Même ligne
-            (dy === 0 && dx !== 0) ||  // Même colonne
-            (Math.abs(dx) === Math.abs(dy))  // Diagonale
-        ) {
-            // Vérifier si la cellule est alignée avec les cellules déjà sélectionnées
-            const isAligned = selectedCells.length <= 1 || 
-                (Math.sign(row - selectedCells[1].row) === dx && 
-                 Math.sign(col - selectedCells[1].col) === dy);
-            
-            if (isAligned) {
-                // Effacer les cellules sélectionnées sauf la première
-                while (selectedCells.length > 1) {
-                    const lastCell = selectedCells.pop();
-                    lastCell.element.classList.remove('selected');
-                }
-                
-                // Sélectionner les cellules entre la première et la cellule courante
-                const currentRow = startCell.row;
-                const currentCol = startCell.col;
-                
-                const distance = Math.max(
-                    Math.abs(row - startCell.row),
-                    Math.abs(col - startCell.col)
-                );
-                
-                for (let i = 0; i <= distance; i++) {
-                    const r = startCell.row + dx * i;
-                    const c = startCell.col + dy * i;
-                    
-                    // Vérifier si la cellule est dans la grille
-                    if (r >= 0 && r < gridSize && c >= 0 && c < gridSize) {
-                        const currentCell = document.querySelector(`.grid-cell[data-row="${r}"][data-col="${c}"]`);
-                        
-                        // Éviter les doublons
-                        if (!selectedCells.some(cell => cell.row === r && cell.col === c)) {
-                            selectedCells.push({ row: r, col: c, element: currentCell });
-                            currentCell.classList.add('selected');
-                        }
-                    }
-                }
+        // Vérifier si la cellule est déjà sélectionnée
+        const isAlreadySelected = selectedCells.some(cell => cell.row === row && cell.col === col);
+        
+        if (isAlreadySelected) {
+            // Si on revient en arrière, supprimez toutes les cellules après celle-ci
+            const index = selectedCells.findIndex(cell => cell.row === row && cell.col === col);
+            if (index !== -1 && index < selectedCells.length - 1) {
+                const cellsToRemove = selectedCells.splice(index + 1);
+                cellsToRemove.forEach(cell => cell.element.classList.remove('selected'));
             }
+            return;
         }
+        
+        // Vérifier si les cellules sont alignées (horizontale, verticale ou diagonale)
+        const rowDiff = row - lastCell.row;
+        const colDiff = col - lastCell.col;
+        
+        // Vérifier si la direction est l'une des directions valides
+        const isValidDirection = directions.some(([dx, dy]) => 
+            (dx === Math.sign(rowDiff) && dy === Math.sign(colDiff)) && 
+            (Math.abs(rowDiff) === Math.abs(colDiff) || rowDiff === 0 || colDiff === 0)
+        );
+        
+        // Si la direction n'est pas valide, ne rien faire
+        if (!isValidDirection) return;
+        
+        // Vérifier si la cellule est ajdacente ou dans la bonne direction
+        if (selectedCells.length > 1) {
+            const firstCell = selectedCells[0];
+            const dirX = Math.sign(lastCell.row - firstCell.row);
+            const dirY = Math.sign(lastCell.col - firstCell.col);
+            
+            const newDirX = Math.sign(row - firstCell.row);
+            const newDirY = Math.sign(col - firstCell.col);
+            
+            // Si la direction change, ne rien faire
+            if (dirX !== 0 && newDirX !== dirX) return;
+            if (dirY !== 0 && newDirY !== dirY) return;
+            
+            // Vérifier que la nouvelle cellule est dans le prolongement
+            const isInLine = (dirX === 0 && newDirX === 0) || (dirY === 0 && newDirY === 0) || (Math.abs(row - firstCell.row) === Math.abs(col - firstCell.col));
+            if (!isInLine) return;
+        }
+        
+        // Ajouter la cellule à la sélection
+        selectedCells.push({ row, col, element: event.target });
+        event.target.classList.add('selected');
     }
     
-    // Terminer la sélection des lettres
+    // Terminer la sélection
     function endSelection() {
         if (!gameActive || selectedCells.length === 0) return;
         
-        // Récupérer le mot sélectionné
-        const selectedWord = selectedCells
-            .map(cell => grid[cell.row][cell.col])
-            .join('');
+        // Vérifier si le mot sélectionné est valide
+        const selectedWord = selectedCells.map(cell => grid[cell.row][cell.col]).join('');
         
-        // Vérifier si le mot est dans la liste
-        const foundWordListItem = Array.from(wordList.children).find(item => {
-            const word = item.dataset.word;
-            return (selectedWord === word || selectedWord.split('').reverse().join('') === word);
-        });
+        // Vérifier si le mot est dans la liste et n'a pas déjà été trouvé
+        const foundWordIndex = words.findIndex(word => 
+            word.word.toUpperCase().replace(/[^A-Z]/g, '') === selectedWord &&
+            !foundWords.includes(word.word)
+        );
         
-        if (foundWordListItem && !foundWordListItem.classList.contains('found')) {
-            // Marquer le mot comme trouvé
-            const wordId = foundWordListItem.dataset.id;
-            const wordObj = words.find(w => w.id.toString() === wordId);
+        if (foundWordIndex !== -1) {
+            // Mot trouvé
+            const word = words[foundWordIndex].word;
+            foundWords.push(word);
             
-            foundWordListItem.classList.add('found');
-            foundWords.push(wordId);
+            // Mettre à jour l'UI
+            const wordElement = document.querySelector(`[data-word="${word}"]`);
+            if (wordElement) {
+                wordElement.classList.add('found');
+            }
             
-            // Marquer les cellules comme trouvées
+            // Garder les cellules sélectionnées
             selectedCells.forEach(cell => {
-                cell.element.classList.remove('selected');
                 cell.element.classList.add('found');
+                cell.element.classList.remove('selected');
             });
             
-            // Mettre à jour le score
-            const wordLength = selectedWord.length;
-            const timeBonus = Math.max(0, Math.floor((timer / 10)));
-            const pointsEarned = wordLength * 10 + timeBonus;
-            score += pointsEarned;
-            
-            // Animation pour le mot trouvé
-            foundWordListItem.classList.add('word-found-animation');
-            setTimeout(() => {
-                foundWordListItem.classList.remove('word-found-animation');
-            }, 500);
-            
-            // Mettre à jour l'affichage
+            // Mettre à jour le score et les compteurs
+            score += selectedWord.length * 10;
             scoreDisplay.textContent = score;
             wordsFoundDisplay.textContent = foundWords.length;
             
@@ -388,15 +424,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 endGame();
             }
         } else {
-            // Réinitialiser la sélection
+            // Mot non valide, réinitialiser la sélection
             clearSelectedCells();
             
-            // Incrémenter le nombre de tentatives
+            // Compter une tentative
             attempts++;
         }
+        
+        // Réinitialiser la sélection pour le prochain mot
+        selectedCells = [];
+        isSelecting = false;
     }
     
-    // Effacer la sélection de cellules
+    // Effacer les cellules sélectionnées
     function clearSelectedCells() {
         selectedCells.forEach(cell => {
             cell.element.classList.remove('selected');
@@ -404,63 +444,64 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedCells = [];
     }
     
-    // Afficher un indice (mettre en surbrillance temporairement la première lettre d'un mot non trouvé)
+    // Afficher un indice
     function showHint() {
-        if (!gameActive) return;
+        if (!gameActive || foundWords.length >= words.length) return;
         
         // Trouver un mot qui n'a pas encore été trouvé
-        const unFoundWords = words.filter(w => !foundWords.includes(w.id.toString()));
+        const remainingWords = words.filter(word => !foundWords.includes(word.word));
         
-        if (unFoundWords.length === 0) return;
+        if (remainingWords.length === 0) return;
         
-        // Choisir un mot aléatoire
-        const randomWord = unFoundWords[Math.floor(Math.random() * unFoundWords.length)];
-        const wordToFind = randomWord.word.toUpperCase().replace(/[^A-Z]/g, '');
+        // Choisir un mot aléatoire parmi les mots restants
+        const randomWord = remainingWords[Math.floor(Math.random() * remainingWords.length)];
+        const word = randomWord.word.toUpperCase().replace(/[^A-Z]/g, '');
         
-        // Trouver la position de ce mot dans la grille
-        let hintCell = null;
+        // Trouver la position du mot dans la grille
+        let hintPosition = null;
         
-        // Parcourir la grille pour trouver la première lettre du mot
-        outerLoop:
+        // Parcourir la grille pour trouver le mot
         for (let i = 0; i < gridSize; i++) {
             for (let j = 0; j < gridSize; j++) {
-                if (grid[i][j] === wordToFind[0]) {
-                    // Vérifier si le mot est à cette position dans toutes les directions
-                    for (const [dx, dy] of directions) {
-                        if (canReadWord(wordToFind, i, j, dx, dy)) {
-                            hintCell = document.querySelector(`.grid-cell[data-row="${i}"][data-col="${j}"]`);
-                            break outerLoop;
-                        }
+                for (const [dx, dy] of directions) {
+                    if (canReadWord(word, i, j, dx, dy)) {
+                        hintPosition = { row: i, col: j, dx, dy };
+                        break;
                     }
                 }
+                if (hintPosition) break;
             }
+            if (hintPosition) break;
         }
         
-        // Mettre en surbrillance temporairement la cellule
-        if (hintCell) {
-            hintCell.style.backgroundColor = '#FFD700';
-            setTimeout(() => {
-                hintCell.style.backgroundColor = '';
-            }, 1000);
+        if (hintPosition) {
+            // Afficher la première lettre comme indice
+            const cell = document.querySelector(`.grid-cell[data-row="${hintPosition.row}"][data-col="${hintPosition.col}"]`);
             
-            // Réduire légèrement le score pour utilisation d'un indice
-            score = Math.max(0, score - 5);
-            scoreDisplay.textContent = score;
+            if (cell) {
+                cell.classList.add('hint');
+                setTimeout(() => {
+                    cell.classList.remove('hint');
+                }, 1500);
+                
+                // Réduire le score pour avoir utilisé un indice
+                score = Math.max(0, score - 20);
+                scoreDisplay.textContent = score;
+            }
         }
     }
     
-    // Vérifier si un mot peut être lu à partir d'une position donnée
+    // Vérifier si un mot peut être lu à partir d'une position
     function canReadWord(word, row, col, dx, dy) {
-        if (row + dx * (word.length - 1) < 0 || row + dx * (word.length - 1) >= gridSize ||
-            col + dy * (word.length - 1) < 0 || col + dy * (word.length - 1) >= gridSize) {
+        const wordLength = word.length;
+        
+        if (row + dx * (wordLength - 1) < 0 || row + dx * (wordLength - 1) >= gridSize ||
+            col + dy * (wordLength - 1) < 0 || col + dy * (wordLength - 1) >= gridSize) {
             return false;
         }
         
-        for (let i = 0; i < word.length; i++) {
-            const r = row + dx * i;
-            const c = col + dy * i;
-            
-            if (grid[r][c] !== word[i]) {
+        for (let i = 0; i < wordLength; i++) {
+            if (grid[row + dx * i][col + dy * i] !== word[i]) {
                 return false;
             }
         }
@@ -468,92 +509,116 @@ document.addEventListener('DOMContentLoaded', () => {
         return true;
     }
     
-    // Terminer le jeu
+    // Afficher la liste des mots à trouver
+    function displayWordList() {
+        wordList.innerHTML = '';
+        
+        words.forEach(wordObj => {
+            const wordItem = document.createElement('li');
+            wordItem.textContent = wordObj.word;
+            wordItem.dataset.word = wordObj.word;
+            wordList.appendChild(wordItem);
+        });
+    }
+    
+    // Fin du jeu
     function endGame() {
-        gameActive = false;
         clearInterval(gameTimer);
+        gameActive = false;
         
-        // Afficher l'écran de fin de jeu
+        // Calculer le temps écoulé
+        const endTime = Date.now();
+        const gameTime = Math.floor((endTime - startTime) / 1000);
+        
+        // Calculer le score final
+        const finalScore = score + (timer > 0 ? timer : 0) * (foundWords.length / words.length);
+        
+        // Ajuster le score si tous les mots ont été trouvés
+        const bonusScore = foundWords.length === words.length ? 100 : 0;
+        const totalScore = Math.floor(finalScore + bonusScore);
+        
+        // Sauvegarder le score
+        saveScore(totalScore);
+        
+        // Afficher l'écran de fin
         activeGameScreen.classList.remove('active');
-        postGameScreen.classList.add('active');
-        
-        // Calculer les statistiques de fin de jeu
-        const totalTime = (Date.now() - startTime) / 1000;
-        const avgTime = foundWords.length > 0 ? (totalTime / foundWords.length).toFixed(1) : 0;
-        const accuracy = attempts > 0 ? Math.round((foundWords.length / attempts) * 100) : 0;
-        
-        // Mettre à jour l'affichage des statistiques
-        finalScoreDisplay.textContent = score;
-        finalWordsFoundDisplay.textContent = foundWords.length;
-        finalTotalWordsDisplay.textContent = words.length;
-        accuracyDisplay.textContent = `${accuracy}%`;
-        avgTimeDisplay.textContent = `${avgTime}s`;
-        
-        // Vérifier si c'est un nouveau record
-        if (score > highScore) {
-            highScoreMessage.textContent = `Nouveau record : ${score} points !`;
-            highScoreMessage.classList.add('new-record');
+        if (postGameScreen) {
+            postGameScreen.classList.add('active');
             
-            // Enregistrer le score côté serveur
-            saveScore(score);
-        } else if (highScore > 0) {
-            highScoreMessage.textContent = `Votre record est de ${highScore} points.`;
-            highScoreMessage.classList.remove('new-record');
+            // Mettre à jour l'affichage des statistiques
+            if (finalScoreDisplay) finalScoreDisplay.textContent = totalScore;
+            if (finalWordsFoundDisplay) finalWordsFoundDisplay.textContent = foundWords.length;
+            if (finalTotalWordsDisplay) finalTotalWordsDisplay.textContent = words.length;
+            
+            // Calculer la précision (mots trouvés / tentatives)
+            const accuracy = attempts > 0 ? Math.round((foundWords.length / attempts) * 100) : 0;
+            if (accuracyDisplay) accuracyDisplay.textContent = `${accuracy}%`;
+            
+            // Calculer le temps moyen par mot
+            const avgTime = foundWords.length > 0 ? Math.round(gameTime / foundWords.length) : 0;
+            if (avgTimeDisplay) avgTimeDisplay.textContent = `${avgTime}s`;
+            
+            // Afficher un message si c'est un nouveau record
+            if (totalScore > highScore && highScoreMessage) {
+                highScoreMessage.style.display = 'block';
+            }
         } else {
-            highScoreMessage.textContent = '';
+            alert(`Jeu terminé ! Votre score est de ${totalScore}`);
+            resetGame();
         }
     }
     
-    // Réinitialiser le jeu pour jouer à nouveau
+    // Réinitialiser le jeu pour rejouer
     function resetGame() {
-        clearInterval(gameTimer);
-        
         // Réinitialiser les variables
-        grid = [];
-        words = [];
+        selectedCells = [];
         foundWords = [];
         score = 0;
         timer = 600;
-        selectedCells = [];
-        gameActive = false;
         
-        // Revenir à l'écran de pré-jeu
+        clearInterval(gameTimer);
+        
+        // Réinitialiser l'interface
+        if (postGameScreen) postGameScreen.classList.remove('active');
         preGameScreen.classList.add('active');
         activeGameScreen.classList.remove('active');
-        postGameScreen.classList.remove('active');
+        
+        // Vider la grille
+        wordSearchGrid.innerHTML = '';
     }
     
-    // Enregistrer le score
+    // Sauvegarder le score sur le serveur
     async function saveScore(score) {
         try {
-            const response = await fetch('/games/scores', {
+            const response = await fetch('/games/wordSearch/saveScore', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    game_type: 'word_search',
-                    score: score,
-                    details: {
-                        wordsFound: foundWords.length,
-                        totalWords: words.length,
-                        difficulty: selectedDifficulty
-                    }
-                }),
+                body: JSON.stringify({ score })
             });
             
+            const data = await response.json();
+            
             if (!response.ok) {
-                throw new Error('Erreur lors de l\'enregistrement du score');
+                throw new Error(data.error || 'Erreur lors de la sauvegarde du score');
             }
             
-            // Mettre à jour le highScore local
-            highScore = score;
+            // Mettre à jour le high score local
+            if (data.isHighScore) {
+                highScore = score;
+            }
             
         } catch (error) {
-            console.error('Erreur lors de l\'enregistrement du score:', error);
+            console.error('Erreur lors de la sauvegarde du score:', error);
         }
     }
     
     // Initialiser le jeu
     init();
+    
+    // Événements pour rejouer
+    if (playAgainBtn) {
+        playAgainBtn.addEventListener('click', resetGame);
+    }
 });

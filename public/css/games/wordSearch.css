@@ -829,3 +829,74 @@
         padding: 15px;
     }
 }
+
+/* iPhone-specific adjustments for Word Search game */
+@media only screen and (max-width: 480px) {
+    .game-board {
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    #word-search-grid {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+    
+    .word-list-container {
+        height: auto;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    .game-info-panel {
+        flex-direction: column;
+    }
+    
+    .hint-btn {
+        margin-bottom: 10px;
+    }
+    
+    .active-game-screen {
+        padding: 10px !important;
+    }
+    
+    /* Fix touch interaction for word selection */
+    #word-search-grid td {
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+}
+
+@media only screen and (max-width: 375px) {
+    .game-status {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .status-item {
+        margin: 5px;
+        font-size: 14px;
+    }
+    
+    .hint-btn {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
+
+/* Fix for iOS Safari */
+@supports (-webkit-touch-callout: none) {
+    .game-board, 
+    .word-search-grid,
+    .word-list-container {
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Prevent rubber-banding/overscroll effect */
+    .game-container {
+        position: relative;
+        overflow: hidden;
+    }
+}
