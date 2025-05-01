@@ -205,6 +205,7 @@
 .active-game-screen,
 .post-game-screen {
     display: none;
+    text-align: center;
     opacity: 0;
     transition: opacity 0.5s ease, transform 0.5s ease;
     transform: translateY(10px);
@@ -239,20 +240,19 @@
     margin-bottom: 1rem;
     color: #4b5563;
     line-height: 1.5;
+    text-align: center;
     position: relative;
-    padding-left: 0.5rem;
+    padding-left: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-
 .rules-list li::before {
     content: "•";
     color: #6a11cb;
     font-weight: bold;
-    font-size: 1.2rem;
-    display: inline-block; 
-    width: 1.2rem;
-    margin-left: -1.2rem;
-    position: absolute;
-    left: 0;
+    font-size: 2rem;
+    margin-right: 0.5rem;
 }
 
 .start-btn {
