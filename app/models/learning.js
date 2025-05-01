@@ -21,6 +21,21 @@ class Learning {
         }
     }
 
+    async getNumWordsByLevel(user_id, level) {
+        try {
+            const [rows] = await global.dbConnection.execute(
+                `SELECT COUNT(*) AS num_words
+                 FROM learning
+                 WHERE user_id = ? AND level = ?`,
+                [user_id, level]
+            );
+            return rows[0].num_words;
+        } catch (error) {
+            console.error("Erreur lors de la récupération du nombre de mots par niveau :", error);
+            throw error;
+        }
+    }
+
     async findWordsTodayToLearn(user_id) {
         try {
             const [rows] = await global.dbConnection.execute(
@@ -29,10 +44,10 @@ class Learning {
                  WHERE user_id = ?
                    AND (
                        (level = 'x' AND DATE_ADD(DATE(date_memorized), INTERVAL 0 DAY) <= CURDATE()) OR
-                       (level = '0' AND DATE_ADD(DATE(date_memorized), INTERVAL 1 DAY) <= CURDATE()) OR
-                       (level = '1' AND DATE_ADD(DATE(date_memorized), INTERVAL 3 DAY) <= CURDATE()) OR
-                       (level = '2' AND DATE_ADD(DATE(date_memorized), INTERVAL 0 DAY) <= CURDATE()) OR
-                       (level = 'v' AND DATE_ADD(DATE(date_memorized), INTERVAL 14 DAY) <= CURDATE())
+                       (level = '0' AND DATE_ADD(DATE(date_memorized), INTERVAL 2 DAY) <= CURDATE()) OR
+                       (level = '1' AND DATE_ADD(DATE(date_memorized), INTERVAL 4 DAY) <= CURDATE()) OR
+                       (level = '2' AND DATE_ADD(DATE(date_memorized), INTERVAL 10 DAY) <= CURDATE()) OR
+                       (level = 'v' AND DATE_ADD(DATE(date_memorized), INTERVAL 20 DAY) <= CURDATE())
                    );`,
                 [user_id]
             );

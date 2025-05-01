@@ -25,19 +25,19 @@
           <h2><i class="fas fa-chart-pie" style="color: #C850C0; margin-right: 0.5rem;"></i>Mes Statistiques</h2>
           <div class="stats">
             <div class="stat-item">
-              <div class="stat-number">{{stats.totalWords}}</div>
+              <div class="stat-number">{{user.totalWords}}</div>
               <div class="stat-label">Mots Totaux</div>
             </div>
             <div class="stat-item">
-              <div class="stat-number">{{stats.masteredWords}}</div>
+              <div class="stat-number">{{user.learnedWords}}</div>
               <div class="stat-label">Mots Maîtrisés</div>
             </div>
             <div class="stat-item">
-              <div class="stat-number">{{stats.learningWords}}</div>
+              <div class="stat-number">{{user.islearningWords}}</div>
               <div class="stat-label">En Apprentissage</div>
             </div>
             <div class="stat-item">
-              <div class="stat-number">{{stats.newWords}}</div>
+              <div class="stat-number">{{user.newWords}}</div>
               <div class="stat-label">Nouveaux Mots</div>
             </div>
           </div>
@@ -48,11 +48,11 @@
               <div class="progress-container fade-in">
                 <h3><i class="fas fa-fire" style="color: #F59E0B; margin-right: 0.5rem;"></i>Séries d'Apprentissage</h3>
                 <div class="progress-bar-container">
-                  <div class="progress-bar-fill" data-width="{{stats.progressPercentage}}"></div>
+                  <div class="progress-bar-fill" data-width="{{user.streak}}"></div>
                 </div>
                 <div class="progress-bar-labels">
                   <span><i class="fas fa-tachometer-alt" style="color: #4158D0; margin-right: 0.25rem;"></i>Progression</span>
-                  <span id="progress-percentage"><i class="fas fa-trophy" style="color: #FFCC70; margin-right: 0.25rem;"></i>{{stats.progressPercentage}}%</span>
+                  <span id="progress-percentage"><i class="fas fa-trophy" style="color: #FFCC70; margin-right: 0.25rem;"></i>{{user.streak}}</span>
                 </div>
               </div>
             </div>
@@ -76,11 +76,11 @@
             </div>
             <div class="info-row">
               <div class="info-label"><i class="fas fa-calendar-alt" style="color: #10B981; width: 20px; margin-right: 8px;"></i>Membre depuis: </div>
-              <div class="info-value"> {{user.joinDate}}</div>
+              <div class="info-value"> {{user.created_at}}</div>
             </div>
             <div class="info-row">
               <div class="info-label"><i class="fas fa-clock" style="color: #F59E0B; width: 20px; margin-right: 8px;"></i>Dernière connexion: </div>
-              <div class="info-value"> {{user.lastLogin}}</div>
+              <div class="info-value"> {{user.last_login}}</div>
             </div>
           </div>
           <div class="text-center" style="margin-top: 1.5rem;">

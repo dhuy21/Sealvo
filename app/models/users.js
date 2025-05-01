@@ -110,6 +110,50 @@ class User {
             throw error;
         }
     }
+
+    async updateLastLogin(id) {
+        try {
+            const [result] = await global.dbConnection.execute(
+                'UPDATE users SET last_login = NOW() WHERE id = ?', 
+                [id]
+            );
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour de la date de dernière connexion :', error);
+            throw error;
+        }
+    }
+
+    async updateStreak(id, streak) {
+        try {
+            const [result] = await global.dbConnection.execute(
+                'UPDATE users SET streak = ? WHERE id = ?', 
+                [streak, id]
+            );
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour de la série :', error);
+            throw error;
+        }
+    }
+    async getStreakById(id) {
+        try {
+            const [rows] = await global.dbConnection.execute('SELECT streak FROM users WHERE id = ?', [id]);
+            return rows[0] || null;
+        } catch (error) {
+            console.error('Erreur lors de la récupération de la série :', error);
+            throw error;
+        }
+    }
+    async getLastLogin(id) {
+        try {
+            const [rows] = await global.dbConnection.execute('SELECT last_login FROM users WHERE id = ?', [id]);
+            return rows[0] || null;
+        } catch (error) {
+            console.error('Erreur lors de la récupération de la date de dernière connexion :', error);
+            throw error;
+        }
+    }
     async delete(id) {
         try {
             const [result] = await global.dbConnection.execute('DELETE FROM users WHERE id = ?', [id]);
