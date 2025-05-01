@@ -1,8 +1,8 @@
 module.exports = {
     // Database Configuration
-    DB_HOST: 'hopper.proxy.rlwy.net',
+    DB_HOST: 'localhost',
     DB_USER: 'root',
-    DB_PASSWORD: 'TTuanfuExeJILPWmVdseSgGfnjkWixyW',
+    DB_PASSWORD: '123456789',
     DB_DATABASE: 'web_db',
     DB_PORT: 15400,
 
