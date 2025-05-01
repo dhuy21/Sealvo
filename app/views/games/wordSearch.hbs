@@ -7,6 +7,17 @@
 
     <!-- Écran de pré-jeu -->
     <div class="game-screen" id="game-screen">
+        <div class="game-stats">
+            <div class="stat-box">
+                <span class="stat-label">Votre meilleur score</span>
+                <span class="stat-value">{{#if highScore}}{{highScore.score}}{{else}}0{{/if}}</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Mots disponibles</span>
+                <span class="stat-value">{{wordCount}}</span>
+            </div>
+        </div>
+        
         <div class="screen pre-game-screen active">
             {{#if errorMessage}}
                 <div class="error-message">
@@ -14,19 +25,8 @@
                     <a href="/monVocabs/add" class="btn add-words-btn">Ajouter des mots</a>
                 </div>
             {{else}}
-            <div class="game-stats">
-                <div class="stat-box">
-                    <span class="stat-label">Votre meilleur score</span>
-                    <span class="stat-value">{{#if highScore}}{{highScore.score}}{{else}}0{{/if}}</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">Mots disponibles</span>
-                    <span class="stat-value">{{wordCount}}</span>
-                </div>
-            </div>
             <div class="game-instructions">
-                    <h3>Règles du jeu</h3>
-                    <p>Trouvez tous les mots de vocabulaire cachés dans la grille. Les mots peuvent être placés horizontalement, verticalement ou en diagonale, dans n'importe quelle direction.</p>
+                    <h3><i class="fas fa-bolt" style="color: #e9e919;"></i> Règles du jeu</h3>
                     <ul class="rules-list">
                         <li>Cliquez et faites glisser pour sélectionner les lettres qui forment un mot.</li>
                         <li>Lorsque vous trouvez un mot, il sera marqué dans la liste de droite.</li>

@@ -178,9 +178,64 @@ header {
   }
   
   a:hover {
-    color: #333;
-    text-decoration: none;
+    color: hsl(0, 100%, 99%);
+    text-decoration: none !important;
   }
+
+  .nav-link {
+    color: #2575fc;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s ease;
+  }
+
+  .nav-link i {
+    text-decoration: none;
+    font-size: 30px;
+    font-weight: 600;
+    transition: color 0.3s ease;
+  }
+
+  .nav-link:active {
+    color: hsl(0, 100%, 99%);
+    text-decoration: none !important;
+    transition: color 0.8s ease;
+  }
+
+  .sign-in {
+    color: #2575fc;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s ease;
+  }
+
+  .sign-in:hover {
+    color: hsl(0, 100%, 99%);
+    text-decoration: none !important;
+  }
+
+  .sign-in:active {
+    color: hsl(0, 100%, 99%);
+    text-decoration: none !important;
+  }
+
+  .sign-out {
+    color: #2575fc;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s ease;
+  }
+
+  .sign-out:hover {
+    color: hsl(0, 98%, 49%);
+    text-decoration: none !important;
+  }
+  
+  .sign-out:active {
+    color: hsl(0, 100%, 99%);
+    text-decoration: none !important;
+  }
+
 
   /* Button styles */
   .btn-outline-success {

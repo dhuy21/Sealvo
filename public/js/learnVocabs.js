@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const hintText = document.getElementById('hint-text');
     
     const levelCheckboxes = [
+      document.getElementById('levelx'),
       document.getElementById('level0'),
       document.getElementById('level1'),
       document.getElementById('level2')
@@ -384,14 +385,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
       
-      // Si le mode répétition espacée est activé
-      const mode = document.querySelector('input[name="mode"]:checked').value;
-      if (mode === 'spaced-repetition') {
-        setupSpacedRepetition(selectedLevels);
-      } else {
-        // Mode normal
-        currentWords = allWords.filter(word => selectedLevels.includes(word.level));
-      }
+      // Mode normal
+      currentWords = allWords.filter(word => selectedLevels.includes(word.level));
+      
       
       // Réinitialiser l'index si nécessaire
       if (currentIndex >= currentWords.length) {
@@ -405,50 +401,6 @@ document.addEventListener('DOMContentLoaded', function() {
       updateCardDisplay();
     }
     
-    // Configurer le mode de répétition espacée
-    function setupSpacedRepetition(selectedLevels) {
-      spacedRepetition.enabled = true;
-      
-      // Filtrer les mots par niveaux sélectionnés
-      const filteredWords = allWords.filter(word => selectedLevels.includes(word.level));
-      
-      // Si c'est la première fois, initialiser les temps de révision
-      if (Object.keys(spacedRepetition.nextReviewTimes).length === 0) {
-        filteredWords.forEach(word => {
-          spacedRepetition.nextReviewTimes[word.id] = Date.now();
-        });
-      }
-      
-      // Trier les mots par temps de révision (les plus urgents d'abord)
-      const sortedWords = [...filteredWords].sort((a, b) => {
-        const timeA = spacedRepetition.nextReviewTimes[a.id] || 0;
-        const timeB = spacedRepetition.nextReviewTimes[b.id] || 0;
-        return timeA - timeB;
-      });
-      
-      currentWords = sortedWords;
-    }
-    
-    // Mettre à jour le temps de révision pour un mot dans le système de répétition espacée
-    function updateSpacedRepetitionTime(wordId, knowledgeLevel) {
-      const now = Date.now();
-      let delay = 0;
-      
-      // Ajuster le délai en fonction du niveau de connaissance
-      switch (knowledgeLevel) {
-        case 0: // Ne sait pas
-          delay = 1 * 60 * 1000; // 1 minute
-          break;
-        case 1: // Incertain
-          delay = 10 * 60 * 1000; // 10 minutes
-          break;
-        case 2: // Sait
-          delay = 24 * 60 * 60 * 1000; // 1 jour
-          break;
-      }
-      
-      spacedRepetition.nextReviewTimes[wordId] = now + delay;
-    }
     
     // Mélanger les mots
     function shuffleWords() {
