@@ -64,8 +64,6 @@ app.engine('hbs', engine({
 app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'app/views'));
 
-Reminder.scheduleReminder();
-
 app.listen(port, () =>
     console.log(`App listening at http://localhost:${port}`),
 );
