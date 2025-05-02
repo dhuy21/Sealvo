@@ -13,7 +13,7 @@ async function connect() {
       database: process.env.DB_DATABASE || config.DB_DATABASE,
       port: process.env.DB_PORT || config.DB_PORT,
       ssl: {
-        // Azure MySQL requires SSL
+        // Azure MySQL requires SSL with mode=require
         rejectUnauthorized: true
       }
     });

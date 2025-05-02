@@ -4,11 +4,9 @@ const newUserLogout = require('./user/logout');
 const siteRouter = require('./site');
 const newVocabsRouter = require('./vocab/monVocabs');
 const gameRouter = require('./game/game');
-
+const apiRouter = require('./api');
 // Import controllers
-const SiteController = require('../controllers/SiteController');
-const UserController = require('../controllers/UserController');
-const WordController = require('../controllers/WordController');
+
 const LearningController = require('../controllers/LearningController');
 
 // Authentication middleware
@@ -26,6 +24,7 @@ function route(app) {
     app.use('/monVocabs', newVocabsRouter);
     // Removing duplicate route for feedback, it's already included in siteRouter
     app.use('/games', gameRouter);
+    app.use('/api', apiRouter);
     
     // Streak update route
     app.post('/api/update-streak', ensureAuthenticated, async (req, res) => {
