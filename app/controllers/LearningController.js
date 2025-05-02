@@ -87,7 +87,7 @@ class LearningController {
                 hasMoreWords: totalWords > 5,
                 words: words,
                 streak,
-                baseUrl: process.env.BASE_URL || 'http://localhost:8080'
+                baseUrl: process.env.BASE_URL || 'https://learnvcab.azurewebsites.net/'
             };
             
             console.log('Génération du contenu HTML de l\'email...');

@@ -10,7 +10,6 @@ const passport = require('passport');
 const app = express();
 const port = process.env.PORT || config.PORT;
 const crypto = require('crypto');
-const Reminder = require('./app/services/reminder');
 
 
 app.use(express.urlencoded({ extended: true }));
