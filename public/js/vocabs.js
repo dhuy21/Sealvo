@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize search functionality
+    initSearch();
 
     // Add pulsing effect to the learn button
     
@@ -547,4 +549,343 @@ function showNotification(message, type) {
             notification.remove();
         }, 400);
     }, 3000);
+}
+
+// Client-side search functionality
+function initSearch() {
+    const searchInput = document.getElementById('search-input');
+    const searchBtn = document.getElementById('search-btn');
+    const clearSearchBtn = document.getElementById('clear-search-btn');
+    const searchResultsInfo = document.getElementById('search-results-info');
+    const searchTermDisplay = document.getElementById('search-term-display');
+    const searchCountDisplay = document.getElementById('search-count');
+    
+    if (!searchInput || !searchBtn || !clearSearchBtn) return;
+
+    // Function to perform the search
+    function performSearch() {
+        const searchTerm = searchInput.value.trim().toLowerCase();
+        
+        if (searchTerm === '') {
+            // If search is empty, show all words
+            clearSearch();
+            return;
+        }
+        
+        // Add searching effect
+        document.querySelector('.input-group').classList.add('searching');
+        setTimeout(() => {
+            document.querySelector('.input-group').classList.remove('searching');
+        }, 600);
+        
+        // Show the clear button and search info
+        clearSearchBtn.style.display = 'flex';
+        clearSearchBtn.style.opacity = '0';
+        clearSearchBtn.style.transform = 'translateY(-50%) scale(0.8)';
+        setTimeout(() => {
+            clearSearchBtn.style.opacity = '1';
+            clearSearchBtn.style.transform = 'translateY(-50%) scale(1)';
+        }, 100);
+        
+        // Show and animate search results info
+        searchResultsInfo.style.display = 'block';
+        searchResultsInfo.style.opacity = '0';
+        searchResultsInfo.style.transform = 'translateY(20px)';
+        searchTermDisplay.textContent = searchTerm;
+        setTimeout(() => {
+            searchResultsInfo.style.opacity = '1';
+            searchResultsInfo.style.transform = 'translateY(0)';
+        }, 150);
+        
+        // Get all level containers
+        const levelContainers = document.querySelectorAll('.level-container');
+        let totalVisibleRows = 0;
+        
+        levelContainers.forEach(container => {
+            const rows = container.querySelectorAll('tbody tr');
+            let visibleRowsInLevel = 0;
+            
+            rows.forEach((row, index) => {
+                // Get text from all cells (except actions column)
+                const cells = row.querySelectorAll('td:not(:last-child)');
+                let rowText = '';
+                cells.forEach(cell => {
+                    rowText += cell.textContent.toLowerCase() + ' ';
+                });
+                
+                // Check if the search term is in any cell text
+                if (rowText.includes(searchTerm)) {
+                    // Apply staggered animation for visible rows
+                    if (row.style.display === 'none') {
+                        row.style.opacity = '0';
+                        row.style.transform = 'translateY(20px) scale(0.97)';
+                        row.style.transition = 'all 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
+                        row.style.display = 'table-row';
+                        
+                        // Staggered animation delay based on row index
+                        setTimeout(() => {
+                            row.style.opacity = '1';
+                            row.style.transform = 'translateY(0) scale(1)';
+                        }, 200 + (index * 30)); // Staggered delay
+                    }
+                    
+                    visibleRowsInLevel++;
+                    totalVisibleRows++;
+                    
+                    // Highlight matching content
+                    highlightMatches(row, searchTerm);
+                } else {
+                    // Animate hiding rows
+                    if (row.style.display !== 'none') {
+                        row.style.opacity = '1';
+                        row.style.transform = 'translateY(0) scale(1)';
+                        
+                        // Animate out
+                        row.style.opacity = '0';
+                        row.style.transform = 'translateY(20px) scale(0.95)';
+                        
+                        // Hide after animation completes
+                        setTimeout(() => {
+                            row.style.display = 'none';
+                        }, 300);
+                    }
+                }
+            });
+            
+            // Show/hide level container based on whether it has any visible rows
+            if (visibleRowsInLevel > 0) {
+                // If previously hidden, animate in
+                if (container.style.display === 'none') {
+                    container.style.opacity = '0';
+                    container.style.transform = 'translateY(30px) scale(0.98)';
+                    container.style.display = 'block';
+                    
+                    // Trigger animation
+                    setTimeout(() => {
+                        container.style.opacity = '1';
+                        container.style.transform = 'translateY(0) scale(1)';
+                        container.style.transition = 'all 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+                    }, 100);
+                }
+                
+                // Update the level badge with filtered count
+                const badge = container.querySelector('.level-badge');
+                if (badge) {
+                    // Animate the badge update
+                    badge.style.transform = 'scale(1.3)';
+                    badge.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                    
+                    setTimeout(() => {
+                        badge.textContent = `${visibleRowsInLevel} mot(s)`;
+                        badge.style.transform = 'scale(1)';
+                    }, 300);
+                }
+            } else {
+                // If it has words but none match, animate out
+                if (container.style.display !== 'none') {
+                    container.style.opacity = '1';
+                    container.style.transform = 'translateY(0) scale(1)';
+                    container.style.transition = 'all 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+                    
+                    // Animate out
+                    container.style.opacity = '0';
+                    container.style.transform = 'translateY(30px) scale(0.95)';
+                    
+                    // Hide after animation completes
+                    setTimeout(() => {
+                        container.style.display = 'none';
+                    }, 500);
+                }
+            }
+        });
+        
+        // Update search count with animation
+        const currentCount = parseInt(searchCountDisplay.textContent);
+        // Animate count up
+        animateCounterUp(currentCount, totalVisibleRows, searchCountDisplay);
+        
+        // Show no results message if needed
+        toggleNoResultsMessage(totalVisibleRows === 0);
+    }
+    
+    // Function to animate counter
+    function animateCounterUp(start, end, element) {
+        let current = start;
+        const duration = 500; // ms
+        const frameRate = 1000 / 60; // 60fps
+        const totalFrames = Math.round(duration / frameRate);
+        const increment = (end - start) / totalFrames;
+        
+        const animate = () => {
+            current += increment;
+            if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                element.textContent = end;
+            } else {
+                element.textContent = Math.round(current);
+                requestAnimationFrame(animate);
+            }
+        };
+        
+        animate();
+    }
+    
+    // Function to clear the search
+    function clearSearch() {
+        // Clear input with animation
+        searchInput.value = '';
+        
+        // Hide clear button and search info with animation
+        if (clearSearchBtn.style.display !== 'none') {
+            clearSearchBtn.style.opacity = '0';
+            clearSearchBtn.style.transform = 'translateY(-50%) scale(0.9)';
+            setTimeout(() => {
+                clearSearchBtn.style.display = 'none';
+            }, 300);
+        }
+        
+        if (searchResultsInfo.style.display !== 'none') {
+            searchResultsInfo.style.opacity = '0';
+            searchResultsInfo.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                searchResultsInfo.style.display = 'none';
+                searchResultsInfo.style.transform = '';
+            }, 300);
+        }
+        
+        // Show all level containers with animation
+        const levelContainers = document.querySelectorAll('.level-container');
+        levelContainers.forEach((container, index) => {
+            // If it was hidden, animate it back in
+            if (container.style.display === 'none') {
+                container.style.opacity = '0';
+                container.style.transform = 'translateY(15px)';
+                container.style.display = 'block';
+                container.style.transition = 'all 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
+                
+                // Staggered animation
+                setTimeout(() => {
+                    container.style.opacity = '1';
+                    container.style.transform = 'translateY(0)';
+                }, 100 + (index * 50));
+            }
+            
+            // Reset the level badge count with animation
+            const badge = container.querySelector('.level-badge');
+            const rows = container.querySelectorAll('tbody tr');
+            if (badge) {
+                badge.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    badge.textContent = `${rows.length} mot(s)`;
+                    badge.style.transform = 'scale(1)';
+                }, 200);
+            }
+            
+            // Show all rows with staggered animation
+            rows.forEach((row, rowIndex) => {
+                if (row.style.display === 'none') {
+                    row.style.opacity = '0';
+                    row.style.transform = 'translateY(10px)';
+                    row.style.transition = 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
+                    row.style.display = 'table-row';
+                    
+                    // Staggered animation delay based on row index
+                    setTimeout(() => {
+                        row.style.opacity = '1';
+                        row.style.transform = 'translateY(0)';
+                    }, 100 + (rowIndex * 20)); // Staggered delay
+                }
+                
+                // Remove any highlights with fade-out effect
+                const highlights = row.querySelectorAll('.search-highlight');
+                highlights.forEach(highlight => {
+                    const text = highlight.textContent;
+                    const span = document.createElement('span');
+                    span.textContent = text;
+                    span.style.transition = 'all 0.3s ease';
+                    highlight.parentNode.replaceChild(span, highlight);
+                });
+            });
+        });
+        
+        // Hide no results message with animation
+        const noResultsMsg = document.getElementById('no-search-results');
+        if (noResultsMsg && noResultsMsg.style.display !== 'none') {
+            noResultsMsg.style.opacity = '0';
+            noResultsMsg.style.transform = 'translateY(10px)';
+            setTimeout(() => {
+                noResultsMsg.style.display = 'none';
+            }, 300);
+        }
+    }
+    
+    // Function to highlight matching text
+    function highlightMatches(row, searchTerm) {
+        const cells = row.querySelectorAll('td:not(:last-child)');
+        cells.forEach(cell => {
+            const text = cell.textContent;
+            const lowerText = text.toLowerCase();
+            const index = lowerText.indexOf(searchTerm.toLowerCase());
+            
+            if (index !== -1) {
+                let newHtml = '';
+                let i = 0;
+                
+                while (i < text.length) {
+                    if (i === index) {
+                        newHtml += '<span class="search-highlight">';
+                        newHtml += text.substring(i, i + searchTerm.length);
+                        newHtml += '</span>';
+                        i += searchTerm.length;
+                    } else {
+                        newHtml += text.charAt(i);
+                        i++;
+                    }
+                }
+                
+                cell.innerHTML = newHtml;
+            }
+        });
+    }
+    
+    // Function to show/hide no results message
+    function toggleNoResultsMessage(show) {
+        // Check if message already exists
+        let noResultsMsg = document.getElementById('no-search-results');
+        
+        if (show) {
+            if (!noResultsMsg) {
+                // Create message if it doesn't exist
+                noResultsMsg = document.createElement('div');
+                noResultsMsg.id = 'no-search-results';
+                noResultsMsg.className = 'no-words';
+                noResultsMsg.innerHTML = `
+                    <i class="fas fa-search"></i>
+                    <h3>Aucun résultat trouvé</h3>
+                    <p>Aucun mot ne correspond à votre recherche. Essayez avec d'autres termes.</p>
+                `;
+                
+                // Insert before home CTA
+                const container = document.querySelector('.vocabulary-container');
+                const homeCta = container.querySelector('.home-cta');
+                if (homeCta) {
+                    container.insertBefore(noResultsMsg, homeCta);
+                } else {
+                    container.appendChild(noResultsMsg);
+                }
+            } else {
+                noResultsMsg.style.display = 'block';
+            }
+        } else if (noResultsMsg) {
+            noResultsMsg.style.display = 'none';
+        }
+    }
+    
+    // Event Listeners
+    searchBtn.addEventListener('click', performSearch);
+    
+    searchInput.addEventListener('input', function() {
+        performSearch();
+    });
+    
+    clearSearchBtn.addEventListener('click', clearSearch);
 }

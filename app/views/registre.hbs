@@ -93,6 +93,21 @@
             <label for="terms">J'accepte les <a href="/terms" class="terms-link">conditions d'utilisation</a></label>
           </div>
         </div>
+
+        <div class="form-group avatar-selection" data-delay="550">
+          <label class="avatar-label">Choisissez votre avatar</label>
+          <div class="avatars-container">
+            {{#each avatars}}
+              <div class="avatar-option">
+                <input type="radio" id="avatar-{{this}}" name="avatar" value="{{this}}" {{#if @first}}checked{{/if}}>
+                <label for="avatar-{{this}}">
+                  <img src="/images/avatars/{{this}}" alt="Avatar {{this}}">
+                </label>
+              </div>
+            {{/each}}
+          </div>
+        </div>
+
         <button type="submit" class="btn-submit" data-delay="600">
           S'inscrire <i class="fas fa-arrow-right"></i>
         </button>

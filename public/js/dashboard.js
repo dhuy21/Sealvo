@@ -21,13 +21,23 @@ function initDashboard() {
     // Show welcome message with typewriter effect
     const welcomeElement = document.querySelector('.dashboard-welcome');
     if (welcomeElement) {
-        const text = welcomeElement.textContent;
-        welcomeElement.textContent = '';
+        const username = welcomeElement.getAttribute('data-user');
+        
+        // First, render the HTML structure
+        welcomeElement.innerHTML = `
+            <i class="fas fa-hand-sparkles" style="color: #FFCC70; margin-right: 0.5rem;"></i>
+            Bienvenue <span style="font-weight: 700; color: var(--primary-color);">${username}</span>, 
+            <span class="typing-text"></span>
+        `;
+        
+        // Then animate only the text part
+        const textToType = "voici le résumé de votre progression en vocabulaire.";
+        const typingElement = welcomeElement.querySelector('.typing-text');
         let i = 0;
         
         function typeWriter() {
-            if (i < text.length) {
-                welcomeElement.textContent += text.charAt(i);
+            if (i < textToType.length) {
+                typingElement.textContent += textToType.charAt(i);
                 i++;
                 setTimeout(typeWriter, 50);
             }
