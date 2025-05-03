@@ -13,9 +13,8 @@
       </div>
       
       <!-- Welcome Message -->
-      <div class="dashboard-welcome fade-in">
-        <i class="fas fa-hand-sparkles" style="color: #FFCC70; margin-right: 0.5rem;"></i>
-        Bienvenue <span style="font-weight: 700; color: var(--primary-color);">{{user.username}}</span>, voici le résumé de votre progression en vocabulaire.
+      <div class="dashboard-welcome fade-in" data-user="{{user.username}}">
+        
       </div>
       
       <!-- Sidebar -->
@@ -60,11 +59,16 @@
         </div>
         
         <!-- User Info Card -->
-        <div class="dashboard-card fade-in">
-          <h2><i class="fas fa-user-circle" style="color: #4158D0; margin-right: 0.5rem;"></i>Informations Utilisateur</h2>
-          {{#if notifications}}
-            <span class="notification-badge">{{notifications.length}}</span>
-          {{/if}}
+        <div class="dashboard-card fade-in user-profile-card">
+          <div class="user-profile-header">
+            <div class="avatar-container-dashboard">
+              <img src="/images/avatars/{{user.avatar}}.png" alt="{{user.username}}'s avatar" class="user-avatar-dashboard">
+            </div>
+            <h2>Informations Utilisateur</h2>
+            {{#if notifications}}
+              <span class="notification-badge">{{notifications.length}}</span>
+            {{/if}}
+          </div>
           <div class="user-info">
             <div class="info-row">
               <div class="info-label"><i class="fas fa-user-tag" style="color: #4158D0; width: 20px; margin-right: 8px;"></i>Nom d'utilisateur: </div>
@@ -174,108 +178,6 @@
     
     <!-- Hidden Mouse tracker -->
     <div class="mouse-tracker" id="mouse-tracker"></div>
-    
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        // Initialize progress bar
-        initProgressBar();
-        
-        // Animate statistics
-        animateStats();
-        
-        // Initialize streak display
-        initStreakDisplay();
-        
-        // Initialize action cards
-        initActionCards();
-        
-        // Initialize activity items
-        initActivityItems();
-      });
-      
-      function animateStats() {
-        const statElements = document.querySelectorAll('.stat-number');
-        
-        statElements.forEach(element => {
-          const target = parseInt(element.textContent) || 0;
-          element.textContent = '0';
-          
-          let current = 0;
-          const duration = 1500; // 1.5 seconds
-          const increment = target / (duration / 16); // 60fps
-          
-          const timer = setInterval(() => {
-            current += increment;
-            if (current >= target) {
-              element.textContent = target;
-              clearInterval(timer);
-            } else {
-              element.textContent = Math.floor(current);
-            }
-          }, 16);
-        });
-      }
-      
-      function initStreakDisplay() {
-        const streakDays = document.querySelectorAll('.streak-day');
-        
-        streakDays.forEach((day, index) => {
-          setTimeout(() => {
-            day.style.opacity = '1';
-            day.style.transform = 'scale(1)';
-          }, index * 100);
-        });
-      }
-      
-      function initProgressBar() {
-        setTimeout(() => {
-          const progressBar = document.querySelector('.progress-bar-fill');
-          const width = progressBar.getAttribute('data-width') || 0;
-          
-          progressBar.style.width = `${width}%`;
-        }, 500);
-      }
-      
-      function initActionCards() {
-        const actionCards = document.querySelectorAll('.action-card');
-        
-        actionCards.forEach(card => {
-          card.addEventListener('mouseenter', () => {
-            card.classList.add('hover-effect');
-          });
-          
-          card.addEventListener('mouseleave', () => {
-            card.classList.remove('hover-effect');
-          });
-          
-          // Click effect
-          card.addEventListener('click', (e) => {
-            // Don't trigger the effect if clicking on the button
-            if (e.target.classList.contains('dashboard-btn') || e.target.tagName === 'A') return;
-            
-            const button = card.querySelector('.dashboard-btn');
-            if (button) {
-              // Add pulse effect to button
-              button.classList.add('pulse-animation');
-              
-              // Redirect after a short delay to see the animation
-              setTimeout(() => {
-                window.location.href = button.getAttribute('href');
-              }, 300);
-            }
-          });
-        });
-      }
-      
-      function initActivityItems() {
-        const activityItems = document.querySelectorAll('.activity-item');
-        
-        activityItems.forEach((item, index) => {
-          setTimeout(() => {
-            item.style.opacity = '1';
-            item.style.transform = 'translateX(0)';
-          }, index * 150);
-        });
-      }
-    </script>
   </div>
+  <script src="/js/dashboard.js"></script>
+

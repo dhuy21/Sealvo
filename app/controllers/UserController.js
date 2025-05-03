@@ -3,6 +3,8 @@ const userModel = require('../models/users');
 const wordModel = require('../models/words');
 const learningModel = require('../models/learning');
 const { last } = require('pdf-lib');
+const fs = require('fs');
+const path = require('path');
 
 class UserController {
     // Afficher la page de connexion
@@ -53,11 +55,11 @@ class UserController {
                 last_login: user.last_login, //convertir en date dd/mm/yyyy
                 created_at: user.created_at,
                 email: user.email,
+                avatar: user.ava,
                 totalWords,
                 learnedWords,
                 newWords,
                 islearningWords
-
             };
             
             // Rediriger vers le tableau de bord
@@ -71,16 +73,20 @@ class UserController {
 
     // Afficher la page d'inscription
     registre(req, res) {
+        // Create array of avatars from 1 to 11
+        const avatars = Array.from({ length: 11 }, (_, i) => `${i + 1}.png`);
+        
         res.render('registre', {
             title: 'Inscription',
-            error: req.query.error
+            error: req.query.error,
+            avatars: avatars
         });
     }
 
     // Traiter la soumission du formulaire d'inscription
     async registrePost(req, res) {
         try {
-            const { username, email, password, password2 } = req.body;
+            const { username, email, password, password2, avatar } = req.body;
             
             // Validation de base
             if (!username || !email || !password || !password2) {
@@ -106,11 +112,23 @@ class UserController {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
             
+            // Convert avatar to integer (avatar is the filename like "1.png")
+            let avatarInt = 1; // Default avatar
+            if (avatar) {
+                // Extract the number from the filename
+                const avatarNum = parseInt(avatar.replace(/\D/g, ''));
+                // Ensure it's within the valid range (1-11)
+                if (avatarNum >= 1 && avatarNum <= 11) {
+                    avatarInt = avatarNum;
+                }
+            }
+            
             // Créer le nouvel utilisateur
             await userModel.create({
                 username,
                 email,
-                password: hashedPassword
+                password: hashedPassword,
+                ava: avatarInt
             });
             
             // Rediriger vers la page de connexion

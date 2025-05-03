@@ -1,4 +1,3 @@
-const db = require('../core/database');
 const crypto = require('crypto');
 
 class User {
@@ -88,8 +87,8 @@ class User {
             
             // Insérer l'utilisateur avec l'ID généré
             const [result] = await global.dbConnection.execute(
-                'INSERT INTO users (id, username, email, password) VALUES (?, ?, ?, ?)', 
-                [userId, userData.username, userData.email, userData.password]
+                'INSERT INTO users (id, username, email, password, ava) VALUES (?, ?, ?, ?, ?)', 
+                [userId, userData.username, userData.email, userData.password, userData.ava]
             );
             
             return userId;
@@ -98,6 +97,17 @@ class User {
             throw error;
         }
     }
+
+    async updateAvatar(id, ava) {
+        try {
+            const [result] = await global.dbConnection.execute('UPDATE users SET ava = ? WHERE id = ?', [ava, id]);
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour de l\'avatar :', error);
+            throw error;
+        }
+    }
+
     async update(id, userData) {
         try {
             const [result] = await global.dbConnection.execute(

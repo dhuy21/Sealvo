@@ -142,8 +142,9 @@
       box-shadow: var(--box-shadow);
       transition: var(--transition);
       position: relative;
-      overflow: hidden;
-      height: 100%;
+      overflow: visible;
+      height: auto;
+      width: auto;
       border: 1px solid rgba(255,255,255,0.2);
     }
     
@@ -169,12 +170,15 @@
       font-size: 30px;
       position: relative;
       display: inline-block;
+      align-items: center;
+      justify-content: center;
     }
     
     .stats {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 1rem;
+      
     }
     
     .stat-item {
@@ -702,4 +706,108 @@
       0% { transform: scale(1); }
       50% { transform: scale(1.05); }
       100% { transform: scale(1); }
+    }
+
+    /* Add styles for the avatar in dashboard card header */
+    .dashboard-card h2 img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin-right: 10px;
+      vertical-align: middle;
+      object-fit: cover;
+      border: 2px solid var(--primary-color);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+      transition: var(--transition);
+    }
+
+    .dashboard-card h2 img:hover {
+      transform: scale(1.1);
+      border-color: var(--secondary-color);
+    }
+
+    /* Ensure the header is properly aligned with the avatar */
+    .dashboard-card h2 {
+      display: flex;
+      align-items: center;
+      font-size: 1.5rem;
+    }
+
+    /* Enhanced User Profile Card */
+    .user-profile-card {
+      position: relative;
+      overflow: visible;
+    }
+
+    .user-profile-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+
+    .avatar-container {
+      position: relative;
+      margin-bottom: 1rem;
+      z-index: 2;
+    }
+
+    .user-avatar-dashboard {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid rgb(175, 14, 190);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s ease;
+      margin-bottom: 0.5rem;
+    }
+
+    .user-avatar-dashboard:hover {
+      transform: scale(1.05);
+      box-shadow: 0 10px 25px rgba(106, 17, 203, 0.3);
+      border-color: var(--secondary-color);
+    }
+
+    .avatar-container-dashboard:hover::before {
+      transform: scale(0.5);
+      opacity: 0.7;
+    }
+
+    .user-profile-header h2 {
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+      text-align: center;
+      font-size: 1.4rem;
+      background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    /* Adjust info rows for the enhanced profile card */
+    .user-profile-card .user-info {
+      background-color: rgba(255, 255, 255, 0.5);
+      border-radius: 10px;
+      padding: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .user-profile-card .info-row {
+      padding: 0.75rem 0.5rem;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+    }
+
+    .user-profile-card .info-row:hover {
+      background-color: rgba(255, 255, 255, 0.9);
+      transform: translateX(5px);
+    }
+
+    /* Position the notification badge correctly on the profile card */
+    .user-profile-card .notification-badge {
+      position: absolute;
+      top: 0;
+      right: 0;
     }
