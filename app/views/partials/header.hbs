@@ -1,50 +1,166 @@
 <link rel="stylesheet" href="/css/common/header.css">
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container-fluid">
-  
-    <a class="navbar-brand" href="../">
-      <img src="/images/logo.png" alt="Logo" class="logo-img">
-      <span class="brand-text">LEARNVCAB</span>
-    </a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
+<header class="site-header">
+  <div class="header-container">
+    <div class="brand-container">
+      <a href="../" class="brand-link">
+        <div class="logo-wrapper">
+          <img src="/images/logo.png" alt="Logo" class="logo-img">
+          <div class="logo-glow"></div>
+        </div>
+        <h1 class="brand-text">LEARNVCAB</h1>
+      </a>
+    </div>
+
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <span></span>
+      <span></span>
+      <span></span>
     </button>
-    <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item">
-          {{#if user}}
-            <a class="nav-link active" aria-current="page" href="../dashboard">Home</a>
-          {{else}}
-            <a class="nav-link active" aria-current="page" href="../login">Home</a>
-          {{/if}}
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/feedback">Feedback</a>
-        </li>
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Dropdown
+
+    <div class="nav-container">
+      <nav class="main-nav">
+        <ul class="nav-list">
+          <li class="nav-item {{#if isHome}}active{{/if}}">
+            {{#if user}}
+              <a href="../dashboard" class="nav-link">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+              </a>
+            {{else}}
+              <a href="../login" class="nav-link">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+              </a>
+            {{/if}}
+          </li>
+          <li class="nav-item {{#if isFeedback}}active{{/if}}">
+            <a href="/feedback" class="nav-link">
+              <i class="fas fa-comments"></i>
+              <span>Feedback</span>
+            </a>
+          </li>
+          <li class="nav-item dropdown">
+            <a href="#" class="nav-link dropdown-toggle">
+              <i class="fas fa-th-large"></i>
+              <span>Services</span>
+            </a>
+            <ul class="dropdown-menu">
+              <li><a href="#" class="dropdown-item"><i class="fas fa-book"></i> Dictionary</a></li>
+              <li><a href="/games" class="dropdown-item"><i class="fas fa-gamepad"></i> Word Games</a></li>
+              <li><a href="#" class="dropdown-item"><i class="fas fa-chart-line"></i> Progress Tracker</a></li>
+            </ul>
+          </li>
+          <li class="nav-item {{#if isAbout}}active{{/if}}">
+            <a href="../aboutme" class="nav-link">
+              <i class="fas fa-user"></i>
+              <span>About</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="user-controls">
+        {{#if user}}
+          <div class="user-profile">
+            <div class="user-avatar">
+              {{#if user.avatar}}
+                <img src="/images/avatars/{{user.avatar}}.png" alt="{{user.username}}'s avatar">
+              {{else}}
+                <span>{{firstLetter user.username}}</span>
+              {{/if}}
+            </div>
+            <a href="../logout" class="logout-btn">
+              <i class="fas fa-sign-out-alt"></i>
+              <span>Sign Out</span>
+            </a>
+          </div>
+        {{else}}
+          <a href="../login" class="login-btn">
+            <i class="fas fa-sign-in-alt"></i>
+            <span>Sign In</span>
           </a>
-          <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-            <li><a class="dropdown-item" href="#">Action</a></li>
-            <li><a class="dropdown-item" href="#">Another action</a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="#">Something else here</a></li>
-          </ul>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link active" href="../aboutme"  aria-current="page">About me</a>
-        </li>
-      </ul>
-      <form class="d-flex">
-        <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-        <button class="btn-outline-success" type="submit">Search</button>
-      </form>
-      {{#if user}}
-        <a class="nav-link active sign-out" href="../logout"><i class="fas fa-sign-out-alt"></i></a>
-      {{else}}
-        <a class="nav-link active sign-in" href="../login"><i class="fas fa-sign-in-alt"></i></a>
-      {{/if}}
+        {{/if}}
+      </div>
     </div>
   </div>
-</nav>
+</header>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Toggle mobile menu
+    const menuToggle = document.querySelector('.menu-toggle');
+    const navContainer = document.querySelector('.nav-container');
+    
+    if (menuToggle) {
+      menuToggle.addEventListener('click', function() {
+        this.classList.toggle('active');
+        navContainer.classList.toggle('active');
+        document.body.classList.toggle('nav-open');
+        
+        // Create/remove overlay when mobile menu is opened/closed
+        if (navContainer.classList.contains('active')) {
+          if (!document.querySelector('.mobile-menu-overlay')) {
+            const overlay = document.createElement('div');
+            overlay.className = 'mobile-menu-overlay';
+            document.body.appendChild(overlay);
+            
+            // Add click event to close menu when overlay is clicked
+            overlay.addEventListener('click', function() {
+              menuToggle.classList.remove('active');
+              navContainer.classList.remove('active');
+              document.body.classList.remove('nav-open');
+              document.body.removeChild(overlay);
+            });
+          }
+        } else {
+          const overlay = document.querySelector('.mobile-menu-overlay');
+          if (overlay) {
+            document.body.removeChild(overlay);
+          }
+        }
+      });
+    }
+    
+    // Handle window resize to reset mobile menu state on desktop view
+    window.addEventListener('resize', function() {
+      if (window.innerWidth > 1024 && document.body.classList.contains('nav-open')) {
+        const overlay = document.querySelector('.mobile-menu-overlay');
+        if (overlay) {
+          document.body.removeChild(overlay);
+        }
+        menuToggle.classList.remove('active');
+        navContainer.classList.remove('active');
+        document.body.classList.remove('nav-open');
+      }
+    });
+    
+    // Dropdown functionality
+    const dropdowns = document.querySelectorAll('.dropdown');
+    
+    dropdowns.forEach(dropdown => {
+      const toggle = dropdown.querySelector('.dropdown-toggle');
+      const menu = dropdown.querySelector('.dropdown-menu');
+      
+      toggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        dropdown.classList.toggle('open');
+        
+        // Close other open dropdowns
+        dropdowns.forEach(other => {
+          if (other !== dropdown && other.classList.contains('open')) {
+            other.classList.remove('open');
+          }
+        });
+      });
+    });
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.dropdown')) {
+        dropdowns.forEach(dropdown => {
+          dropdown.classList.remove('open');
+        });
+      }
+    });
+  });
+</script>

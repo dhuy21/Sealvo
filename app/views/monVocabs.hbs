@@ -13,6 +13,10 @@
     {{success}}
   </div>
   {{/if}}
+  
+  
+  
+  
   <div class="action-container">
     <a href="/monVocabs/add" class="add-word-btn">
       <i class="fas fa-plus"></i> Ajouter un nouveau mot
@@ -26,6 +30,31 @@
       <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Supprimer tous les mots</button>
     </form>
   </div>
+
+  <!-- Search Form -->
+  <div class="search-container">
+    <div class="search-form">
+      <div class="input-group">
+        <input 
+          type="text" 
+          id="search-input"
+          placeholder="Tapez pour rechercher un mot..."
+          class="search-input"
+        >
+        <button type="button" id="search-btn" class="search-btn">
+          <i class="fas fa-search"></i>
+        </button>
+        <button type="button" id="clear-search-btn" class="clear-search-btn" style="display: none;">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="search-results-info" class="search-results-info" style="display: none;">
+    <p><span id="search-count">0</span> résultat(s) pour <strong id="search-term-display"></strong></p>
+  </div>
+  
   {{#if hasWords}}
     {{#each wordsByLevel as |levelWords level|}}
     <div class="level-container" data-level="{{level}}">

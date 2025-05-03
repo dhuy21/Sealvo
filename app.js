@@ -57,6 +57,9 @@ app.engine('hbs', engine({
   helpers: {
     json: function(context) {
       return JSON.stringify(context);
+    },
+    firstLetter: function(username) {
+      return username ? username.charAt(0).toUpperCase() : 'U';
     }
   }
 }));
