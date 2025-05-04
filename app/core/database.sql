@@ -16,17 +16,66 @@ CREATE TABLE IF NOT EXISTS users (
   last_login TIMESTAMP NULL DEFAULT NULL,
   created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  ava INT CHECK (ava BETWEEN 1 AND 11) NOT NULL DEFAULT 1,
   PRIMARY KEY (id),
   CHECK (email REGEXP '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$')
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
+/*CREATE TABLE languages (
+    code VARCHAR(2) PRIMARY KEY, 
+    name VARCHAR(100) NOT NULL   
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO languages (code, name) VALUES
+('en', 'English'),
+('fr', 'Français'),
+('es', 'Español'),
+('de', 'Deutsch'),
+('it', 'Italiano'),
+('ja', '日本語'),
+('zh', '中文'),
+('ar', 'العربية'),
+('pt', 'Português'),
+('ru', 'Русский'),
+('tr', 'Türkçe'),
+('vi', 'Tiếng Việt'),
+('ko', '한국어'),
+('th', 'ภาษาไทย'),
+('id', 'Bahasa Indonesia'),
+('ms', 'Bahasa Melayu'),
+('hi', 'हिन्दी'),
+('bn', 'বাংলা'),
+('pl', 'Polski'),
+('nl', 'Nederlands'),
+('sv', 'Svenska'),
+('fi', 'Suomi'),
+('uk', 'Українська'),
+('el', 'Ελληνικά'),
+('he', 'עברית'),
+('ro', 'Română'),
+('hu', 'Magyar'),
+('cs', 'Čeština'),
+('da', 'Dansk'),
+('no', 'Norsk'),
+('sk', 'Slovenčina'),
+('sr', 'Српски'),
+('hr', 'Hrvatski'),
+('bg', 'Български'),
+('fa', 'فارسی'),
+('ur', 'اردو');*/
+
 CREATE TABLE IF NOT EXISTS words (
     word_id INT NOT NULL AUTO_INCREMENT,
     word VARCHAR(255) NOT NULL,
     subject VARCHAR(255) NOT NULL,
+    /*language_code VARCHAR(2) NOT NULL,*/
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (word_id)
+    PRIMARY KEY (word_id),
+    /*FOREIGN KEY (language_code) REFERENCES languages(code)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE*/
+
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*INSERT INTO words (word, subject) VALUES ('Present', 'Daily words');*/
 
@@ -34,7 +83,7 @@ CREATE TABLE IF NOT EXISTS learning (
     user_id CHAR(7) NOT NULL,
     word_id INT NOT NULL,
     level ENUM('x', '0', '1', '2', 'v') NOT NULL,
-    date_memorized TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,  -- Sửa từ TIMESTAMP sang DATE
+    date_memorized TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,
     PRIMARY KEY (user_id, word_id),
     FOREIGN KEY (user_id) REFERENCES users(id)
         ON DELETE CASCADE
