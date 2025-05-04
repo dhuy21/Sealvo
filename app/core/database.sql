@@ -4,7 +4,7 @@ SET time_zone = "+00:00";
 
 DROP DATABASE IF EXISTS web_db;
 CREATE DATABASE IF NOT EXISTS web_db;
-USE web_db
+USE web_db;
 
 CREATE TABLE IF NOT EXISTS users (
   id CHAR(7) NOT NULL,
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS words (
     subject VARCHAR(255) NOT NULL,
     /*language_code VARCHAR(2) NOT NULL,*/
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (word_id),
+    PRIMARY KEY (word_id)
     /*FOREIGN KEY (language_code) REFERENCES languages(code)
         ON DELETE CASCADE
         ON UPDATE CASCADE*/
