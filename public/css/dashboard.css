@@ -44,6 +44,7 @@
       padding: 2rem;
       max-width: 1400px;
       margin: 0 auto;
+      overflow-x: hidden;
     }
     
     .dashboard-container {
@@ -59,6 +60,10 @@
     }
     
     @media (max-width: 1024px) {
+      .home-container {
+        padding: 1.5rem;
+      }
+      
       .dashboard-container {
         grid-template-columns: 1fr;
         grid-template-areas: 
@@ -67,6 +72,336 @@
           "sidebar"
           "main"
           "footer";
+        gap: 1rem;
+        padding: 0 5px;
+      }
+      
+      .dashboard-card h2, .dashboard-card h3 {
+        font-size: 1.5rem;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .home-container {
+        padding: 1rem;
+      }
+      
+      .dashboard-container {
+        padding: 0;
+      }
+      
+      .dashboard-header h1 {
+        font-size: 2rem;
+        margin-bottom: 25px;
+      }
+      
+      .stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .stat-number {
+        font-size: 1.5rem;
+      }
+      
+      .stat-label {
+        font-size: 0.75rem;
+      }
+      
+      .dashboard-card {
+        padding: 1.25rem;
+      }
+      
+      .action-card {
+        padding: 1rem;
+      }
+      
+      .action-card-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+      }
+      
+      .dashboard-btn {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.8rem;
+      }
+      
+      .user-avatar-dashboard {
+        width: 70px;
+        height: 70px;
+      }
+    }
+    
+    @media (max-width: 576px) {
+      .home-container {
+        padding: 1rem;
+        overflow-x: visible;
+      }
+      
+      .stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+      }
+      
+      .stat-item {
+        padding: 0.75rem;
+      }
+      
+      .dashboard-header h1 {
+        font-size: 1.75rem;
+      }
+      
+      .action-card {
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .action-card-icon {
+        margin-bottom: 0.75rem;
+      }
+      
+      .action-card-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .action-card h3 {
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+      }
+      
+      .action-card p {
+        margin-bottom: 1rem;
+      }
+
+      .dashboard-footer {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      
+      .dashboard-footer .dashboard-btn {
+        width: 100%;
+        text-align: center;
+      }
+      
+      .dashboard-footer span {
+        display: none !important;
+      }
+      
+      .activity-time {
+        font-size: 0.8rem;
+      }
+      
+      .dashboard-card {
+        padding: 1rem;
+        margin-left: 0;
+        margin-right: 0;
+        width: 100%;
+        border-radius: 14px;
+        box-sizing: border-box;
+        max-width: 100%;
+      }
+      
+      .sidebar, .main-content {
+        width: 100%;
+        margin: 0;
+        padding: 0 2px;
+      }
+      
+      .action-card {
+        width: 100%;
+        box-sizing: border-box;
+        margin-left: 0;
+        margin-right: 0;
+      }
+      
+      .activity-item {
+        padding: 0.75rem;
+      }
+      
+      .dashboard-card h2, .dashboard-card h3 {
+        font-size: 1.2rem;
+        text-align: center;
+        display: block;
+        margin-bottom: 15px;
+      }
+    }
+    
+    @media (max-width: 414px) {
+      .home-container {
+        width: auto;
+        max-width: 100%;
+        padding: 8px;
+      }
+      
+      .dashboard-container {
+        width: 100%;
+      }
+      
+      .dashboard-header h1 {
+        font-size: 1.5rem;
+      }
+      
+      .dashboard-header h1::after {
+        width: 60px;
+        bottom: -8px;
+      }
+      
+      .dashboard-card h2, .dashboard-card h3 {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+      }
+      
+      .dashboard-card {
+        padding: 12px;
+        border-radius: 12px;
+        margin: 0 auto 1rem;
+        width: calc(100% - 10px);
+      }
+      
+      .sidebar, .main-content {
+        padding: 0;
+        width: 100%;
+      }
+      
+      .dashboard-container {
+        width: 100%;
+        padding: 0;
+      }
+      
+      .action-card, .recent-activity {
+        margin-left: auto;
+        margin-right: auto;
+        width: 100%;
+        border-radius: 10px;
+      }
+      
+      .stats {
+        padding: 0;
+        margin: 0;
+      }
+      
+      .stat-item {
+        padding: 8px 5px;
+      }
+      
+      .stat-number {
+        font-size: 1.25rem;
+      }
+      
+      .stat-label {
+        font-size: 0.7rem;
+      }
+      
+      .action-card {
+        padding: 0.75rem;
+      }
+      
+      .action-card h3 {
+        font-size: 1rem;
+      }
+      
+      .action-card p {
+        font-size: 0.8rem;
+      }
+      
+      .activity-icon {
+        width: 2rem;
+        height: 2rem;
+        margin-right: 0.75rem;
+      }
+      
+      .activity-title {
+        font-size: 0.9rem;
+      }
+      
+      .activity-time {
+        font-size: 0.75rem;
+      }
+
+      .user-profile-header h2 {
+        font-size: 1.2rem;
+      }
+      
+      .user-info .info-row {
+        padding: 0.5rem 0.25rem;
+      }
+      
+      .info-label {
+        min-width: 100px;
+        font-size: 0.8rem;
+      }
+      
+      .info-value {
+        font-size: 0.8rem;
+      }
+    }
+    
+    @media (max-width: 375px) {
+      .home-container {
+        padding: 0.75rem;
+      }
+      
+      .dashboard-header h1 {
+        font-size: 1.35rem;
+      }
+      
+      .dashboard-card, .action-card, .recent-activity {
+        width: 100%;
+        padding: 10px;
+        border-radius: 10px;
+      }
+      
+      .stat-number {
+        font-size: 1.1rem;
+      }
+      
+      .stat-label {
+        font-size: 0.65rem;
+        letter-spacing: 0;
+      }
+      
+      .action-card-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+      }
+      
+      .fa-book-open, .fa-plus-circle, .fa-gamepad,
+      .fa-graduation-cap, .fa-magic, .fa-dice {
+        font-size: 1.2rem;
+      }
+      
+      .user-avatar-dashboard {
+        width: 60px;
+        height: 60px;
+      }
+    }
+    
+    @media (max-height: 600px) and (orientation: landscape) {
+      .home-container {
+        padding: 0.5rem 1rem;
+      }
+      
+      .dashboard-header h1 {
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+      }
+      
+      .dashboard-card {
+        padding: 0.75rem;
+      }
+      
+      .stat-item {
+        padding: 0.5rem;
+      }
+      
+      .action-card {
+        padding: 0.75rem;
+      }
+      
+      .dashboard-welcome {
+        padding: 0.75rem;
       }
     }
     
@@ -133,6 +468,14 @@
       grid-area: footer;
       text-align: center;
       margin-top: 1rem;
+    }
+    
+    .dashboard-card,
+    .action-card,
+    .recent-activity {
+      box-sizing: border-box;
+      overflow: hidden;
+      max-width: 100%;
     }
     
     .dashboard-card {
@@ -810,4 +1153,221 @@
       position: absolute;
       top: 0;
       right: 0;
+    }
+
+    /* iPhone XS/11 Pro/12 Pro specific fixes for clipping */
+    @media screen and (min-width: 375px) and (max-width: 415px) {
+      .home-container {
+        padding: 0.75rem 1rem;
+      }
+      
+      .dashboard-card, 
+      .action-card, 
+      .recent-activity {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      
+      .activity-icon {
+        margin-right: 0.6rem;
+      }
+    }
+
+    /* Fix dashboard card on small iPhone and other small devices */
+    @media screen and (max-width: 320px) {
+      .home-container {
+        padding: 5px;
+      }
+      
+      .dashboard-container {
+        padding: 0;
+      }
+      
+      .dashboard-card, 
+      .action-card, 
+      .recent-activity {
+        padding: 8px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+      }
+      
+      .stat-label {
+        font-size: 0.6rem;
+      }
+      
+      .dashboard-card h2, 
+      .action-card h3 {
+        font-size: 1rem;
+        margin-bottom: 10px;
+      }
+      
+      .action-card p {
+        font-size: 0.75rem;
+      }
+      
+      .activity-item {
+        padding: 8px;
+      }
+    }
+
+    /* Fix transform hover effects that could cause overflow on mobile */
+    @media screen and (max-width: 576px) {
+      .dashboard-card:hover,
+      .action-card:hover,
+      .progress-container:hover {
+        transform: none;
+      }
+    }
+
+    /* Complete iPhone 12 Pro specific fix */
+    @media screen and (min-width: 385px) and (max-width: 400px) {
+      .home-container {
+        padding: 5px !important;
+        width: 100% !important;
+      }
+      
+      .dashboard-container {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        gap: 10px !important;
+      }
+      
+      .sidebar, .main-content {
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+      }
+      
+      .dashboard-card, 
+      .action-card, 
+      .recent-activity {
+        margin: 0 0 10px 0 !important;
+        width: 100% !important;
+        padding: 10px !important;
+        border-radius: 10px !important;
+      }
+    }
+
+    /* General override for iPhone and small screens */
+    @media screen and (max-width: 414px) {  
+      html, body {
+        overflow-x: hidden;
+        width: 100%;
+      }
+      
+      * {
+        max-width: 100%;
+      }
+      
+      /* Reset hover effects that could cause issues */
+      .dashboard-card:hover,
+      .action-card:hover,
+      .progress-container:hover,
+      .stat-item:hover,
+      .activity-item:hover {
+        transform: none !important;
+      }
+      
+      /* Ensure cards don't overflow */
+      .dashboard-card, 
+      .action-card, 
+      .recent-activity {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        box-sizing: border-box !important;
+        width: 100% !important;
+      }
+    }
+
+    /* Additional iPhone 12 Pro and iOS fixes */
+    @supports (-webkit-touch-callout: none) {
+      /* iOS specific CSS */
+      @media screen and (max-width: 414px) {
+        .home-container {
+          padding: 5px !important;
+          width: 100vw !important;
+          max-width: 100vw !important;
+          overflow-x: hidden !important;
+        }
+        
+        .dashboard-container {
+          width: calc(100vw - 10px) !important;
+          margin: 0 auto !important;
+          padding: 0 !important;
+        }
+        
+        .sidebar, .main-content {
+          width: 100% !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+        
+        .dashboard-card, 
+        .action-card, 
+        .recent-activity {
+          width: 100% !important;
+          margin: 0 0 10px 0 !important;
+          padding: 10px !important;
+          border-radius: 10px !important;
+          overflow: hidden !important;
+        }
+        
+        .stats {
+          gap: 5px !important;
+        }
+        
+        .stat-item {
+          padding: 5px !important;
+        }
+        
+        /* Simplify headings */
+        .dashboard-header h1 {
+          font-size: 1.5rem !important;
+          margin-bottom: 20px !important;
+        }
+        
+        .dashboard-card h2, .dashboard-card h3,
+        .action-card h3, .recent-activity h3 {
+          font-size: 1.1rem !important;
+          margin-bottom: 10px !important;
+        }
+      }
+    }
+
+    /* Final iPhone 12 Pro specific fix with exact width targeting */
+    @media screen and (width: 390px) {
+      .home-container {
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      
+      .dashboard-container {
+        width: 100% !important;
+        padding: 5px !important;
+        margin: 0 !important;
+      }
+      
+      .dashboard-card, 
+      .action-card, 
+      .recent-activity {
+        border-radius: 8px !important;
+        padding: 8px !important;
+        width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+      }
+      
+      .sidebar, .main-content {
+        padding: 0 !important;
+      }
+    }
+
+    /* Prevent horizontal scrolling at all costs */
+    body {
+      overflow-x: hidden;
+      max-width: 100%;
     }

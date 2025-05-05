@@ -1,6 +1,3 @@
-// Ne pas importer db, utiliser la connexion globale
-// const db = require('../core/db');
-
 class GameScores {
     /**
      * Enregistre un nouveau score pour un utilisateur dans un jeu
