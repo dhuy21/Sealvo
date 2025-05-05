@@ -5,7 +5,6 @@
     <i class="fas fa-language floating-icons float-icon-1"></i>
     <i class="fas fa-brain floating-icons float-icon-2"></i>
     <i class="fas fa-graduation-cap floating-icons float-icon-3"></i>
-    
     <div class="dashboard-container">
       <!-- Header -->
       <div class="dashboard-header fade-in">
@@ -85,6 +84,16 @@
             <div class="info-row">
               <div class="info-label"><i class="fas fa-clock" style="color: #F59E0B; width: 20px; margin-right: 8px;"></i>Dernière connexion: </div>
               <div class="info-value"> {{user.last_login}}</div>
+            </div>
+            <div class="info-row">
+              <div class="info-label">
+                <i class="fas fa-bell" style="color: #EF4444; width: 20px; margin-right: 8px;"></i>
+                <div class="info-value">
+                  <form action="/api/reminder" method="post">
+                    <button class="dashboard-btn dashboard-btn-primary" type="submit">Test Reminder</button>
+                  </form>
+                </div>
+              </div>
             </div>
           </div>
           <div class="text-center" style="margin-top: 1.5rem;">
