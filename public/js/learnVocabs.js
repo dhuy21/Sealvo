@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (wordsContainer && wordsContainer.dataset.words) {
         try {
             allWords = JSON.parse(wordsContainer.dataset.words);
+            console.log(`Successfully loaded ${allWords.length} words from data attribute`);
         } catch (e) {
             console.error('Erreur lors du parsing des mots:', e);
         }
@@ -15,29 +16,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // Si pas trouvé et qu'une variable globale existe (définie dans le template)
     else if (typeof window.vocabularyWords !== 'undefined') {
         allWords = window.vocabularyWords;
+        console.log(`Successfully loaded ${allWords.length} words from global variable`);
+    } else {
+        console.error('No words found in data attribute or global variable');
     }
     
     let currentWords = [...allWords]; // Copie pour permettre le filtrage
     let currentIndex = 0;
     let progress = []; // Pour suivre les progrès (0: ne sait pas, 1: incertain, 2: sait)
     let sessionStartTime = new Date();
-    let achievements = {
-      fiveWords: false,
-      tenWords: false,
-      allWords: false
-    };
+    
     
     // Streak update variables
     let streakUpdateTimeout = null;
     let streakUpdated = false;
     const STREAK_UPDATE_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
     
-    // Données pour la répétition espacée
-    const spacedRepetition = {
-      enabled: false,
-      words: [],
-      nextReviewTimes: {}
-    };
+   
     
     // Éléments DOM
     let flashcard = document.getElementById('flashcard');
@@ -55,11 +50,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const notKnownCountEl = document.getElementById('not-known-count');
     const uncertainCountEl = document.getElementById('uncertain-count');
     const masteredCountEl = document.getElementById('mastered-count');
-    const achievementPopup = document.getElementById('achievement-popup');
-    const achievementText = document.getElementById('achievement-text');
-    const closeAchievementBtn = document.getElementById('close-achievement');
-    const hintBtn = document.getElementById('hint-button');
-    const hintText = document.getElementById('hint-text');
     
     const levelCheckboxes = [
       document.getElementById('levelx'),
@@ -110,8 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
       animateCounter(masteredCountEl, known);
       animateCounter(knownCountEl, known);
       
-      // Vérifier les réalisations
-      checkAchievements(known);
+      
     }
     
     // Animation pour les compteurs
@@ -143,53 +132,15 @@ document.addEventListener('DOMContentLoaded', function() {
       requestAnimationFrame(updateCounter);
     }
     
-    // Vérifier et afficher les réalisations
-    function checkAchievements(knownCount) {
-      if (knownCount >= 5 && !achievements.fiveWords) {
-        achievements.fiveWords = true;
-        showAchievement('Vous avez maîtrisé 5 mots !');
-      } else if (knownCount >= 10 && !achievements.tenWords) {
-        achievements.tenWords = true;
-        showAchievement('Vous avez maîtrisé 10 mots !');
-      } else if (knownCount === currentWords.length && currentWords.length > 0 && !achievements.allWords) {
-        achievements.allWords = true;
-        showAchievement('Félicitations ! Vous avez maîtrisé tous les mots !');
-        
-        // Ajout de confettis pour la réussite complète
-        if (typeof confetti !== 'undefined') {
-          confetti({
-            particleCount: 100,
-            spread: 70,
-            origin: { y: 0.6 }
-          });
-        }
-      }
-    }
     
-    // Afficher une réalisation
-    function showAchievement(text) {
-      achievementText.textContent = text;
-      achievementPopup.classList.add('show');
-      
-      // Jouer un son de réussite si disponible
-      try {
-        const successSound = new Audio('/sounds/achievement.mp3');
-        successSound.volume = 0.5;
-        successSound.play();
-      } catch (e) {
-        console.log('Son non disponible');
-      }
-      
-      // Masquer automatiquement après 5 secondes
-      setTimeout(() => {
-        achievementPopup.classList.remove('show');
-      }, 5000);
-    }
     
     
     // Mettre à jour l'affichage de la carte
     function updateCardDisplay() {
+      console.log(`Updating card display. Currently have ${currentWords.length} words, index: ${currentIndex}`);
+      
       if (currentWords.length === 0) {
+        console.error('No words available to display');
         flashcard.innerHTML = `
           <div class="flashcard-inner">
             <div class="flashcard-front">
@@ -205,77 +156,93 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
       
-      const word = currentWords[currentIndex];
-      const mode = document.querySelector('input[name="mode"]:checked').value;
+      try {
+        const word = currentWords[currentIndex];
+        if (!word) {
+          console.error(`Invalid word at index ${currentIndex}`);
+          return;
+        }
+        
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        console.log(`Using mode: ${mode}`);
+        
+        // Déterminer le contenu de la carte en fonction du mode
+        let frontContent, backContent;
+        
+        if (mode === 'word-to-meaning') {
+          frontContent = word.word;
+          backContent = word.meaning;
+        } else if (mode === 'meaning-to-word') {
+          frontContent = word.meaning;
+          backContent = word.word;
+        }
+        
+        // Validation
+        if (!frontContent || !backContent) {
+          console.error('Missing content for flashcard', { front: frontContent, back: backContent, word });
+        }
+        
+        // Mettre à jour la carte avec une animation
+        flashcard.classList.add('updating');
       
-      // Déterminer le contenu de la carte en fonction du mode
-      let frontContent, backContent;
+        // Add class for current mode
+        flashcard.classList.remove('word-to-meaning-mode', 'meaning-to-word-mode');
+        flashcard.classList.add(`${mode}-mode`);
       
-      if (mode === 'word-to-meaning') {
-        frontContent = word.word;
-        backContent = word.meaning;
-      } else if (mode === 'meaning-to-word') {
-        frontContent = word.meaning;
-        backContent = word.word;
-      } else if (mode === 'spaced-repetition') {
-        // Dans ce mode, on garde word-to-meaning mais on change l'ordre des mots
-        frontContent = word.word;
-        backContent = word.meaning;
-      }
-      
-      // Mettre à jour la carte avec une animation
-      flashcard.classList.add('updating');
-      
-      setTimeout(() => {
-        // Mettre à jour le contenu de la carte
-        flashcard.innerHTML = `
-          <div class="flashcard-inner">
-            <div class="flashcard-front">
-              <span class="card-type">${word.type}</span>
-              <h2 class="card-content">${frontContent}</h2>
-              <div class="hint-container">
-                <button id="hint-button" class="hint-btn"><i class="fas fa-lightbulb"></i> Indice</button>
-                <p id="hint-text" class="hint-text"></p>
-              </div>
-              <p class="card-prompt">Cliquez pour voir la traduction</p>
-            </div>
-            <div class="flashcard-back">
-              <span class="card-type">${word.type}</span>
-              <h2 class="card-content">${backContent}</h2>
-              <div class="card-details">
-                <p><strong>Exemple:</strong> <span class="example-text">${word.example}</span></p>
-                ${word.pronunciation ? `
-                  <p><strong>Prononciation:</strong> <span class="pronunciation-text">${word.pronunciation}</span></p>
-                  <button class="pronunciation-btn" data-text="${word.word}">
-                    <i class="fas fa-volume-up"></i> Écouter
-                  </button>
-                ` : ''}
-                ${word.synonyms ? `<p><strong>Synonymes:</strong> ${word.synonyms}</p>` : ''}
-                ${word.antonyms ? `<p><strong>Antonymes:</strong> ${word.antonyms}</p>` : ''}
-              </div>
-            </div>
-          </div>
-        `;
-        
-        // Rétablir les écouteurs d'événements pour les nouveaux éléments
-        setupCardListeners();
-        
-        // Mettre à jour l'indice de carte courant avec animation
-        animateCounter(currentCardEl, currentIndex + 1);
-        totalCardsEl.textContent = currentWords.length;
-        
-        // Mettre à jour les boutons de navigation
-        prevBtn.disabled = currentIndex === 0;
-        nextBtn.disabled = currentIndex === currentWords.length - 1;
-        
-        // S'assurer que la carte est sur le côté question
-        flashcard.classList.remove('flipped');
-        
-        // Retirer la classe d'animation après mise à jour
         setTimeout(() => {
-          flashcard.classList.remove('updating');
-        }, 50);
-      }, 150);
+          // Mettre à jour le contenu de la carte
+          flashcard.innerHTML = `
+            <div class="flashcard-inner">
+              <div class="flashcard-front">
+                <span class="card-type">${word.type}</span>
+                <h2 class="card-content">${frontContent}</h2>
+                <div class="hint-container">
+                  <button id="hint-button" class="hint-btn"><i class="fas fa-lightbulb"></i> Indice</button>
+                  <p id="hint-text" class="hint-text"></p>
+                </div>
+                <p class="card-prompt">Cliquez pour voir la traduction</p>
+              </div>
+              <div class="flashcard-back">
+                <span class="card-type">${word.type}</span>
+                <h2 class="card-content">${backContent}</h2>
+                <div class="card-details">
+                  <p><strong>Exemple:</strong> <span class="example-text">${word.example}</span></p>
+                  ${word.synonyms ? `<p><strong>Synonymes:</strong> ${word.synonyms}</p>` : ''}
+                  ${word.antonyms ? `<p><strong>Antonymes:</strong> ${word.antonyms}</p>` : ''}
+                  ${word.pronunciation ? `
+                    <p><strong>Prononciation:</strong> <span class="pronunciation-text">${word.pronunciation}</span></p>
+                    <button class="pronunciation-btn" data-text="${word.word}">
+                      <i class="fas fa-volume-up"></i> Écouter
+                    </button>
+                  ` : ''}
+                  
+                </div>
+              </div>
+            </div>
+          `;
+          
+          // Rétablir les écouteurs d'événements pour les nouveaux éléments
+          setupCardListeners();
+          
+          // Mettre à jour l'indice de carte courant avec animation
+          animateCounter(currentCardEl, currentIndex + 1);
+          totalCardsEl.textContent = currentWords.length;
+          
+          // Mettre à jour les boutons de navigation
+          prevBtn.disabled = currentIndex === 0;
+          nextBtn.disabled = currentIndex === currentWords.length - 1;
+          
+          // S'assurer que la carte est sur le côté question
+          flashcard.classList.remove('flipped');
+          
+          // Retirer la classe d'animation après mise à jour
+          setTimeout(() => {
+            flashcard.classList.remove('updating');
+          }, 50);
+        }, 150);
+      } catch (e) {
+        console.error('Erreur lors de la mise à jour de la carte:', e);
+      }
     }
     
     // Configurer les écouteurs d'événements pour les éléments de la carte
@@ -346,6 +313,16 @@ document.addEventListener('DOMContentLoaded', function() {
           hintText.style.transform = 'translateY(-10px)';
           hintText.style.display = 'block';
           
+          // Clear hint after 5 seconds for meaning-to-word mode to prevent clutter
+          if (mode === 'meaning-to-word') {
+            setTimeout(() => {
+              hintText.style.opacity = '0';
+              setTimeout(() => {
+                hintText.style.display = 'none';
+              }, 500);
+            }, 5000);
+          }
+          
           setTimeout(() => {
             hintText.style.opacity = '1';
             hintText.style.transform = 'translateY(0)';
@@ -374,10 +351,60 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fonction pour prononcer un texte avec l'API Speech Synthesis
     function speakText(text) {
       if ('speechSynthesis' in window) {
+        // Cancel any ongoing speech
+        speechSynthesis.cancel();
+        
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'en-US'; // Langue anglaise
-        utterance.rate = 0.9; // Légèrement plus lent que la normale
-        speechSynthesis.speak(utterance);
+        
+        // Set language to English
+        utterance.lang = 'en-US';
+        
+        // Adjust rate (slightly slower)
+        utterance.rate = 0.9;
+        
+        // Set pitch (slightly lower for better clarity)
+        utterance.pitch = 1.0;
+        
+        // Detect iOS device
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        
+        // Select the best voice available (prioritize female voices which are usually clearer)
+        let voices = speechSynthesis.getVoices();
+        
+        // If voices array is empty, wait for them to load
+        if (voices.length === 0) {
+          speechSynthesis.addEventListener('voiceschanged', function() {
+            voices = speechSynthesis.getVoices();
+            selectAndSpeakWithBestVoice();
+          }, { once: true });
+        } else {
+          selectAndSpeakWithBestVoice();
+        }
+        
+        function selectAndSpeakWithBestVoice() {
+          // Filter English voices
+          let englishVoices = voices.filter(voice => voice.lang.includes('en-'));
+          
+          // Look for specific voices based on device
+          if (isIOS) {
+            // Try to use Samantha voice on iOS (high quality)
+            const samanthaVoice = englishVoices.find(v => v.name.includes('Samantha'));
+            if (samanthaVoice) utterance.voice = samanthaVoice;
+          } else {
+            // On other devices, prefer Google voices if available
+            const googleVoice = englishVoices.find(v => v.name.includes('Google'));
+            if (googleVoice) utterance.voice = googleVoice;
+          }
+          
+          // If no specific voice was found, try any English female voice
+          if (!utterance.voice) {
+            const femaleVoice = englishVoices.find(v => v.name.includes('female') || v.name.includes('Female'));
+            if (femaleVoice) utterance.voice = femaleVoice;
+          }
+          
+          // Start speaking
+          speechSynthesis.speak(utterance);
+        }
       }
     }
     
@@ -390,9 +417,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
       
+      // Make sure we have at least one level selected
+      if (selectedLevels.length === 0 && levelCheckboxes.length > 0) {
+        // If no levels are selected, select the first one by default
+        levelCheckboxes[0].checked = true;
+        selectedLevels.push('0');
+      }
+      
       // Mode normal
       currentWords = allWords.filter(word => selectedLevels.includes(word.level));
       
+      console.log(`Filtered words: ${currentWords.length} words match selected levels`);
       
       // Réinitialiser l'index si nécessaire
       if (currentIndex >= currentWords.length) {
@@ -449,7 +484,6 @@ document.addEventListener('DOMContentLoaded', function() {
           date: new Date().toISOString(),
           progress: progress,
           words: currentWords.map(w => w.id),
-          achievements: achievements
         };
         
         localStorage.setItem('flashcards_progress', JSON.stringify(progressData));
@@ -458,8 +492,7 @@ document.addEventListener('DOMContentLoaded', function() {
         saveBtn.classList.add('saving');
         setTimeout(() => {
           saveBtn.classList.remove('saving');
-          // Afficher un message de confirmation
-          showAchievement('Progrès sauvegardé avec succès !');
+
         }, 500);
       } catch (e) {
         console.error('Erreur lors de la sauvegarde des progrès', e);
@@ -481,10 +514,9 @@ document.addEventListener('DOMContentLoaded', function() {
           if (savedIds.length === currentIds.length && 
               savedIds.every(id => currentIds.includes(id))) {
             progress = data.progress;
-            achievements = data.achievements || achievements;
-            updateProgressDisplay();
             
-            showAchievement('Progrès chargé avec succès !');
+            updateProgressDisplay();
+
           }
         }
       } catch (e) {
@@ -522,8 +554,13 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (data.updated) {
                 streakUpdated = true;
-                // Show achievement notification for updated streak
-                showAchievement(`🔥 Série de ${data.newStreak} jours! Continuez comme ça!`);
+                //Notify in the page that the streak has been updated
+                const streakUpdateNotification = document.getElementById('streak-update-notification');
+                streakUpdateNotification.textContent = `🔥 Série de ${data.newStreak} jours! Continuez comme ça!`;
+                streakUpdateNotification.classList.add('show');
+                setTimeout(() => {
+                    streakUpdateNotification.classList.remove('show');
+                }, 5000);
             }
         })
         .catch(error => {
@@ -531,7 +568,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Gestion des événements
     
     // Navigation entre les cartes
     prevBtn.addEventListener('click', function() {
@@ -566,11 +602,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Enregistrer le niveau de connaissance
         progress[currentIndex] = level;
         
-        // Si mode répétition espacée, mettre à jour le temps de révision
-        if (spacedRepetition.enabled) {
-          updateSpacedRepetitionTime(currentWords[currentIndex].id, level);
-        }
-        
         // Mettre à jour l'affichage des progrès
         updateProgressDisplay();
         
@@ -593,7 +624,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 200);
           } else {
             // C'était la dernière carte
-            showAchievement('Vous avez terminé cette série !');
           }
         }, 500);
       });
@@ -608,20 +638,18 @@ document.addEventListener('DOMContentLoaded', function() {
     modeRadios.forEach(radio => {
       radio.addEventListener('change', function() {
         const mode = this.value;
+        console.log(`Switching to mode: ${mode}`);
         
         // Animation de transition
         document.querySelector('.flashcard-container').classList.add('mode-change');
         setTimeout(() => {
           document.querySelector('.flashcard-container').classList.remove('mode-change');
           
-          if (mode === 'spaced-repetition') {
-            // Activer le mode répétition espacée
-            filterWords();
-          } else {
-            // Désactiver le mode répétition espacée
-            spacedRepetition.enabled = false;
-            filterWords();
-          }
+          // Just update the current card display without re-filtering words
+          updateCardDisplay();
+          
+          // Log current state for debugging
+          console.log(`After mode change to ${mode}: ${currentWords.length} words available`);
         }, 400);
       });
     });
@@ -824,4 +852,13 @@ document.addEventListener('DOMContentLoaded', function() {
         element.style.transform = 'translateY(0)';
       }, 100);
     });
+    
+    // Fix to prevent meaning-to-word mode issues
+    setTimeout(() => {
+      if (currentWords.length === 0 && allWords.length > 0) {
+        console.log('No current words but allWords exists, restoring from allWords');
+        currentWords = [...allWords];
+        updateCardDisplay();
+      }
+    }, 1000);
   });
