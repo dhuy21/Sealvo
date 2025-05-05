@@ -1,5 +1,5 @@
 /**
- * Web Vocab - Home Page Interactions
+ * Vocaboo - Home Page Interactions
  * This file handles all the interactive elements on the home page
  * Enhanced for maximum fluidity and smoothness
  */
