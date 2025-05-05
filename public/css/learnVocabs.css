@@ -20,11 +20,12 @@
 
 .learn-container {
   max-width: 2000px;
-  min-width: 1000px;
+  min-width: auto;
   width: 100%;
   margin: 0 auto;
   text-align: center;
   animation: fadeIn 0.7s ease;
+  padding: 0 15px;
 }
 
 @keyframes fadeIn {
@@ -62,6 +63,22 @@
   transform: translateX(-50%);
   background: var(--bg-gradient);
   border-radius: 10px;
+}
+
+.streak-update-notification {
+  display: none;
+  padding: 10px;
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+  border-radius: 8px;
+  margin-top: 10px;
+  font-weight: bold;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.streak-update-notification.show {
+  display: block;
 }
 
 /* Dashboard Stats */
@@ -262,7 +279,7 @@
 /* Flashcard Container */
 .flashcard-container {
   position: relative;
-  margin-bottom: 35px;
+  margin-bottom: 70px;
   perspective: 2000px;
 }
 
@@ -277,7 +294,8 @@
 
 .flashcard {
   width: 100%;
-  height: 450px;
+  height: 380px;
+  max-height: 380px;
   perspective: 1000px;
   margin-bottom: 30px;
   cursor: pointer;
@@ -308,10 +326,10 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 40px;
+  padding: 30px 20px;
   border-radius: var(--card-radius);
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .flashcard-front {
@@ -369,14 +387,17 @@
   letter-spacing: 1px;
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
+  margin-bottom: 15px;
 }
 
 .card-content {
-  font-size: 3rem;
-  margin: 20px 0;
+  font-size: 2.2rem;
+  margin: 10px 0 15px;
   text-align: center;
   max-width: 90%;
   overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
   animation: fadeScale 0.5s ease;
   font-weight: 700;
   letter-spacing: -0.5px;
@@ -462,21 +483,101 @@
 }
 
 .card-details {
-  margin-top: 25px;
+  margin-top: 15px;
   width: 100%;
+  height: auto;
+  max-height: none;
   text-align: left;
   background: rgba(255, 255, 255, 0.15);
-  padding: 22px;
+  padding: 15px;
   border-radius: 15px;
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
   box-shadow: var(--card-inner-shadow);
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  overflow: visible;
 }
 
 .card-details p {
-  margin: 12px 0;
-  font-size: 1.1rem;
-  line-height: 1.6;
+  margin: 8px 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+/* Final fixes for synonym/antonym clipping */
+.card-details p:has(strong:contains("Synonymes")) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.card-details p:has(strong:contains("Antonymes")) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+/* Fallback for browsers that don't support :has */
+.card-details p strong {
+  display: inline-block;
+  margin-right: 5px;
+}
+
+/* Ensure any long words in synonyms/antonyms wrap properly */
+.card-details {
+  word-break: break-all;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  text-overflow: ellipsis;
+}
+
+/* For all screen sizes, ensure the flashcard can expand to fit content */
+@media (min-width: 320px) {
+  .flashcard, 
+  .flashcard-inner, 
+  .flashcard-front, 
+  .flashcard-back {
+    height: 350px !important;
+    min-height: 350px !important;
+    max-height: 350px !important;
+  }
+}
+
+@media (min-width: 577px) {
+  .flashcard, 
+  .flashcard-inner, 
+  .flashcard-front, 
+  .flashcard-back {
+    height: 420px !important;
+    min-height: 420px !important;
+    max-height: 420px !important;
+  }
+}
+
+@media (max-width: 414px) {
+  .flashcard, 
+  .flashcard-inner, 
+  .flashcard-front, 
+  .flashcard-back {
+    height: 280px !important;
+    min-height: 280px !important;
+    max-height: 280px !important;
+  }
+  
+  .flashcard-container {
+    margin-bottom: 50px;
+  }
+}
+
+/* Fix specifically for synonyms and antonyms that might be clipped */
+p strong + span, 
+p strong + span + span {
+  word-break: break-word;
+  white-space: normal;
+  display: inline-block;
+  width: auto;
+  max-width: 100%;
 }
 
 .example-text {
@@ -485,6 +586,9 @@
   padding-left: 10px;
   margin-left: 5px;
   display: inline-block;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 .pronunciation-text {
@@ -493,6 +597,9 @@
   background: rgba(255, 255, 255, 0.1);
   padding: 3px 8px;
   border-radius: 6px;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 .pronunciation-btn {
@@ -506,6 +613,9 @@
   margin-top: 12px;
   transition: all var(--transition-speed);
   box-shadow: var(--card-inner-shadow);
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 .pronunciation-btn:hover {
@@ -519,7 +629,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 25px;
+  margin-top: 30px !important;
+  clear: both;
+  position: relative;
+  z-index: 50;
 }
 
 .nav-btn {
@@ -987,14 +1100,19 @@
   box-shadow: 0 8px 20px rgba(255, 107, 107, 0.35);
 }
 
-/* Responsive Design */
+/* Improved Responsive Design for iPhone and small devices */
 @media (max-width: 992px) {
+  .flashcard {
+    height: 350px;
+    max-height: 350px;
+  }
+  
   .flashcard-controls {
     grid-template-columns: 1fr;
   }
   
-  .flashcard {
-    height: 400px;
+  .learn-title {
+    font-size: 2.2rem;
   }
 }
 
@@ -1015,7 +1133,7 @@
   }
   
   .card-content {
-    font-size: 2.2rem;
+    font-size: 2rem;
   }
   
   .progress-stats {
@@ -1023,11 +1141,40 @@
     align-items: flex-start;
     gap: 10px;
   }
+
+  .stat-card {
+    padding: 16px;
+  }
+
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 1.5rem;
+  }
+
+  .flashcard {
+    height: 320px;
+    max-height: 320px;
+  }
+  
+  .flashcard-inner, .flashcard-front, .flashcard-back {
+    min-height: 400px;
+  }
+  
+  .card-details {
+    padding: 15px;
+    margin-top: 10px;
+  }
 }
 
 @media (max-width: 576px) {
   .flashcard {
-    height: 350px;
+    height: 300px;
+    max-height: 300px;
+  }
+  
+  .flashcard-inner, .flashcard-front, .flashcard-back {
+    min-height: 350px;
   }
   
   .dashboard-stats {
@@ -1042,6 +1189,135 @@
   .action-btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .card-content {
+    font-size: 1.8rem;
+    margin: 10px 0;
+  }
+
+  .learn-title {
+    font-size: 1.8rem;
+  }
+
+  .card-details p {
+    font-size: 1rem;
+  }
+}
+
+@media screen and (max-width: 414px) {
+  .flashcard {
+    height: 280px;
+    max-height: 280px;
+  }
+  
+  .flashcard-front, .flashcard-back {
+    padding: 20px 15px;
+  }
+
+  .card-content {
+    font-size: 1.5rem;
+  }
+
+  .stat-card {
+    padding: 12px;
+  }
+
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+    margin-right: 12px;
+  }
+
+  .stat-content h3 {
+    font-size: 1.5rem;
+  }
+
+  .flashcard-filters, .mode-selector {
+    padding: 15px;
+  }
+
+  .filter-label, .mode-label {
+    padding: 8px 10px;
+  }
+
+  .custom-checkbox, .custom-radio {
+    width: 20px;
+    height: 20px;
+  }
+
+  .filter-label input:checked ~ .custom-checkbox:after {
+    left: 7px;
+    top: 4px;
+    width: 5px;
+    height: 9px;
+  }
+
+  .card-type {
+    font-size: 0.7rem;
+    top: 10px;
+    left: 10px;
+    padding: 3px 10px;
+  }
+
+  .card-prompt {
+    font-size: 0.8rem;
+    bottom: 15px;
+    padding: 6px 12px;
+  }
+
+  .card-details {
+    padding: 15px;
+    margin-top: 15px;
+  }
+
+  .card-details p {
+    margin: 8px 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  .achievement-popup {
+    min-width: 280px;
+    padding: 20px;
+  }
+
+  .knowledge-btn, .nav-btn, .action-btn {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+  }
+
+  .progress-container {
+    padding: 15px;
+  }
+
+  .progress-header h3 {
+    font-size: 1rem;
+  }
+
+  #progress-text {
+    font-size: 0.9rem;
+    padding: 4px 10px;
+  }
+}
+
+/* Height adjustments for shorter screens */
+@media (max-height: 700px) {
+  .flashcard {
+    height: 280px;
+  }
+
+  .learn-title {
+    margin-bottom: 20px;
+  }
+
+  .dashboard-stats {
+    margin-bottom: 20px;
+  }
+
+  .flashcard-container {
+    margin-bottom: 20px;
   }
 }
 
@@ -1183,4 +1459,455 @@ button, .btn, .action-btn, .knowledge-btn, .nav-btn, .hint-btn, .pronunciation-b
 /* Global active button pressing effect */
 button:active, .btn:active {
   transform: scale(0.97);
+}
+
+/* iPhone XS/11 Pro/12 Pro specific adjustments (390px width) */
+@media screen and (min-width: 385px) and (max-width: 415px) {
+  .flashcard {
+    height: 290px;
+  }
+  
+  .knowledge-buttons {
+    gap: 8px;
+  }
+  
+  .knowledge-btn {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+  }
+  
+  .card-details {
+    padding: 12px;
+  }
+  
+  .card-details p {
+    margin: 6px 0;
+    font-size: 0.85rem;
+  }
+  
+  .progress-stat {
+    padding: 5px 10px;
+  }
+}
+
+/* Fix for very small screens like iPhone SE */
+@media screen and (max-width: 375px) {
+  .flashcard {
+    height: 270px;
+  }
+  
+  .stat-card {
+    padding: 10px;
+  }
+  
+  .progress-container {
+    padding: 12px;
+  }
+  
+  .knowledge-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Orientation specific adjustments for mobile */
+@media screen and (max-height: 800px) and (orientation: landscape) {
+  .flashcard {
+    height: 220px;
+  }
+  
+  .dashboard-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .knowledge-buttons {
+    flex-direction: row;
+  }
+}
+
+/* Laptop Responsive Styles */
+@media screen and (min-width: 1024px) and (max-width: 1440px) {
+  .learn-container {
+    max-width: 1200px;
+    padding: 0 30px;
+  }
+  
+  .dashboard-stats {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  
+  .flashcard-controls {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  
+  .flashcard {
+    height: 380px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .card-content {
+    font-size: 2.5rem;
+    max-width: 80%;
+  }
+  
+  .card-details {
+    max-width: 90%;
+  }
+  
+  .flashcard-navigation {
+    max-width: 800px;
+    margin: 25px auto 0;
+  }
+  
+  .knowledge-buttons {
+    gap: 15px;
+  }
+  
+  .progress-container {
+    max-width: 800px;
+    margin: 35px auto;
+  }
+  
+  .flashcard-actions {
+    max-width: 800px;
+    margin: 35px auto;
+    gap: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .action-btn {
+    min-width: 180px;
+  }
+}
+
+/* Larger Laptops / Small Desktops */
+@media screen and (min-width: 1441px) and (max-width: 1920px) {
+  .learn-container {
+    max-width: 1400px;
+  }
+  
+  .flashcard {
+    height: 420px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  
+  .card-content {
+    font-size: 2.8rem;
+  }
+  
+  .flashcard-navigation,
+  .progress-container,
+  .flashcard-actions {
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* Wide screens / High-resolution laptops */
+@media screen and (min-width: 1600px) {
+  .learn-container {
+    max-width: 1600px;
+  }
+  
+  .flashcard-controls {
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto 35px;
+  }
+  
+  .dashboard-stats {
+    grid-template-columns: repeat(3, 1fr);
+    max-width: 1200px;
+    margin: 0 auto 35px;
+  }
+}
+
+/* Laptop in landscape mode (shorter height) */
+@media screen and (min-width: 1024px) and (max-height: 800px) {
+  .learn-title {
+    font-size: 2.2rem;
+    margin-bottom: 25px;
+  }
+  
+  .dashboard-stats {
+    margin-bottom: 25px;
+  }
+  
+  .flashcard {
+    height: 320px;
+  }
+  
+  .flashcard-controls {
+    margin-bottom: 25px;
+  }
+  
+  .flashcard-container {
+    margin-bottom: 25px;
+  }
+  
+  .progress-container {
+    margin: 25px auto;
+    padding: 20px;
+  }
+  
+  .flashcard-actions {
+    margin-top: 25px;
+  }
+}
+
+/* General laptop adjustments (better centering and layout) */
+@media screen and (min-width: 992px) {
+  .learn-container {
+    padding: 20px 40px;
+  }
+  
+  .dashboard-stats, 
+  .flashcard-controls, 
+  .flashcard-container, 
+  .progress-container, 
+  .flashcard-actions {
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .home-cta {
+    margin-top: 30px;
+    padding-bottom: 20px;
+  }
+  
+  /* Better balance for 3-column stats */
+  .dashboard-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  /* Better arrangement of controls */
+  .flashcard-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+  }
+  
+  /* Better read experience for card content */
+  .card-content {
+    line-height: 1.2;
+  }
+  
+  /* Improved navigation buttons */
+  .flashcard-navigation {
+    padding: 0 50px;
+  }
+  
+  /* Better alignment for knowledge buttons */
+  .knowledge-buttons {
+    justify-content: center;
+  }
+}
+
+/* Specific wide-screen laptop adjustments (16:9) */
+@media screen and (min-width: 992px) and (aspect-ratio: 16/9) {
+  .flashcard {
+    height: 400px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .learn-title {
+    margin-bottom: 30px;
+  }
+}
+
+/* MacBook Pro and similar laptops (16:10) */
+@media screen and (min-width: 992px) and (aspect-ratio: 16/10) {
+  .flashcard {
+    height: 380px;
+  }
+  
+  .flashcard-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+  }
+  
+  .action-btn {
+    flex: 0 0 auto;
+    min-width: 200px;
+  }
+}
+
+/* High-DPI laptop screens */
+@media screen and (min-width: 992px) and (min-resolution: 192dpi) {
+  .card-shadow {
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08), 0 6px 16px rgba(0, 0, 0, 0.06);
+  }
+  
+  .flashcard-inner {
+    box-shadow: var(--card-shadow);
+  }
+  
+  .learn-title {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* Fix for content overflow */
+.example-text, .pronunciation-text, .synonymes, .antonymes {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Make sure the flashcard grows to fit content */
+.flashcard, .flashcard-inner, .flashcard-front, .flashcard-back {
+  height: auto !important;
+  min-height: 350px !important;
+  max-height: none !important;
+  overflow: visible;
+}
+
+/* Fix the scrolling issue in card-details */
+.card-details {
+  margin-top: 15px;
+  width: 100%;
+  height: auto;
+  max-height: none;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 15px;
+  border-radius: 15px;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  box-shadow: var(--card-inner-shadow);
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  overflow: visible;
+}
+
+/* Responsive adjustments for card-details */
+@media (max-width: 768px) {
+  .card-details {
+    max-height: none;
+    padding: 12px;
+  }
+}
+
+@media (max-width: 576px) {
+  .card-details {
+    max-height: none;
+    padding: 10px;
+  }
+}
+
+@media (max-width: 414px) {
+  .card-details {
+    max-height: none;
+    padding: 8px;
+  }
+}
+
+/* Meaning-to-word mode adjustments */
+input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card-content {
+  font-size: 1.8rem;
+  line-height: 1.3;
+  font-weight: 600;
+  margin-bottom: 20px;
+  max-height: none;
+  overflow: visible;
+}
+
+/* Better direct targeting with the added classes */
+.flashcard.meaning-to-word-mode .flashcard-front .card-content {
+  font-size: 1.5rem !important;
+  line-height: 1.4 !important;
+  font-weight: 600 !important;
+  max-width: 95% !important;
+  margin: 15px 0 25px !important;
+}
+
+.flashcard.meaning-to-word-mode .flashcard-back .card-content {
+  font-size: 2.2rem !important;
+  line-height: 1.2 !important;
+  font-weight: 700 !important;
+}
+
+.flashcard.meaning-to-word-mode .hint-container {
+  margin-top: 20px !important;
+}
+
+/* Responsive styles for meaning-to-word mode */
+@media (max-width: 768px) {
+  .flashcard.meaning-to-word-mode .flashcard-front .card-content {
+    font-size: 1.3rem !important;
+    line-height: 1.3 !important;
+    margin: 10px 0 15px !important;
+  }
+  
+  .flashcard.meaning-to-word-mode .flashcard-back .card-content {
+    font-size: 1.8rem !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .flashcard.meaning-to-word-mode .flashcard-front .card-content {
+    font-size: 1.1rem !important;
+    line-height: 1.3 !important;
+    margin: 5px 0 10px !important;
+  }
+  
+  .flashcard.meaning-to-word-mode .flashcard-back .card-content {
+    font-size: 1.6rem !important;
+  }
+  
+  .flashcard.meaning-to-word-mode .hint-container {
+    margin-top: 10px !important;
+  }
+}
+
+@media (max-width: 414px) {
+  .flashcard.meaning-to-word-mode .flashcard-front .card-content {
+    font-size: 1rem !important;
+    margin: 5px 0 8px !important;
+  }
+  
+  .flashcard.meaning-to-word-mode .flashcard-back .card-content {
+    font-size: 1.4rem !important;
+  }
+}
+
+/* Override height constraints for meaning-to-word-mode */
+.flashcard.meaning-to-word-mode,
+.flashcard.meaning-to-word-mode .flashcard-inner,
+.flashcard.meaning-to-word-mode .flashcard-front,
+.flashcard.meaning-to-word-mode .flashcard-back {
+  height: auto !important;
+  min-height: 380px !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+@media (max-width: 768px) {
+  .flashcard.meaning-to-word-mode,
+  .flashcard.meaning-to-word-mode .flashcard-inner,
+  .flashcard.meaning-to-word-mode .flashcard-front,
+  .flashcard.meaning-to-word-mode .flashcard-back {
+    min-height: 320px !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .flashcard.meaning-to-word-mode,
+  .flashcard.meaning-to-word-mode .flashcard-inner,
+  .flashcard.meaning-to-word-mode .flashcard-front,
+  .flashcard.meaning-to-word-mode .flashcard-back {
+    min-height: 280px !important;
+  }
 }
