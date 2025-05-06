@@ -21,6 +21,19 @@ CREATE TABLE IF NOT EXISTS users (
   CHECK (email REGEXP '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$')
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+/* INSERT INTO users (id, username, email, password, streak, last_login, created_at, updated_at, ava) VALUES ('95a916c', 'John Doe', 'john.doe@example.com', 'password123', 0, NULL, CURRENT_TIMESTAMP, NULL, 1); */
+
+CREATE TABLE IF NOT EXISTS reset_password (
+    email VARCHAR(255) NOT NULL,
+    token VARCHAR(255) DEFAULT NULL,
+    expires_at TIMESTAMP DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    used BOOLEAN DEFAULT FALSE,
+    PRIMARY KEY (email),
+    FOREIGN KEY (email) REFERENCES users(email)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 /*CREATE TABLE languages (
     code VARCHAR(2) PRIMARY KEY, 
@@ -122,7 +135,7 @@ CREATE TABLE IF NOT EXISTS word_pronunciations (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*INSERT INTO word_pronunciations (detail_id, pronunciation) VALUES ('1', 'Present');*/
 
-CREATE TABLE IF NOT EXISTS game_scores (
+/*CREATE TABLE IF NOT EXISTS game_scores (
   id int(11) NOT NULL AUTO_INCREMENT,
   user_id char(7) NOT NULL,
   game_type enum('word_scramble', 'flash_match', 'speed_vocab', 'vocab_quiz') NOT NULL,
@@ -134,4 +147,4 @@ CREATE TABLE IF NOT EXISTS game_scores (
   FOREIGN KEY (user_id) REFERENCES users(id)
       ON DELETE CASCADE
       ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;*/

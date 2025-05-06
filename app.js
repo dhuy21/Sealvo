@@ -4,9 +4,8 @@ const path = require('path');
 const express = require('express');
 const route = require('./app/routes');
 const morgan = require('morgan');
-const { engine } = require('express-handlebars'); // Sử dụng cú pháp mới
+const { engine } = require('express-handlebars');
 const session = require('express-session');
-const passport = require('passport');
 const app = express();
 const port = process.env.PORT || config.PORT;
 const crypto = require('crypto');
@@ -37,12 +36,9 @@ app.use(session({
     cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 heures
 }));
 
-app.use(passport.initialize());
-app.use(passport.session());
-
 // Make user data available to all templates
 app.use((req, res, next) => {
-  res.locals.user = req.user || null;
+  res.locals.user = req.session.user || null;
   next();
 });
 

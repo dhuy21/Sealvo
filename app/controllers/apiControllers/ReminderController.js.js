@@ -1,6 +1,6 @@
-const UserModel = require('../models/users');
-const LearningModel = require('../models/learning');
-const LearningController = require('../controllers/LearningController');
+const UserModel = require('../../models/users');
+const LearningModel = require('../../models/learning');
+const LearningController = require('../LearningController');
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
@@ -13,7 +13,7 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-class APIcontroller {
+class ReminderController {
     constructor() {
         // Bind methods to preserve 'this' context
         this.reminder = this.reminder.bind(this);
@@ -49,7 +49,7 @@ class APIcontroller {
     async sendEmail(email, content) {
         try {
             const info = await transporter.sendMail({
-                from: '"VocabMaster" <huynguyen2182004@gmail.com>', // sender address
+                from: '"Vocaboo" <huynguyen2182004@gmail.com>', // sender address
                 to: email, // list of receivers
                 subject: "Vos mots à réviser aujourd'hui", // Subject line 
                 html: content
@@ -65,4 +65,4 @@ class APIcontroller {
    
 }
 
-module.exports = new APIcontroller();
+module.exports = new ReminderController();

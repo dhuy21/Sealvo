@@ -5,6 +5,7 @@ const siteRouter = require('./site');
 const newVocabsRouter = require('./vocab/monVocabs');
 const gameRouter = require('./game/game');
 const apiRouter = require('./api');
+const authRouter = require('./auth/auth');
 // Import controllers
 
 const LearningController = require('../controllers/LearningController');
@@ -25,6 +26,7 @@ function route(app) {
     // Removing duplicate route for feedback, it's already included in siteRouter
     app.use('/games', gameRouter);
     app.use('/api', apiRouter);
+    app.use('/auth', authRouter);
     
     // Streak update route
     app.post('/api/update-streak', ensureAuthenticated, async (req, res) => {
