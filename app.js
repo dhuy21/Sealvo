@@ -1,5 +1,4 @@
 const db = require('./app/core/database.js');
-const config = require('./app/config/env');
 const path = require('path');
 const express = require('express');
 const route = require('./app/routes');
@@ -7,7 +6,7 @@ const morgan = require('morgan');
 const { engine } = require('express-handlebars');
 const session = require('express-session');
 const app = express();
-const port = process.env.PORT || config.PORT;
+const port = process.env.PORT;
 const crypto = require('crypto');
 
 
