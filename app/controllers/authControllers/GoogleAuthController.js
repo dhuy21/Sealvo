@@ -1,15 +1,14 @@
 const axios = require('axios');
 const crypto = require('crypto');
-const config = require('../../config/env');
 const User = require('../../models/users');
 const wordModel = require('../../models/words');
 const learningModel = require('../../models/learning');
 
 class GoogleAuthController {
     constructor() {
-        this.clientID = process.env.GOOGLE_CLIENT_ID || config.GOOGLE_CLIENT_ID;
-        this.clientSecret = process.env.GOOGLE_CLIENT_SECRET || config.GOOGLE_CLIENT_SECRET;
-        this.redirectURI = 'http://localhost:8080/auth/google/callback';
+        this.clientID = process.env.GOOGLE_CLIENT_ID;
+        this.clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+        this.redirectURI = `http://${process.env.DOMAIN}/auth/google/callback`;
     }
     
     // Retourner l'URL de vérification Google

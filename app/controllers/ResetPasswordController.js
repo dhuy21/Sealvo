@@ -5,6 +5,7 @@ const fs = require('fs');
 const bcrypt = require('bcryptjs')
 const path = require('path');
 const nodemailer = require('nodemailer');
+//Variables d'environnement\
 
 const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
@@ -29,7 +30,7 @@ class ResetPasswordController {
 
     async generateResetPasswordEmail(email, token) {
         try {
-            const resetPasswordLink = `http://localhost:8080/login/resetPassword?token=${token}`;
+            const resetPasswordLink = `http://${process.env.DOMAIN}/login/resetPassword?token=${token}`;
             const userId = await userModel.findByEmail(email);
             const username = await userModel.findUsernameById(userId);
 
