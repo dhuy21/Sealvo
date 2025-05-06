@@ -44,7 +44,7 @@ class User {
     }   
     async findByEmail(email) {
         try {
-            const [rows] = await global.dbConnection.execute('SELECT * FROM users WHERE email = ?', [email]);
+            const [rows] = await global.dbConnection.execute('SELECT id FROM users WHERE email = ?', [email]);
             return rows[0] || null;
         } catch (error) {
             console.error('Erreur lors de la recherche de l\'utilisateur par email :', error);
@@ -85,10 +85,25 @@ class User {
                 existingUser = await this.findById(userId);
             }
             
+            // Ensure all required values are defined - replace undefined with null for MySQL
+            const username = userData.username;
+            const email = userData.email;
+            const password = userData.password;
+            const ava = userData.ava || 1; // Default avatar is 1
+            
+            // Log the values being inserted (without sensitive info)
+            console.log('Creating user with values:', {
+                id: userId,
+                username: username,
+                email: email, 
+                hasPassword: !!password,
+                ava: ava
+            });
+            
             // Insérer l'utilisateur avec l'ID généré
             const [result] = await global.dbConnection.execute(
                 'INSERT INTO users (id, username, email, password, ava) VALUES (?, ?, ?, ?, ?)', 
-                [userId, userData.username, userData.email, userData.password, userData.ava]
+                [userId, username, email, password, ava]
             );
             
             return userId;
@@ -121,6 +136,19 @@ class User {
         }
     }
 
+    async updateResetPasswordToken(email, token, expiresAt) {
+        try {
+            const [result] = await global.dbConnection.execute(
+                'UPDATE users SET reset_password_token = ?, reset_password_expires = ? WHERE email = ?',
+                [token, expiresAt, email]
+            );
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour du jeton de réinitialisation du mot de passe :', error);
+            throw error;
+        }
+    }
+
     async updateLastLogin(id) {
         try {
             const [result] = await global.dbConnection.execute(
@@ -146,6 +174,20 @@ class User {
             throw error;
         }
     }
+
+    async updatePassword(email, newPassword) {
+        try {
+            const [result] = await global.dbConnection.execute(
+                'UPDATE users SET password = ? WHERE email = ?', 
+                [newPassword, email]
+            );
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour du mot de passe :', error);
+            throw error;
+        }
+    }
+    
     async getStreakById(id) {
         try {
             const [rows] = await global.dbConnection.execute('SELECT streak FROM users WHERE id = ?', [id]);

@@ -2,9 +2,7 @@ const bcrypt = require('bcryptjs');
 const userModel = require('../models/users');
 const wordModel = require('../models/words');
 const learningModel = require('../models/learning');
-const { last } = require('pdf-lib');
-const fs = require('fs');
-const path = require('path');
+
 
 class UserController {
     // Afficher la page de connexion
