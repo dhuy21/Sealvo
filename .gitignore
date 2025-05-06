@@ -7,7 +7,7 @@ yarn-error.log
 
 # Environment variables
 .env
-/app/config/env.js
+
 .env.local
 .env.development.local
 .env.test.local
