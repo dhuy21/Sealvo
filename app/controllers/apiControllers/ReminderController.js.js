@@ -49,7 +49,7 @@ class ReminderController {
     async sendEmail(email, content) {
         try {
             const info = await transporter.sendMail({
-                from: '"Vocaboo" <huynguyen2182004@gmail.com>', // sender address
+                from: '"SealVo" <huynguyen2182004@gmail.com>', // sender address
                 to: email, // list of receivers
                 subject: "Vos mots à réviser aujourd'hui", // Subject line 
                 html: content
