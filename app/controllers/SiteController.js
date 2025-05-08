@@ -28,18 +28,7 @@ class SiteController {
         });
     }
 
-    // Tableau de bord (protégé)
-    dashboard(req, res) {
-        // Vérifier si l'utilisateur est connecté
-        if (!req.session.user) {
-            return res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
-        }
-        
-        res.render('dashboard', {
-            title: 'Tableau de bord',
-            user: req.session.user
-        });
-    }
+    
     // Page "Feedback"
     feedback(req, res) {
         res.render('feedback', {

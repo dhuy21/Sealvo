@@ -4,149 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Vos mots à réviser aujourd'hui</title>
-    </head>
-    <body>
-        <div class="email-container">
-            <div class="header">
-                <div class="logo">SEALVO</div>
-                <h1>Bonjour {{user.username}} !</h1>
-            </div>
-            
-            <div class="content">
-                {{#if streak}}
-                <div class="streak-container">
-                    <p class="streak-number">
-                        <span class="streak-emoji">🔥</span> {{streak.currentStreak}} jour(s)
-                    </p>
-                    <p class="streak-label">Série d'apprentissage actuelle</p>
-                    
-                    {{#if streak.isAtRisk}}
-                    <p class="streak-message">⚠️ Ne perdez pas votre série ! Révisez aujourd'hui pour continuer.</p>
-                    {{else}}
-                    <p class="streak-message">
-                        {{#if streak.isOnFire}}
-                        <span class="flames">🔥🔥🔥</span> Impressionnant ! Continuez comme ça !
-                        {{else if streak.isGood}}
-                        👏 Bonne progression ! Gardez le rythme.
-                        {{else}}
-                        💪 Chaque jour compte. Continuez à apprendre !
-                        {{/if}}
-                    </p>
-                    {{/if}}
-                    
-                    {{#if streak.longestStreak}}
-                    <p class="streak-label">Record personnel: {{streak.longestStreak}} jours</p>
-                    {{/if}}
-                </div>
-                {{/if}}
-                
-                <h2 class="section-title">Votre révision du jour</h2>
-                
-                <p>Voici un aperçu de vos mots à réviser aujourd'hui pour optimiser votre apprentissage :</p>
-
-                {{#if wordCount}}
-                <div class="stats-container">
-                    <div class="stats">
-                        <div class="stat-item">
-                            <span class="stat-number">{{wordCount}}</span>
-                            <span class="stat-label">Mots au total</span>
-                        </div>
-                        
-                        {{#if streak}}
-                        <div class="stat-item">
-                            <span class="stat-number">{{streak.currentStreak}}</span>
-                            <span class="stat-label">Jours consécutifs</span>
-                        </div>
-                        {{/if}}
-                        
-                        <div class="stat-item">
-                            <span class="stat-number">{{wordsShown}}</span>
-                            <span class="stat-label">Mots affichés</span>
-                        </div>
-                    </div>
-                    
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 0%;"></div>
-                    </div>
-                    <span style="font-size: 12px; color: #666;">0% complété</span>
-                </div>
-                {{/if}}
-
-                {{#if words.length}}
-                <div class="word-list">
-                    {{#each words}}
-                    <div class="word-item word-level-{{this.level}}">
-                        <div class="word-header">
-                            <h3 class="word-title">{{this.word}}</h3>
-                            <span class="word-type">{{this.type}}</span>
-                        </div>
-                        <p class="word-meaning">{{this.meaning}}</p>
-                        
-                        {{#if this.pronunciation}}
-                        <div class="word-pronunciation">
-                            <span class="audio-icon">🔊</span> {{this.pronunciation}}
-                        </div>
-                        {{/if}}
-                        
-                        {{#if this.example}}
-                        <div class="word-example">
-                            <span style="color: #999;">"</span>{{this.example}}<span style="color: #999;">"</span>
-                        </div>
-                        {{/if}}
-                        
-                        <div class="word-difficulty">
-                            Difficulté: 
-                            <span class="difficulty-indicator difficulty-active"></span>
-                            {{#if this.isLevel1}}
-                            <span class="difficulty-indicator difficulty-active"></span>
-                            {{else}}
-                            {{#if this.isLevel2}}
-                            <span class="difficulty-indicator difficulty-active"></span>
-                            {{else}}
-                            <span class="difficulty-indicator difficulty-inactive"></span>
-                            {{/if}}
-                            {{/if}}
-                            
-                            {{#if this.isLevel2}}
-                            <span class="difficulty-indicator difficulty-active"></span>
-                            {{else}}
-                            <span class="difficulty-indicator difficulty-inactive"></span>
-                            {{/if}}
-                        </div>
-                    </div>
-                    {{/each}}
-                    
-                    {{#if hasMoreWords}}
-                    <a href="{{baseUrl}}/monVocabs/learn" class="view-all-link">Voir tous les {{wordCount}} mots →</a>
-                    {{/if}}
-                </div>
-                {{/if}}
-                
-                <div class="tip-box">
-                    <span class="tip-title">💡 Astuce du jour</span>
-                    <p>Consacrer juste 10 minutes par jour à réviser votre vocabulaire peut améliorer votre maîtrise de la langue de façon significative ! Essayez de réviser à la même heure chaque jour pour créer une habitude durable.</p>
-                </div>
-
-                <div style="text-align: center; margin-top: 30px;">
-                    <a href="{{baseUrl}}/monVocabs/learn" class="cta-button">Commencer à réviser</a>
-                </div>
-
-                <p style="margin-top: 30px;">Bon apprentissage,<br>L'équipe VocabMaster</p>
-            </div>
-            
-            <div class="footer">
-                <p>Cet e-mail vous a été envoyé car vous êtes inscrit sur VocabMaster.</p>
-                <p><a href="{{baseUrl}}/settings">Modifier mes préférences de notification</a></p>
-                
-                <div class="social-links">
-                    <a href="#" style="text-decoration: none;">📱</a>
-                    <a href="#" style="text-decoration: none;">📘</a>
-                    <a href="#" style="text-decoration: none;">📸</a>
-                </div>
-            </div>
-        </div>
-    </body>
-    <style>
+        <style>
             /* Styles optimisés pour la compatibilité email */
             body {
                 font-family: 'Arial', sans-serif;
@@ -596,4 +454,148 @@
                 }
             }
     </style>
+    </head>
+    <body>
+        <div class="email-container">
+            <div class="header">
+                <div class="logo">SEALVO</div>
+                <h1>Bonjour {{user.username}} !</h1>
+            </div>
+            
+            <div class="content">
+                {{#if streak}}
+                <div class="streak-container">
+                    <p class="streak-number">
+                        <span class="streak-emoji">🔥</span> {{streak.currentStreak}} jour(s)
+                    </p>
+                    <p class="streak-label">Série d'apprentissage actuelle</p>
+                    
+                    {{#if streak.isAtRisk}}
+                    <p class="streak-message">⚠️ Ne perdez pas votre série ! Révisez aujourd'hui pour continuer.</p>
+                    {{else}}
+                    <p class="streak-message">
+                        {{#if streak.isOnFire}}
+                        <span class="flames">🔥🔥🔥</span> Impressionnant ! Continuez comme ça !
+                        {{else if streak.isGood}}
+                        👏 Bonne progression ! Gardez le rythme.
+                        {{else}}
+                        💪 Chaque jour compte. Continuez à apprendre !
+                        {{/if}}
+                    </p>
+                    {{/if}}
+                    
+                    {{#if streak.longestStreak}}
+                    <p class="streak-label">Record personnel: {{streak.longestStreak}} jours</p>
+                    {{/if}}
+                </div>
+                {{/if}}
+                
+                <h2 class="section-title">Votre révision du jour</h2>
+                
+                <p>Voici un aperçu de vos mots à réviser aujourd'hui pour optimiser votre apprentissage :</p>
+
+                {{#if wordCount}}
+                <div class="stats-container">
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-number">{{wordCount}}</span>
+                            <span class="stat-label">Mots au total</span>
+                        </div>
+                        
+                        {{#if streak}}
+                        <div class="stat-item">
+                            <span class="stat-number">{{streak.currentStreak}}</span>
+                            <span class="stat-label">Jours consécutifs</span>
+                        </div>
+                        {{/if}}
+                        
+                        <div class="stat-item">
+                            <span class="stat-number">{{wordsShown}}</span>
+                            <span class="stat-label">Mots affichés</span>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%;"></div>
+                    </div>
+                    <span style="font-size: 12px; color: #666;">0% complété</span>
+                </div>
+                {{/if}}
+
+                {{#if words.length}}
+                <div class="word-list">
+                    {{#each words}}
+                    <div class="word-item word-level-{{this.level}}">
+                        <div class="word-header">
+                            <h3 class="word-title">{{this.word}}</h3>
+                            <span class="word-type">{{this.type}}</span>
+                        </div>
+                        <p class="word-meaning">{{this.meaning}}</p>
+                        
+                        {{#if this.pronunciation}}
+                        <div class="word-pronunciation">
+                            <span class="audio-icon">🔊</span> {{this.pronunciation}}
+                        </div>
+                        {{/if}}
+                        
+                        {{#if this.example}}
+                        <div class="word-example">
+                            <span style="color: #999;">"</span>{{this.example}}<span style="color: #999;">"</span>
+                        </div>
+                        {{/if}}
+                        
+                        <div class="word-difficulty">
+                            Difficulté: 
+                            <span class="difficulty-indicator difficulty-active"></span>
+                            {{#if this.isLevel1}}
+                            <span class="difficulty-indicator difficulty-active"></span>
+                            {{else}}
+                            {{#if this.isLevel2}}
+                            <span class="difficulty-indicator difficulty-active"></span>
+                            {{else}}
+                            <span class="difficulty-indicator difficulty-inactive"></span>
+                            {{/if}}
+                            {{/if}}
+                            
+                            {{#if this.isLevel2}}
+                            <span class="difficulty-indicator difficulty-active"></span>
+                            {{else}}
+                            <span class="difficulty-indicator difficulty-inactive"></span>
+                            {{/if}}
+                        </div>
+                    </div>
+                    {{/each}}
+                    
+                    {{#if hasMoreWords}}
+                    <a href="{{baseUrl}}/monVocabs/learn" class="view-all-link">Voir tous les {{wordCount}} mots →</a>
+                    {{/if}}
+                </div>
+                {{/if}}
+                
+                <div class="tip-box">
+                    <span class="tip-title">💡 Astuce du jour</span>
+                    <p>Consacrer juste 10 minutes par jour à réviser votre vocabulaire peut améliorer votre maîtrise de la langue de façon significative ! Essayez de réviser à la même heure chaque jour pour créer une habitude durable.</p>
+                </div>
+
+                <div style="text-align: center; margin-top: 30px;">
+                    <a href="{{baseUrl}}/monVocabs/learn" class="cta-button">Commencer à réviser</a>
+                </div>
+
+                <p style="margin-top: 30px;">Bon apprentissage,<br>L'équipe VocabMaster</p>
+            </div>
+            
+            <div class="footer">
+                <p>Cet e-mail vous a été envoyé car vous êtes inscrit sur VocabMaster.</p>
+                <p><a href="{{baseUrl}}/settings">Modifier mes préférences de notification</a></p>
+                
+                <div class="social-links">
+                    <a href="#" style="text-decoration: none;">📱</a>
+                    <a href="#" style="text-decoration: none;">📘</a>
+                    <a href="#" style="text-decoration: none;">📸</a>
+                </div>
+            </div>
+        </div>
+        
+    </body>
+    
 </html>

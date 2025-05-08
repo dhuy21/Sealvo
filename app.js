@@ -1,12 +1,13 @@
 const db = require('./app/core/database.js');
 const path = require('path');
+const dotenv = require('dotenv').config({ path: path.join(__dirname, 'app/config/.env') });
 const express = require('express');
 const route = require('./app/routes');
 const morgan = require('morgan');
 const { engine } = require('express-handlebars');
 const session = require('express-session');
 const app = express();
-const port = process.env.PORT;
+const port = process.env.PORT || 3000;
 const crypto = require('crypto');
 
 
@@ -55,6 +56,16 @@ app.engine('hbs', engine({
     },
     firstLetter: function(username) {
       return username ? username.charAt(0).toUpperCase() : 'U';
+    },
+    for: function(from, to, options) {
+      let result = '';
+      for (let i = from; i <= to; i++) {
+        result += options.fn(i);
+      }
+      return result;
+    },
+    eq: function(a, b) {
+      return a == b;
     }
   }
 }));

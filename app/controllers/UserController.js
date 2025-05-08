@@ -164,6 +164,51 @@ class UserController {
             res.redirect('/dashboard?error=Une erreur est survenue. Veuillez réessayer plus tard.');
         }
     }
+
+    // Tableau de bord (protégé)
+    dashboard(req, res) {
+        // Vérifier si l'utilisateur est connecté
+        if (!req.session.user) {
+            return res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
+        }
+        
+        res.render('dashboard', {
+            title: 'Tableau de bord',
+            user: req.session.user
+        });
+    }
+    async editPost(req, res) {
+        try {
+            const userId = req.session.user.id;
+            if (!userId) {
+                return res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
+            }
+            const data = req.body;
+            await userModel.updateUserInfo(userId, data);
+            
+            // Update the user session data
+            if (data.username) {
+                req.session.user.username = data.username;
+            }
+            if (data.email) {
+                req.session.user.email = data.email;
+            }
+            if (data.ava) {
+                req.session.user.avatar = data.ava;
+            }
+            
+            res.json({
+                success: true,
+                message: 'Informations modifiées avec succès'
+            });
+        } catch (error) {
+            console.error('Erreur lors de la modification:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Une erreur est survenue lors de la modification des informations'
+            });
+        }
+    }
 }
 
 module.exports = new UserController();
