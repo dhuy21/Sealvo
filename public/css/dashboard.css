@@ -668,6 +668,8 @@
       overflow: hidden;
       position: relative;
       box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+      width: 100%; /* Ensure full width */
+      min-width: 100px; /* Set minimum width */
     }
     
     .progress-bar-fill {
@@ -676,6 +678,9 @@
       border-radius: 1rem;
       width: 0;
       transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+      display: block; /* Ensure it's displayed as a block */
+      min-height: 0.75rem; /* Match container height */
+      min-width: 5px; /* Ensure a minimum visible width */
     }
     
     .progress-bar-labels {
@@ -1761,3 +1766,77 @@
         flex: 1;
       }
     }
+
+/* Additional mobile fixes for the progress bar */
+@media (max-width: 480px) {
+  .progress-container {
+    padding: 1rem;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+  
+  .progress-bar-container {
+    width: 100%;
+    display: block;
+    min-width: 100px; /* Ensure it has a minimum width */
+    height: 0.75rem;
+    position: relative; /* Ensure proper positioning */
+    overflow: visible; /* Make sure overflow is visible */
+  }
+  
+  .progress-bar-fill {
+    display: block !important; /* Force display as block */
+    height: 100% !important;
+    min-height: 0.75rem;
+    position: absolute; /* Use absolute positioning to fix iOS rendering issues */
+    left: 0;
+    top: 0;
+    min-width: 5px; /* Ensure a minimum visible width */
+    transition: width 1.5s ease; /* Simplify the transition */
+  }
+  
+  .progress-bar-labels {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 0.75rem;
+  }
+}
+
+/* Specifically for old iPhones and very small screens */
+@media (max-width: 375px) {
+  .progress-bar-container {
+    height: 0.6rem;
+    min-height: 0.6rem;
+  }
+  
+  .progress-bar-fill {
+    height: 0.6rem !important;
+    min-height: 0.6rem;
+  }
+  
+  .progress-container h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+  }
+}
+
+/* iOS-specific fixes for progress bar */
+@supports (-webkit-touch-callout: none) {
+  /* iOS only CSS */
+  @media (max-width: 480px) {
+    .progress-bar-container {
+      -webkit-transform: translateZ(0); /* Fix Safari rendering issues */
+      transform: translateZ(0);
+      -webkit-backface-visibility: hidden; /* Another Safari fix */
+      backface-visibility: hidden;
+    }
+    
+    .progress-bar-fill {
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+      will-change: width; /* Optimize animations */
+    }
+  }
+}

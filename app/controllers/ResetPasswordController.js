@@ -22,6 +22,7 @@ class ResetPasswordController {
         // Bind methods to preserve 'this' context in express route handlers
         this.forgotPassword = this.forgotPassword.bind(this);
         this.forgotPasswordPost = this.forgotPasswordPost.bind(this);
+        this.changePasswordPost = this.changePasswordPost.bind(this);
         this.resetPassword = this.resetPassword.bind(this);
         this.resetPasswordPost = this.resetPasswordPost.bind(this);
         this.generateResetPasswordEmail = this.generateResetPasswordEmail.bind(this);
@@ -133,7 +134,52 @@ class ResetPasswordController {
             res.redirect('/login/forgotPassword?error=Une erreur est survenue. Veuillez réessayer plus tard.');
         }
     }
+    
+    async changePasswordPost(req, res) {
+        try {
+            const email = req.session.user.email;
+            
+            // Vérifier si l'email existe dans la base de données
+            const user = await userModel.findByEmail(email);
+            
+            if (!user) {
+                return res.json({
+                    success: false,
+                    message: 'Cet email n\'existe pas'
+                });
+            }
 
+            // Créer un jeton de réinitialisation du mot de passe
+            const { token, expiresAt } = await resetPasswordModel.createResetPasswordToken();
+
+            // Enregistrer le jeton dans la base de données
+            await resetPasswordModel.saveResetPasswordToken(email, token, expiresAt);
+
+            // Envoyer le jeton par email
+            const emailContent = await this.generateResetPasswordEmail(email, token);
+
+            const emailSent = await this.sendEmail(email, emailContent);
+
+            if (!emailSent) {
+                return res.json({
+                    success: false,
+                    message: 'Une erreur est survenue. Veuillez réessayer plus tard.'
+                });
+            }
+
+            res.json({
+                success: true,
+                message: 'Un email a été envoyé pour réinitialiser votre mot de passe'
+            });
+        } catch (error) {
+            console.error('Erreur lors de la soumission du formulaire pour oublier le mot de passe:', error);
+            res.json({
+                success: false,
+                message: 'Une erreur est survenue. Veuillez réessayer plus tard.'
+            });
+        }
+
+    }
     // Afficher la page pour réinitialiser le mot de passe
     resetPassword(req, res) {
         const { token } = req.query;

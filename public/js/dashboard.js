@@ -18,6 +18,27 @@ document.querySelectorAll('.edit-btn').forEach(button => {
     button.addEventListener('click', handleEditClick);
 }); 
 
+document.getElementById('changePasswordBtn').addEventListener('click', function() {
+    // Send a POST request to change the password
+    fetch('/dashboard/changePassword', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Un message a été envoyé pour réinitialiser votre mot de passe', 'success');
+        } else {
+            showNotification('Erreur lors du changement de mot de passe: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors de la requête:', error);
+    });
+});
+
 /**
  * Initialize the dashboard components
  */
