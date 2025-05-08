@@ -44,13 +44,11 @@
               <i class="fas fa-th-large"></i>
               <span>Services</span>
             </a>
-            <div class="dropdown-menu" id="dropdown-menu">
-              <ul class="dropdown-menu">
-                <li><a href="#" class="dropdown-item"><i class="fas fa-book"></i> Dictionary</a></li>
-                <li><a href="/games" class="dropdown-item"><i class="fas fa-gamepad"></i> Word Games</a></li>
-                <li><a href="#" class="dropdown-item"><i class="fas fa-chart-line"></i> Progress Tracker</a></li>
-              </ul>
-            </div>
+            <ul class="dropdown-menu">
+              <li><a href="#" class="dropdown-item"><i class="fas fa-book"></i> Dictionary</a></li>
+              <li><a href="/games" class="dropdown-item"><i class="fas fa-gamepad"></i> Word Games</a></li>
+              <li><a href="#" class="dropdown-item"><i class="fas fa-chart-line"></i> Progress Tracker</a></li>
+            </ul>
           </li>
           <li class="nav-item {{#if isAbout}}active{{/if}}">
             <a href="../aboutme" class="nav-link">
@@ -99,6 +97,11 @@
         navContainer.classList.toggle('active');
         document.body.classList.toggle('nav-open');
         
+        // Close all dropdowns when toggling menu
+        document.querySelectorAll('.dropdown').forEach(dropdown => {
+          dropdown.classList.remove('open');
+        });
+        
         // Create/remove overlay when mobile menu is opened/closed
         if (navContainer.classList.contains('active')) {
           if (!document.querySelector('.mobile-menu-overlay')) {
@@ -133,6 +136,11 @@
         menuToggle.classList.remove('active');
         navContainer.classList.remove('active');
         document.body.classList.remove('nav-open');
+        
+        // Reset all dropdowns when returning to desktop
+        document.querySelectorAll('.dropdown').forEach(dropdown => {
+          dropdown.classList.remove('open');
+        });
       }
     });
     
@@ -141,10 +149,10 @@
     
     dropdowns.forEach(dropdown => {
       const toggle = dropdown.querySelector('.dropdown-toggle');
-      const menu = dropdown.querySelector('.dropdown-menu');
       
       toggle.addEventListener('click', function(e) {
         e.preventDefault();
+        e.stopPropagation();
         dropdown.classList.toggle('open');
         
         // Close other open dropdowns
