@@ -188,6 +188,38 @@ class User {
         }
     }
     
+    async updateUserInfo(id, userData) {
+        try {
+            let updated = false;
+            
+            if (userData.username) {
+                const [result] = await global.dbConnection.execute(
+                    'UPDATE users SET username = ? WHERE id = ?',
+                    [userData.username, id]
+                );
+                updated = updated || result.affectedRows > 0;
+            }
+            if (userData.email) {
+                const [result] = await global.dbConnection.execute(
+                    'UPDATE users SET email = ? WHERE id = ?',
+                    [userData.email, id]
+                );
+                updated = updated || result.affectedRows > 0;
+            }
+            if (userData.ava) {
+                const [result] = await global.dbConnection.execute(
+                    'UPDATE users SET ava = ? WHERE id = ?',
+                    [userData.ava, id]
+                );
+                updated = updated || result.affectedRows > 0;
+            }
+            
+            return updated;
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour des informations de l\'utilisateur :', error);
+            throw error;
+        }
+    }
     async getStreakById(id) {
         try {
             const [rows] = await global.dbConnection.execute('SELECT streak FROM users WHERE id = ?', [id]);

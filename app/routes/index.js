@@ -6,6 +6,7 @@ const newVocabsRouter = require('./vocab/monVocabs');
 const gameRouter = require('./game/game');
 const apiRouter = require('./api');
 const authRouter = require('./auth/auth');
+const newUserDashboard = require('./user/dashboard');
 // Import controllers
 
 const LearningController = require('../controllers/LearningController');
@@ -23,7 +24,7 @@ function route(app) {
     app.use('/registre', newUserRegister);
     app.use('/logout', newUserLogout);
     app.use('/monVocabs', newVocabsRouter);
-    // Removing duplicate route for feedback, it's already included in siteRouter
+    app.use('/dashboard', newUserDashboard);
     app.use('/games', gameRouter);
     app.use('/api', apiRouter);
     app.use('/auth', authRouter);

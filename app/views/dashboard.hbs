@@ -62,6 +62,9 @@
           <div class="user-profile-header">
             <div class="avatar-container-dashboard">
               <img src="/images/avatars/{{user.avatar}}.png" alt="{{user.username}}'s avatar" class="user-avatar-dashboard">
+              <button type="button" class="edit-btn-avatar" title="Modifier l'avatar">
+                <i class="fas fa-edit"></i>
+              </button>
             </div>
             <h2>Informations Utilisateur</h2>
             {{#if notifications}}
@@ -71,19 +74,29 @@
           <div class="user-info">
             <div class="info-row">
               <div class="info-label"><i class="fas fa-user-tag" style="color: #4158D0; width: 20px; margin-right: 8px;"></i>Nom d'utilisateur: </div>
-              <div class="info-value"> {{user.username}}</div>
+              <div class="info-value"> 
+                <span class="username-display">{{user.username}}</span>
+                <button type="button" class="edit-btn" title="Modifier">
+                  <i class="fas fa-edit"></i>
+                </button>
+              </div> 
             </div>
             <div class="info-row">
               <div class="info-label"><i class="fas fa-envelope" style="color: #C850C0; width: 20px; margin-right: 8px;"></i>Email: </div>
-              <div class="info-value"> {{user.email}}</div>
+              <div class="info-value"> 
+                <span class="email-display">{{user.email}}</span>
+                <button type="button" class="edit-btn" title="Modifier">
+                  <i class="fas fa-edit"></i>
+                </button>
+              </div>
             </div>
             <div class="info-row">
               <div class="info-label"><i class="fas fa-calendar-alt" style="color: #10B981; width: 20px; margin-right: 8px;"></i>Membre depuis: </div>
-              <div class="info-value"> {{user.created_at}}</div>
+              <div class="info-value">{{user.created_at}}</div>
             </div>
             <div class="info-row">
               <div class="info-label"><i class="fas fa-clock" style="color: #F59E0B; width: 20px; margin-right: 8px;"></i>Dernière connexion: </div>
-              <div class="info-value"> {{user.last_login}}</div>
+              <div class="info-value">{{user.last_login}}</div>
             </div>
             <div class="info-row">
               <div class="info-label">
@@ -95,11 +108,6 @@
                 </div>
               </div>
             </div>
-          </div>
-          <div class="text-center" style="margin-top: 1.5rem;">
-            <a href="/user/profile" class="dashboard-btn dashboard-btn-primary">
-              <i class="fas fa-user-edit"></i> Modifier mon profil
-            </a>
           </div>
         </div>
       </div>
@@ -187,6 +195,32 @@
     
     <!-- Hidden Mouse tracker -->
     <div class="mouse-tracker" id="mouse-tracker"></div>
+    
+    <!-- Avatar Selection Modal -->
+    <div id="avatarModal" class="avatar-modal">
+      <div class="avatar-modal-content">
+        <div class="avatar-modal-header">
+          <h3><i class="fas fa-user-circle"></i>Choisir un nouvel avatar</h3>
+          <span class="avatar-modal-close">&times;</span>
+        </div>
+        <div class="avatar-modal-body">
+          <div class="avatar-grid">
+            {{#for 1 11}}
+              <div class="avatar-option" data-avatar="{{this}}">
+                <img src="/images/avatars/{{this}}.png" alt="Avatar {{this}}" class="avatar-selection">
+                {{#if (eq ../user.avatar this)}}
+                  <div class="avatar-selected"><i class="fas fa-check"></i></div>
+                {{/if}}
+              </div>
+            {{/for}}
+          </div>
+        </div>
+        <div class="avatar-modal-footer">
+          <button id="cancelAvatarBtn">Annuler</button>
+          <button id="saveAvatarBtn">Enregistrer</button>
+        </div>
+      </div>
+    </div>
   </div>
   <script src="/js/dashboard.js"></script>
 

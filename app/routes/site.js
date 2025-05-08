@@ -17,8 +17,6 @@ router.get('/aboutme', siteController.aboutme);
 router.get('/feedback', siteController.feedback);
 router.post('/feedback', siteController.feedbackPost);
 
-// Tableau de bord (protégé)
-router.get('/dashboard', isAuthenticated, siteController.dashboard);
 // Page d'accueil
 router.get('/', siteController.index);
 
