@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -11,11 +11,25 @@
         <meta name="msapplication-TileImage" content="/images/logo.png">
         <meta name="theme-color" content="#2575fc">
         
+        <!-- Early Dark Mode Detection -->
+        <script>
+            // Apply the saved theme immediately to prevent flashing
+            (function() {
+                const savedTheme = localStorage.getItem('theme');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.classList.add(theme + '-theme');
+            })();
+        </script>
+        
         <!-- Font Awesome -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <!-- Custom CSS -->
         <link rel="stylesheet" href="/css/common/main.css">
         <link rel="stylesheet" href="/css/common/responsive.css">
+        <!-- Dark Mode CSS -->
+        <link rel="stylesheet" href="/css/common/dark-mode.css">
         <!-- Game responsive CSS (loads last to override game-specific styles) -->
         <link rel="stylesheet" href="/css/games/responsive-games.css">
     </head>
@@ -31,6 +45,7 @@
 
         
         <!-- App scripts -->
+        <script src="/js/darkMode.js"></script>
         <script src="/js/home.js"></script>
         <script src="/js/aboutme.js"></script>
         <script src="/js/games/flashMatch.js"></script>

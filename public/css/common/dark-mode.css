@@ -1,0 +1,455 @@
+/* Dark Mode Styles */
+:root {
+  /* Light theme variables (default) */
+  --text-color: #333;
+  --card-bg: #ffffff;
+  --card-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  --border-color: rgba(0, 0, 0, 0.1);
+  --input-bg: #f5f7fa;
+  --input-text: #333;
+  --btn-primary-bg: linear-gradient(135deg, #6a11cb, #2575fc);
+  --btn-primary-text: white;
+  --btn-secondary-bg: #f5f7fa;
+  --btn-secondary-text: #333;
+  --pattern-opacity: 0.05;
+}
+
+[data-theme="dark"] {
+  /* Dark theme variables */
+  --bg-color: #121212;
+  --text-color: #ffffff;
+  --card-bg: #2d2d2d;
+  --card-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --input-bg: #0f172a;
+  --input-text: #ffffff;
+  --btn-primary-bg: linear-gradient(135deg, #6a11cb, #2575fc);
+  --btn-primary-text: white;
+  --btn-secondary-bg: #334155;
+  --btn-secondary-text: #ffffff;
+  --pattern-opacity: 0.02;
+}
+
+/* Apply variables to elements */
+html[data-theme="light"] body,
+body[data-theme="light"] {
+  color: var(--text-color, #333);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+html[data-theme="dark"] body,
+body[data-theme="dark"] {
+  background: var(--bg-color, #121212) !important;
+  color: var(--text-color, #ffffff) !important;
+  transition: background 0.3s ease, color 0.3s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%234158d0' fill-opacity='0.02'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3Cpath d='M6 5V0H5v5H0v1h5v94h1V6h94V5H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Card styles */
+[data-theme="light"] .card, 
+[data-theme="light"] .dropdown-menu, 
+[data-theme="light"] .form-container,
+[data-theme="light"] .modal-content {
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  border-color: var(--border-color);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+[data-theme="dark"] .card, 
+[data-theme="dark"] .dropdown-menu, 
+[data-theme="dark"] .form-container,
+[data-theme="dark"] .modal-content {
+  background: var(--card-bg) !important;
+  box-shadow: var(--card-shadow);
+  border-color: var(--border-color);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Form control styles */
+[data-theme="light"] input, 
+[data-theme="light"] select, 
+[data-theme="light"] textarea {
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  border-color: var(--border-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+[data-theme="dark"] input, 
+[data-theme="dark"] select, 
+[data-theme="dark"] textarea {
+  background-color: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--border-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Button styles */
+[data-theme="light"] button.btn-primary, 
+[data-theme="light"] a.btn-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+}
+
+[data-theme="dark"] button.btn-primary, 
+[data-theme="dark"] a.btn-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+}
+
+[data-theme="light"] button.btn-secondary, 
+[data-theme="light"] a.btn-secondary {
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+}
+
+[data-theme="dark"] button.btn-secondary, 
+[data-theme="dark"] a.btn-secondary {
+  background: var(--btn-secondary-bg) !important;
+  color: var(--btn-secondary-text) !important;
+}
+
+/* Apply additional text color overrides for dark mode */
+[data-theme="dark"] p,
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6,
+[data-theme="dark"] span,
+[data-theme="dark"] li,
+[data-theme="dark"] a,
+[data-theme="dark"] label,
+[data-theme="dark"] td,
+[data-theme="dark"] th {
+  color: #ffffff !important;
+}
+
+/* Exception for special links that need their own color */
+[data-theme="dark"] a.nav-link,
+[data-theme="dark"] a.brand-text,
+[data-theme="dark"] a.btn-primary,
+[data-theme="dark"] .brand-text {
+  color: inherit !important;
+}
+
+/* Dark mode toggle */
+.dark-mode-toggle {
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  margin-right: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+}
+
+.dark-mode-toggle:hover {
+  transform: rotate(30deg);
+}
+
+.dark-mode-toggle i {
+  font-size: 20px;
+  color: var(--text-light);
+  transition: color 0.3s ease;
+}
+
+[data-theme="dark"] .dark-mode-toggle .fa-moon {
+  display: none;
+}
+
+[data-theme="dark"] .dark-mode-toggle .fa-sun {
+  display: inline-block;
+  color: #ffc107;
+}
+
+[data-theme="light"] .dark-mode-toggle .fa-sun {
+  display: none;
+}
+
+[data-theme="light"] .dark-mode-toggle .fa-moon {
+  display: inline-block;
+  color: #6a11cb;
+}
+
+/* Animation */
+@keyframes toggle-spin {
+  0% { transform: rotate(0); }
+  100% { transform: rotate(360deg); }
+}
+
+.dark-mode-toggle i {
+  animation: toggle-spin 0.5s;
+}
+
+/* Card styles for dark mode */
+[data-theme="dark"] .word-card-front {
+  background: #2d2d2d;
+  border: 1px solid rgba(106, 17, 203, 0.3);
+}
+
+[data-theme="dark"] .word-card h3 {
+  background: linear-gradient(135deg, #8a2be2, #4169e1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme="dark"] .word-pronunciation {
+  color: #a0aec0;
+}
+
+/* Exception for special cards that need different colors */
+[data-theme="dark"] .word-card,
+[data-theme="dark"] .word-card-front,
+[data-theme="dark"] .testimonial,
+[data-theme="dark"] .floating-element,
+[data-theme="dark"] .feature-card,
+[data-theme="dark"] .counter-item {
+  background-color: #2d2d2d !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .testimonial p,
+[data-theme="dark"] .author-name,
+[data-theme="dark"] .word-card p,
+[data-theme="dark"] .word-card span,
+[data-theme="dark"] .feature p,
+[data-theme="dark"] .counter-item p,
+[data-theme="dark"] .counter-item span,
+[data-theme="dark"] .counter-label {
+  color: #ffffff !important;
+}
+
+/* Ensure back of card has proper color */
+[data-theme="dark"] .word-card-back {
+  background: #2d2d2d !important;
+  color: #ffffff !important;
+}
+
+/* Container styles for dark mode */
+[data-theme="dark"] .container,
+[data-theme="dark"] .home-container {
+  background: rgba(45, 45, 45, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Fix for login, auth, and register containers */
+[data-theme="dark"] .login-container,
+[data-theme="dark"] .auth-container,
+[data-theme="dark"] .register-container,
+[data-theme="dark"] .logout-container {
+  background: rgba(45, 45, 45, 0.95) !important;
+  color: #ffffff !important;
+}
+
+/* Fix the login form input colors for better visibility */
+[data-theme="dark"] .auth-form input,
+[data-theme="dark"] .login-form input,
+[data-theme="dark"] .register-form input {
+  background-color: #3a3a3a !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .login-container label,
+[data-theme="dark"] .auth-container label,
+[data-theme="dark"] .register-container label,
+[data-theme="dark"] .login-container p,
+[data-theme="dark"] .auth-container p,
+[data-theme="dark"] .register-container p {
+  color: #e0e0e0 !important;
+}
+
+/* Fix for floating cards on login/registration pages */
+[data-theme="dark"] .floating-card {
+  background: #2d2d2d !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Fix for card text in dark mode */
+[data-theme="dark"] .card p,
+[data-theme="dark"] .card span {
+  color: #ffffff !important;
+}
+
+/* Special handling for cards with light backgrounds in dark mode */
+[data-theme="dark"] .card[style*="background-color: white"],
+[data-theme="dark"] .card[style*="background-color: #fff"],
+[data-theme="dark"] .card[style*="background: white"],
+[data-theme="dark"] .card[style*="background: #fff"] {
+  background-color: #2d2d2d !important;
+  color: #ffffff !important;
+}
+
+/* Fix for paragraphs in cards */
+[data-theme="dark"] .card p {
+  color: #ffffff !important;
+}
+
+/* Fix for learnVocabs flashcard in dark mode */
+[data-theme="dark"] .flashcard-front {
+  background: #2d2d2d !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .flashcard-back {
+  background: linear-gradient(135deg, #6a11cb, #2575fc) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .flashcard-front .card-content,
+[data-theme="dark"] .flashcard-front .card-type,
+[data-theme="dark"] .flashcard-front .card-prompt,
+[data-theme="dark"] .flashcard-front .hint-text {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .flashcard-front .card-prompt {
+  background: rgba(45, 45, 45, 0.7) !important;
+  color: #e0e0e0 !important;
+}
+
+[data-theme="dark"] .hint-btn {
+  background: rgba(124, 92, 245, 0.3) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .flashcard-front .hint-text {
+  background: rgba(45, 45, 45, 0.7) !important;
+  color: #e0e0e0 !important;
+}
+
+/* Fix stat cards in learnVocabs */
+[data-theme="dark"] .stat-card {
+  background: #2d2d2d !important;
+}
+
+[data-theme="dark"] .stat-content h3,
+[data-theme="dark"] .stat-content p {
+  color: #ffffff !important;
+}
+
+/* Fix filter options in learnVocabs */
+[data-theme="dark"] .flashcard-filters,
+[data-theme="dark"] .mode-selector {
+  background: #2d2d2d !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .filter-label,
+[data-theme="dark"] .mode-label {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .custom-checkbox,
+[data-theme="dark"] .custom-radio {
+  background-color: #1e1e1e !important;
+}
+
+/* Fix navigation buttons in learnVocabs */
+[data-theme="dark"] .nav-btn {
+  background: #2d2d2d !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .nav-btn:hover:not([disabled]) {
+  background: #3a3a3a !important;
+  color: #ffffff !important;
+}
+
+/* Fix progress container in learnVocabs */
+[data-theme="dark"] .progress-container {
+  background: #2d2d2d !important;
+}
+
+[data-theme="dark"] .progress-header h3,
+[data-theme="dark"] #progress-text {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .progress-bar {
+  background: #1e1e1e !important;
+}
+
+[data-theme="dark"] .progress-stat {
+  background: #3a3a3a !important;
+  color: #ffffff !important;
+}
+
+/* Fix for monVocabs page in dark mode */
+[data-theme="dark"] .vocabulary-container {
+  background: var(--bg-color, #121212) !important;
+  color: var(--text-color, #ffffff) !important;
+}
+
+[data-theme="dark"] .level-container {
+  background: #2d2d2d !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .level-container:hover {
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+}
+
+/* Fix for table text in monVocabs page */
+[data-theme="dark"] .words-table th {
+  background: rgba(106, 17, 203, 0.2) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .words-table td {
+  color: #ffffff !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .words-table tr:hover td {
+  background: rgba(37, 117, 252, 0.15) !important;
+}
+
+/* Fix search input in monVocabs */
+[data-theme="dark"] .search-input {
+  background-color: #2d2d2d !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .search-input::placeholder {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+[data-theme="dark"] .search-btn,
+[data-theme="dark"] .clear-search-btn {
+  background: rgba(106, 17, 203, 0.3) !important;
+  color: #ffffff !important;
+}
+
+/* Fix search results info */
+[data-theme="dark"] .search-results-info {
+  background: rgba(45, 45, 45, 0.8) !important;
+  color: #ffffff !important;
+}
+
+/* Fix for no-words section */
+[data-theme="dark"] .no-words {
+  background: #2d2d2d !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .no-words h3,
+[data-theme="dark"] .no-words p {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .no-words i {
+  color: rgba(255, 255, 255, 0.2) !important;
+} 
