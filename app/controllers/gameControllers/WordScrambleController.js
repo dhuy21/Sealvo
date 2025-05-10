@@ -67,31 +67,21 @@ class WordScrambleController {
      */
     async checkWordScrambleAnswer(req, res) {
         try {
-            const { answer } = req.body;
+            const { answer, correctWord } = req.body;
             
             if (!answer) {
                 return res.status(400).json({ error: 'Réponse manquante.' });
             }
             
-            // Récupérer tous les mots de l'utilisateur
-            const words = await wordModel.findWordsByUserId(req.session.user.id);
             
             // Vérifier si la réponse correspond à un mot
-            const correctWord = words.find(word => 
-                word.word.toLowerCase() === answer.toLowerCase()
-            );
+            const iscorrectWord = correctWord.toLowerCase() === answer.toLowerCase()
             
-            if (correctWord) {
-                return res.json({
-                    correct: true,
-                    answer: correctWord.word
-                });
-            } else {
-                return res.json({
-                    correct: false,
-                    answer: "???" // On ne donne pas la réponse pour l'instant
-                });
-            }
+            return res.json({
+                correct: iscorrectWord,
+                answer: correctWord
+            });
+           
         } catch (error) {
             console.error('Erreur lors de la vérification de la réponse:', error);
             return res.status(500).json({ error: 'Une erreur est survenue lors de la vérification de la réponse.' });
@@ -108,7 +98,17 @@ class WordScrambleController {
                 return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
             }
             
-            // On peut renvoyer un mot aléatoire comme réponse
+            // Récupérer le mot actuel s'il est fourni dans la requête
+            const { currentWord } = req.body;
+            
+            // Si le mot actuel est fourni, le renvoyer comme réponse
+            if (currentWord) {
+                return res.json({
+                    answer: currentWord
+                });
+            }
+            
+            // Sinon, on peut renvoyer un mot aléatoire comme réponse
             // C'est une approche simple, mais on pourrait aussi enregistrer le mot en cours
             // dans la session et le renvoyer ici
             

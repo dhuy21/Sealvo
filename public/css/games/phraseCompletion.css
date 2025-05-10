@@ -688,6 +688,7 @@
 /* Input container styles */
 .input-container {
   display: flex;
+  align-items: center;
   margin: 2rem auto;
   max-width: 500px;
   position: relative;

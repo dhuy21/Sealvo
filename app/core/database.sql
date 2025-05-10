@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS word_pronunciations (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*INSERT INTO word_pronunciations (detail_id, pronunciation) VALUES ('1', 'Present');*/
 
-/*CREATE TABLE IF NOT EXISTS game_scores (
+CREATE TABLE IF NOT EXISTS game_scores (
   id int(11) NOT NULL AUTO_INCREMENT,
   user_id char(7) NOT NULL,
   game_type enum('word_scramble', 'flash_match', 'speed_vocab', 'vocab_quiz') NOT NULL,
@@ -147,4 +147,4 @@ CREATE TABLE IF NOT EXISTS word_pronunciations (
   FOREIGN KEY (user_id) REFERENCES users(id)
       ON DELETE CASCADE
       ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;*/
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

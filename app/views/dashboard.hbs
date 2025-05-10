@@ -73,7 +73,7 @@
           </div>
           <div class="user-info">
             <div class="info-row">
-              <div class="info-label"><i class="fas fa-user-tag" style="color: #4158D0; width: 20px; margin-right: 8px;"></i>Nom d'utilisateur: </div>
+              <div class="info-label"><i class="fas fa-user-tag" style="color: #2b44bf; width: 30px; margin-right: 8px;"></i>Nom d'utilisateur: </div>
               <div class="info-value"> 
                 <span class="username-display">{{user.username}}</span>
                 <button type="button" class="edit-btn" title="Modifier">
@@ -82,7 +82,7 @@
               </div> 
             </div>
             <div class="info-row">
-              <div class="info-label"><i class="fas fa-envelope" style="color: #C850C0; width: 20px; margin-right: 8px;"></i>Email: </div>
+              <div class="info-label"><i class="fas fa-envelope" style="color: #b720ad; width: 30px; margin-right: 8px;"></i>Email: </div>
               <div class="info-value"> 
                 <span class="email-display">{{user.email}}</span>
                 <button type="button" class="edit-btn" title="Modifier">
@@ -91,16 +91,16 @@
               </div>
             </div>
             <div class="info-row">
-              <div class="info-label"><i class="fas fa-calendar-alt" style="color: #10B981; width: 20px; margin-right: 8px;"></i>Membre depuis: </div>
+              <div class="info-label"><i class="fas fa-calendar-alt" style="color: #0a8f62; width: 30px; margin-right: 8px;"></i>Membre depuis: </div>
               <div class="info-value">{{user.created_at}}</div>
             </div>
             <div class="info-row">
-              <div class="info-label"><i class="fas fa-clock" style="color: #F59E0B; width: 20px; margin-right: 8px;"></i>Dernière connexion: </div>
+              <div class="info-label"><i class="fas fa-clock" style="color: #ba7d13; width: 30px; margin-right: 8px;"></i>Dernière connexion: </div>
               <div class="info-value">{{user.last_login}}</div>
             </div>
             <div class="info-row">
               <div class="info-label">
-                <i class="fas fa-bell" style="color: #EF4444; width: 20px; margin-right: 8px;"></i>
+                <i class="fas fa-bell" style="color: #ee1616; width: 20px; margin-right: 20px;"></i>
                 <div class="info-value">
                   <form action="/api/reminder" method="post">
                     <button class="dashboard-btn dashboard-btn-primary" type="submit">Test Reminder</button>

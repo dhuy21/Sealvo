@@ -226,6 +226,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Afficher la grille dans le DOM
     function displayGrid() {
+        // Créer un conteneur pour la grille avec défilement
+        const gridContainer = document.createElement('div');
+        gridContainer.className = 'word-search-grid-container';
+        
+        // Créer la grille
         wordSearchGrid.innerHTML = '';
         wordSearchGrid.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
         
@@ -251,6 +256,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 wordSearchGrid.appendChild(cell);
             }
+        }
+        
+        // Vider le contenu actuel du game-board
+        const gameBoard = document.querySelector('.game-board');
+        if (gameBoard) {
+            gameBoard.innerHTML = '';
+            
+            // Ajouter la grille au conteneur
+            gridContainer.appendChild(wordSearchGrid);
+            
+            // Ajouter le conteneur au game-board
+            gameBoard.appendChild(gridContainer);
         }
         
         // Ajouter un événement pour annuler la sélection si on sort de la grille
@@ -403,12 +420,9 @@ document.addEventListener('DOMContentLoaded', () => {
             foundWords.push(word);
             
             // Mettre à jour l'UI
-            const wordElement = document.querySelector(`[data-word="${word}"]`);
-            if (wordElement) {
-                wordElement.classList.add('found');
-            }
+            updateWordFoundStyle(word);
             
-            // Garder les cellules sélectionnées
+            // Garder les cellules sélectionnées et les marquer comme trouvées
             selectedCells.forEach(cell => {
                 cell.element.classList.add('found');
                 cell.element.classList.remove('selected');
@@ -465,7 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let j = 0; j < gridSize; j++) {
                 for (const [dx, dy] of directions) {
                     if (canReadWord(word, i, j, dx, dy)) {
-                        hintPosition = { row: i, col: j, dx, dy };
+                        hintPosition = { row: i, col: j, dx, dy, wordLength: word.length };
                         break;
                     }
                 }
@@ -475,20 +489,152 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         if (hintPosition) {
-            // Afficher la première lettre comme indice
-            const cell = document.querySelector(`.grid-cell[data-row="${hintPosition.row}"][data-col="${hintPosition.col}"]`);
+            // Créer un élément de notification pour montrer le mot qu'on cherche
+            const hintNotification = document.createElement('div');
+            hintNotification.className = 'hint-notification';
+            hintNotification.innerHTML = `
+                <div class="hint-icon"><i class="fas fa-lightbulb"></i></div>
+                <div class="hint-content">
+                    <div class="hint-title">Indice activé</div>
+                    <div class="hint-message">Cherchez le mot "<span>${randomWord.word}</span>"</div>
+                </div>
+            `;
+            document.querySelector('.active-game-screen').appendChild(hintNotification);
+            
+            // Animation d'entrée et de sortie pour la notification
+            setTimeout(() => {
+                hintNotification.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                hintNotification.classList.remove('show');
+                setTimeout(() => {
+                    hintNotification.remove();
+                }, 500);
+            }, 3000);
+            
+            // Déterminer le type d'indice à afficher (aléatoire entre 3 types)
+            const hintType = Math.floor(Math.random() * 3);
+            
+            switch (hintType) {
+                case 0: // Type 1: Montrer la première lettre
+                    highlightFirstLetter(hintPosition);
+                    break;
+                case 1: // Type 2: Montrer la direction du mot
+                    showDirectionHint(hintPosition);
+                    break;
+                case 2: // Type 3: Montrer un aperçu rapide du mot complet
+                    flashEntireWord(hintPosition);
+                    break;
+            }
+            
+            // Réduire le score pour avoir utilisé un indice
+            score = Math.max(0, score - 20);
+            scoreDisplay.textContent = score;
+        }
+    }
+    
+    // Mettre en évidence la première lettre comme indice
+    function highlightFirstLetter(hintPosition) {
+        const cell = document.querySelector(`.grid-cell[data-row="${hintPosition.row}"][data-col="${hintPosition.col}"]`);
+        
+        if (cell) {
+            cell.classList.add('hint-pulse');
+            setTimeout(() => {
+                cell.classList.remove('hint-pulse');
+            }, 2000);
+        }
+    }
+    
+    // Montrer la direction du mot comme indice
+    function showDirectionHint(hintPosition) {
+        const { row, col, dx, dy, wordLength } = hintPosition;
+        
+        // Mettre en évidence la première et la dernière lettre pour montrer la direction
+        const firstCell = document.querySelector(`.grid-cell[data-row="${row}"][data-col="${col}"]`);
+        const lastCell = document.querySelector(`.grid-cell[data-row="${row + dx * (wordLength - 1)}"][data-col="${col + dy * (wordLength - 1)}"]`);
+        
+        if (firstCell && lastCell) {
+            // Ajouter une flèche ou un effet visuel entre les deux cellules
+            firstCell.classList.add('hint-start');
+            lastCell.classList.add('hint-end');
+            
+            // Créer une ligne directionnelle entre les deux points
+            const arrow = document.createElement('div');
+            arrow.className = 'direction-arrow';
+            
+            // Positionner la flèche
+            const firstRect = firstCell.getBoundingClientRect();
+            const lastRect = lastCell.getBoundingClientRect();
+            const gameBoard = document.querySelector('.game-board');
+            const gameBoardRect = gameBoard.getBoundingClientRect();
+            
+            // Calcul pour positionner la flèche relativement au gameBoard
+            const startX = firstRect.left + firstRect.width / 2 - gameBoardRect.left;
+            const startY = firstRect.top + firstRect.height / 2 - gameBoardRect.top;
+            const endX = lastRect.left + lastRect.width / 2 - gameBoardRect.left;
+            const endY = lastRect.top + lastRect.height / 2 - gameBoardRect.top;
+            
+            // Calculer l'angle de la flèche
+            const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI;
+            
+            // Calculer la longueur de la flèche
+            const length = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+            
+            // Appliquer les styles à la flèche
+            arrow.style.width = `${length}px`;
+            arrow.style.left = `${startX}px`;
+            arrow.style.top = `${startY}px`;
+            arrow.style.transform = `rotate(${angle}deg)`;
+            
+            gameBoard.appendChild(arrow);
+            
+            // Supprimer les éléments d'indice après un délai
+            setTimeout(() => {
+                firstCell.classList.remove('hint-start');
+                lastCell.classList.remove('hint-end');
+                arrow.classList.add('fade-out');
+                
+                setTimeout(() => {
+                    arrow.remove();
+                }, 500);
+            }, 2000);
+        }
+    }
+    
+    // Faire clignoter rapidement tout le mot comme indice
+    function flashEntireWord(hintPosition) {
+        const { row, col, dx, dy, wordLength } = hintPosition;
+        const cells = [];
+        
+        // Collecter toutes les cellules composant le mot
+        for (let i = 0; i < wordLength; i++) {
+            const cellRow = row + dx * i;
+            const cellCol = col + dy * i;
+            const cell = document.querySelector(`.grid-cell[data-row="${cellRow}"][data-col="${cellCol}"]`);
             
             if (cell) {
-                cell.classList.add('hint');
-                setTimeout(() => {
-                    cell.classList.remove('hint');
-                }, 1500);
-                
-                // Réduire le score pour avoir utilisé un indice
-                score = Math.max(0, score - 20);
-                scoreDisplay.textContent = score;
+                cells.push(cell);
             }
         }
+        
+        // Animation de clignotement rapide
+        let flashCount = 0;
+        const maxFlashes = 3;
+        const flashInterval = setInterval(() => {
+            cells.forEach(cell => {
+                cell.classList.toggle('hint-flash');
+            });
+            
+            flashCount++;
+            
+            if (flashCount >= maxFlashes * 2) {
+                clearInterval(flashInterval);
+                cells.forEach(cell => {
+                    cell.classList.remove('hint-flash');
+                });
+            }
+        }, 200);
     }
     
     // Vérifier si un mot peut être lu à partir d'une position
@@ -512,13 +658,86 @@ document.addEventListener('DOMContentLoaded', () => {
     // Afficher la liste des mots à trouver
     function displayWordList() {
         wordList.innerHTML = '';
+        wordList.classList.add('pretty-word-list');
         
-        words.forEach(wordObj => {
-            const wordItem = document.createElement('li');
-            wordItem.textContent = wordObj.word;
+        // Ajouter un titre pour la liste
+        const listTitle = document.createElement('div');
+        listTitle.className = 'word-list-title';
+        listTitle.innerHTML = '<i class="fas fa-search"></i> Mots à trouver';
+        wordList.appendChild(listTitle);
+        
+        // Diviser la liste en colonnes pour une meilleure présentation
+        const wordContainer = document.createElement('div');
+        wordContainer.className = 'word-items-container';
+        wordList.appendChild(wordContainer);
+        
+        // Trier les mots par ordre alphabétique
+        const sortedWords = [...words].sort((a, b) => a.word.localeCompare(b.word));
+        
+        sortedWords.forEach((wordObj, index) => {
+            const wordItem = document.createElement('div');
+            wordItem.className = 'word-item';
             wordItem.dataset.word = wordObj.word;
-            wordList.appendChild(wordItem);
+            
+            // Créer un marqueur pour l'animation
+            const wordMarker = document.createElement('span');
+            wordMarker.className = 'word-marker';
+            wordMarker.innerHTML = '<i class="fas fa-circle"></i>';
+            
+            // Créer l'élément pour le texte du mot
+            const wordText = document.createElement('span');
+            wordText.className = 'word-text';
+            wordText.textContent = wordObj.word;
+            
+            // Assembler les éléments
+            wordItem.appendChild(wordMarker);
+            wordItem.appendChild(wordText);
+            
+            // Ajouter une animation de délai d'entrée basée sur l'index
+            wordItem.style.animationDelay = `${index * 0.1}s`;
+            
+            wordContainer.appendChild(wordItem);
         });
+        
+        // Ajouter un compteur visuel de progression
+        const progressCounter = document.createElement('div');
+        progressCounter.className = 'word-progress';
+        progressCounter.innerHTML = `
+            <div class="progress-text">
+                <span id="found-word-count">0</span>/${words.length}
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="word-progress-bar" style="width: 0%"></div>
+            </div>
+        `;
+        wordList.appendChild(progressCounter);
+    }
+    
+    // Mise à jour du style des mots trouvés
+    function updateWordFoundStyle(word) {
+        const wordElement = document.querySelector(`.word-item[data-word="${word}"]`);
+        if (wordElement) {
+            wordElement.classList.add('found');
+            
+            // Mettre à jour le marqueur avec une coche
+            const marker = wordElement.querySelector('.word-marker');
+            if (marker) {
+                marker.innerHTML = '<i class="fas fa-check-circle"></i>';
+            }
+            
+            // Mettre à jour le compteur de progression
+            const foundCount = document.getElementById('found-word-count');
+            if (foundCount) {
+                foundCount.textContent = foundWords.length;
+            }
+            
+            // Mettre à jour la barre de progression
+            const progressBar = document.getElementById('word-progress-bar');
+            if (progressBar) {
+                const progressPercent = (foundWords.length / words.length) * 100;
+                progressBar.style.width = `${progressPercent}%`;
+            }
+        }
     }
     
     // Fin du jeu

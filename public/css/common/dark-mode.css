@@ -56,6 +56,22 @@ body[data-theme="dark"] {
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
+[data-theme="dark"] .profile-section p,
+[data-theme="dark"] .skills-section p,
+[data-theme="dark"] .skills-section span,
+[data-theme="dark"] .timeline-section p,
+[data-theme="dark"] .timeline-section span,
+[data-theme="dark"] .timeline-section h3,
+[data-theme="dark"] .timeline-section h2,
+[data-theme="dark"] .contact-section h2,
+[data-theme="dark"] .contact-section p,
+[data-theme="dark"] .contact-section span,
+[data-theme="dark"] .contact-section i,
+[data-theme="dark"] .contact-section a
+{
+  color: black !important;
+}
+
 [data-theme="dark"] .card, 
 [data-theme="dark"] .dropdown-menu, 
 [data-theme="dark"] .form-container,
@@ -98,17 +114,9 @@ body[data-theme="dark"] {
   color: var(--btn-primary-text);
 }
 
-[data-theme="light"] button.btn-secondary, 
-[data-theme="light"] a.btn-secondary {
-  background: var(--btn-secondary-bg);
-  color: var(--btn-secondary-text);
-}
 
-[data-theme="dark"] button.btn-secondary, 
-[data-theme="dark"] a.btn-secondary {
-  background: var(--btn-secondary-bg) !important;
-  color: var(--btn-secondary-text) !important;
-}
+
+
 
 /* Apply additional text color overrides for dark mode */
 [data-theme="dark"] p,
@@ -120,18 +128,21 @@ body[data-theme="dark"] {
 [data-theme="dark"] h6,
 [data-theme="dark"] span,
 [data-theme="dark"] li,
-[data-theme="dark"] a,
-[data-theme="dark"] label,
 [data-theme="dark"] td,
 [data-theme="dark"] th {
   color: #ffffff !important;
 }
 
+[data-theme="dark"] .scroll-indicator .wheel{
+  background: #ffffff !important;
+}
+
+[data-theme="dark"] .scroll-indicator .mouse {
+  border: 1px solid #ffffff !important;
+}
+
 /* Exception for special links that need their own color */
-[data-theme="dark"] a.nav-link,
-[data-theme="dark"] a.brand-text,
-[data-theme="dark"] a.btn-primary,
-[data-theme="dark"] .brand-text {
+[data-theme="dark"] a.btn-primary {
   color: inherit !important;
 }
 
@@ -208,8 +219,7 @@ body[data-theme="dark"] {
 [data-theme="dark"] .word-card-front,
 [data-theme="dark"] .testimonial,
 [data-theme="dark"] .floating-element,
-[data-theme="dark"] .feature-card,
-[data-theme="dark"] .counter-item {
+[data-theme="dark"] .feature-card {
   background-color: #2d2d2d !important;
   color: #ffffff !important;
 }
@@ -453,3 +463,106 @@ body[data-theme="dark"] {
 [data-theme="dark"] .no-words i {
   color: rgba(255, 255, 255, 0.2) !important;
 } 
+
+[data-theme="dark"] .feedback-form-container {
+  background: #313131 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .avatar-modal-header h3,
+[data-theme="dark"] .avatar-modal-header span {
+  color:black !important;
+}
+
+[data-theme="dark"] .info-label {
+  color:#323232 !important;
+}
+
+[data-theme="dark"] .user-info {
+  background-color: #918888 !important;
+}
+
+
+[data-theme="dark"] .user-info i {
+  width: 20px;
+}
+
+[data-theme="dark"] .games-container h2,
+[data-theme="dark"] .game-info h3,
+[data-theme="dark"] .info-card h3,
+[data-theme="dark"] .info-card p {
+  color: black !important;
+}
+
+[data-theme="dark"] .games-info h2 {
+  color: rgb(101, 19, 224) !important;
+}
+
+[data-theme="dark"] .game-info p {
+  color: rgb(108, 107, 110) !important;
+}
+
+[data-theme="dark"] .stat-box span,
+[data-theme="dark"] .stat-box p,
+[data-theme="dark"] .game-area h3,
+[data-theme="dark"] .game-area p,
+[data-theme="dark"] .game-area h4,
+[data-theme="dark"] .game-area h5,
+[data-theme="dark"] .game-area h6,
+[data-theme="dark"] .game-area h2,
+[data-theme="dark"] .game-area span,
+[data-theme="dark"] .game-area li
+ {
+  color: black !important;
+}
+
+[data-theme="dark"] .pre-game-screen h2,
+[data-theme="dark"] .pre-game-screen p,
+[data-theme="dark"] .pre-game-screen h3,
+[data-theme="dark"] .pre-game-screen h4,
+[data-theme="dark"] .pre-game-screen h5,
+[data-theme="dark"] .pre-game-screen h6,
+[data-theme="dark"] .pre-game-screen span,
+[data-theme="dark"] .pre-game-screen li
+{
+  color: black !important;
+}
+
+[data-theme="dark"] .phrase-container h2,
+[data-theme="dark"] .phrase-container p
+{
+  color: black !important;
+}
+[data-theme="dark"] .phrase-container span,
+[data-theme="dark"] .hint-container span {
+  color: rgb(69, 4, 80) !important;
+}
+
+[data-theme="dark"] .status-item span {
+  color: black !important;
+}
+
+[data-theme="dark"] .status-item p,
+[data-theme="dark"] .word-list-container h3 {
+  color: black !important;
+}
+
+[data-theme="dark"] .word-list-container li {
+  color: rgb(73, 1, 82) !important;
+}
+
+[data-theme="dark"] .word-item span {
+  color: rgb(73, 1, 82) !important;
+}
+
+[data-theme="dark"]  .card {
+  background: none !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .card-back  {
+  color: black !important;
+}
+
+
+
