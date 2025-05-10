@@ -551,6 +551,9 @@
 
 .input-container {
   margin: 2rem auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   max-width: 500px;
   position: relative;
 }

@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
         wordsPlayed = 0;
         timer = 200;
         gameActive = true;
+        currentWord = null;
         
         // Mettre à jour l'affichage
         currentScoreDisplay.textContent = score;
@@ -83,12 +84,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            currentWord = data.word;
             scrambledWordDisplay.textContent = data.scrambled;
             wordMeaningDisplay.textContent = data.meaning;
             wordInput.value = '';
             resultMessage.textContent = '';
             resultMessage.className = 'result-message';
+            
+            // Stocker le mot correct pour vérification ultérieure
+            currentWord = data.word;
+            return data.word;
         })
         .catch(error => {
             console.error('Erreur lors du chargement du mot:', error);
@@ -97,9 +101,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour vérifier la réponse
     function checkAnswer() {
-        if (!gameActive) return;
+        if (!gameActive || !currentWord) return;
         
-        const answer = wordInput.value.trim().toLowerCase();
+        const answer = wordInput.value.trim();
         if (!answer) return;
         
         totalAttempts++;
@@ -112,7 +116,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                answer: answer
+                answer: answer,
+                correctWord: currentWord
             })
         })
         .then(response => response.json())
@@ -148,11 +153,14 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({
+                currentWord: currentWord
+            })
         })
         .then(response => response.json())
         .then(data => {
-            resultMessage.textContent = `Passé ! La réponse était : ${data.answer}`;
+            resultMessage.textContent = `Passé ! La réponse était : ${currentWord || data.answer}`;
             resultMessage.className = 'result-message skipped';
             
             wordsPlayed++;

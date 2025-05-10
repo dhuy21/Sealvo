@@ -472,7 +472,7 @@ input:focus {
 .hero-section {
   padding: 20px 0;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* Animated background shapes */
@@ -483,8 +483,6 @@ input:focus {
   height: 300px;
   border-radius: 50%;
   background: linear-gradient(135deg, rgba(106, 17, 203, 0.1), rgba(37, 117, 252, 0.1));
-  z-index: -1;
-  filter: blur(20px);
 }
 
 .hero-section::before {
@@ -735,7 +733,6 @@ input:focus {
 
 .btn-primary:hover, .btn-secondary:hover, .btn-info:hover {
   transform: translateY(-7px) scale(1.05);
-  color: white;
   box-shadow: 0 15px 25px rgba(0, 0, 0, 0.3);
 }
 
@@ -896,7 +893,7 @@ input:focus {
   margin-bottom: 25px;
   line-height: 1.2;
   color: #333;
-  animation: slideInLeft 1s ease-out forwards;
+  animation: slideInLeft 10s ease-out forwards;
   opacity: 0;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -1596,7 +1593,7 @@ section {
 .mouse {
   width: 30px;
   height: 50px;
-  border: 2px solid #fff;
+  border: 2px solid #0a0a0a;
   border-radius: 25px;
   display: flex;
   justify-content: center;
@@ -1607,7 +1604,7 @@ section {
 .wheel {
   width: 4px;
   height: 10px;
-  background: #fff;
+  background: #060606;
   border-radius: 2px;
   position: absolute;
   top: 10px;
@@ -1620,8 +1617,9 @@ section {
 }
 
 .scroll-indicator p {
-  font-size: 0.8rem;
-  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #121212;
   text-transform: uppercase;
   letter-spacing: 2px;
   text-align: center;
@@ -2126,10 +2124,11 @@ section {
   
   .hero-cta {
     justify-content: flex-start;
+    width: 120%;
+    gap: 50px;
 }
 
   .btn-large {
-    padding: 8px 16px;
     font-size: 0.85rem;
     min-width: 120px;
   }
