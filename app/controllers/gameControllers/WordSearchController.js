@@ -66,20 +66,17 @@ class WordSearchController {
             
             switch (difficulty) {
                 case 'easy':
-                    wordCount = 5;
-                    gridSize = 5;
+                    wordCount = 8;
+                    gridSize = 30;
                     break;
                 case 'medium':
                     wordCount = 10;
-                    gridSize = 10;
+                    gridSize = 30;
                     break;
                 case 'hard':
-                    wordCount = 20;
-                    gridSize = 20;
+                    wordCount = 25;
+                    gridSize = 30;
                     break;
-                default:
-                    wordCount = 5;
-                    gridSize = 5;
             }
             
             // Récupérer des mots aléatoires du vocabulaire de l'utilisateur
