@@ -349,13 +349,15 @@ body[data-theme="dark"] {
 
 /* Fix filter options in learnVocabs */
 [data-theme="dark"] .flashcard-filters,
-[data-theme="dark"] .mode-selector {
+[data-theme="dark"] .mode-selector,
+[data-theme="dark"] .mode-vocab-selector {
   background: #2d2d2d !important;
   color: #ffffff !important;
 }
 
 [data-theme="dark"] .filter-label,
-[data-theme="dark"] .mode-label {
+[data-theme="dark"] .mode-label,
+[data-theme="dark"] .mode-vocab-label {
   color: #ffffff !important;
 }
 

@@ -13,14 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Erreur lors du parsing des mots:', e);
         }
     } 
-    // Si pas trouvé et qu'une variable globale existe (définie dans le template)
-    else if (typeof window.vocabularyWords !== 'undefined') {
-        allWords = window.vocabularyWords;
-        console.log(`Successfully loaded ${allWords.length} words from global variable`);
-    } else {
-        console.error('No words found in data attribute or global variable');
-    }
-    
+  
     let currentWords = [...allWords]; // Copie pour permettre le filtrage
     let currentIndex = 0;
     let progress = []; // Pour suivre les progrès (0: ne sait pas, 1: incertain, 2: sait)
@@ -58,6 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('level2')
     ];
     const modeRadios = document.querySelectorAll('input[name="mode"]');
+    const vocabModeRadios = document.querySelectorAll('input[name="vocab-mode"]');
     
     // Animation pour les boutons
     const animateButtonPress = (button) => {
@@ -411,9 +405,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Filtrer les mots en fonction des niveaux sélectionnés
     function filterWords() {
       const selectedLevels = [];
-      levelCheckboxes.forEach((checkbox, index) => {
+      levelCheckboxes.forEach((checkbox) => {
         if (checkbox.checked) {
-          selectedLevels.push(index.toString());
+          selectedLevels.push(checkbox.value);
         }
       });
       
@@ -421,9 +415,9 @@ document.addEventListener('DOMContentLoaded', function() {
       if (selectedLevels.length === 0 && levelCheckboxes.length > 0) {
         // If no levels are selected, select the first one by default
         levelCheckboxes[0].checked = true;
-        selectedLevels.push('0');
+        selectedLevels.push('x');
       }
-      
+      console.log(selectedLevels);
       // Mode normal
       currentWords = allWords.filter(word => selectedLevels.includes(word.level));
       
@@ -441,6 +435,18 @@ document.addEventListener('DOMContentLoaded', function() {
       updateCardDisplay();
     }
     
+    //Filtrer le vocabulaire en fonction du mode ( aujourd'hui ou tous les mots)
+    function filterVocab() {
+      const vocabMode = document.querySelector('input[name="vocab-mode"]:checked').value;
+      if (vocabMode === 'today-words') {
+        currentWords = allWords.filter(word => word.dueToday);
+      } else {
+        currentWords = [...allWords];
+      }
+      
+      initProgress();
+      updateCardDisplay();  
+    }
     
     // Mélanger les mots
     function shuffleWords() {
@@ -634,6 +640,11 @@ document.addEventListener('DOMContentLoaded', function() {
       checkbox.addEventListener('change', filterWords);
     });
     
+    //filtrer les mots en fonction du mode
+    vocabModeRadios.forEach(radio => {
+      radio.addEventListener('change', filterVocab);
+    }); 
+
     // Changement de mode
     modeRadios.forEach(radio => {
       radio.addEventListener('change', function() {

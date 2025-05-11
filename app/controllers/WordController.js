@@ -1,4 +1,5 @@
 const wordModel = require('../models/words');
+const learningModel = require('../models/learning');
 
 class WordController {
     // Afficher la page de vocabulaire
@@ -349,6 +350,13 @@ class WordController {
 
             // Récupérer les mots de l'utilisateur
             const words = await wordModel.findWordsByUserId(req.session.user.id);
+            const wordIdsToReview = await learningModel.findWordsTodayToLearn(req.session.user.id);
+
+            // Add dueToday flag to each word
+            words.forEach(word => {
+                word.dueToday = wordIdsToReview.some(item => item.word_id === word.word_id);
+            });
+            console.log(words);
 
             res.render('learnVocabs', {
                 title: 'Apprendre des mots',
