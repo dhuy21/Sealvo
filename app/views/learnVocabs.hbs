@@ -43,25 +43,25 @@
         <div class="filter-options">
           <div class="filter-row">
             <label class="filter-label">
-              <input type="checkbox" id="levelx" checked>
+              <input type="checkbox" id="levelx" value="x" checked>
               <span class="custom-checkbox"></span>
               Niveau x
             </label>
 
             <label class="filter-label">
-              <input type="checkbox" id="level0" checked>
+              <input type="checkbox" id="level0" value="0" checked>
               <span class="custom-checkbox"></span>
               Niveau 0
             </label>
           </div>
           <div class="filter-row">  
             <label class="filter-label">
-              <input type="checkbox" id="level1" checked>
+              <input type="checkbox" id="level1" value="1"  checked>
               <span class="custom-checkbox"></span>
               Niveau 1
             </label>
             <label class="filter-label">
-              <input type="checkbox" id="level2" checked>
+              <input type="checkbox" id="level2" value="2" checked>
               <span class="custom-checkbox"></span>
               Niveau 2
             </label>
@@ -80,6 +80,22 @@
             <input type="radio" name="mode" value="meaning-to-word">
             <span class="custom-radio"></span>
             Signification → Mot
+          </label>
+        </div>
+      </div>
+
+      <div class="mode-vocab-selector">
+        <h3>Mode de vocabulaire</h3>
+        <div class="mode-options">
+          <label class="mode-label">
+            <input type="radio" name="vocab-mode" value="today-words" checked>
+            <span class="custom-radio"></span>
+            Mots du jour
+          </label>
+          <label class="mode-label">
+            <input type="radio" name="vocab-mode" value="all-words">
+            <span class="custom-radio"></span>
+            Tous les mots
           </label>
         </div>
       </div>
@@ -195,11 +211,6 @@
   {{/if}}
   
   <div id="words-data" data-words="{{json words}}"></div>
-
-  <script>
-    // Définir la variable globale pour le script externe
-    window.vocabularyWords = {{{json words}}};
-  </script>
 
   <div class="home-cta">
     <a href="/monVocabs" class="btn back-btn">

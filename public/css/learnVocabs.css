@@ -150,25 +150,58 @@
 /* Flashcard Controls */
 .flashcard-controls {
   display: grid;
+  grid-template-areas:
+    "filters mode-selector"
+    "vocab-selector vocab-selector";
   grid-template-columns: 1fr 1fr;
   justify-content: center;
-  align-items: center;
+  align-items: start;
   gap: 25px;
   margin-bottom: 35px;
 }
 
-.flashcard-filters, .mode-selector {
+.flashcard-filters {
+  grid-area: filters;
+}
+
+.mode-selector {
+  grid-area: mode-selector;
+}
+
+.mode-vocab-selector {
+  grid-area: vocab-selector;
+  justify-self: center;
+  width: 50%;
+  min-width: 300px;
+}
+
+/* Media query for smaller screens */
+@media (max-width: 768px) {
+  .flashcard-controls {
+    grid-template-areas:
+      "filters"
+      "mode-selector"
+      "vocab-selector";
+    grid-template-columns: 1fr;
+  }
+  
+  .mode-vocab-selector {
+    width: 100%;
+    min-width: auto;
+  }
+}
+
+.flashcard-filters, .mode-selector, .mode-vocab-selector {
   background: white;
   border-radius: var(--card-radius);
   padding: 25px;
-  
   box-shadow: var(--card-shadow);
   border: 1px solid rgba(0, 0, 0, 0.03);
   position: relative;
   overflow: hidden;
 }
 
-.flashcard-filters::before, .mode-selector::before {
+.flashcard-filters::before, .mode-selector::before, .mode-vocab-selector::before {
   content: '';
   position: absolute;
   top: 0;
@@ -178,7 +211,7 @@
   background: var(--bg-gradient);
 }
 
-.flashcard-filters h3, .mode-selector h3 {
+.flashcard-filters h3, .mode-selector h3, .mode-vocab-selector h3 {
   margin-top: 0;
   margin-bottom: 18px;
   color: var(--primary-color);
@@ -1234,7 +1267,7 @@ p strong + span + span {
     font-size: 1.5rem;
   }
 
-  .flashcard-filters, .mode-selector {
+  .flashcard-filters, .mode-selector, .mode-vocab-selector {
     padding: 15px;
   }
 
