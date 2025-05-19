@@ -21,7 +21,7 @@ class WordSearchController {
             const gridSize = 18;
             
             // Récupérer des mots aléatoires du vocabulaire de l'utilisateur
-            const words = await wordModel.getRandomUserWords(req.session.user.id, wordCount, levelGame);
+            const words = await learningModel.getRandomUserWords(req.session.user.id, wordCount, levelGame);
             
             if (!words || words.length === 0) {
                 return res.status(404).json({ error: 'Aucun mot trouvé dans votre vocabulaire.' });

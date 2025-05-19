@@ -79,8 +79,8 @@ class LevelProgressController {
                 
                 // If all games for this level are completed, update all words at this level
                 if (allCompleted) {
-                    // Get all words at this level
-                    const wordIds = await learningModel.findWordsByLevel(req.session.user.id, currentLevel);
+                    // Get all words of today at this level
+                    const wordIds = await learningModel.findWordsTodayByLevel(req.session.user.id, currentLevel);
                     
                     // Update each word to the next level
                     const updatedWords = [];
