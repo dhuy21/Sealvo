@@ -59,7 +59,7 @@ const processExcelFile = async (filePath) => {
                     synonyms: row[6] || '',
                     antonyms: row[7] || '',
                     grammar: row[8] || '',
-                    level: row[9] || 'x' // Niveau par défaut
+                    level: row[9] 
                 });
             }
         }

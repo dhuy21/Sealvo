@@ -1,20 +1,14 @@
 const gameScoresModel = require('../../models/game_scores');
 const wordModel = require('../../models/words');
-
+const learningModel = require('../../models/learning');
+const levelGame = 'x';
 class VocabQuizController {
     constructor() {
         // Bind all methods to maintain 'this' context
         
         this.getQuestionForVocabQuiz = this.getQuestionForVocabQuiz.bind(this);
         this.shuffleArray = this.shuffleArray.bind(this);
-    }
-
-
-    async index(req, res) {
-        res.render('games/vocabQuiz', {
-            title: 'Vocab Quiz',
-            user: req.session.user
-        });
+        this.getAvailableWordsCount = this.getAvailableWordsCount.bind(this);
     }
 
     async getQuestionForVocabQuiz(req, res) {
@@ -24,22 +18,19 @@ class VocabQuizController {
                 return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
             }
             
-            const { difficulty } = req.query;
-            
-            // Déterminer le nombre d'options en fonction de la difficulté
-            let optionsCount = 4; // Par défaut: facile
-            if (difficulty === 'medium') {
-                optionsCount = 6;
-            } else if (difficulty === 'hard') {
-                optionsCount = 8;
-            }
+            const optionsCount = 6
             
             // Récupérer tous les mots de l'utilisateur
-            const words = await wordModel.findWordsByUserId(req.session.user.id);
+            const wordIds = await learningModel.findWordsByLevel(req.session.user.id, levelGame);
+            let words = [];
+            for (const wordId of wordIds) {
+                const word = await wordModel.findById(wordId.word_id);
+                words.push(word);
+            }
             
             if (words.length < optionsCount) {
                 return res.status(404).json({ 
-                    error: `Vous devez avoir au moins ${optionsCount} mots dans votre vocabulaire pour jouer à ce niveau de difficulté.` 
+                    error: `Vous devez avoir au moins ${optionsCount} mots au niveau ${levelGame} dans votre vocabulaire pour jouer à ce niveau de difficulté.` 
                 });
             }
             
@@ -100,6 +91,26 @@ class VocabQuizController {
             [array[i], array[j]] = [array[j], array[i]];
         }
         return array;
+    }
+
+    async getAvailableWordsCount(req, res) {
+        try {
+            // Vérifier si l'utilisateur est connecté
+            if (!req.session.user) {
+                return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
+            }
+            
+            // Compter le nombre de mots disponibles pour ce niveau
+            const wordCount = await learningModel.countUserWordsByLevel(req.session.user.id, levelGame);
+            
+            return res.json({
+                success: true,
+                count: wordCount
+            });
+        } catch (error) {
+            console.error('Erreur lors du comptage des mots disponibles:', error);
+            return res.status(500).json({ error: 'Une erreur est survenue lors du comptage des mots disponibles.' });
+        }
     }
 
 }

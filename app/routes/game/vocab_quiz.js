@@ -13,7 +13,7 @@ const isAuthenticated = (req, res, next) => {
 // Routes pour le jeu Vocab Quiz
 router.get('/question', isAuthenticated, vocabQuizController.getQuestionForVocabQuiz);
 
-// Route pour afficher la page de jeu Vocab Quiz
-router.get('/', isAuthenticated, vocabQuizController.index);
+// Route pour obtenir le nombre de mots disponibles
+router.get('/available-words', isAuthenticated, vocabQuizController.getAvailableWordsCount);
 
 module.exports = router;

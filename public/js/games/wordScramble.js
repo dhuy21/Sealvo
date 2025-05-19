@@ -200,15 +200,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const accuracy = totalAttempts > 0 ? Math.round((correctAnswers / totalAttempts) * 100) : 0;
         accuracyDisplay.textContent = `${accuracy}%`;
         
+        // Check if game was completed successfully
+        const minWordsPlayed = 10; // Must play at least 10 words
+        const minAccuracy = 70; // Must have at least 70% accuracy
+        const isSuccessful = wordsPlayed >= minWordsPlayed && accuracy >= minAccuracy;
+        
+        // Track level progress
+        trackLevelProgress(isSuccessful);
+        
         // Vérifier si c'est un nouveau record
         const currentHighScore = document.getElementById('game-container').dataset.highScore || 0;
         if (score > currentHighScore) {
             highScoreMessage.textContent = 'Nouveau record personnel !';
             highScoreMessage.classList.add('new-record');
+        }
             
             // Enregistrer le score
             saveScore(score);
-        }
         
         // Afficher l'écran de fin de jeu
         activeGameScreen.classList.remove('active');
@@ -240,6 +248,33 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Erreur lors de l\'enregistrement du score:', error);
+        });
+    }
+    
+    // Fonction pour suivre la progression de niveau
+    function trackLevelProgress(isSuccessful) {
+        fetch('/level-progress/track', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                game_type: 'word_scramble',
+                completed: isSuccessful
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Progression de niveau mise à jour:', data);
+            
+            // If all games for this level are completed and words were updated
+            if (data.level_completed && data.words_updated > 0) {
+                // You could show a notification or modal here
+                console.log(`Niveau terminé! ${data.words_updated} mots sont passés au niveau ${data.to_level}`);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors de la mise à jour de la progression de niveau:', error);
         });
     }
     

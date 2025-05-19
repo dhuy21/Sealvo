@@ -19,21 +19,23 @@ document.addEventListener('DOMContentLoaded', function() {
     let correctAnswers = 0;
     let streak = 0;
     let bestStreak = 0;
-    let totalQuestions = 10;
-    let selectedDifficulty = 'easy';
+    let totalQuestions = 0; // Valeur par défaut qui sera mise à jour
+    let availableWords = 0; // Nombre de mots disponibles pour ce niveau
+    const maxQuestions = 20; // Maximum de questions
+
+    
     let timePerQuestion = [];
     let startQuestionTime = null;
     let attempts = 0; // nombre de tentatives sur la question actuelle
     let isLoadingPhrase = false; // Guard to prevent multiple simultaneous loadNewPhrase calls
     
     // Éléments DOM
-    const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+    
     const startGameBtn = document.getElementById('start-game');
     const phraseDisplay = document.getElementById('phrase-display');
     const wordInput = document.getElementById('word-input');
     const submitBtn = document.getElementById('submit-answer');
     const wordMeaning = document.getElementById('word-meaning');
-    const hintContainer = document.getElementById('hint-container');
     const hintText = document.getElementById('hint-text');
     const feedbackMessage = document.getElementById('feedback-message');
     const nextPhraseBtn = document.getElementById('next-phrase-btn');
@@ -53,19 +55,40 @@ document.addEventListener('DOMContentLoaded', function() {
     const activeGameScreen = document.querySelector('.active-game-screen');
     const postGameScreen = document.querySelector('.post-game-screen');
     
-    // Initialisation de la difficulté
-    if (difficultyBtns && difficultyBtns.length > 0) {
-        difficultyBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                difficultyBtns.forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                selectedDifficulty = this.dataset.difficulty;
-            });
-        });
-    }
     
     // Fonction pour démarrer le jeu
     function startGame() {
+        // Vérifier le nombre de mots disponibles
+        fetch('/games/phraseCompletion/available-words', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error(data.error);
+                return;
+            }
+            
+            // Mettre à jour le nombre total de questions en fonction des mots disponibles
+            availableWords = data.count;
+            totalQuestions = Math.min(availableWords, maxQuestions) ;
+            totalQuestions += parseInt(0.5*availableWords); // Maximum 20 questions ou le nombre de mots disponibles
+            console.log('Nombre de mots disponibles:', availableWords);
+            console.log('Nombre de questions:', totalQuestions);
+            
+            // Continuer l'initialisation du jeu
+            initializeGame();
+        })
+        .catch(error => {
+            console.error('Erreur lors de la vérification des mots disponibles:', error);
+        });
+    }
+    
+    // Fonction pour initialiser le jeu après avoir vérifié les mots disponibles
+    function initializeGame() {
         // Réinitialiser les variables
         score = 0;
         timer = 300;
@@ -126,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
         startQuestionTime = Date.now();
         
         // Charger une nouvelle phrase du serveur
-        fetch(`/games/phraseCompletion/phrase?difficulty=${selectedDifficulty}&previousWordId=${previousWordId || ''}`, {
+        fetch(`/games/phraseCompletion/phrase?previousWordId=${previousWordId || ''}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -149,9 +172,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const formattedPhrase = data.phrase;
             phraseDisplay.innerHTML = formattedPhrase;
             
-            // Afficher un indice en fonction de la difficulté
-            showHint(data.word, data.difficulty);
-            
             // Focus sur l'input
             wordInput.focus();
             isLoadingPhrase = false;
@@ -160,30 +180,6 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Erreur lors du chargement de la phrase:', error);
             isLoadingPhrase = false;
         });
-    }
-    
-    // Fonction pour afficher un indice en fonction de la difficulté
-    function showHint(word, difficulty) {
-        // Vérifier que le mot existe et n'est pas undefined
-        if (!word) {
-            console.error("Impossible d'afficher un indice : le mot est undefined");
-            hintText.textContent = '';
-            return;
-        }
-        
-        if (difficulty === 'easy') {
-            // En facile, montrer la première et dernière lettre
-            const firstLetter = word.charAt(0);
-            const lastLetter = word.charAt(word.length - 1);
-            hintText.innerHTML = `Indice: Le mot commence par <span class="letter">${firstLetter}</span> et finit par <span class="letter">${lastLetter}</span>`;
-        } else if (difficulty === 'medium') {
-            // En moyen, montrer seulement la première lettre
-            const firstLetter = word.charAt(0);
-            hintText.innerHTML = `Indice: Le mot commence par <span class="letter">${firstLetter}</span>`;
-        } else {
-            // En difficile, pas d'indice
-            hintText.textContent = 'Aucun indice disponible en mode difficile';
-        }
     }
     
     // Fonction pour vérifier la réponse
@@ -242,14 +238,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 bestStreak = Math.max(bestStreak, streak);
             
                 // Calcul du score
-                let basePoints = 10;
-                
-                // Bonus pour la difficulté
-                if (selectedDifficulty === 'medium') {
-                    basePoints = 15;
-                } else if (selectedDifficulty === 'hard') {
-                    basePoints = 20;
-                }
+                const basePoints = 10;
                 
                 // Bonus pour la rapidité (max 5 points bonus)
                 const timeBonus = Math.max(0, Math.min(5, Math.round(10 - questionTime)));
@@ -350,6 +339,14 @@ document.addEventListener('DOMContentLoaded', function() {
         bestStreakDisplay.textContent = bestStreak;
         avgTimeDisplay.textContent = `${avgTime}s`;
         
+        // Check if game was completed successfully
+        const minAccuracy = 70; // 70% accuracy
+        const minQuestionsAnswered = Math.ceil(totalQuestions * 0.8); // 80% completion
+        const isSuccessful = accuracy >= minAccuracy && questionsAnswered >= minQuestionsAnswered;
+        
+        // Track level progress
+        trackLevelProgress(isSuccessful);
+        
         // Vérifier si c'est un nouveau record
         const currentHighScore = document.getElementById('game-container').dataset.highScore || 0;
         if (score > currentHighScore) {
@@ -357,6 +354,9 @@ document.addEventListener('DOMContentLoaded', function() {
             highScoreMessage.classList.add('new-record');
             
             // Enregistrer le score
+            saveScore(score);
+        } else {
+            // Save score anyway
             saveScore(score);
         }
         
@@ -376,7 +376,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 game_type: 'phrase_completion',
                 score: score,
                 details: {
-                    difficulty: selectedDifficulty,
                     questions_answered: questionsAnswered,
                     correct_answers: correctAnswers,
                     accuracy: questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0,
@@ -393,6 +392,33 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Erreur lors de l\'enregistrement du score:', error);
+        });
+    }
+    
+    // Fonction pour suivre la progression de niveau
+    function trackLevelProgress(isSuccessful) {
+        fetch('/level-progress/track', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                game_type: 'phrase_completion',
+                completed: isSuccessful
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Progression de niveau mise à jour:', data);
+            
+            // If all games for this level are completed and words were updated
+            if (data.level_completed && data.words_updated > 0) {
+                // You could show a notification or modal here
+                console.log(`Niveau terminé! ${data.words_updated} mots sont passés au niveau ${data.to_level}`);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors de la mise à jour de la progression de niveau:', error);
         });
     }
     

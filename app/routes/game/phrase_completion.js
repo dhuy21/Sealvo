@@ -7,7 +7,7 @@ const isAuthenticated = (req, res, next) => {
     if (req.session.user) {
         return next();
     }
-    res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
+    res.status(401).json({ success: false, message: 'Vous devez être connecté' });
 };
 
 // Route pour récupérer une phrase pour le jeu
@@ -16,7 +16,7 @@ router.get('/phrase', isAuthenticated, phraseCompletionController.getPhraseForCo
 // Route pour vérifier la réponse à une phrase
 router.post('/check', isAuthenticated, phraseCompletionController.checkPhraseAnswer);
 
-// Route pour afficher la page de jeu Phrase Completion
-router.get('/', isAuthenticated, phraseCompletionController.index);
+// Route pour obtenir le nombre de mots disponibles
+router.get('/available-words', isAuthenticated, phraseCompletionController.getAvailableWordsCount);
 
 module.exports = router;
