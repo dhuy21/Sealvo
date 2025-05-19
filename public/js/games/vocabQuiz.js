@@ -13,12 +13,11 @@ document.addEventListener('DOMContentLoaded', function() {
     let correctAnswers = 0;
     let totalQuestions = 10;
     let gameActive = false;
-    let selectedDifficulty = 'easy';
-    let optionsCount = 4; // Par défaut: facile
+    let optionsCount = 6; // Par défaut
     let currentSelectedOption = null;
-    
+    let availableWords = 0;
+    const maxQuestions = 30;
     // Éléments DOM
-    const difficultyBtns = document.querySelectorAll('.difficulty-btn');
     const startGameBtn = document.getElementById('start-game');
     const nextQuestionBtn = document.getElementById('next-question');
     const playAgainBtn = document.getElementById('play-again');
@@ -37,31 +36,39 @@ document.addEventListener('DOMContentLoaded', function() {
     const activeGameScreen = document.querySelector('.active-game-screen');
     const postGameScreen = document.querySelector('.post-game-screen');
     
-    // Initialisation de la difficulté
-    if (difficultyBtns && difficultyBtns.length > 0) {
-        difficultyBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                difficultyBtns.forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                selectedDifficulty = this.dataset.difficulty;
-                
-                switch(selectedDifficulty) {
-                    case 'easy':
-                        optionsCount = 4;
-                        break;
-                    case 'medium':
-                        optionsCount = 6;
-                        break;
-                    case 'hard':
-                        optionsCount = 8;
-                        break;
-                }
-            });
+    // Fonction pour démarrer le jeu
+    function startGame() {
+        // Vérifier le nombre de mots disponibles
+        fetch('/games/vocabQuiz/available-words', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error(data.error);
+                return;
+            }
+            
+            // Mettre à jour le nombre total de questions en fonction des mots disponibles
+            availableWords = data.count;
+            totalQuestions = Math.min(availableWords, maxQuestions);
+            totalQuestions += parseInt(0.5*availableWords);
+            console.log('Nombre de mots disponibles:', availableWords);
+            console.log('Nombre de questions:', totalQuestions);
+            
+            // Continuer l'initialisation du jeu
+            initializeGame();
+        })
+        .catch(error => {
+            console.error('Erreur lors de la vérification des mots disponibles:', error);
         });
     }
     
-    // Fonction pour démarrer le jeu
-    function startGame() {
+    // Fonction pour initialiser le jeu après avoir vérifié les mots disponibles
+    function initializeGame() {
         // Réinitialiser les variables
         score = 0;
         correctAnswers = 0;
@@ -88,9 +95,8 @@ document.addEventListener('DOMContentLoaded', function() {
         resultMessage.textContent = '';
         resultMessage.className = 'result-message';
         
-        // Simuler une requête à l'API pour obtenir une question
-        // Dans une vraie implémentation, vous feriez un appel fetch à votre API
-        fetch(`/games/vocabQuiz/question?difficulty=${selectedDifficulty}`, {
+        // Appel à l'API pour obtenir une question
+        fetch(`/games/vocabQuiz/question`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -100,6 +106,8 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.error) {
                 console.error(data.error);
+                resultMessage.textContent = data.error;
+                resultMessage.className = 'result-message incorrect';
                 return;
             }
             
@@ -117,6 +125,8 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Erreur lors du chargement de la question:', error);
+            resultMessage.textContent = 'Erreur lors du chargement de la question. Veuillez réessayer.';
+            resultMessage.className = 'result-message incorrect';
         });
     }
     
@@ -203,6 +213,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const accuracy = Math.round((correctAnswers / totalQuestions) * 100);
         accuracyDisplay.textContent = `${accuracy}%`;
         
+        // Check if game was completed successfully
+        const minCorrectAnswers = Math.ceil(totalQuestions * 0.7); // 70% correct answers
+        const isSuccessful = correctAnswers >= minCorrectAnswers;
+        
+        // Track level progress
+        trackLevelProgress(isSuccessful);
+        
         // Vérifier si c'est un nouveau record
         const currentHighScore = document.getElementById('game-container').dataset.highScore || 0;
         if (score > currentHighScore) {
@@ -210,6 +227,9 @@ document.addEventListener('DOMContentLoaded', function() {
             highScoreMessage.classList.add('new-record');
             
             // Enregistrer le score
+            saveScore(score);
+        } else {
+            // Save score anyway
             saveScore(score);
         }
         
@@ -231,7 +251,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 game_type: 'vocab_quiz',
                 score: score,
                 details: {
-                    difficulty: selectedDifficulty,
                     correct_answers: correctAnswers,
                     total_questions: totalQuestions,
                     accuracy: Math.round((correctAnswers / totalQuestions) * 100)
@@ -244,6 +263,33 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Erreur lors de l\'enregistrement du score:', error);
+        });
+    }
+    
+    // Fonction pour suivre la progression de niveau
+    function trackLevelProgress(isSuccessful) {
+        fetch('/level-progress/track', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                game_type: 'vocab_quiz',
+                completed: isSuccessful
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Progression de niveau mise à jour:', data);
+            
+            // If all games for this level are completed and words were updated
+            if (data.level_completed && data.words_updated > 0) {
+                // You could show a notification or modal here
+                console.log(`Niveau terminé! ${data.words_updated} mots sont passés au niveau ${data.to_level}`);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors de la mise à jour de la progression de niveau:', error);
         });
     }
     

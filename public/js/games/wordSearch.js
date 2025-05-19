@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const activeGameScreen = document.querySelector('.active-game-screen');
     const postGameScreen = document.querySelector('.post-game-screen');
     const startGameBtn = document.getElementById('start-game');
-    const difficultyBtns = document.querySelectorAll('.difficulty-btn');
     const wordSearchGrid = document.getElementById('word-search-grid');
     const wordList = document.getElementById('word-list');
     const scoreDisplay = document.getElementById('score');
@@ -33,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const showHintBtn = document.getElementById('show-hint');
     
     // Variables du jeu
-    let selectedDifficulty = 'easy';
     let gridSize = 8;
     let grid = [];
     let words = [];
@@ -69,14 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
         startGameBtn.addEventListener('click', startGame);
         showHintBtn.addEventListener('click', showHint);
         
-        // Gérer la sélection de difficulté
-        difficultyBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                difficultyBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                selectedDifficulty = btn.dataset.difficulty;
-            });
-        });
     }
     
     // Démarrer le jeu
@@ -95,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
             startTime = Date.now();
             
             // Charger les mots depuis le serveur
-            const response = await fetch(`/games/wordSearch/words?difficulty=${selectedDifficulty}`);
+            const response = await fetch(`/games/wordSearch/words`);
             const data = await response.json();
             
             if (!response.ok) {
@@ -527,12 +517,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     flashEntireWord(hintPosition);
                     break;
             }
-            
-            // Réduire le score pour avoir utilisé un indice
-            score = Math.max(0, score - 20);
-            scoreDisplay.textContent = score;
+                
+                // Réduire le score pour avoir utilisé un indice
+                score = Math.max(0, score - 20);
+                scoreDisplay.textContent = score;
+            }
         }
-    }
     
     // Mettre en évidence la première lettre comme indice
     function highlightFirstLetter(hintPosition) {
@@ -756,6 +746,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const bonusScore = foundWords.length === words.length ? 100 : 0;
         const totalScore = Math.floor(finalScore + bonusScore);
         
+        // Check if game was completed successfully
+        const minWordsFound = Math.ceil(words.length * 0.7); // 70% of words found
+        const isSuccessful = foundWords.length >= minWordsFound;
+        
+        // Track level progress
+        trackLevelProgress(isSuccessful);
+        
         // Sauvegarder le score
         saveScore(totalScore);
         
@@ -804,6 +801,33 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Vider la grille
         wordSearchGrid.innerHTML = '';
+    }
+    
+    // Fonction pour suivre la progression de niveau
+    function trackLevelProgress(isSuccessful) {
+        fetch('/level-progress/track', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                game_type: 'word_search',
+                completed: isSuccessful
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Progression de niveau mise à jour:', data);
+            
+            // If all games for this level are completed and words were updated
+            if (data.level_completed && data.words_updated > 0) {
+                // You could show a notification or modal here
+                console.log(`Niveau terminé! ${data.words_updated} mots sont passés au niveau ${data.to_level}`);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors de la mise à jour de la progression de niveau:', error);
+        });
     }
     
     // Sauvegarder le score sur le serveur
