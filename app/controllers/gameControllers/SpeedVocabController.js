@@ -1,5 +1,4 @@
 const gameScoresModel = require('../../models/game_scores');
-const wordModel = require('../../models/words');
 const learningModel = require('../../models/learning');
 const levelGame = '1';
 
@@ -25,7 +24,7 @@ class SpeedVocabController {
                 return res.status(404).json({ error: 'Vous n\'avez pas encore de mots dans votre vocabulaire.' });
             }
                
-            const words = await wordModel.findRandomWordsExcluding(
+            const words = await learningModel.findRandomWordsExcluding(
                 req.session.user.id, 
                 previousWordId, 
                 1,
