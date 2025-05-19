@@ -1,5 +1,4 @@
 const gameScoresModel = require('../../models/game_scores');
-const wordModel = require('../../models/words');
 const learningModel = require('../../models/learning');
 const levelGame = '0';
 
@@ -42,7 +41,7 @@ class PhraseCompletionController {
             const previousWordId = req.query.previousWordId || null;
             
             // Récupérer un mot aléatoire du vocabulaire de l'utilisateur
-            const words = await wordModel.findRandomWordsExcluding(req.session.user.id, previousWordId, 1, levelGame);
+            const words = await learningModel.findRandomWordsExcluding(req.session.user.id, previousWordId, 1, levelGame);
             
             if (!words || words.length === 0) {
                 return res.status(404).json({ error: 'Aucun mot trouvé dans votre vocabulaire.' });
