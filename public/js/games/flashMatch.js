@@ -9,17 +9,16 @@ document.addEventListener('DOMContentLoaded', function() {
     let cards = [];
     let selectedCards = [];
     let matchedPairs = 0;
-    let totalPairs = 4; // Par défaut: facile
+    let totalPairs = 15; // Par défaut (max 15)
     let moves = 0;
     let score = 0;
     let gameActive = false;
     let timerInterval = null;
     let startTime = null;
     let currentTime = 0;
-    let selectedDifficulty = 'easy';
+    
     
     // Éléments DOM
-    const difficultyBtns = document.querySelectorAll('.difficulty-btn');
     const startGameBtn = document.getElementById('start-game');
     const gameBoard = document.getElementById('game-board');
     const movesCount = document.getElementById('moves-count');
@@ -36,17 +35,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const activeGameScreen = document.querySelector('.active-game-screen');
     const postGameScreen = document.querySelector('.post-game-screen');
     
-    // Initialisation de la difficulté
-    if (difficultyBtns.length > 0) {
-        difficultyBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                difficultyBtns.forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                selectedDifficulty = this.dataset.difficulty;
-                totalPairs = parseInt(this.dataset.pairs);
-            });
-        });
-    }
     
     // Fonction pour démarrer le jeu
     function startGame() {
@@ -78,20 +66,35 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour charger les cartes
     function loadCards() {
-        // Simuler une requête à l'API pour obtenir les mots et les définitions
-        // Dans une vraie implémentation, vous feriez un appel fetch à votre API
-        fetch(`/games/flashMatch/cards?difficulty=${selectedDifficulty}`, {
+        // Faire la requête API pour obtenir les cartes
+        fetch(`/games/flashMatch/cards`, {
             method: 'GET',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Erreur HTTP: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log("Données reçues:", data);
+            
             if (data.error) {
                 console.error(data.error);
                 return;
             }
+            
+            if (!data.cards || !Array.isArray(data.cards) || data.cards.length === 0) {
+                throw new Error('Aucune carte disponible');
+            }
+            
+            // Mettre à jour le nombre total de paires
+            totalPairs = data.cards.length / 2;
+            pairsCount.textContent = `0/${totalPairs}`;
             
             createGameBoard(data.cards);
         })
@@ -148,15 +151,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Appliquer la grille en fonction du nombre de paires
-        let gridClass = '';
-        if (totalPairs === 4) {
-            gridClass = 'grid-4';
-        } else if (totalPairs === 6) {
-            gridClass = 'grid-6';
+        if (totalPairs <= 4) {
+            gameBoard.className = 'game-board grid-4';
+        } else if (totalPairs <= 8) {
+            gameBoard.className = 'game-board grid-8';
+        } else if (totalPairs <= 10) {
+            gameBoard.className = 'game-board grid-10';
+        } else if (totalPairs <= 12) {
+            gameBoard.className = 'game-board grid-12';
         } else {
-            gridClass = 'grid-8';
+            gameBoard.className = 'game-board grid-15';
         }
-        gameBoard.className = `game-board ${gridClass}`;
     }
     
     // Fonction pour retourner une carte
@@ -260,6 +265,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         finalMoves.textContent = moves;
         
+        // Check if game was completed successfully
+        const successThreshold = Math.ceil(totalPairs * 0.8); // 80% success rate
+        const isSuccessful = matchedPairs >= successThreshold;
+        
+        // Track level progress
+        trackLevelProgress(isSuccessful);
+        
         // Vérifier si c'est un nouveau record
         // Récupérer le highScore depuis un élément data ou une variable globale
         const currentHighScore = document.getElementById('game-container').dataset.highScore || 0;
@@ -268,6 +280,9 @@ document.addEventListener('DOMContentLoaded', function() {
             highScoreMessage.classList.add('new-record');
             
             // Enregistrer le score
+            saveScore(score);
+        } else {
+            // Save score anyway
             saveScore(score);
         }
         
@@ -316,6 +331,33 @@ document.addEventListener('DOMContentLoaded', function() {
         return array;
     }
     
+    // Fonction pour suivre la progression de niveau
+    function trackLevelProgress(isSuccessful) {
+        fetch('/level-progress/track', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                game_type: 'flash_match',
+                completed: isSuccessful
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Progression de niveau mise à jour:', data);
+            
+            // If all games for this level are completed and words were updated
+            if (data.level_completed && data.words_updated > 0) {
+                // You could show a notification or modal here
+                console.log(`Niveau terminé! ${data.words_updated} mots sont passés au niveau ${data.to_level}`);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors de la mise à jour de la progression de niveau:', error);
+        });
+    }
+    
     // Événements
     if (startGameBtn) {
         startGameBtn.addEventListener('click', startGame);
@@ -325,3 +367,4 @@ document.addEventListener('DOMContentLoaded', function() {
         playAgainBtn.addEventListener('click', startGame);
     }
 });
+

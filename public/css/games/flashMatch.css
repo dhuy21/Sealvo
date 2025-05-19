@@ -185,113 +185,7 @@
     margin-right: 0.5rem;
 }
 
-.difficulty-selector {
-    margin: 2.5rem 0;
-    text-align: center;
-  }
-  
-  .difficulty-selector h3 {
-    margin-bottom: 1.5rem;
-    color: #4b5563;
-    font-weight: 600;
-    font-size: 1.3rem;
-  }
-  
-  .difficulty-options {
-    display: flex;
-    justify-content: center;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-  }
-  
-  .difficulty-btn {
-    flex: 1;
-    background-color: rgba(248, 250, 252, 0.8);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    border: 2px solid #e5e7eb;
-    border-radius: 16px;
-    padding: 1.5rem 1rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    position: relative;
-    overflow: hidden;
-    min-width: 150px;
-    max-width: 200px;
-    padding: 0.8rem 1.5rem;
-    border: 2px solid #6a11cb;
-    border-radius: 50px;
-    background: transparent;
-    color: #6a11cb;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    z-index: 1;
-  }
-  
-  .difficulty-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(45deg, rgba(106, 17, 203, 0.05), rgba(37, 117, 252, 0.05));
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: 0;
-    /**/
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(106, 17, 203, 0.2), transparent);
-    transition: 0.5s;
-    z-index: -1;
-  }
-  
-  .difficulty-btn:hover {
-    transform: translateY(-5px);
-    border-color: rgba(106, 17, 203, 0.3);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(106, 17, 203, 0.2);
-  }
-  
-  .difficulty-btn:hover::before {
-    opacity: 1;
-    left: 100%;
-  }
-  
-  .difficulty-btn.active {
-    background-color: rgba(240, 245, 255, 0.9);
-    border-color: #3b82f6;
-    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2);
-    background: linear-gradient(135deg, #6a11cb, #2575fc);
-    color: white;
-    box-shadow: 0 8px 20px rgba(106, 17, 203, 0.3);
-    border-color: transparent;
-  }
-  
-  .difficulty-btn i {
-    color: #fbbf24;
-    margin-bottom: 0.8rem;
-    font-size: 1.8rem;
-    position: relative;
-    z-index: 1;
-  }
-  
-  .difficulty-btn span {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: #333;
-    position: relative;
-    z-index: 1;
-  }
+
 /**/
 .start-btn {
     display: block;
@@ -402,13 +296,25 @@
     grid-template-columns: repeat(4, 1fr);
 }
 
+.game-board.grid-15 {
+    grid-template-columns: repeat(6, 1fr);
+}
+
+.game-board.grid-10 {
+    grid-template-columns: repeat(5, 1fr);
+}
+
+.game-board.grid-12 {
+    grid-template-columns: repeat(6, 1fr);
+}
+
 .card {
     height: 120px;
     perspective: 1500px;
     cursor: pointer;
     position: relative;
-    transform-style: flat; /* Changed from preserve-3d to fix rendering issues */
-    isolation: isolate; /* Improves stacking context */
+    transform-style: preserve-3d;
+    isolation: isolate;
 }
 
 .card-inner {
@@ -908,10 +814,6 @@
     
     .leaderboard {
         flex: auto;
-    }
-    
-    .difficulty-options {
-        flex-direction: column;
     }
     
     .game-board.grid-4,

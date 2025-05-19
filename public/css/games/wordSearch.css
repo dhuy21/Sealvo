@@ -4,10 +4,13 @@
 
 .game-container {
     max-width: 1000px;
-    min-width: 1000px;
     margin: 0 auto;
     padding: 2rem;
     font-family: 'Poppins', sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 .game-header {
@@ -171,114 +174,6 @@
     margin-right: 0.5rem;
 }
 
-.difficulty-selector {
-    margin: 2.5rem 0;
-    text-align: center;
-  }
-  
-  .difficulty-selector h3 {
-    margin-bottom: 1.5rem;
-    color: #4b5563;
-    font-weight: 600;
-    font-size: 1.3rem;
-  }
-  
-  .difficulty-options {
-    display: flex;
-    justify-content: center;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-  }
-  
-  .difficulty-btn {
-    flex: 1;
-    background-color: rgba(248, 250, 252, 0.8);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    border: 2px solid #e5e7eb;
-    border-radius: 16px;
-    padding: 1.5rem 1rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    position: relative;
-    overflow: hidden;
-    min-width: 150px;
-    max-width: 200px;
-    padding: 0.8rem 1.5rem;
-    border: 2px solid #6a11cb;
-    border-radius: 50px;
-    background: transparent;
-    color: #6a11cb;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    z-index: 1;
-  }
-  
-  .difficulty-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(45deg, rgba(106, 17, 203, 0.05), rgba(37, 117, 252, 0.05));
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: 0;
-    /**/
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(106, 17, 203, 0.2), transparent);
-    transition: 0.5s;
-    z-index: -1;
-  }
-  
-  .difficulty-btn:hover {
-    transform: translateY(-5px);
-    border-color: rgba(106, 17, 203, 0.3);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(106, 17, 203, 0.2);
-  }
-  
-  .difficulty-btn:hover::before {
-    opacity: 1;
-    left: 100%;
-  }
-  
-  .difficulty-btn.active {
-    background-color: rgba(240, 245, 255, 0.9);
-    border-color: #3b82f6;
-    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2);
-    background: linear-gradient(135deg, #6a11cb, #2575fc);
-    color: white;
-    box-shadow: 0 8px 20px rgba(106, 17, 203, 0.3);
-    border-color: transparent;
-  }
-  
-  .difficulty-btn i {
-    color: #fbbf24;
-    margin-bottom: 0.8rem;
-    font-size: 1.8rem;
-    position: relative;
-    z-index: 1;
-  }
-  
-  .difficulty-btn span {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: #333;
-    position: relative;
-    z-index: 1;
-  }
-
 .start-btn {
     margin-top: 30px;
     padding: 15px 40px;
@@ -352,7 +247,11 @@
     border: 1px solid rgba(255, 255, 255, 0.18);
     transition: box-shadow 0.3s ease;
     max-width: 100%;
-    overflow: hidden;
+    overflow: visible !important;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 .game-board:hover {
@@ -361,75 +260,83 @@
 
 .word-search-grid-container {
     width: 100%;
-    max-height: 500px;
-    overflow: auto;
+    max-height: none;
+    overflow: visible !important;
     position: relative;
     border-radius: 12px;
     padding: 5px;
     margin-bottom: 1rem;
-    /* Enable smooth scrolling */
-    scroll-behavior: smooth;
-    /* Make scrolling feel natural on iOS */
-    -webkit-overflow-scrolling: touch;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 .word-search-grid {
     display: grid;
-    gap: 4px;
+    gap: 2px;
     width: 100%;
     max-width: 100%;
     margin: 0 auto;
+    overflow: visible !important;
+    grid-template-columns: repeat(auto-fill, minmax(20px, 1fr));
     user-select: none;
-    min-width: min-content; /* Ensures grid doesn't shrink smaller than content */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
-/* Custom scrollbar styling */
+/* Remove scrollbar styling as it's no longer needed */
 .word-search-grid-container::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    display: none;
 }
 
 .word-search-grid-container::-webkit-scrollbar-track {
-    background: rgba(237, 242, 247, 0.5);
-    border-radius: 10px;
+    display: none;
 }
 
 .word-search-grid-container::-webkit-scrollbar-thumb {
-    background: rgba(106, 17, 203, 0.3);
-    border-radius: 10px;
+    display: none;
 }
 
 .word-search-grid-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(106, 17, 203, 0.5);
+    display: none;
 }
 
 /* Responsive adjustments for grid */
 @media (max-width: 768px) {
     .word-search-grid-container {
-        max-height: 400px;
+        max-height: none;
     }
 }
 
 @media (max-width: 576px) {
     .word-search-grid-container {
-        max-height: 350px;
+        max-height: none;
     }
 }
 
 @media (max-width: 480px) {
     .word-search-grid-container {
-        max-height: 300px;
+        max-height: none;
     }
     
     .game-board {
-        padding: 15px;
+        max-width: 100%;
+        overflow: visible !important;
+        padding: 10px;
+    }
+    
+    .word-search-grid {
+        max-width: 100%;
+        overflow: visible !important;
     }
 }
 
 /* Additional support for landscape mode */
 @media (max-height: 600px) and (orientation: landscape) {
     .word-search-grid-container {
-        max-height: 250px;
+        max-height: none;
     }
 }
 
@@ -496,41 +403,30 @@
     overflow-y: auto;
     margin: 0;
     flex-grow: 1;
-}
-
-/* Scrollbar styling */
-.word-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.word-list::-webkit-scrollbar-track {
-    background: rgba(237, 242, 247, 0.7);
-    border-radius: 10px;
-}
-
-.word-list::-webkit-scrollbar-thumb {
-    background: rgba(160, 174, 192, 0.5);
-    border-radius: 10px;
-}
-
-.word-list::-webkit-scrollbar-thumb:hover {
-    background: rgba(160, 174, 192, 0.8);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
 }
 
 .word-list-item {
-    padding: 12px 18px;
+    padding: 8px 12px;
     margin-bottom: 8px;
     background: rgba(237, 242, 247, 0.7);
     border-radius: 10px;
     transition: all 0.3s ease;
-    border-left: 3px solid transparent;
+    border-left: 3px solid #4299e1;
     font-weight: 500;
     color: #4a5568;
+    display: inline-block;
+    width: auto;
+    text-align: center;
 }
 
 .word-list-item:hover {
-    transform: translateX(5px);
+    transform: translateY(-3px);
     background: rgba(237, 242, 247, 0.9);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .word-list-item.found {
@@ -548,6 +444,30 @@
     0% { transform: scale(1); }
     50% { transform: scale(1.08); }
     100% { transform: scale(1); }
+}
+
+/* Responsive adjustments for word list */
+@media (max-width: 768px) {
+    .word-list {
+        gap: 6px;
+    }
+    
+    .word-list-item {
+        padding: 6px 10px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .word-list {
+        gap: 4px;
+    }
+    
+    .word-list-item {
+        padding: 4px 8px;
+        font-size: 0.85rem;
+        margin-bottom: 6px;
+    }
 }
 
 .hint-btn {
@@ -593,13 +513,23 @@
     justify-content: center;
     background-color: rgba(237, 242, 247, 0.7);
     font-weight: 600;
-    font-size: 1.4rem;
+    font-size: 0.6rem;
     cursor: pointer;
     aspect-ratio: 1 / 1;
     transition: all 0.15s ease;
-    border-radius: 8px;
+    border-radius: 4px;
     color: #2d3748;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    padding: 0;
+    width: 100%;
+    height: auto;
+    max-height: 20px;
+    min-height: 20px;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    touch-action: none;
 }
 
 .grid-cell:hover {
@@ -852,13 +782,73 @@
     left: 100%;
 }
 /* Responsive design */
+@media (max-width: 1200px) {
+    .word-items-container {
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    }
+    
+    .word-search-grid {
+        grid-template-columns: repeat(auto-fill, minmax(20px, 1fr));
+    }
+    
+    .grid-cell {
+        max-height: 20px;
+        min-height: 20px;
+        font-size: 0.6rem;
+        font-weight: 600;
+    }
+}
+
+@media (max-width: 1024px) {
+    .game-container {
+        max-width: 100%;
+        padding: 1.5rem;
+    }
+    
+    .grid-cell {
+        font-size: 0.6rem;
+        max-height: 20px;
+        min-height: 20px;
+        border-radius: 3px;
+        font-weight: 600;
+    }
+    
+    .game-board {
+        padding: 12px;
+    }
+    
+    .active-game-screen {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .word-search-grid {
+        gap: 2px;
+        grid-template-columns: repeat(auto-fill, minmax(20px, 1fr));
+    }
+    
+    .word-search-grid-container {
+        width: 100%;
+        margin: 0 auto;
+    }
+    
+    .pre-game-screen,
+    .active-game-screen,
+    .post-game-screen {
+        padding: 1rem;
+    }
+}
+
 @media (max-width: 768px) {
     .active-game-screen {
         grid-template-columns: 1fr;
     }
     
     .grid-cell {
-        font-size: 1rem;
+        font-size: 0.55rem;
+        max-height: 18px;
+        min-height: 18px;
+        font-weight: 600;
     }
     
     .stats-grid {
@@ -866,24 +856,20 @@
     }
     
     .game-board, .game-info-panel, .game-results {
-        padding: 20px;
+        padding: 10px;
     }
     
     .game-title {
         font-size: 2rem;
     }
+    
+    .word-search-grid {
+        grid-template-columns: repeat(auto-fill, minmax(18px, 1fr));
+        gap: 2px;
+    }
 }
 
 @media (max-width: 480px) {
-    .difficulty-btns {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .difficulty-btn {
-        width: 100%;
-    }
-    
     .stat-value {
         font-size: 1.6rem;
     }
@@ -892,76 +878,6 @@
         font-size: 1.8rem;
     }
     
-    .game-container {
-        padding: 15px;
-    }
-}
-
-/* iPhone-specific adjustments for Word Search game */
-@media only screen and (max-width: 480px) {
-    .game-board {
-        max-width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    #word-search-grid {
-        max-width: 100%;
-        overflow-x: hidden;
-    }
-    
-    .word-list-container {
-        height: auto;
-        max-height: 200px;
-        overflow-y: auto;
-    }
-    
-    .game-info-panel {
-        flex-direction: column;
-    }
-    
-    .hint-btn {
-        margin-bottom: 10px;
-    }
-    
-    .active-game-screen {
-        padding: 10px !important;
-    }
-    
-    /* Fix touch interaction for word selection */
-    #word-search-grid td {
-        touch-action: none;
-        -webkit-user-select: none;
-        user-select: none;
-    }
-}
-
-@media only screen and (max-width: 375px) {
-    .game-status {
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-    
-    .status-item {
-        margin: 5px;
-        font-size: 14px;
-    }
-    
-    .hint-btn {
-        width: 100%;
-        margin-bottom: 10px;
-    }
-}
-
-/* Fix for iOS Safari */
-@supports (-webkit-touch-callout: none) {
-    .game-board, 
-    .word-search-grid,
-    .word-list-container {
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    /* Prevent rubber-banding/overscroll effect */
     .game-container {
         position: relative;
         overflow: hidden;
@@ -1111,92 +1027,88 @@
     }
     
     .word-list-title {
-        font-size: 1.2rem;
-    }
-}
-
-@media (max-width: 768px) {
-    .word-items-container {
-        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-        gap: 0.5rem;
-    }
-    
-    .word-item {
-        padding: 0.4rem 0.6rem;
-    }
-    
-    .word-text {
-        font-size: 0.9rem;
-    }
-    
-    .word-marker {
-        font-size: 0.7rem;
-    }
-    
-    .pretty-word-list {
-        max-height: 300px;
-    }
-}
-
-@media (max-width: 576px) {
-    .pretty-word-list {
-        padding: 1rem;
-        max-height: 250px;
-    }
-    
-    .word-items-container {
-        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-        gap: 0.4rem;
-    }
-    
-    .word-list-title {
-        font-size: 1.1rem;
-        padding-bottom: 0.6rem;
-    }
-    
-    .word-text {
-        font-size: 0.8rem;
-    }
-    
-    .progress-text {
-        font-size: 0.9rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .pretty-word-list {
-        padding: 0.8rem;
-    }
-    
-    .word-items-container {
-        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-        gap: 0.3rem;
-    }
-    
-    .word-item {
-        padding: 0.3rem 0.5rem;
-    }
-    
-    .word-text {
-        font-size: 0.75rem;
-    }
-    
-    .word-marker {
-        font-size: 0.6rem;
-    }
-    
-    .word-list-title {
+        margin-bottom: 10px;
         font-size: 1rem;
     }
 }
 
-@media (max-width: 360px) {
-    .word-items-container {
-        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+@media (max-width: 394px) {
+    .word-search-grid {
+        grid-template-columns: repeat(auto-fill, minmax(12px, 1fr));
+        gap: 1px;
     }
     
-    .word-text {
-        font-size: 0.7rem;
+    .grid-cell {
+        font-size: 0.4rem;
+        max-height: 12px;
+        min-height: 12px;
+        font-weight: 600;
+    }
+    
+    /* Adjust status display */
+    .status-item span:first-child {
+        font-size: 0.9rem;
+    }
+    
+    .status-item span:last-child {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 360px) {
+    .word-search-grid {
+        grid-template-columns: repeat(auto-fill, minmax(9px, 1fr));
+        gap: 1px;
+        overflow: visible !important;
+    }
+    
+    .grid-cell {
+        font-size: 0.35rem;
+        max-height: 9px;
+        min-height: 9px;
+        padding: 0;
+        border-radius: 1px;
+        font-weight: 600;
+    }
+    
+    .game-board {
+        padding: 5px;
+        overflow: visible !important;
+    }
+    
+    .active-game-screen {
+        padding: 0.5rem;
+    }
+    
+    .word-list-container {
+        max-height: 150px;
+    }
+    
+    /* Further compact UI */
+    .pre-game-screen,
+    .active-game-screen,
+    .post-game-screen {
+        padding: 0.8rem;
+    }
+    
+    .hint-btn {
+        padding: 6px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Extreme small screen adjustments */
+@media (max-width: 320px) {
+    .word-search-grid {
+        grid-template-columns: repeat(auto-fill, minmax(8px, 1fr));
+        gap: 1px;
+    }
+    
+    .grid-cell {
+        font-size: 0.3rem;
+        max-height: 8px;
+        min-height: 8px;
+        font-weight: 600;
     }
 }
 
@@ -1213,9 +1125,34 @@
 
 /* Fix for iOS Safari */
 @supports (-webkit-touch-callout: none) {
-    .pretty-word-list {
+    .game-board, 
+    .word-search-grid,
+    .word-search-grid-container {
         -webkit-overflow-scrolling: touch;
+        overflow: visible !important;
     }
+    
+    /* Prevent rubber-banding/overscroll effect */
+    .game-container {
+        position: relative;
+        overflow: hidden;
+    }
+}
+
+/* Pretty Word List Styles - Enhanced Responsiveness */
+.pretty-word-list {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.07);
+    max-height: 500px;
+    overflow-y: auto;
+    border: 1px solid rgba(220, 220, 250, 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* Hint notification system */
@@ -1385,5 +1322,232 @@
     
     .hint-message {
         font-size: 0.9rem;
+    }
+}
+
+/* Add media query for 1024px screens */
+@media (max-width: 1024px) {
+    .game-container {
+        max-width: 100%;
+        padding: 1.5rem;
+    }
+    
+    .grid-cell {
+        font-size: 1.2rem;
+    }
+    
+    .game-board {
+        padding: 20px;
+    }
+    
+    .active-game-screen {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .word-search-grid {
+        gap: 3px;
+        grid-template-columns: repeat(auto-fill, minmax(28px, 1fr));
+    }
+    
+    .word-search-grid-container {
+        width: 100%;
+        margin: 0 auto;
+    }
+    
+    .pre-game-screen,
+    .active-game-screen,
+    .post-game-screen {
+        padding: 1.5rem;
+    }
+}
+
+/* Add specific media queries for mobile devices */
+@media (max-width: 432px) {
+    .word-search-grid {
+        grid-template-columns: repeat(auto-fill, minmax(14px, 1fr));
+        gap: 1px;
+    }
+    
+    .grid-cell {
+        font-size: 0.35rem;
+        max-height: 14px;
+        min-height: 14px;
+        font-weight: 600;
+        border-radius: 2px;
+    }
+    
+    .game-board {
+        padding: 8px;
+    }
+    
+    .word-search-grid-container {
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 412px) {
+    .word-search-grid {
+        grid-template-columns: repeat(auto-fill, minmax(13px, 1fr));
+        gap: 1px;
+    }
+    
+    .grid-cell {
+        font-size: 0.32rem;
+        max-height: 13px;
+        min-height: 13px;
+    }
+}
+
+@media (max-width: 394px) {
+    .word-search-grid {
+        grid-template-columns: repeat(auto-fill, minmax(12px, 1fr));
+        gap: 1px;
+    }
+    
+    .grid-cell {
+        font-size: 0.3rem;
+        max-height: 12px;
+        min-height: 12px;
+    }
+}
+
+@media (max-width: 360px) {
+    .word-search-grid {
+        grid-template-columns: repeat(auto-fill, minmax(9px, 1fr));
+        gap: 1px;
+        overflow: visible !important;
+    }
+    
+    .grid-cell {
+        font-size: 0.25rem;
+        max-height: 9px;
+        min-height: 9px;
+        padding: 0;
+        border-radius: 1px;
+    }
+    
+    .game-board {
+        padding: 5px;
+        overflow: visible !important;
+    }
+    
+    .active-game-screen {
+        padding: 0.5rem;
+    }
+    
+    .word-list-container {
+        max-height: 150px;
+    }
+    
+    /* Further compact UI */
+    .pre-game-screen,
+    .active-game-screen,
+    .post-game-screen {
+        padding: 0.8rem;
+    }
+    
+    .hint-btn {
+        padding: 6px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Fix any other potential causes of scrolling */
+.active-game-screen, 
+.game-info-panel, 
+.word-list-container {
+    overflow: visible !important;
+}
+
+/* Hide any scrollbars that might appear */
+.word-search-grid-container::-webkit-scrollbar,
+.word-search-grid::-webkit-scrollbar,
+.game-board::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+.word-search-grid-container,
+.word-search-grid,
+.game-board {
+    -ms-overflow-style: none !important;  /* IE and Edge */
+    scrollbar-width: none !important;  /* Firefox */
+}
+
+/* Additional global rule to prevent text selection during play */
+.active-game-screen * {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+}
+
+/* Media queries for all device sizes */
+
+/* Large Desktop screens */
+@media (min-width: 1600px) {
+    .word-search-grid {
+        grid-template-columns: repeat(auto-fill, minmax(25px, 1fr));
+        gap: 3px;
+    }
+    
+    .grid-cell {
+        font-size: 0.7rem;
+        max-height: 25px;
+        min-height: 25px;
+        border-radius: 5px;
+    }
+}
+
+/* Standard Desktop screens */
+@media (min-width: 1367px) and (max-width: 1599px) {
+    .word-search-grid {
+        grid-template-columns: repeat(auto-fill, minmax(22px, 1fr));
+        gap: 3px;
+    }
+    
+    .grid-cell {
+        font-size: 0.65rem;
+        max-height: 22px;
+        min-height: 22px;
+    }
+}
+
+/* iPad Pro and similar large tablets */
+@media (min-width: 1024px) and (max-width: 1366px) {
+    .word-search-grid {
+        grid-template-columns: repeat(auto-fill, minmax(21px, 1fr));
+        gap: 2px;
+    }
+    
+    .grid-cell {
+        font-size: 0.6rem;
+        max-height: 21px;
+        min-height: 21px;
+    }
+    
+    .game-board {
+        padding: 15px;
+    }
+}
+
+/* iPad and similar tablets */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .word-search-grid {
+        grid-template-columns: repeat(auto-fill, minmax(19px, 1fr));
+        gap: 2px;
+    }
+    
+    .grid-cell {
+        font-size: 0.55rem;
+        max-height: 19px;
+        min-height: 19px;
+        border-radius: 3px;
+    }
+    
+    .game-board {
+        padding: 12px;
     }
 }

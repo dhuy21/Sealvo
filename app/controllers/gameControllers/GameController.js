@@ -1,5 +1,6 @@
 const gameScoresModel = require('../../models/game_scores');
 const wordModel = require('../../models/words');
+const learningModel = require('../../models/learning');
 
 class GameController {
     /**
@@ -59,10 +60,18 @@ class GameController {
             
             // Nombre de mots dans le vocabulaire de l'utilisateur
             console.log('User ID from session:', req.session.user.id, 'Type:', typeof req.session.user.id);
-            
+            const levelGame = {
+                'flashMatch': 'x',
+                'vocabQuiz': 'x',
+                'wordSearch': '2',
+                'phraseCompletion': '0',
+                'speedVocab': '1',
+                'wordScramble': '0'
+            }
+
             let wordCount = 0;
             try {
-                wordCount = await wordModel.countUserWords(req.session.user.id);
+                wordCount = await learningModel.countUserWordsByLevel(req.session.user.id, levelGame[gameType]);
                 console.log(`Retrieved word count: ${wordCount}`);
             } catch (countError) {
                 console.error('Error counting user words:', countError);
@@ -71,11 +80,11 @@ class GameController {
             
             // Vérifier si l'utilisateur a suffisamment de mots pour jouer
             let minWordsRequired = 5;
-            if (gameType === 'flashMatch') minWordsRequired = 4;
+            if (gameType === 'flashMatch') minWordsRequired = 6;
             
             let errorMessage = null;
             if (wordCount < minWordsRequired) {
-                errorMessage = `Vous devez avoir au moins ${minWordsRequired} mots dans votre vocabulaire pour jouer à ce jeu.`;
+                errorMessage = `Vous devez avoir au moins ${minWordsRequired} mots au niveau ${levelGame[gameType]} dans votre vocabulaire pour jouer à ce jeu.`;
             }
             
             // Récupérer le titre et la description du jeu
@@ -99,7 +108,7 @@ class GameController {
             };
             
             return res.render(`games/${gameType}`, {
-                title: `${gameTitles[gameType]} - VocabMaster`,
+                title: `${gameTitles[gameType]}`,
                 user: req.session.user,
                 highScore: highScore,
                 leaderboard: leaderboard,

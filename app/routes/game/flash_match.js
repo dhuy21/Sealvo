@@ -13,8 +13,6 @@ const isAuthenticated = (req, res, next) => {
 // Routes pour le jeu Flash Match
 router.get('/cards', isAuthenticated, flashMatchController.getCardsForFlashMatch);
 
-// Route pour afficher la page de jeu Flash Match
-router.get('/', isAuthenticated, flashMatchController.index);
 
 
 module.exports = router;

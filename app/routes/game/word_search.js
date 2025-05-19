@@ -13,8 +13,7 @@ const isAuthenticated = (req, res, next) => {
  * Routes pour le jeu WordSearch (Mots cachés)
  */
 
-// Page principale du jeu
-router.get('/', isAuthenticated, wordSearchController.index);
+
 
 // Récupérer les mots pour le jeu
 router.get('/words', isAuthenticated, wordSearchController.getWordsForGame);

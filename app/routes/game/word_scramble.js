@@ -15,7 +15,6 @@ router.get('/word', isAuthenticated, wordScrambleController.getRandomWordForScra
 router.post('/check', isAuthenticated, wordScrambleController.checkWordScrambleAnswer);
 router.post('/skip', isAuthenticated, wordScrambleController.skipWordInScramble);
 
-// Route pour afficher la page de jeu Word Scramble
-router.get('/', isAuthenticated, wordScrambleController.index);
+
 
 module.exports = router;

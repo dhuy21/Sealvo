@@ -1,5 +1,6 @@
-const gameScoresModel = require('../../models/game_scores');
 const wordModel = require('../../models/words');
+const learningModel = require('../../models/learning');
+const levelGame = '0';
 
 class WordScrambleController {
     constructor() {
@@ -9,31 +10,16 @@ class WordScrambleController {
         this.skipWordInScramble = this.skipWordInScramble.bind(this);
         this.scrambleWord = this.scrambleWord.bind(this);
     }
-    
-    /**
-     * Récupérer un mot aléatoire pour le jeu Word Scramble
-     */
-    async index(req, res) {
-        res.render('games/wordScramble', {
-            title: 'Word Scramble',
-            user: req.session.user
-        });
-    }
-    
+
     async getRandomWordForScramble(req, res) {
         try {
-            // Vérifier si l'utilisateur est connecté
-            if (!req.session.user) {
-                return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
-            }
             
             // Récupérer tous les mots de l'utilisateur
-            const words = await wordModel.findWordsByUserId(req.session.user.id);
-            
-            if (words.length === 0) {
-                return res.status(404).json({ 
-                    error: 'Vous n\'avez pas encore ajouté de mots à votre vocabulaire.' 
-                });
+            const wordIds = await learningModel.findWordsByLevel(req.session.user.id, levelGame);
+            let words = [];
+            for (const wordId of wordIds) {
+                const word = await wordModel.findById(wordId.word_id);
+                words.push(word);
             }
             
             // Sélectionner un mot aléatoire
@@ -93,10 +79,6 @@ class WordScrambleController {
      */
     async skipWordInScramble(req, res) {
         try {
-            // Vérifier si l'utilisateur est connecté
-            if (!req.session.user) {
-                return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
-            }
             
             // Récupérer le mot actuel s'il est fourni dans la requête
             const { currentWord } = req.body;
@@ -108,26 +90,7 @@ class WordScrambleController {
                 });
             }
             
-            // Sinon, on peut renvoyer un mot aléatoire comme réponse
-            // C'est une approche simple, mais on pourrait aussi enregistrer le mot en cours
-            // dans la session et le renvoyer ici
-            
-            // Récupérer tous les mots de l'utilisateur
-            const words = await wordModel.findWordsByUserId(req.session.user.id);
-            
-            if (words.length === 0) {
-                return res.status(404).json({ 
-                    error: 'Vous n\'avez pas encore ajouté de mots à votre vocabulaire.' 
-                });
-            }
-            
-            // Sélectionner un mot aléatoire
-            const randomIndex = Math.floor(Math.random() * words.length);
-            const selectedWord = words[randomIndex];
-            
-            return res.json({
-                answer: selectedWord.word
-            });
+           
         } catch (error) {
             console.error('Erreur lors du passage d\'un mot:', error);
             return res.status(500).json({ error: 'Une erreur est survenue lors du passage d\'un mot.' });

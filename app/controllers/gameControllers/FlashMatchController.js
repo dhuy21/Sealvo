@@ -1,17 +1,12 @@
 const gameScoresModel = require('../../models/game_scores');
 const wordModel = require('../../models/words');
+const learningModel = require('../../models/learning');
+const levelGame = 'x';
 
 class FlashMatchController {
     constructor() {
         // Bind all methods to maintain 'this' context
         this.getCardsForFlashMatch = this.getCardsForFlashMatch.bind(this);
-    }
-
-    async index(req, res) {
-        res.render('games/flashMatch', {
-            title: 'Flash Match',
-            user: req.session.user
-        });
     }
 
     async getCardsForFlashMatch(req, res) {
@@ -21,23 +16,28 @@ class FlashMatchController {
                 return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
             }
             
-            const { difficulty } = req.query;
-            
             // Déterminer le nombre de paires en fonction de la difficulté
-            let pairsCount = 4; // Par défaut: facile
-            if (difficulty === 'medium') {
-                pairsCount = 6;
-            } else if (difficulty === 'hard') {
-                pairsCount = 8;
-            }
+            let pairsCount = 15; // Par défaut
+            
+            const minPairsCount = 4; // Par défaut
+            const maxPairsCount = 15; // Par défaut
             
             // Récupérer tous les mots de l'utilisateur
-            const words = await wordModel.findWordsByUserId(req.session.user.id);
+            const wordIds = await learningModel.findWordsByLevel(req.session.user.id, levelGame);
+            let words = [];
+            for (const wordId of wordIds) {
+                const word = await wordModel.findById(wordId.word_id);
+                words.push(word);
+            }
             
-            if (words.length < pairsCount) {
+            if (words.length < minPairsCount) {
                 return res.status(404).json({ 
-                    error: `Vous devez avoir au moins ${pairsCount} mots dans votre vocabulaire pour jouer à ce niveau de difficulté.` 
+                    error: `Vous devez avoir au moins ${minPairsCount} mots au niveau ${levelGame} dans votre vocabulaire pour jouer à ce niveau de difficulté.` 
                 });
+            } 
+
+            if (words.length < maxPairsCount) {
+                pairsCount = words.length;
             }
             
             // Mélanger les mots et sélectionner le nombre de paires requis
@@ -68,8 +68,12 @@ class FlashMatchController {
                 });
             });
             
+            // Extract word IDs for tracking progress
+            const wordIdsForUpdate = selectedWords.map(word => word.id);
+            
             return res.json({
-                cards: cards
+                cards: cards,
+                wordIds: wordIdsForUpdate
             });
         } catch (error) {
             console.error('Erreur lors de la récupération des cartes:', error);

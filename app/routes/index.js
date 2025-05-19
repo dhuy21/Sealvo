@@ -7,6 +7,7 @@ const gameRouter = require('./game/game');
 const apiRouter = require('./api');
 const authRouter = require('./auth/auth');
 const newUserDashboard = require('./user/dashboard');
+const levelProgressRouter = require('./level_progress');
 // Import controllers
 
 const LearningController = require('../controllers/LearningController');
@@ -28,6 +29,7 @@ function route(app) {
     app.use('/games', gameRouter);
     app.use('/api', apiRouter);
     app.use('/auth', authRouter);
+    app.use('/level-progress', levelProgressRouter);
     
     // Streak update route
     app.post('/api/update-streak', ensureAuthenticated, async (req, res) => {
