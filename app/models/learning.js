@@ -9,13 +9,13 @@ class Learning {
                 intervalDate = 0;
                 break;
             case '0':
-                intervalDate = 2;
+                intervalDate = 0;
                 break;
             case '1':
-                intervalDate = 4;
+                intervalDate = 0;
                 break;
             case '2':
-                intervalDate = 10;
+                intervalDate = 0;
                 break;
             case 'v':
                 intervalDate = 20;
@@ -183,9 +183,10 @@ class Learning {
             
             if (excludeWordId) {
                 // Requête avec exclusion d'un mot spécifique
-                query = 'SELECT w.word_id, w.word, wd.meaning, wd.example ' +
+                query = 'SELECT w.word_id, w.word, wd.meaning, wd.example, wp.pronunciation ' +
                         'FROM words w ' +
                         'JOIN word_details wd ON w.word_id = wd.word_id ' +
+                        'JOIN word_pronunciations wp ON wd.detail_id = wp.detail_id ' +
                         'JOIN learning ln ON w.word_id = ln.word_id ' +
                         'WHERE ln.user_id = ? AND w.word_id != ? AND ln.level = ? ' +
                         'AND DATE_ADD(DATE(ln.date_memorized), INTERVAL ? DAY) <= CURDATE()'+
@@ -193,14 +194,15 @@ class Learning {
                 params = [userId, excludeWordId, levelGame, intervalDate];
             } else {
                 // Requête sans exclusion
-                query = 'SELECT w.word_id, w.word, wd.meaning, wd.example ' +
+                query = 'SELECT w.word_id, w.word, wd.meaning, wd.example, wp.pronunciation ' +
                         'FROM words w ' +
                         'JOIN word_details wd ON w.word_id = wd.word_id ' +
+                        'JOIN word_pronunciations wp ON wd.detail_id = wp.detail_id ' +
                         'JOIN learning ln ON w.word_id = ln.word_id ' +
                         'WHERE ln.user_id = ? AND ln.level = ? ' +
                         'AND DATE_ADD(DATE(ln.date_memorized), INTERVAL ? DAY) <= CURDATE()'+
                         'ORDER BY RAND() LIMIT 1';
-                params = [userId, levelGame];
+                params = [userId, levelGame, intervalDate];
             }
             
             const [words] = await global.dbConnection.execute(query, params);

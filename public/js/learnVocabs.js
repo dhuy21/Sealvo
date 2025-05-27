@@ -548,7 +548,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function to call the API to update streak
     function updateUserStreak() {
-        fetch('/api/update-streak', {
+        fetch('/update-streak', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

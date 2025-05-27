@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Mettre à jour l'affichage
             scoreDisplay.textContent = score;
-            wordsFoundDisplay.textContent = foundWords.length;
+            wordsFoundDisplay.textContent =  foundWords.length + ' / ';
             totalWordsDisplay.textContent = words.length;
             
             timerDisplay.textContent = timer;
@@ -479,18 +479,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         if (hintPosition) {
-            // Créer un élément de notification pour montrer le mot qu'on cherche
-            const hintNotification = document.createElement('div');
-            hintNotification.className = 'hint-notification';
-            hintNotification.innerHTML = `
-                <div class="hint-icon"><i class="fas fa-lightbulb"></i></div>
-                <div class="hint-content">
-                    <div class="hint-title">Indice activé</div>
-                    <div class="hint-message">Cherchez le mot "<span>${randomWord.word}</span>"</div>
-                </div>
-            `;
-            document.querySelector('.active-game-screen').appendChild(hintNotification);
-            
             // Animation d'entrée et de sortie pour la notification
             setTimeout(() => {
                 hintNotification.classList.add('show');

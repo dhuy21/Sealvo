@@ -5,26 +5,28 @@
         <p class="game-description">{{gameDescription}}</p>
     </div>
 
+    {{#if errorMessage}}
+    <div class="error-box">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>{{errorMessage}}</p>
+        <a href="/monVocabs/add" class="btn add-words-btn">Ajouter des mots</a>
+    </div>
+    {{else}}
+
+    <div class="game-stats">
+        <div class="stat-box">
+            <span class="stat-label">Votre meilleur score</span>
+            <span class="stat-value">{{#if highScore}}{{highScore.score}}{{else}}0{{/if}}</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Mots disponibles</span>
+            <span class="stat-value">{{wordCount}}</span>
+        </div>
+    </div>
+
     <!-- Écran de pré-jeu -->
     <div class="game-screen" id="game-screen">
-        <div class="game-stats">
-            <div class="stat-box">
-                <span class="stat-label">Votre meilleur score</span>
-                <span class="stat-value">{{#if highScore}}{{highScore.score}}{{else}}0{{/if}}</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-label">Mots disponibles</span>
-                <span class="stat-value">{{wordCount}}</span>
-            </div>
-        </div>
-        
         <div class="screen pre-game-screen active">
-            {{#if errorMessage}}
-                <div class="error-message">
-                    <p>{{errorMessage}}</p>
-                    <a href="/monVocabs/add" class="btn add-words-btn">Ajouter des mots</a>
-                </div>
-            {{else}}
             <div class="game-instructions">
                     <h3><i class="fas fa-bolt" style="color: #e9e919;"></i> Règles du jeu</h3>
                     <ul class="rules-list">
@@ -33,22 +35,15 @@
                         <li>Trouvez tous les mots avant la fin du temps pour maximiser votre score !</li>
                     </ul>
             </div>
-            <button id="start-game" class="start-btn">Commencer le jeu</button>
-  
-            {{/if}}
+            <button id="start-game" class="start-btn">
+                <i class="fas fa-play"></i> Commencer
+            </button>
         </div>
 
         <!-- Écran de jeu actif -->
         <div class="screen active-game-screen">
-            <button id="show-hint" class="hint-btn">Afficher un indice</button>
-            <div class="game-board">
-                <div class="word-search-grid" id="word-search-grid">
-                    <!-- La grille sera générée dynamiquement en JavaScript -->
-                </div>
-            </div>
-
-            <div class="game-info-panel">
-                <div class="game-status">
+            <div class="game-status">
+                    <button id="show-hint" class="hint-btn"></button>
                     <div class="status-item">
                         <span>Score:</span>
                         <span id="score">0</span>
@@ -59,19 +54,26 @@
                     </div>
                     <div class="status-item">
                         <span>Mots trouvés:</span>
-                        <span id="words-found">0</span>/<span id="total-words">0</span>
+                        <span id="words-found">0</span><span id="total-words" class="total-words">0</span>
                     </div>
-                </div>
-                
-                <div class="word-list-container">
-                    <h3 class="word-list-title">Mots à trouver</h3>
-                    <ul class="word-list" id="word-list">
-                        <!-- La liste de mots sera générée dynamiquement en JavaScript -->
-                    </ul>
+            </div>
+            <div class="game-board">
+                <div class="word-search-grid" id="word-search-grid">
+                    <!-- La grille sera générée dynamiquement en JavaScript -->
                 </div>
             </div>
+
+            <div class="word-list-container">
+                 <ul class="word-list" id="word-list">
+                    <!-- La liste de mots sera générée dynamiquement en JavaScript -->
+                 </ul>
+            </div>
+
         </div>
     </div>
+
+    {{/if}}
+
     <div class="game-footer">
         <a href="/games" class="btn back-btn">
             <i class="fas fa-arrow-left"></i> Retour aux jeux
@@ -79,9 +81,10 @@
         <a href="/monVocabs/learn" class="btn learn-btn">
             <i class="fas fa-book"></i> Apprendre
         </a>
-        <a href="/games/wordScramble" class="btn next-btn">
+        <a href="/games/testPronun" class="btn next-btn">
             <i class="fas fa-arrow-right"></i> Jeu suivant
         </a>
+
     </div>
 </div>
 

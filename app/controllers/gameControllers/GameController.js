@@ -17,7 +17,7 @@ class GameController {
             const stats = await gameScoresModel.getUserGameStats(req.session.user.id);
             
             return res.render('games/index', {
-                title: 'Jeux éducatifs - VocabMaster',
+                title: 'Jeux éducatifs',
                 user: req.session.user,
                 stats: stats
             });
@@ -44,7 +44,7 @@ class GameController {
             const gameType = req.params.gameType;
             
             // Vérifier si le type de jeu est valide
-            const validGames = ['wordScramble', 'flashMatch', 'speedVocab', 'vocabQuiz', 'phraseCompletion', 'wordSearch'];
+            const validGames = ['wordScramble', 'flashMatch', 'speedVocab', 'vocabQuiz', 'phraseCompletion', 'wordSearch', 'testPronun'];
             if (!validGames.includes(gameType)) {
                 return res.redirect('/games?error=Type de jeu invalide');
             }
@@ -63,6 +63,7 @@ class GameController {
             const levelGame = {
                 'flashMatch': 'x',
                 'vocabQuiz': 'x',
+                'testPronun': 'x',
                 'wordSearch': '2',
                 'phraseCompletion': '0',
                 'speedVocab': '1',
@@ -70,9 +71,11 @@ class GameController {
             }
 
             let wordCount = 0;
+            let WordCountlevel = 0;
             try {
                 wordCount = await learningModel.countUserWordsByLevel(req.session.user.id, levelGame[gameType]);
-                console.log(`Retrieved word count: ${wordCount}`);
+                WordCountlevel = await learningModel.getNumWordsByLevel(req.session.user.id, levelGame[gameType]);
+                console.log(`Retrieved word count: ${wordCount}, level: ${levelGame[gameType]}`);
             } catch (countError) {
                 console.error('Error counting user words:', countError);
                 // Continue with word count as 0
@@ -83,8 +86,12 @@ class GameController {
             if (gameType === 'flashMatch') minWordsRequired = 6;
             
             let errorMessage = null;
-            if (wordCount < minWordsRequired) {
+            console.log('Word count:', wordCount, 'Min words required:', minWordsRequired);
+
+            if (wordCount < minWordsRequired || WordCountlevel == 0) {
                 errorMessage = `Vous devez avoir au moins ${minWordsRequired} mots au niveau ${levelGame[gameType]} dans votre vocabulaire pour jouer à ce jeu.`;
+            }else if (WordCountlevel !== 0 && wordCount == 0) {
+                errorMessage = `Aujourd'hui, vous n'avez pas de mots à apprendre pour niveau ${levelGame[gameType]}. Si vous voulez jouer à ce jeu, veuillez ajouter des mots à votre vocabulaire.`;
             }
             
             // Récupérer le titre et la description du jeu
@@ -94,17 +101,19 @@ class GameController {
                 'speedVocab': 'Vitesse Vocab',
                 'vocabQuiz': 'Quiz de Vocabulaire',
                 'phraseCompletion': 'Complétion de Phrase',
-                'wordSearch': 'Mots Cachés'
+                'wordSearch': 'Mots Cachés',
+                'testPronun': 'Défi Prononcial'
                 
             };
             
             const gameDescriptions = {
                 'wordScramble': 'Retrouvez les mots dont les lettres ont été mélangées.',
-                'flashMatch': 'Associez les mots à leurs définitions dans ce jeu de mémoire.',
+                'flashMatch': 'Associez les mots à leurs définitions.',
                 'speedVocab': 'Tapez les mots qui s\'affichent le plus rapidement possible.',
                 'vocabQuiz': 'Testez vos connaissances avec ce quiz de vocabulaire.',
                 'phraseCompletion': 'Complétez les phrases avec les mots appropriés.',
-                'wordSearch': 'Trouvez les mots cachés dans la grille.'
+                'wordSearch': 'Trouvez les mots cachés dans la grille.',
+                'testPronun': 'Essayez de prononcer les mots correctement.'
             };
             
             return res.render(`games/${gameType}`, {
@@ -140,7 +149,7 @@ class GameController {
             const { game_type, score, details } = req.body;
             
             // Vérifier si le type de jeu est valide
-            const validGames = ['word_scramble', 'flash_match', 'speed_vocab', 'vocab_quiz', 'phrase_completion', 'word_search'];
+            const validGames = ['word_scramble', 'flash_match', 'speed_vocab', 'vocab_quiz', 'phrase_completion', 'word_search', 'test_pronun'];
             if (!validGames.includes(game_type)) {
                 return res.status(400).json({ error: 'Type de jeu invalide' });
             }
