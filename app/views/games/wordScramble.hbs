@@ -34,7 +34,9 @@
                     <li>Obtenez 10 points pour chaque mot correct</li>
                     <li>Vous avez 60 secondes pour trouver le plus de mots possible</li>
                 </ul>
-                <button id="start-game" class="start-btn">Commencer à jouer</button>
+                <button id="start-game" class="start-btn">
+                    <i class="fas fa-play"></i> Commencer
+                </button>
             </div>
             
             <div class="active-game-screen">
@@ -57,8 +59,10 @@
                 
                 <div class="answer-container">
                     <input type="text" id="word-input" class="word-input" placeholder="Votre réponse" autocomplete="off">
-                    <button id="submit-answer" class="submit-btn">Valider</button>
-                    <button id="skip-word" class="skip-btn">Passer</button>
+                    <div class="button-group">
+                        <button id="submit-answer" class="submit-btn">Valider</button>
+                        <button id="skip-word" class="skip-btn">Passer</button>
+                    </div>
                 </div>
                 
                 <div id="result-message" class="result-message"></div>
