@@ -1,0 +1,152 @@
+<link rel="stylesheet" href="/css/games/testPronun.css">
+<div class="game-container">
+    <div class="game-header">
+        <h1>{{gameTitle}}</h1>
+        <p class="game-description">{{gameDescription}}</p>
+    </div>
+    
+    {{#if errorMessage}}
+    <div class="error-box">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>{{errorMessage}}</p>
+        <a href="/monVocabs/add" class="btn add-words-btn">Ajouter des mots</a>
+    </div>
+    {{else}}
+    
+    <div class="game-stats">
+        <div class="stat-box">
+            <span class="stat-label">Votre meilleur score</span>
+            <span class="stat-value">{{#if highScore}}{{highScore.score}}{{else}}0{{/if}}</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Mots disponibles</span>
+            <span class="stat-value">{{wordCount}}</span>
+        </div>
+    </div>
+    
+    <div class="game-area">
+        <div id="testPronun-screen" class="game-screen">
+            <!-- Pre-game Screen -->
+            <div class="pre-game-screen active">
+                <h2><i class="fas fa-bolt" style="color: #e9e919;"></i> Règles du jeu</h2>
+                <ul class="rules-list">
+                    <li>Écoutez attentivement la prononciation du mot</li>
+                    <li>Cliquez sur le bouton microphone pour enregistrer votre prononciation</li>
+                    <li>Parlez clairement et essayez de reproduire la prononciation</li>
+                    <li>Obtenez un retour sur la précision de votre prononciation</li>
+                    <li>Complétez tous les mots pour terminer le test</li>
+                </ul>
+                <button id="start-game" class="start-btn">
+                    <i class="fas fa-play"></i> Commencer
+                </button>
+            </div>
+            
+            <!-- Active Game Screen -->
+            <div class="active-game-screen">
+                <div class="game-info">
+                    <div class="words-display">
+                        <span class="words-label">Mots complétés</span>
+                        <span id="words-count" class="words-value">0</span>
+                    </div>
+                    <div class="timer-display">
+                        <span class="timer-label">Temps</span>
+                        <span id="timer" class="timer-value">00:00</span>
+                    </div>
+                    <div class="accuracy-display">
+                        <span class="accuracy-label">Précision</span>
+                        <span id="accuracy-value" class="accuracy-value">0%</span>
+                    </div>
+                </div>
+                
+                <div class="game-board">
+                    <div class="word-display">
+                        <h2 id="currentWord">Prêt?</h2>
+                        <p id="phoneticSpelling" class="phonetic-text"></p>
+                    </div>
+
+                    <div class="pronunciation-controls">
+                        <button id="playWord" class="control-btn">
+                            <i class="fas fa-play"></i>
+                            Écouter
+                        </button>
+                        <button id="recordBtn" class="control-btn">
+                            <i class="fas fa-microphone"></i>
+                            Enregistrer
+                        </button>
+                        <button id="skipWord" class="control-btn" >
+                            <i class="fas fa-forward"></i>
+                            Passer le mot
+                        </button>
+                    </div>
+
+                    <div class="feedback-container">
+                        <div id="accuracyMeter" class="accuracy-meter">
+                            <div class="meter-fill"></div>
+                        </div>
+                        <p id="recognizedText" class="recognized-text"></p>
+                        <p id="feedbackText" class="feedback-text"></p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Post Game Screen -->
+            <div class="post-game-screen">
+                <h2>Test terminé !</h2>
+                <div class="final-score-container">
+                    <span class="final-score-label">Score final</span>
+                    <span id="final-score" class="final-score">0</span>
+                </div>
+                
+                <div class="game-summary">
+                    <div class="summary-item">
+                        <span class="summary-label">Temps</span>
+                        <span id="final-time" class="summary-value">00:00</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Précision moyenne</span>
+                        <span id="final-accuracy" class="summary-value">0%</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Prononciations parfaites</span>
+                        <span id="perfect-count" class="summary-value">0</span>
+                    </div>
+                </div>
+                
+                <div id="high-score-message" class="high-score-message"></div>
+                
+                <div class="action-buttons">
+                    <button id="play-again" class="play-again-btn">Réessayer</button>
+                    <a href="/games" class="back-btn">Retour aux jeux</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{/if}}
+    
+    <div class="game-footer">
+        <a href="/games" class="btn back-btn">
+            <i class="fas fa-arrow-left"></i> Retour aux jeux
+        </a>
+        <a href="/monVocabs/learn" class="btn learn-btn">
+            <i class="fas fa-book"></i> Apprendre
+        </a>
+        <a href="/games/wordScramble" class="btn next-btn">
+            <i class="fas fa-arrow-right"></i> Jeu suivant
+        </a>
+    </div>
+</div>
+
+<!-- Hint Notification -->
+<div class="hint-notification" id="hintNotification">
+    <div class="hint-icon">
+        <i class="fas fa-lightbulb"></i>
+    </div>
+    <div class="hint-content">
+        <div class="hint-title">Conseil de prononciation</div>
+        <div class="hint-message">Essayez de reproduire le <span>rythme</span> et l'<span>accent</span> du mot</div>
+    </div>
+</div>
+
+<script src="/js/games/testPronun.js"></script>
+
+

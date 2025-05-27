@@ -1,11 +1,9 @@
-<link rel="stylesheet" href="/css/styleVocabs.css">
+
+<link rel="stylesheet" href="/css/addWord.css">
 <div class="vocabulary-container">
   <h1>Ajouter un nouveau mot</h1>
 
   <div class="import-section">
-    <h2>Importer du vocabulaire</h2>
-    <p>Téléchargez un fichier Excel ou PDF contenant votre vocabulaire</p>
-    
     <form action="/monVocabs/add/import" method="POST" enctype="multipart/form-data" class="import-form">
       <div class="file-upload-container">
         <input type="file" id="vocab-file" name="file" accept=".xlsx,.xls,.csv,.pdf" class="file-input">
@@ -15,7 +13,7 @@
         </label>
         <span class="selected-file-name">Aucun fichier sélectionné</span>
       </div>
-      <button type="submit" class="btn btn-primary import-btn">Importer</button>
+      <button type="submit" class="btn btn-primary import-btn">Importer du vocabulaire</button>
     </form>
     
     <div class="format-info">
@@ -30,7 +28,7 @@
             <li>Créez un fichier Excel avec les colonnes dans le bon ordre</li>
             <li>Assurez-vous que chaque ligne contient au moins: Mot, Sujet, Type, Signification et Exemple</li>
             <li>Pour le type, utilisez uniquement: noun, verb, adjective, adverb, ph.v, idiom, collocation</li>
-            <li>Pour le niveau, utilisez <strong>uniquement les chiffres</strong> 0, 1 ou 2 (pas de texte comme "Niveau 1")</li>
+            <li>Pour le niveau, utilisez <strong>uniquement les chiffres</strong> x, 0, 1, 2 ou v (pas de texte comme "Niveau 1")</li>
             <li>Limitez la taille du fichier à moins de 5 Mo</li>
           </ol>
           <p>Si vous rencontrez des erreurs, vérifiez ces points et réessayez.</p>
@@ -105,6 +103,7 @@
                   <option value="0">Niveau 0</option>
                   <option value="1">Niveau 1</option>
                   <option value="2">Niveau 2</option>
+                  <option value="v">Niveau v</option>
                 </select>
               </td>
               <td>
@@ -126,395 +125,9 @@
     </form>
   
   <div class="form-actions">
-    <a href="/monVocabs" class="btn btn-secondary">Annuler</a>
+    <a href="/monVocabs" class="btn btn-tertiary">Annuler</a>
   </div>
 </div>
-
-<style>
-  .vocabulary-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-  }
-  
-  .import-section {
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 12px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    margin-bottom: 30px;
-  }
-  
-  /* Mode toggle buttons styles */
-  .form-mode-toggle {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 20px;
-    gap: 10px;
-  }
-  
-  .mode-button {
-    padding: 10px 20px;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 600;
-    color: #555;
-    background: #f5f5f5;
-    border: 1px solid #ddd;
-    transition: all 0.3s ease;
-  }
-  
-  .mode-button:hover {
-    background: #eaeaea;
-    transform: translateY(-2px);
-  }
-  
-  .mode-button.active {
-    background: linear-gradient(135deg, #6a11cb, #2575fc);
-    color: white;
-    border: 1px solid transparent;
-  }
-  
-  /* Multiple words form styles */
-  .table-responsive {
-    overflow-x: auto;
-    margin-bottom: 20px;
-  }
-  
-  .multi-word-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 15px;
-  }
-  
-  .multi-word-table th {
-    background: #f5f5f7;
-    padding: 12px 8px;
-    text-align: left;
-    font-weight: 600;
-    color: #444;
-    font-size: 14px;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-  
-  .multi-word-table td {
-    padding: 8px 5px;
-    vertical-align: middle;
-    border-bottom: 1px solid #eee;
-  }
-  
-  .multi-word-table input,
-  .multi-word-table select {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-  }
-  
-  .word-row:hover {
-    background-color: #f8f9fa;
-  }
-  
-  .btn-danger {
-    background: #ff4d6d;
-    color: white;
-    border: none;
-    padding: 5px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  
-  .btn-danger:hover {
-    background: #d63447;
-    transform: translateY(-2px);
-  }
-  
-  .multiple-form-actions {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 15px;
-  }
-  
-  /* Import section styles */
-  .import-section h2 {
-    margin-top: 0;
-    font-size: 1.5em;
-    color: #333;
-    margin-bottom: 10px;
-  }
-  
-  .import-form {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-top: 15px;
-    margin-bottom: 15px;
-  }
-  
-  .file-upload-container {
-    flex: 1;
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-  
-  .file-input {
-    position: absolute;
-    width: 0.1px;
-    height: 0.1px;
-    opacity: 0;
-    overflow: hidden;
-    z-index: -1;
-  }
-  
-  .file-label {
-    display: flex;
-    align-items: center;
-    padding: 8px 15px;
-    background: #f3f4f6;
-    color: #333;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s;
-    font-weight: 600;
-    border: 1px solid #ddd;
-  }
-  
-  .file-icon {
-    margin-right: 8px;
-    font-size: 18px;
-  }
-  
-  .file-label:hover {
-    background: #e5e7eb;
-  }
-  
-  .selected-file-name {
-    margin-left: 10px;
-    color: #666;
-    font-size: 14px;
-  }
-  
-  .import-btn {
-    min-width: 120px;
-  }
-  
-  .format-info {
-    margin-top: 10px;
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    font-size: 14px;
-  }
-  
-  .format-info p {
-    margin: 0;
-    color: #666;
-  }
-  
-  .import-help {
-    margin-top: 10px;
-  }
-  
-  .import-help summary {
-    cursor: pointer;
-    color: #2575fc;
-    font-weight: 600;
-  }
-  
-  .help-content {
-    margin-top: 10px;
-    padding: 10px;
-    background: #fff;
-    border-radius: 8px;
-    border-left: 3px solid #2575fc;
-  }
-  
-  .help-content ol {
-    padding-left: 20px;
-  }
-  
-  .help-content li {
-    margin-bottom: 5px;
-  }
-  
-  .separator {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    margin: 20px 0;
-    color: #666;
-  }
-  
-  .separator::before,
-  .separator::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid #ddd;
-  }
-  
-  .separator span {
-    padding: 0 10px;
-    font-weight: 600;
-  }
-  
-  .word-form {
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 12px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    margin-top: 20px;
-    overflow-x: auto;
-  }
-  
-  .single-row-form {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-end;
-    gap: 10px;
-    min-width: 1100px;
-  }
-  
-  .form-field {
-    flex: 1;
-    min-width: 120px;
-  }
-  
-  .form-control {
-    width: 100%;
-    padding: 8px 10px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 14px;
-    transition: all 0.3s ease;
-    height: 38px;
-  }
-  
-  .form-control:focus {
-    border-color: #6a11cb;
-    box-shadow: 0 0 0 3px rgba(106, 17, 203, 0.2);
-    outline: none;
-  }
-  
-  label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 600;
-    color: #333;
-    font-size: 14px;
-  }
-  
-  .form-actions {
-    display: flex;
-    justify-content: flex-start;
-    margin-top: 15px;
-  }
-  
-  .btn {
-    padding: 8px 15px;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border: none;
-    text-decoration: none;
-    height: 38px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .btn-primary {
-    background: linear-gradient(135deg, #6a11cb, #2575fc);
-    color: white;
-    width: 100%;
-  }
-  
-  .btn-secondary {
-    background: #f1f1f1;
-    color: #333;
-    border: 1px solid #ddd;
-  }
-  
-  .btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  }
-  
-  .btn-primary:hover {
-    background: linear-gradient(135deg, #5c0fb3, #1a68e5);
-  }
-  
-  .btn-secondary:hover {
-    background: #e8e8e8;
-  }
-  
-  select.form-control {
-    appearance: none;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 8px center;
-    background-size: 12px;
-    padding-right: 25px;
-  }
-  
-  /* Alert styles */
-  .alert {
-    padding: 12px 15px;
-    margin-bottom: 20px;
-    border-radius: 8px;
-    font-weight: 500;
-  }
-  
-  .alert-error {
-    background-color: #ffeaec;
-    color: #d63447;
-    border-left: 4px solid #d63447;
-  }
-  
-  .alert-success {
-    background-color: #e7f5ea;
-    color: #28a745;
-    border-left: 4px solid #28a745;
-  }
-  
-  /* Responsive */
-  @media (max-width: 1200px) {
-    .word-form {
-      overflow-x: auto;
-    }
-    
-    .single-row-form {
-      min-width: 1100px;
-    }
-    
-    .import-form {
-      flex-direction: column;
-      align-items: stretch;
-    }
-  }
-  
-  .example-link {
-    display: inline-block;
-    margin-top: 5px;
-    color: #2575fc;
-    text-decoration: none;
-    font-weight: 600;
-    background: #e6f2ff;
-    padding: 4px 10px;
-    border-radius: 4px;
-    transition: all 0.3s ease;
-  }
-  
-  .example-link:hover {
-    background: #d1e6ff;
-    text-decoration: underline;
-  }
-</style>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {

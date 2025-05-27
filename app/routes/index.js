@@ -32,7 +32,7 @@ function route(app) {
     app.use('/level-progress', levelProgressRouter);
     
     // Streak update route
-    app.post('/api/update-streak', ensureAuthenticated, async (req, res) => {
+    app.post('/update-streak', ensureAuthenticated, async (req, res) => {
         try {
             const result = await LearningController.checkAndUpdateStreak(req.session.user.id);
             res.json({ success: true, ...result });

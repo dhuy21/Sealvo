@@ -119,23 +119,28 @@
     left: 100%;
 }
 
+/* Game Stats */
 .game-stats {
     display: flex;
-    justify-content: space-around;
+    justify-content: center;
+    align-items: center;
     margin-bottom: 2.5rem;
-    flex-wrap: wrap;
-    gap: 1rem;
+    gap: 2rem;
+    flex-wrap: nowrap;
 }
 
 .stat-box {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
     background-color: rgba(248, 250, 252, 0.9);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    padding: 1.2rem 1.5rem;
-    border-radius: 16px;
-    width: 45%;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.07);
+    padding: 0.8rem 1rem;
+    border-radius: 50px;
+    width: auto;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
     transition: all 0.3s ease;
     border: 1px solid rgba(220, 220, 250, 0.5);
     position: relative;
@@ -196,7 +201,7 @@
     background-color: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border-radius: 20px;
+    border-radius: 50px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
     padding: 2.5rem;
     min-height: 450px;
@@ -265,43 +270,41 @@
 
 
 .start-btn {
-    display: block;
-    width: 100%;
-    max-width: 350px;
-    margin: 2rem auto 0;
-    background: linear-gradient(135deg, #6a11cb, #2575fc);
-    color: #fff;
-    padding: 1.2rem;
+    display: inline-block;
+    padding: 1rem 2.5rem;
     border: none;
     border-radius: 50px;
-    font-size: 1.2rem;
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    color: white;
+    font-size: 1.1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.4s ease;
-    box-shadow: 0 10px 20px rgba(106, 17, 203, 0.3);
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 20px rgba(106, 17, 203, 0.3);
+    margin-top: 2rem;
     position: relative;
     overflow: hidden;
-}
-
-.start-btn::before {
+  }
+  
+  .start-btn::before {
     content: "";
     position: absolute;
     top: 0;
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: all 0.5s;
-}
-
-.start-btn:hover {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: 0.5s;
+  }
+  
+  .start-btn:hover {
     transform: translateY(-5px);
-    box-shadow: 0 15px 25px rgba(106, 17, 203, 0.4);
-}
-
-.start-btn:hover::before {
+    box-shadow: 0 12px 25px rgba(106, 17, 203, 0.4);
+  }
+  
+  .start-btn:hover::before {
     left: 100%;
-}
+  }
 
 .game-info {
     display: flex;

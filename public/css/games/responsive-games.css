@@ -76,15 +76,29 @@
   min-width: 80px;
 }
 
-/* Game footer responsiveness */
+/* Game footer responsiveness - High priority overrides */
+.game-container .game-footer,
 .game-footer {
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  justify-content: center !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  gap: 1rem !important;
+  padding: 0 1rem !important;
+  justify-content: space-between !important;
+  display: flex !important;
 }
 
+.game-container .game-footer .btn,
 .game-footer .btn {
-  margin: 0.25rem;
+  width: auto !important;
+  justify-content: center !important;
+  margin-bottom: 0 !important;
+  padding: 0.7rem 1.2rem !important;
+  font-size: 0.95rem !important;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+  min-width: fit-content !important;
+  overflow: visible !important;
 }
 
 /* Word cards/grids responsiveness */
@@ -154,7 +168,7 @@ a, button, .btn, [role="button"], input, label, select, textarea {
   }
   
   .game-stats {
-    flex-wrap: wrap !important;
+    flex-wrap: wrap ;
   }
   
   .stat-box {
@@ -173,15 +187,28 @@ a, button, .btn, [role="button"], input, label, select, textarea {
     gap: 0.75rem !important;
   }
   
+  .game-container .game-footer,
   .game-footer {
-    flex-direction: column !important;
-    align-items: stretch !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    gap: 1rem !important;
+    padding: 0 1rem !important;
+    justify-content: space-between !important;
+    display: flex !important;
   }
   
+  .game-container .game-footer .btn,
   .game-footer .btn {
-    width: 100% !important;
+    width: auto !important;
     justify-content: center !important;
-    margin-bottom: 0.5rem !important;
+    margin-bottom: 0 !important;
+    padding: 0.7rem 1.2rem !important;
+    font-size: 0.95rem !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    min-width: fit-content !important;
+    overflow: visible !important;
   }
   
   .options-container {
@@ -254,6 +281,31 @@ a, button, .btn, [role="button"], input, label, select, textarea {
   
   .input-container {
     flex-direction: column !important;
+  }
+  
+  .game-container .game-footer,
+  .game-footer {
+    gap: 0.5rem !important;
+    padding: 0 0.5rem !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    display: flex !important;
+  }
+  
+  .game-container .game-footer .btn,
+  .game-footer .btn {
+    padding: 0.6rem 1rem !important;
+    font-size: 0.9rem !important;
+    white-space: nowrap !important;
+    min-width: fit-content !important;
+    width: auto !important;
+    flex-shrink: 0 !important;
+    overflow: visible !important;
+  }
+  
+  .game-container .game-footer .btn i,
+  .game-footer .btn i {
+    margin-right: 0.3rem !important;
   }
   
   #word-input,
@@ -413,6 +465,35 @@ a, button, .btn, [role="button"], input, label, select, textarea {
   .pre-game-screen,
   .active-game-screen {
     gap: 1rem !important;
+  }
+  
+  /* Game footer for very small screens */
+  .game-container .game-footer,
+  .game-footer {
+    gap: 0.3rem !important;
+    padding: 0 0.3rem !important;
+    margin-top: 2rem !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    display: flex !important;
+  }
+  
+  .game-container .game-footer .btn,
+  .game-footer .btn {
+    padding: 0.5rem 0.8rem !important;
+    font-size: 0.85rem !important;
+    min-height: 44px !important;
+    white-space: nowrap !important;
+    min-width: fit-content !important;
+    width: auto !important;
+    flex-shrink: 0 !important;
+    overflow: visible !important;
+  }
+  
+  .game-container .game-footer .btn i,
+  .game-footer .btn i {
+    margin-right: 0.2rem !important;
+    font-size: 0.9rem !important;
   }
 }
 

@@ -12,7 +12,10 @@
 .vocabulary-container h1 {
   text-align: center;
   margin-bottom: 30px;
-  color: #333;
+  background: linear-gradient(45deg, #6a11cb, #2575fc);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   font-weight: 700;
   font-size: 2.5rem;
   position: relative;
@@ -465,6 +468,7 @@
   border-radius: 0.75em;
   transform-style: preserve-3d;
   transition: transform 150ms cubic-bezier(0, 0, 0.58, 1), background 150ms cubic-bezier(0, 0, 0.58, 1);
+  gap: 10px;
 }
 
 .add-word-btn::before,
@@ -529,7 +533,7 @@
 
 .add-word-btn::before {
   background: #2d0656 ;
-  box-shadow: 0 0 0 2px #37026f, 0 0.625em 0 0 #f5e2ff;
+  box-shadow: 0 0 0 2px #37026f;
 }
 
 .add-word-btn:hover {
@@ -537,7 +541,7 @@
 }
 
 .add-word-btn:hover::before {
-  box-shadow: 0 0 0 2px #6a11cb, 0 0.5em 0 0 #e2e6ff;
+  box-shadow: 0 0 0 2px #6a11cb;
 }
 
 .learn-btn {
@@ -550,7 +554,7 @@
 
 .learn-btn::before {
   background: #014320;
-  box-shadow: 0 0 0 2px #08952d, 0 0.625em 0 0 #e2fff0;
+  box-shadow: 0 0 0 2px #08952d;
 }
 
 .learn-btn:hover {
@@ -558,7 +562,7 @@
 }
 
 .learn-btn:hover::before {
-  box-shadow: 0 0 0 2px #08952d, 0 0.5em 0 0 #e2fff0;
+  box-shadow: 0 0 0 2px #08952d;
 }
 
 .btn-danger {
@@ -572,7 +576,7 @@
 
 .btn-danger::before {
   background: #910c32;
-  box-shadow: 0 0 0 2px #ee0979, 0 0.625em 0 0 #ffe2e9;
+  box-shadow: 0 0 0 2px #ee0979;
 }
 
 .btn-danger:hover {
@@ -581,7 +585,7 @@
 }
 
 .btn-danger:hover::before {
-  box-shadow: 0 0 0 2px #ee0979, 0 0.5em 0 0 #ffe2e9;
+  box-shadow: 0 0 0 2px #ee0979;
 }
 
 .home-cta .btn, .no-words .btn {
@@ -594,7 +598,7 @@
 
 .home-cta .btn::before, .no-words .btn::before {
   background: #c4a9fc;
-  box-shadow: 0 0 0 2px #4A00E0, 0 0.625em 0 0 #e2e2ff;
+  box-shadow: 0 0 0 2px #4A00E0;
 }
 
 .home-cta .btn:hover, .no-words .btn:hover {
@@ -602,7 +606,7 @@
 }
 
 .home-cta .btn:hover::before, .no-words .btn:hover::before {
-  box-shadow: 0 0 0 2px #4A00E0, 0 0.5em 0 0 #e2e2ff;
+  box-shadow: 0 0 0 2px #4A00E0;
 }
 
 /* Table action buttons (edit, delete) */

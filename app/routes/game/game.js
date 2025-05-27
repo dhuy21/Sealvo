@@ -6,6 +6,7 @@ const speedVocabRoutes = require('./speed_vocab');
 const vocabQuizRoutes = require('./vocab_quiz');
 const phraseCompletionRoutes = require('./phrase_completion');
 const wordSearchRoutes = require('./word_search');
+const testPronunRoutes = require('./test_pronun');
 const gameController = require('../../controllers/gameControllers/GameController');
 
 // Middleware d'authentification
@@ -29,5 +30,6 @@ router.use('/speedVocab', isAuthenticated, speedVocabRoutes);
 router.use('/vocabQuiz', isAuthenticated, vocabQuizRoutes);
 router.use('/phraseCompletion', isAuthenticated, phraseCompletionRoutes);
 router.use('/wordSearch', isAuthenticated, wordSearchRoutes);
+router.use('/testPronun', isAuthenticated, testPronunRoutes);
 
 module.exports = router;
