@@ -25,6 +25,12 @@ document.addEventListener('DOMContentLoaded', function() {
     let audioContext = null;
     let intensityLevel = 1; // Increases as timer gets lower
     
+    // Mobile responsiveness variables
+    let isMobile = window.innerWidth <= 432;
+    let particleCount = isMobile ? 8 : 15;
+    let particleCreationRate = isMobile ? 1200 : 800;
+    let speedLineCreationRate = isMobile ? 500 : 300;
+    
     // Éléments DOM
     const startGameBtn = document.getElementById('start-game');
     const wordDisplay = document.getElementById('word-display');
@@ -50,6 +56,35 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize background animations
     initializeBackgroundAnimations();
     initializeAudio();
+    
+    // Handle window resize for responsive particles
+    window.addEventListener('resize', updateMobileSettings);
+    
+    // Function to update mobile settings based on screen size
+    function updateMobileSettings() {
+        const newIsMobile = window.innerWidth <= 432;
+        
+        if (newIsMobile !== isMobile) {
+            isMobile = newIsMobile;
+            particleCount = isMobile ? 8 : 15;
+            particleCreationRate = isMobile ? 1200 : 800;
+            speedLineCreationRate = isMobile ? 500 : 300;
+            
+            // Restart animations with new settings if game is active
+            if (gameActive) {
+                // Clear existing intervals
+                if (particleInterval) {
+                    clearInterval(particleInterval);
+                    particleInterval = setInterval(createParticle, Math.max(200, particleCreationRate / intensityLevel));
+                }
+                
+                if (speedLineInterval) {
+                    clearInterval(speedLineInterval);
+                    speedLineInterval = setInterval(createSpeedLine, Math.max(100, speedLineCreationRate / intensityLevel));
+                }
+            }
+        }
+    }
     
     // Fonction pour initialiser les animations de fond
     function initializeBackgroundAnimations() {
@@ -78,28 +113,36 @@ document.addEventListener('DOMContentLoaded', function() {
             particle.style.left = Math.random() * 100 + 'vw';
             particle.style.animationDelay = Math.random() * 2 + 's';
             
-            // Vary particle size based on intensity
-            const size = 2 + (intensityLevel * 2);
-            particle.style.width = size + 'px';
-            particle.style.height = size + 'px';
+            // Don't apply any transforms that could distort the shape
+            // Let CSS media queries handle all sizing and appearance
+            
+            // Only apply intensity-based opacity enhancement (no scaling)
+            const intensityOpacity = Math.min(1, 0.6 + (intensityLevel - 1) * 0.2);
+            particle.style.opacity = intensityOpacity;
+            
+            // Ensure particle maintains circular shape
+            particle.style.borderRadius = '50%';
+            particle.style.boxSizing = 'border-box';
+            particle.style.display = 'block';
             
             particlesContainer.appendChild(particle);
             
-            // Remove particle after animation
+            // Remove particle after animation (shorter duration for mobile)
+            const animationDuration = isMobile ? 12000 : 18000;
             setTimeout(() => {
                 if (particle.parentNode) {
                     particle.parentNode.removeChild(particle);
                 }
-            }, 18000);
+            }, animationDuration);
         }
         
         // Create initial particles
-        for (let i = 0; i < 15; i++) {
+        for (let i = 0; i < particleCount; i++) {
             setTimeout(() => createParticle(), i * 200);
         }
         
         // Continue creating particles
-        particleInterval = setInterval(createParticle, 800);
+        particleInterval = setInterval(createParticle, particleCreationRate);
         
         // Make createParticle available globally for intensity updates
         window.createParticle = createParticle;
@@ -119,21 +162,28 @@ document.addEventListener('DOMContentLoaded', function() {
             speedLine.style.left = Math.random() * 100 + '%';
             speedLine.style.animationDelay = Math.random() * 0.5 + 's';
             
-            // Vary speed line intensity
-            const opacity = 0.3 + (intensityLevel * 0.2);
-            speedLine.style.opacity = Math.min(opacity, 1);
+            // Let CSS media queries handle base size and opacity, only apply intensity scaling
+            const intensityScale = 1 + (intensityLevel - 1) * 0.2; // Subtle scaling based on intensity
+            if (intensityScale > 1) {
+                speedLine.style.transform = `scale(${intensityScale})`;
+            }
+            
+            // Apply intensity-based opacity enhancement
+            const intensityOpacity = Math.min(1, 0.6 + (intensityLevel - 1) * 0.3);
+            speedLine.style.opacity = intensityOpacity;
             
             speedLinesContainer.appendChild(speedLine);
             
-            // Remove speed line after animation
+            // Remove speed line after animation (shorter duration for mobile)
+            const animationDuration = isMobile ? 1500 : 2000;
             setTimeout(() => {
                 if (speedLine.parentNode) {
                     speedLine.parentNode.removeChild(speedLine);
                 }
-            }, 2000);
+            }, animationDuration);
         }
         
-        speedLineInterval = setInterval(createSpeedLine, 300);
+        speedLineInterval = setInterval(createSpeedLine, speedLineCreationRate);
         
         // Make createSpeedLine available globally for intensity updates
         window.createSpeedLine = createSpeedLine;
@@ -561,13 +611,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update particle creation rate based on intensity
         if (particleInterval) {
             clearInterval(particleInterval);
-            particleInterval = setInterval(createParticle, Math.max(200, 800 / intensityLevel));
+            particleInterval = setInterval(createParticle, Math.max(200, particleCreationRate / intensityLevel));
         }
         
         // Update speed line creation rate
         if (speedLineInterval) {
             clearInterval(speedLineInterval);
-            speedLineInterval = setInterval(createSpeedLine, Math.max(100, 300 / intensityLevel));
+            speedLineInterval = setInterval(createSpeedLine, Math.max(100, speedLineCreationRate / intensityLevel));
         }
     }
     
