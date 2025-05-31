@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('PhraseCompletion script initialized');
     
+    // Initialize sunlight effects
+    initializeSunshineRayEffects();
+    
     // Variables du jeu
     let currentPhrase = null;
     let correctWord = null;
@@ -28,6 +31,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let startQuestionTime = null;
     let attempts = 0; // nombre de tentatives sur la question actuelle
     let isLoadingPhrase = false; // Guard to prevent multiple simultaneous loadNewPhrase calls
+    
+    // Animation variables
+    let audioContext = null;
+    let animationParticles = [];
     
     // Éléments DOM
     
@@ -55,6 +62,219 @@ document.addEventListener('DOMContentLoaded', function() {
     const activeGameScreen = document.querySelector('.active-game-screen');
     const postGameScreen = document.querySelector('.post-game-screen');
     
+    // Fonction pour initialiser les effets de rayons de soleil
+    function initializeSunshineRayEffects() {
+        createSunshineRayFocusRings();
+        createSunshineRayFloatingElements();
+        initializeAudio();
+        startSunshineRayBackgroundAnimation();
+    }
+    
+    // Fonction pour créer les anneaux de focus de rayons de soleil
+    function createSunshineRayFocusRings() {
+        for (let i = 0; i < 5; i++) {
+            const ring = document.createElement('div');
+            ring.className = 'sunshine-focus-ring';
+            ring.style.animationDelay = `${i * 1.5}s`;
+            document.querySelector('.game-container').appendChild(ring);
+        }
+    }
+    
+    // Fonction pour créer des éléments flottants de rayons de soleil
+    function createSunshineRayFloatingElements() {
+        for (let i = 0; i < 8; i++) {
+            const element = document.createElement('div');
+            element.className = 'floating-sunshine-element';
+            element.style.left = Math.random() * 100 + '%';
+            element.style.top = Math.random() * 100 + '%';
+            element.style.animationDelay = Math.random() * 6 + 's';
+            element.style.animationDuration = (10 + Math.random() * 4) + 's';
+            
+            // Symboles de rayons de soleil et d'énergie
+            const symbols = ['☀️', '🌞', '✨', '💫', '🌟', '⭐', '🔆', '💡'];
+            element.textContent = symbols[i % symbols.length];
+            
+            document.querySelector('.game-container').appendChild(element);
+        }
+    }
+    
+    // Fonction pour démarrer l'animation de fond de rayons de soleil
+    function startSunshineRayBackgroundAnimation() {
+        const container = document.querySelector('.game-container');
+        container.classList.add('enhanced-sunshine-mode');
+    }
+    
+    // Fonction pour initialiser le contexte audio
+    function initializeAudio() {
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            console.log('Web Audio API not supported');
+        }
+    }
+    
+    // Fonction pour jouer un son de succès de rayons de soleil
+    function playSunshineRaySuccessSound() {
+        if (!audioContext) return;
+        
+        // Son de succès chaleureux et lumineux
+        const oscillator1 = audioContext.createOscillator();
+        const oscillator2 = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator1.connect(gainNode);
+        oscillator2.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator1.frequency.setValueAtTime(587, audioContext.currentTime); // D5
+        oscillator1.frequency.setValueAtTime(740, audioContext.currentTime + 0.15); // F#5
+        oscillator1.frequency.setValueAtTime(880, audioContext.currentTime + 0.3); // A5
+        
+        oscillator2.frequency.setValueAtTime(294, audioContext.currentTime); // D4
+        oscillator2.frequency.setValueAtTime(370, audioContext.currentTime + 0.15); // F#4
+        
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
+        
+        oscillator1.start(audioContext.currentTime);
+        oscillator1.stop(audioContext.currentTime + 0.6);
+        oscillator2.start(audioContext.currentTime);
+        oscillator2.stop(audioContext.currentTime + 0.6);
+    }
+    
+    // Fonction pour jouer un son d'erreur doux
+    function playSunshineRayErrorSound() {
+        if (!audioContext) return;
+        
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(160, audioContext.currentTime + 0.3);
+        
+        gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.3);
+    }
+    
+    // Fonction pour créer des particules de rayons de soleil
+    function createSunshineRayParticles(isCorrect = true) {
+        const colors = isCorrect ? 
+            ['#ffeb3b', '#ffc107', '#ff9800', '#ffeb3b'] : 
+            ['#ff9800', '#ff5722', '#ffeb3b', '#ffc107'];
+        
+        const symbols = isCorrect ? ['✨', '🌟', '💫', '☀️'] : ['💭', '🌤️', '⭐', '💡'];
+        
+        for (let i = 0; i < 12; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'sunshine-ray-particle';
+            particle.style.position = 'fixed';
+            particle.style.fontSize = '1.5rem';
+            particle.style.color = colors[Math.floor(Math.random() * colors.length)];
+            particle.style.pointerEvents = 'none';
+            particle.style.zIndex = '1000';
+            particle.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+            
+            // Position en rayons depuis le centre
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            const angle = (Math.PI * 2 * i) / 12;
+            const startRadius = 50;
+            const endRadius = 300 + Math.random() * 200;
+            
+            particle.style.left = (centerX + Math.cos(angle) * startRadius) + 'px';
+            particle.style.top = (centerY + Math.sin(angle) * startRadius) + 'px';
+            
+            document.body.appendChild(particle);
+            
+            // Animation de rayonnement en ligne droite
+            const animation = particle.animate([
+                { 
+                    transform: 'scale(0) rotate(0deg)', 
+                    opacity: 1,
+                    filter: 'brightness(1)'
+                },
+                { 
+                    transform: 'scale(1.2) rotate(90deg)', 
+                    opacity: 0.9,
+                    filter: 'brightness(1.5)',
+                    offset: 0.3
+                },
+                { 
+                    transform: `scale(0.5) rotate(180deg) translate(${Math.cos(angle) * endRadius}px, ${Math.sin(angle) * endRadius}px)`, 
+                    opacity: 0,
+                    filter: 'brightness(2)'
+                }
+            ], {
+                duration: 2000,
+                easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+            });
+            
+            animation.onfinish = () => {
+                particle.remove();
+            };
+        }
+    }
+    
+    // Fonction pour créer un effet de vague de rayons de soleil
+    function createSunshineRayWaveEffect(isCorrect = true) {
+        const wave = document.createElement('div');
+        wave.className = isCorrect ? 'sunshine-ray-success-wave' : 'sunshine-ray-error-wave';
+        wave.style.position = 'fixed';
+        wave.style.top = '50%';
+        wave.style.left = '50%';
+        wave.style.width = '0';
+        wave.style.height = '0';
+        wave.style.borderRadius = '50%';
+        wave.style.background = isCorrect ? 
+            'radial-gradient(circle, rgba(255, 235, 59, 0.4) 0%, transparent 70%)' : 
+            'radial-gradient(circle, rgba(255, 152, 0, 0.4) 0%, transparent 70%)';
+        wave.style.transform = 'translate(-50%, -50%)';
+        wave.style.pointerEvents = 'none';
+        wave.style.zIndex = '999';
+        
+        document.body.appendChild(wave);
+        
+        const animation = wave.animate([
+            { 
+                width: '0px', 
+                height: '0px', 
+                opacity: 1,
+                filter: 'brightness(1)'
+            },
+            { 
+                width: '600px', 
+                height: '600px', 
+                opacity: 0,
+                filter: 'brightness(1.5)'
+            }
+        ], {
+            duration: 1800,
+            easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+        });
+        
+        animation.onfinish = () => {
+            wave.remove();
+        };
+    }
+    
+    // Fonction pour arrêter les effets
+    function stopSunshineRayEffects() {
+        document.querySelector('.game-container').classList.remove('enhanced-sunshine-mode');
+        
+        // Nettoyer les particules
+        animationParticles.forEach(particle => {
+            if (particle.parentNode) {
+                particle.parentNode.removeChild(particle);
+            }
+        });
+        animationParticles = [];
+    }
     
     // Fonction pour démarrer le jeu
     function startGame() {
@@ -237,6 +457,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 streak++;
                 bestStreak = Math.max(bestStreak, streak);
             
+                // Play sunlight success sound
+                playSunshineRaySuccessSound();
+                
+                // Create sunlight particles
+                createSunshineRayParticles(true);
+                
+                // Create sunlight wave effect
+                createSunshineRayWaveEffect(true);
+                
                 // Calcul du score
                 const basePoints = 10;
                 
@@ -266,6 +495,15 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
             // Réponse incorrecte
                 streak = 0;
+                
+                // Play sunlight error sound
+                playSunshineRayErrorSound();
+                
+                // Create error particles
+                createSunshineRayParticles(false);
+                
+                // Create error wave effect
+                createSunshineRayWaveEffect(false);
                 
                 // Feedback
                 feedbackMessage.textContent = `Incorrect. La bonne réponse était "${correctWord}"`;
@@ -323,6 +561,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function endGame() {
         gameActive = false;
         clearInterval(timerInterval);
+        
+        // Stop sunlight effects
+        stopSunshineRayEffects();
         
         // Calculer les statistiques
         const accuracy = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
