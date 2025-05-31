@@ -398,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Ajouter les événements avec support iOS Safari
         if (startGameBtn) {
-            startGameBtn.addEventListener('click', startGame);
+        startGameBtn.addEventListener('click', startGame);
             // Add touch support for iOS Safari
             if (isTouchDevice) {
                 startGameBtn.addEventListener('touchend', (e) => {
@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         if (showHintBtn) {
-            showHintBtn.addEventListener('click', showHint);
+        showHintBtn.addEventListener('click', showHint);
             // Add touch support for iOS Safari
             if (isTouchDevice) {
                 showHintBtn.addEventListener('touchend', (e) => {
@@ -424,6 +424,68 @@ document.addEventListener('DOMContentLoaded', () => {
             showHintBtn.style.userSelect = 'none';
             showHintBtn.style.webkitTouchCallout = 'none';
         }
+        
+        // Add iOS Safari touch support for next-btn anchor tag
+        const nextBtn = document.querySelector('.next-btn');
+        if (nextBtn && isTouchDevice) {
+            // Ensure proper iOS Safari styling
+            nextBtn.style.webkitTapHighlightColor = 'transparent';
+            nextBtn.style.webkitUserSelect = 'none';
+            nextBtn.style.userSelect = 'none';
+            nextBtn.style.webkitTouchCallout = 'none';
+            nextBtn.style.touchAction = 'manipulation';
+            
+            // Add touch event listeners for iOS Safari
+            nextBtn.addEventListener('touchstart', (e) => {
+                nextBtn.classList.add('touch-active');
+            }, { passive: true });
+            
+            nextBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                nextBtn.classList.remove('touch-active');
+                
+                // Navigate to the href after a short delay to ensure visual feedback
+                setTimeout(() => {
+                    window.location.href = nextBtn.href;
+                }, 100);
+            }, { passive: false });
+            
+            nextBtn.addEventListener('touchcancel', (e) => {
+                nextBtn.classList.remove('touch-active');
+            }, { passive: true });
+        }
+        
+        // Add iOS Safari touch support for all footer navigation buttons
+        const footerBtns = document.querySelectorAll('.game-footer .btn');
+        footerBtns.forEach(btn => {
+            if (btn && isTouchDevice) {
+                // Ensure proper iOS Safari styling
+                btn.style.webkitTapHighlightColor = 'transparent';
+                btn.style.webkitUserSelect = 'none';
+                btn.style.userSelect = 'none';
+                btn.style.webkitTouchCallout = 'none';
+                btn.style.touchAction = 'manipulation';
+                
+                // Add touch event listeners for iOS Safari
+                btn.addEventListener('touchstart', (e) => {
+                    btn.classList.add('touch-active');
+                }, { passive: true });
+                
+                btn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    btn.classList.remove('touch-active');
+                    
+                    // Navigate to the href after a short delay to ensure visual feedback
+                    setTimeout(() => {
+                        window.location.href = btn.href;
+                    }, 100);
+                }, { passive: false });
+                
+                btn.addEventListener('touchcancel', (e) => {
+                    btn.classList.remove('touch-active');
+                }, { passive: true });
+            }
+        });
         
         console.log('Word Search game initialized successfully');
     }
@@ -895,42 +957,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Force reflow for iOS Safari
                 hintNotification.offsetHeight;
                 
-                // Animation d'entrée et de sortie pour la notification
-                setTimeout(() => {
+            // Animation d'entrée et de sortie pour la notification
+            setTimeout(() => {
                     hintNotification.style.opacity = '1';
                     hintNotification.style.transform = 'translateX(-50%) translateY(0)';
                     console.log('Hint notification shown');
-                }, 100);
-                
-                setTimeout(() => {
+            }, 100);
+            
+            setTimeout(() => {
                     hintNotification.style.opacity = '0';
                     hintNotification.style.transform = 'translateX(-50%) translateY(-20px)';
-                    setTimeout(() => {
+                setTimeout(() => {
                         if (hintNotification.parentNode) {
                             hintNotification.parentNode.removeChild(hintNotification);
                             console.log('Hint notification removed');
                         }
-                    }, 500);
-                }, 3000);
-                
-                // Déterminer le type d'indice à afficher (aléatoire entre 3 types)
-                const hintType = Math.floor(Math.random() * 3);
+                }, 500);
+            }, 3000);
+            
+            // Déterminer le type d'indice à afficher (aléatoire entre 3 types)
+            const hintType = Math.floor(Math.random() * 3);
                 console.log('Hint type selected:', hintType);
-                
-                switch (hintType) {
-                    case 0: // Type 1: Montrer la première lettre
+            
+            switch (hintType) {
+                case 0: // Type 1: Montrer la première lettre
                         console.log('Showing first letter hint');
-                        highlightFirstLetter(hintPosition);
-                        break;
-                    case 1: // Type 2: Montrer la direction du mot
+                    highlightFirstLetter(hintPosition);
+                    break;
+                case 1: // Type 2: Montrer la direction du mot
                         console.log('Showing direction hint');
-                        showDirectionHint(hintPosition);
-                        break;
-                    case 2: // Type 3: Montrer un aperçu rapide du mot complet
+                    showDirectionHint(hintPosition);
+                    break;
+                case 2: // Type 3: Montrer un aperçu rapide du mot complet
                         console.log('Showing flash word hint');
-                        flashEntireWord(hintPosition);
-                        break;
-                }
+                    flashEntireWord(hintPosition);
+                    break;
+            }
                 
                 // Réduire le score pour avoir utilisé un indice
                 score = Math.max(0, score - 20);
@@ -944,8 +1006,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } else {
             console.warn('No hint position found for word:', word);
+            }
         }
-    }
     
     // Mettre en évidence la première lettre comme indice
     function highlightFirstLetter(hintPosition) {
@@ -978,37 +1040,37 @@ document.addEventListener('DOMContentLoaded', () => {
             
             try {
                 // Positionner la flèche avec protection pour iOS Safari
-                const firstRect = firstCell.getBoundingClientRect();
-                const lastRect = lastCell.getBoundingClientRect();
-                const gameBoard = document.querySelector('.game-board');
+            const firstRect = firstCell.getBoundingClientRect();
+            const lastRect = lastCell.getBoundingClientRect();
+            const gameBoard = document.querySelector('.game-board');
                 
                 if (!gameBoard) {
                     console.warn('Game board not found for hint arrow');
                     return;
                 }
                 
-                const gameBoardRect = gameBoard.getBoundingClientRect();
-                
+            const gameBoardRect = gameBoard.getBoundingClientRect();
+            
                 // Calcul pour positionner la flèche relativement au gameBoard avec protection iOS Safari
                 const startX = Math.max(0, firstRect.left + firstRect.width / 2 - gameBoardRect.left);
                 const startY = Math.max(0, firstRect.top + firstRect.height / 2 - gameBoardRect.top);
                 const endX = Math.max(0, lastRect.left + lastRect.width / 2 - gameBoardRect.left);
                 const endY = Math.max(0, lastRect.top + lastRect.height / 2 - gameBoardRect.top);
-                
-                // Calculer l'angle de la flèche
-                const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI;
-                
-                // Calculer la longueur de la flèche
-                const length = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-                
+            
+            // Calculer l'angle de la flèche
+            const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI;
+            
+            // Calculer la longueur de la flèche
+            const length = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+            
                 // Appliquer les styles à la flèche avec support iOS Safari
                 arrow.style.position = 'absolute';
                 arrow.style.width = `${Math.max(10, length)}px`;
                 arrow.style.height = '3px';
                 arrow.style.backgroundColor = '#ff6b6b';
-                arrow.style.left = `${startX}px`;
-                arrow.style.top = `${startY}px`;
-                arrow.style.transform = `rotate(${angle}deg)`;
+            arrow.style.left = `${startX}px`;
+            arrow.style.top = `${startY}px`;
+            arrow.style.transform = `rotate(${angle}deg)`;
                 arrow.style.transformOrigin = '0 50%';
                 arrow.style.zIndex = '1000';
                 arrow.style.borderRadius = '2px';
@@ -1020,8 +1082,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 arrow.style.webkitTransform = `rotate(${angle}deg)`;
                 arrow.style.webkitTransformOrigin = '0 50%';
                 arrow.style.webkitTransition = 'opacity 0.3s ease';
-                
-                gameBoard.appendChild(arrow);
+            
+            gameBoard.appendChild(arrow);
                 
                 // Force reflow for iOS Safari
                 arrow.offsetHeight;
@@ -1042,7 +1104,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (arrow.parentNode) {
                     arrow.style.opacity = '0';
-                    setTimeout(() => {
+                setTimeout(() => {
                         if (arrow.parentNode) {
                             arrow.parentNode.removeChild(arrow);
                         }
