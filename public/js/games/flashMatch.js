@@ -5,6 +5,9 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
+    // Create animated bubbles for background
+    createAnimatedBubbles();
+    
     // Variables du jeu
     let cards = [];
     let selectedCards = [];
@@ -16,7 +19,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let timerInterval = null;
     let startTime = null;
     let currentTime = 0;
-    
     
     // Éléments DOM
     const startGameBtn = document.getElementById('start-game');
@@ -35,6 +37,81 @@ document.addEventListener('DOMContentLoaded', function() {
     const activeGameScreen = document.querySelector('.active-game-screen');
     const postGameScreen = document.querySelector('.post-game-screen');
     
+    // Function to create animated bubbles
+    function createAnimatedBubbles() {
+        const gameContainer = document.querySelector('.game-container');
+        if (!gameContainer) return;
+        
+        // Bubble configurations
+        const bubbleConfigs = [
+            // Large bubbles
+            { size: 'large', count: 3, colors: ['', 'blue', 'purple'] },
+            // Medium bubbles  
+            { size: 'medium', count: 4, colors: ['', 'purple', 'pink', ''] },
+            // Small bubbles
+            { size: 'small', count: 5, colors: ['', 'blue', 'purple', 'pink', ''] },
+            // Tiny bubbles
+            { size: 'tiny', count: 6, colors: ['', 'pink', '', 'blue', 'purple', ''] }
+        ];
+        
+        bubbleConfigs.forEach(config => {
+            for (let i = 0; i < config.count; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = `bubble ${config.size}`;
+                
+                // Add color class if specified
+                if (config.colors[i]) {
+                    bubble.classList.add(config.colors[i]);
+                }
+                
+                // Set random horizontal position
+                const leftPosition = Math.random() * 90 + 5; // 5% to 95%
+                bubble.style.left = leftPosition + '%';
+                
+                // Set random animation delay
+                const delay = Math.random() * 20; // 0 to 20 seconds
+                bubble.style.animationDelay = delay + 's';
+                
+                // Set random animation duration based on size
+                let baseDuration;
+                switch (config.size) {
+                    case 'large': baseDuration = 18; break;
+                    case 'medium': baseDuration = 13; break;
+                    case 'small': baseDuration = 8; break;
+                    case 'tiny': baseDuration = 6; break;
+                    default: baseDuration = 10;
+                }
+                
+                const duration = baseDuration + (Math.random() * 5 - 2.5); // ±2.5s variation
+                bubble.style.animationDuration = duration + 's';
+                
+                gameContainer.appendChild(bubble);
+            }
+        });
+        
+        // Create additional random bubbles for more variety
+        for (let i = 0; i < 8; i++) {
+            const bubble = document.createElement('div');
+            const sizes = ['tiny', 'small', 'medium'];
+            const colors = ['', 'purple', 'blue', 'pink'];
+            const randomSize = sizes[Math.floor(Math.random() * sizes.length)];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            bubble.className = `bubble ${randomSize}`;
+            if (randomColor) {
+                bubble.classList.add(randomColor);
+            }
+            
+            // Random positioning and timing
+            bubble.style.left = (Math.random() * 90 + 5) + '%';
+            bubble.style.animationDelay = (Math.random() * 25) + 's';
+            bubble.style.animationDuration = (Math.random() * 8 + 6) + 's';
+            
+            gameContainer.appendChild(bubble);
+        }
+        
+        console.log('Animated bubbles created successfully!');
+    }
     
     // Fonction pour démarrer le jeu
     function startGame() {

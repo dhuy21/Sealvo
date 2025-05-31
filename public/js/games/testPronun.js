@@ -72,16 +72,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (timerDisplay) timerDisplay.textContent = formatTime(elapsedTime);
     }
     
-    function showHintNotification() {
-        const hintNotification = document.getElementById('hintNotification');
-        if (hintNotification) {
-            hintNotification.classList.add('show');
-            setTimeout(() => {
-                hintNotification.classList.remove('show');
-            }, 3000);
-        }
-    }
-    
     // Fonction pour démarrer le jeu
     function startGame() {
         console.log('Starting game...');
@@ -640,9 +630,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
-    // Afficher un conseil de prononciation au début
-    setTimeout(showHintNotification, 2000);
     
     console.log('TestPronun game script initialization complete');
 });
