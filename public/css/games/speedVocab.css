@@ -5,6 +5,242 @@
   margin: 0 auto;
   padding: 2rem;
   font-family: 'Poppins', sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+
+/* Animated Particles */
+.particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: linear-gradient(45deg, #f32804, #f8fc25);
+  border-radius: 50%;
+  animation: particleFloat 15s linear infinite;
+  opacity: 0.6;
+}
+
+.particle:nth-child(odd) {
+  background: linear-gradient(45deg, #ff6b6b, #e54404);
+  animation-duration: 12s;
+}
+
+.particle:nth-child(3n) {
+  background: linear-gradient(45deg, #d78304, #de0606);
+  animation-duration: 18s;
+}
+
+@keyframes particleFloat {
+  0% {
+    transform: translateY(100vh) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-100px) translateX(100px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* Clock Tick Animation for Active Game */
+.active-game-screen {
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 50px;
+  padding: 2.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(240, 240, 255, 0.6);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Word Display Energy Animation */
+
+
+/* Speed Lines Animation */
+.speed-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.speed-line {
+  position: absolute;
+  width: 2px;
+  height: 20px;
+  background: linear-gradient(to bottom, transparent, rgba(106, 17, 203, 0.6), transparent);
+  animation: speedLineMove 1.5s linear infinite;
+}
+
+.speed-line:nth-child(odd) {
+  background: linear-gradient(to bottom, transparent, rgba(37, 117, 252, 0.6), transparent);
+  animation-duration: 1.2s;
+}
+
+.speed-line:nth-child(3n) {
+  background: linear-gradient(to bottom, transparent, rgba(255, 107, 107, 0.6), transparent);
+  animation-duration: 1.8s;
+}
+
+@keyframes speedLineMove {
+  0% {
+    transform: translateX(-100px) translateY(100vh) rotate(45deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100px) translateY(-100px) rotate(45deg);
+    opacity: 0;
+  }
+}
+
+/* Streak Celebration Animation */
+.streak-celebration {
+  animation: streakCelebrate 0.8s ease-out;
+}
+
+@keyframes streakCelebrate {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.1) rotate(2deg); }
+  50% { transform: scale(1.05) rotate(-1deg); }
+  75% { transform: scale(1.08) rotate(1deg); }
+  100% { transform: scale(1); }
+}
+
+/* Correct Answer Ripple Effect */
+.correct-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.3) 0%, transparent 70%);
+  animation: correctRipple 0.6s ease-out;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes correctRipple {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+  100% {
+    width: 300px;
+    height: 300px;
+    margin-left: -150px;
+    margin-top: -150px;
+    opacity: 0;
+  }
+}
+
+/* Incorrect Answer Ripple Effect */
+.incorrect-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, transparent 70%);
+  animation: incorrectRipple 0.6s ease-out;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes incorrectRipple {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+  100% {
+    width: 300px;
+    height: 300px;
+    margin-left: -150px;
+    margin-top: -150px;
+    opacity: 0;
+  }
+}
+
+/* Incorrect Answer Shake */
+.incorrect-shake {
+  animation: incorrectShake 0.5s ease-in-out;
+}
+
+@keyframes incorrectShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  75% { transform: translateX(10px); }
+}
+
+/* Enhanced Timer Warning Animation */
+#timer.warning {
+  background: linear-gradient(45deg, #ef4444, #f87171);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: timerWarningPulse 0.8s infinite alternate;
+  position: relative;
+}
+
+#timer.warning::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  right: -5px;
+  bottom: -5px;
+  background: linear-gradient(45deg, rgba(239, 68, 68, 0.2), rgba(248, 113, 113, 0.2));
+  border-radius: 50px;
+  animation: warningGlow 1s ease-in-out infinite;
+  z-index: -1;
+}
+
+@keyframes timerWarningPulse {
+  from { 
+    transform: scale(1);
+    filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.5));
+  }
+  to { 
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.8));
+  }
+}
+
+@keyframes warningGlow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
 }
 
 .game-header {
@@ -461,22 +697,6 @@
   left: 100%;
 }
 
-/* Active game screen */
-.active-game-screen {
-  background-color: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-radius: 50px;
-  padding: 2.5rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(240, 240, 255, 0.6);
-  transition: all 0.3s ease;
-}
-
-.active-game-screen:hover {
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
-}
-
 /* Game Stats */
 .game-stats-game {
   display: flex;
@@ -572,12 +792,37 @@
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: pulse 1s infinite alternate;
+  animation: timerWarningPulse 0.8s infinite alternate;
+  position: relative;
 }
 
-@keyframes pulse {
-  from { transform: scale(1); }
-  to { transform: scale(1.08); }
+#timer.warning::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  right: -5px;
+  bottom: -5px;
+  background: linear-gradient(45deg, rgba(239, 68, 68, 0.2), rgba(248, 113, 113, 0.2));
+  border-radius: 50px;
+  animation: warningGlow 1s ease-in-out infinite;
+  z-index: -1;
+}
+
+@keyframes timerWarningPulse {
+  from { 
+    transform: scale(1);
+    filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.5));
+  }
+  to { 
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.8));
+  }
+}
+
+@keyframes warningGlow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
 }
 
 .word-container {
@@ -1032,6 +1277,7 @@
   .stat {
     max-width: none;
   }
+  
   
   #word-display {
     font-size: 2.5rem;
