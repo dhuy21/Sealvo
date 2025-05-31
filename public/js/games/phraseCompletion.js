@@ -7,8 +7,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('PhraseCompletion script initialized');
     
-    // Initialize sunlight effects
-    initializeSunshineRayEffects();
+    // Initialize literary background effects
+    initializeStarryEffects();
     
     // Variables du jeu
     let currentPhrase = null;
@@ -31,10 +31,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let startQuestionTime = null;
     let attempts = 0; // nombre de tentatives sur la question actuelle
     let isLoadingPhrase = false; // Guard to prevent multiple simultaneous loadNewPhrase calls
-    
-    // Animation variables
-    let audioContext = null;
-    let animationParticles = [];
     
     // Éléments DOM
     
@@ -62,137 +58,180 @@ document.addEventListener('DOMContentLoaded', function() {
     const activeGameScreen = document.querySelector('.active-game-screen');
     const postGameScreen = document.querySelector('.post-game-screen');
     
-    // Fonction pour initialiser les effets de rayons de soleil
-    function initializeSunshineRayEffects() {
-        createSunshineRayFocusRings();
-        createSunshineRayFloatingElements();
-        initializeAudio();
-        startSunshineRayBackgroundAnimation();
+    
+    // Fonction pour initialiser les effets étoilés
+    function initializeStarryEffects() {
+        createStarryFocusRings();
+        createFloatingCelestialElements();
+        startStarryBackgroundAnimation();
     }
     
-    // Fonction pour créer les anneaux de focus de rayons de soleil
-    function createSunshineRayFocusRings() {
-        for (let i = 0; i < 5; i++) {
+    // Fonction pour créer les anneaux de focus étoilés
+    function createStarryFocusRings() {
+        for (let i = 0; i < 4; i++) {
             const ring = document.createElement('div');
-            ring.className = 'sunshine-focus-ring';
+            ring.className = 'starry-focus-ring';
             ring.style.animationDelay = `${i * 1.5}s`;
             document.querySelector('.game-container').appendChild(ring);
         }
     }
     
-    // Fonction pour créer des éléments flottants de rayons de soleil
-    function createSunshineRayFloatingElements() {
-        for (let i = 0; i < 8; i++) {
+    // Fonction pour créer des éléments flottants célestes
+    function createFloatingCelestialElements() {
+        for (let i = 0; i < 10; i++) {
             const element = document.createElement('div');
-            element.className = 'floating-sunshine-element';
+            element.className = 'floating-celestial-element';
             element.style.left = Math.random() * 100 + '%';
             element.style.top = Math.random() * 100 + '%';
-            element.style.animationDelay = Math.random() * 6 + 's';
-            element.style.animationDuration = (10 + Math.random() * 4) + 's';
+            element.style.animationDelay = Math.random() * 8 + 's';
+            element.style.animationDuration = (6 + Math.random() * 4) + 's';
             
-            // Symboles de rayons de soleil et d'énergie
-            const symbols = ['☀️', '🌞', '✨', '💫', '🌟', '⭐', '🔆', '💡'];
+            // Symboles célestes et d'étoiles
+            const symbols = ['⭐'];
             element.textContent = symbols[i % symbols.length];
             
             document.querySelector('.game-container').appendChild(element);
         }
     }
     
-    // Fonction pour démarrer l'animation de fond de rayons de soleil
-    function startSunshineRayBackgroundAnimation() {
+    // Fonction pour démarrer l'animation de fond étoilé
+    function startStarryBackgroundAnimation() {
         const container = document.querySelector('.game-container');
-        container.classList.add('enhanced-sunshine-mode');
+        container.classList.add('enhanced-starry-mode');
+        
+        // Démarrer les étoiles qui tombent aléatoirement
+        startRandomFallingStars();
     }
     
-    // Fonction pour initialiser le contexte audio
-    function initializeAudio() {
-        try {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        } catch (e) {
-            console.log('Web Audio API not supported');
+    // Fonction pour créer des étoiles qui tombent aléatoirement
+    function startRandomFallingStars() {
+        // Créer plusieurs étoiles à la fois
+        function createMultipleStars() {
+            // Créer 3-6 étoiles en même temps
+            const numberOfStars = 3 + Math.floor(Math.random() * 4);
+            
+            for (let i = 0; i < numberOfStars; i++) {
+                // Délai légèrement différent pour chaque étoile (0-500ms)
+                setTimeout(() => {
+                    createRandomStar();
+                }, Math.random() * 500);
+            }
         }
+        
+        function createRandomStar() {
+            const star = document.createElement('div');
+            star.className = 'random-falling-star';
+            
+            // Utiliser seulement le symbole ⭐
+            star.textContent = '⭐';
+            
+            // Position horizontale aléatoire
+            const leftPosition = Math.random() * 100;
+            star.style.left = leftPosition + '%';
+            star.style.top = '-50px';
+            
+            // Couleurs aléatoires
+            const colors = [
+                'rgba(255, 255, 255, 0.9)',
+                'rgba(147, 197, 253, 0.8)',
+                'rgba(196, 181, 253, 0.7)',
+                'rgba(251, 191, 36, 0.8)',
+                'rgba(34, 197, 94, 0.7)'
+            ];
+            star.style.color = colors[Math.floor(Math.random() * colors.length)];
+            
+            // Taille aléatoire
+            const size = 0.8 + Math.random() * 0.8; // 0.8 à 1.6
+            star.style.fontSize = size + 'rem';
+            
+            document.body.appendChild(star);
+            
+            // Animation de chute libre avec physique
+            const duration = 3000 + Math.random() * 4000; // 3-7 secondes
+            const horizontalDrift = (Math.random() - 0.5) * 200; // -100px à +100px
+            const rotation = Math.random() * 720; // 0 à 720 degrés
+            
+            const animation = star.animate([
+                {
+                    transform: 'translateY(0) translateX(0) rotate(0deg) scale(0.5)',
+                    opacity: 0
+                },
+                {
+                    transform: 'translateY(50px) translateX(0) rotate(' + (rotation * 0.1) + 'deg) scale(1)',
+                    opacity: 1,
+                    offset: 0.1
+                },
+                {
+                    transform: 'translateY(' + (window.innerHeight + 100) + 'px) translateX(' + horizontalDrift + 'px) rotate(' + rotation + 'deg) scale(0.3)',
+                    opacity: 0
+                }
+            ], {
+                duration: duration,
+                easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+            });
+            
+            animation.onfinish = () => {
+                star.remove();
+            };
+        }
+        
+        // Créer le premier groupe d'étoiles immédiatement
+        createMultipleStars();
+        
+        // Puis créer des groupes d'étoiles à intervalles plus courts
+        function scheduleNextStarGroup() {
+            const delay = 400 + Math.random() * 800; // 0.4 à 1.2 secondes
+            setTimeout(() => {
+                createMultipleStars();
+                scheduleNextStarGroup(); // Programmer le prochain groupe
+            }, delay);
+        }
+        
+        scheduleNextStarGroup();
     }
     
-    // Fonction pour jouer un son de succès de rayons de soleil
-    function playSunshineRaySuccessSound() {
-        if (!audioContext) return;
+    // Fonction pour créer un effet de machine à écrire
+    function createTypewriterEffect(element, text, speed = 50) {
+        element.textContent = '';
+        let i = 0;
         
-        // Son de succès chaleureux et lumineux
-        const oscillator1 = audioContext.createOscillator();
-        const oscillator2 = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator1.connect(gainNode);
-        oscillator2.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator1.frequency.setValueAtTime(587, audioContext.currentTime); // D5
-        oscillator1.frequency.setValueAtTime(740, audioContext.currentTime + 0.15); // F#5
-        oscillator1.frequency.setValueAtTime(880, audioContext.currentTime + 0.3); // A5
-        
-        oscillator2.frequency.setValueAtTime(294, audioContext.currentTime); // D4
-        oscillator2.frequency.setValueAtTime(370, audioContext.currentTime + 0.15); // F#4
-        
-        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
-        
-        oscillator1.start(audioContext.currentTime);
-        oscillator1.stop(audioContext.currentTime + 0.6);
-        oscillator2.start(audioContext.currentTime);
-        oscillator2.stop(audioContext.currentTime + 0.6);
+        const typeInterval = setInterval(() => {
+            if (i < text.length) {
+                element.textContent += text.charAt(i);
+                i++;
+            } else {
+                clearInterval(typeInterval);
+            }
+        }, speed);
     }
     
-    // Fonction pour jouer un son d'erreur doux
-    function playSunshineRayErrorSound() {
-        if (!audioContext) return;
-        
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(160, audioContext.currentTime + 0.3);
-        
-        gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-        
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.3);
-    }
-    
-    // Fonction pour créer des particules de rayons de soleil
-    function createSunshineRayParticles(isCorrect = true) {
+    // Fonction pour créer des particules d'étoiles
+    function createStarParticles(isCorrect = true) {
         const colors = isCorrect ? 
-            ['#ffeb3b', '#ffc107', '#ff9800', '#ffeb3b'] : 
-            ['#ff9800', '#ff5722', '#ffeb3b', '#ffc107'];
+            ['#93c5fd', '#c4b5fd', '#fbbf24', '#34d399'] : 
+            ['#ef4444', '#f59e0b', '#8b5cf6', '#6366f1'];
         
-        const symbols = isCorrect ? ['✨', '🌟', '💫', '☀️'] : ['💭', '🌤️', '⭐', '💡'];
+        const symbols = isCorrect ? ['⭐', '✨', '🌟', '💫'] : ['💥', '☄️', '🌠', '⚡'];
         
-        for (let i = 0; i < 12; i++) {
+        for (let i = 0; i < 8; i++) {
             const particle = document.createElement('div');
-            particle.className = 'sunshine-ray-particle';
+            particle.className = 'star-particle';
             particle.style.position = 'fixed';
-            particle.style.fontSize = '1.5rem';
+            particle.style.fontSize = '1.8rem';
             particle.style.color = colors[Math.floor(Math.random() * colors.length)];
             particle.style.pointerEvents = 'none';
             particle.style.zIndex = '1000';
             particle.textContent = symbols[Math.floor(Math.random() * symbols.length)];
             
-            // Position en rayons depuis le centre
+            // Position autour du centre
             const centerX = window.innerWidth / 2;
             const centerY = window.innerHeight / 2;
-            const angle = (Math.PI * 2 * i) / 12;
-            const startRadius = 50;
-            const endRadius = 300 + Math.random() * 200;
-            
-            particle.style.left = (centerX + Math.cos(angle) * startRadius) + 'px';
-            particle.style.top = (centerY + Math.sin(angle) * startRadius) + 'px';
+            particle.style.left = (centerX + (Math.random() - 0.5) * 300) + 'px';
+            particle.style.top = (centerY + (Math.random() - 0.5) * 300) + 'px';
             
             document.body.appendChild(particle);
             
-            // Animation de rayonnement en ligne droite
+            // Animation de la particule avec effet d'étoile filante
             const animation = particle.animate([
                 { 
                     transform: 'scale(0) rotate(0deg)', 
@@ -200,18 +239,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     filter: 'brightness(1)'
                 },
                 { 
-                    transform: 'scale(1.2) rotate(90deg)', 
+                    transform: 'scale(1.5) rotate(180deg)', 
                     opacity: 0.9,
                     filter: 'brightness(1.5)',
                     offset: 0.3
                 },
                 { 
-                    transform: `scale(0.5) rotate(180deg) translate(${Math.cos(angle) * endRadius}px, ${Math.sin(angle) * endRadius}px)`, 
+                    transform: `scale(0.5) rotate(360deg) translate(${(Math.random() - 0.5) * 400}px, ${(Math.random() - 0.5) * 400}px)`, 
                     opacity: 0,
-                    filter: 'brightness(2)'
+                    filter: 'brightness(0.5)'
                 }
             ], {
-                duration: 2000,
+                duration: 3000,
                 easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
             });
             
@@ -221,59 +260,56 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Fonction pour créer un effet de vague de rayons de soleil
-    function createSunshineRayWaveEffect(isCorrect = true) {
-        const wave = document.createElement('div');
-        wave.className = isCorrect ? 'sunshine-ray-success-wave' : 'sunshine-ray-error-wave';
-        wave.style.position = 'fixed';
-        wave.style.top = '50%';
-        wave.style.left = '50%';
-        wave.style.width = '0';
-        wave.style.height = '0';
-        wave.style.borderRadius = '50%';
-        wave.style.background = isCorrect ? 
-            'radial-gradient(circle, rgba(255, 235, 59, 0.4) 0%, transparent 70%)' : 
-            'radial-gradient(circle, rgba(255, 152, 0, 0.4) 0%, transparent 70%)';
-        wave.style.transform = 'translate(-50%, -50%)';
-        wave.style.pointerEvents = 'none';
-        wave.style.zIndex = '999';
+    // Fonction pour créer un effet de constellation qui se forme
+    function createConstellationEffect(isCorrect = true) {
+        const constellation = document.createElement('div');
+        constellation.className = isCorrect ? 'constellation-success' : 'constellation-error';
+        constellation.style.position = 'fixed';
+        constellation.style.top = '50%';
+        constellation.style.left = '50%';
+        constellation.style.width = '0';
+        constellation.style.height = '0';
+        constellation.style.borderRadius = '50%';
+        constellation.style.background = isCorrect ? 
+            'radial-gradient(circle, rgba(147, 197, 253, 0.3) 0%, rgba(196, 181, 253, 0.2) 50%, transparent 70%)' : 
+            'radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, rgba(245, 158, 11, 0.2) 50%, transparent 70%)';
+        constellation.style.transform = 'translate(-50%, -50%)';
+        constellation.style.pointerEvents = 'none';
+        constellation.style.zIndex = '999';
+        constellation.style.boxShadow = isCorrect ?
+            '0 0 50px rgba(147, 197, 253, 0.4)' :
+            '0 0 50px rgba(239, 68, 68, 0.4)';
         
-        document.body.appendChild(wave);
+        document.body.appendChild(constellation);
         
-        const animation = wave.animate([
+        const animation = constellation.animate([
             { 
                 width: '0px', 
                 height: '0px', 
                 opacity: 1,
-                filter: 'brightness(1)'
+                boxShadow: isCorrect ? '0 0 0px rgba(147, 197, 253, 0)' : '0 0 0px rgba(239, 68, 68, 0)'
             },
             { 
                 width: '600px', 
                 height: '600px', 
+                opacity: 0.7,
+                boxShadow: isCorrect ? '0 0 100px rgba(147, 197, 253, 0.6)' : '0 0 100px rgba(239, 68, 68, 0.6)',
+                offset: 0.6
+            },
+            { 
+                width: '800px', 
+                height: '800px', 
                 opacity: 0,
-                filter: 'brightness(1.5)'
+                boxShadow: isCorrect ? '0 0 150px rgba(147, 197, 253, 0)' : '0 0 150px rgba(239, 68, 68, 0)'
             }
         ], {
-            duration: 1800,
+            duration: 2000,
             easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
         });
         
         animation.onfinish = () => {
-            wave.remove();
+            constellation.remove();
         };
-    }
-    
-    // Fonction pour arrêter les effets
-    function stopSunshineRayEffects() {
-        document.querySelector('.game-container').classList.remove('enhanced-sunshine-mode');
-        
-        // Nettoyer les particules
-        animationParticles.forEach(particle => {
-            if (particle.parentNode) {
-                particle.parentNode.removeChild(particle);
-            }
-        });
-        animationParticles = [];
     }
     
     // Fonction pour démarrer le jeu
@@ -390,7 +426,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Formater la phrase avec un espace pour saisir le mot
             const formattedPhrase = data.phrase;
-            phraseDisplay.innerHTML = formattedPhrase;
+            
+            // Effet de machine à écrire pour la phrase
+            phraseDisplay.innerHTML = '';
+            createTypewriterEffect(phraseDisplay, formattedPhrase, 30);
             
             // Focus sur l'input
             wordInput.focus();
@@ -457,15 +496,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 streak++;
                 bestStreak = Math.max(bestStreak, streak);
             
-                // Play sunlight success sound
-                playSunshineRaySuccessSound();
-                
-                // Create sunlight particles
-                createSunshineRayParticles(true);
-                
-                // Create sunlight wave effect
-                createSunshineRayWaveEffect(true);
-                
                 // Calcul du score
                 const basePoints = 10;
                 
@@ -484,6 +514,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Mettre à jour l'affichage
                 scoreDisplay.textContent = score;
                 
+                // Effets littéraires pour réponse correcte
+                createStarParticles(true);
+                createConstellationEffect(true);
+                
                 // Feedback
                 feedbackMessage.textContent = `Correct ! +${totalPoints} points`;
                 feedbackMessage.className = 'feedback-message correct';
@@ -496,14 +530,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Réponse incorrecte
                 streak = 0;
                 
-                // Play sunlight error sound
-                playSunshineRayErrorSound();
-                
-                // Create error particles
-                createSunshineRayParticles(false);
-                
-                // Create error wave effect
-                createSunshineRayWaveEffect(false);
+                // Effets littéraires pour réponse incorrecte
+                createStarParticles(false);
+                createConstellationEffect(false);
                 
                 // Feedback
                 feedbackMessage.textContent = `Incorrect. La bonne réponse était "${correctWord}"`;
@@ -561,9 +590,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function endGame() {
         gameActive = false;
         clearInterval(timerInterval);
-        
-        // Stop sunlight effects
-        stopSunshineRayEffects();
         
         // Calculer les statistiques
         const accuracy = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
