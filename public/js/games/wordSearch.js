@@ -32,6 +32,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const showHintBtn = document.getElementById('show-hint');
   
     
+    // Letter explosion background variables
+    let letterExplosionBackground = null;
+    let letterAnimationIntervals = [];
+    
     // Variables du jeu
     let gridSize = 8;
     let grid = [];
@@ -62,17 +66,374 @@ document.addEventListener('DOMContentLoaded', () => {
         [-1, -1]  // Diagonal haut-gauche
     ];
     
+    // Letter explosion background functions
+    function initializeLetterExplosionBackground() {
+        console.log('Initializing letter explosion background...');
+        
+        // Clean up any existing background
+        if (letterExplosionBackground && letterExplosionBackground.parentNode) {
+            letterExplosionBackground.parentNode.removeChild(letterExplosionBackground);
+        }
+        
+        // Create background container
+        letterExplosionBackground = document.createElement('div');
+        letterExplosionBackground.className = 'letter-explosion-background';
+        letterExplosionBackground.style.position = 'fixed';
+        letterExplosionBackground.style.top = '0';
+        letterExplosionBackground.style.left = '0';
+        letterExplosionBackground.style.width = '100%';
+        letterExplosionBackground.style.height = '100%';
+        letterExplosionBackground.style.pointerEvents = 'none';
+        letterExplosionBackground.style.zIndex = '-1';
+        letterExplosionBackground.style.overflow = 'hidden';
+        document.body.appendChild(letterExplosionBackground);
+        
+        console.log('Letter explosion background created:', letterExplosionBackground);
+        
+        // Add letter explosion mode to game container
+        if (gameContainer) {
+            gameContainer.classList.add('letter-explosion-mode');
+            console.log('Added letter-explosion-mode to game container');
+        }
+        
+        // Start background letter animations
+        startBackgroundLetterAnimations();
+        
+        // Create immediate welcome explosion sequence
+        setTimeout(() => {
+            console.log('Creating welcome explosion sequence...');
+            createRandomLetterBurst();
+        }, 500);
+        
+        setTimeout(() => {
+            createRandomExplodingLetters();
+        }, 1200);
+        
+        setTimeout(() => {
+            createRandomSpiralLetters();
+        }, 2000);
+    }
+    
+    function startBackgroundLetterAnimations() {
+        console.log('Starting background letter animations...');
+        
+        // Clear any existing intervals
+        letterAnimationIntervals.forEach(interval => clearInterval(interval));
+        letterAnimationIntervals = [];
+        
+        // More frequent letter bursts for automatic effect
+        const burstInterval = setInterval(() => {
+            console.log('Creating letter burst...');
+            createRandomLetterBurst();
+        }, 1500 + Math.random() * 2000); // Every 1.5-3.5 seconds (more frequent)
+        
+        // Add exploding letters at random intervals
+        const explodingInterval = setInterval(() => {
+            console.log('Creating exploding letters...');
+            createRandomExplodingLetters();
+        }, 2000 + Math.random() * 3000); // Every 2-5 seconds
+        
+        // Add spiral letters occasionally
+        const spiralInterval = setInterval(() => {
+            console.log('Creating spiral letters...');
+            createRandomSpiralLetters();
+        }, 4000 + Math.random() * 4000); // Every 4-8 seconds
+        
+        letterAnimationIntervals.push(burstInterval, explodingInterval, spiralInterval);
+        console.log('Background animation intervals created:', letterAnimationIntervals.length);
+        
+        // Create immediate explosion when starting
+        setTimeout(() => {
+            createRandomLetterBurst();
+        }, 500);
+        
+        setTimeout(() => {
+            createRandomExplodingLetters();
+        }, 1000);
+    }
+    
+    function createRandomLetterBurst() {
+        if (!letterExplosionBackground) return;
+        
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const numberOfLetters = 5 + Math.floor(Math.random() * 8); // 5-12 letters
+        
+        // Random center position
+        const centerX = 20 + Math.random() * 60; // 20% to 80% of screen width
+        const centerY = 20 + Math.random() * 60; // 20% to 80% of screen height
+        
+        for (let i = 0; i < numberOfLetters; i++) {
+            const letter = letters[Math.floor(Math.random() * letters.length)];
+            const letterElement = document.createElement('div');
+            letterElement.className = 'letter-burst';
+            letterElement.textContent = letter;
+            
+            letterElement.style.left = centerX + '%';
+            letterElement.style.top = centerY + '%';
+            
+            // Random burst direction
+            const burstX = (Math.random() - 0.5) * 300; // -150px to 150px
+            const burstY = (Math.random() - 0.5) * 300; // -150px to 150px
+            letterElement.style.setProperty('--burst-x', burstX + 'px');
+            letterElement.style.setProperty('--burst-y', burstY + 'px');
+            
+            // Random colors
+            const colors = [
+                'rgba(239, 68, 68, 0.6)',
+                'rgba(245, 158, 11, 0.6)',
+                'rgba(34, 197, 94, 0.6)',
+                'rgba(99, 102, 241, 0.6)',
+                'rgba(139, 92, 246, 0.6)'
+            ];
+            letterElement.style.color = colors[Math.floor(Math.random() * colors.length)];
+            
+            letterExplosionBackground.appendChild(letterElement);
+            
+            // Remove after animation
+            setTimeout(() => {
+                if (letterElement.parentNode) {
+                    letterElement.parentNode.removeChild(letterElement);
+                }
+            }, 2000);
+        }
+    }
+    
+    function createRandomExplodingLetters() {
+        if (!letterExplosionBackground) return;
+        
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const numberOfLetters = 3 + Math.floor(Math.random() * 5); // 3-7 letters
+        
+        for (let i = 0; i < numberOfLetters; i++) {
+            setTimeout(() => {
+                const letter = letters[Math.floor(Math.random() * letters.length)];
+                const letterElement = document.createElement('div');
+                letterElement.className = 'exploding-letter';
+                letterElement.textContent = letter;
+                
+                // Random position across the screen
+                letterElement.style.left = Math.random() * 100 + '%';
+                letterElement.style.top = Math.random() * 100 + '%';
+                
+                letterExplosionBackground.appendChild(letterElement);
+                
+                // Remove after animation
+                setTimeout(() => {
+                    if (letterElement.parentNode) {
+                        letterElement.parentNode.removeChild(letterElement);
+                    }
+                }, 3000);
+            }, i * 200); // Stagger the letters
+        }
+    }
+    
+    function createRandomSpiralLetters() {
+        if (!letterExplosionBackground) return;
+        
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const numberOfLetters = 2 + Math.random() * 4; // 2-5 letters
+        
+        for (let i = 0; i < numberOfLetters; i++) {
+            setTimeout(() => {
+                const letter = letters[Math.floor(Math.random() * letters.length)];
+                const letterElement = document.createElement('div');
+                letterElement.className = 'letter-spiral';
+                letterElement.textContent = letter;
+                
+                // Random position
+                letterElement.style.left = (20 + Math.random() * 60) + '%';
+                letterElement.style.top = (20 + Math.random() * 60) + '%';
+                
+                // Random colors for spiral
+                const colors = [
+                    'rgba(239, 68, 68, 0.7)',
+                    'rgba(245, 158, 11, 0.7)',
+                    'rgba(34, 197, 94, 0.7)',
+                    'rgba(99, 102, 241, 0.7)',
+                    'rgba(139, 92, 246, 0.7)',
+                    'rgba(236, 72, 153, 0.7)'
+                ];
+                letterElement.style.color = colors[Math.floor(Math.random() * colors.length)];
+                
+                letterExplosionBackground.appendChild(letterElement);
+                
+                // Remove after animation
+                setTimeout(() => {
+                    if (letterElement.parentNode) {
+                        letterElement.parentNode.removeChild(letterElement);
+                    }
+                }, 4000);
+            }, i * 300); // Stagger the letters
+        }
+    }
+    
+    function createWordFoundExplosion(word, centerX, centerY) {
+        if (!letterExplosionBackground) return;
+        
+        // Create explosion trigger effect
+        const trigger = document.createElement('div');
+        trigger.className = 'letter-explosion-trigger';
+        trigger.style.left = centerX + 'px';
+        trigger.style.top = centerY + 'px';
+        letterExplosionBackground.appendChild(trigger);
+        
+        setTimeout(() => {
+            if (trigger.parentNode) {
+                trigger.parentNode.removeChild(trigger);
+            }
+        }, 1000);
+        
+        // Create letter celebration for each letter in the word
+        const letters = word.toUpperCase().split('');
+        letters.forEach((letter, index) => {
+            setTimeout(() => {
+                const letterElement = document.createElement('div');
+                letterElement.className = 'word-found-letter-celebration';
+                letterElement.textContent = letter;
+                
+                // Position around the center with some randomness
+                const angle = (index / letters.length) * 2 * Math.PI;
+                const radius = 50 + Math.random() * 30;
+                const x = centerX + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+                
+                letterElement.style.left = x + 'px';
+                letterElement.style.top = y + 'px';
+                
+                letterExplosionBackground.appendChild(letterElement);
+                
+                // Remove after animation
+                setTimeout(() => {
+                    if (letterElement.parentNode) {
+                        letterElement.parentNode.removeChild(letterElement);
+                    }
+                }, 2000);
+            }, index * 100); // Stagger each letter
+        });
+        
+        // Create additional spiral letters
+        for (let i = 0; i < 6; i++) {
+            setTimeout(() => {
+                const randomLetter = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)];
+                const letterElement = document.createElement('div');
+                letterElement.className = 'letter-spiral';
+                letterElement.textContent = randomLetter;
+                
+                letterElement.style.left = (centerX + (Math.random() - 0.5) * 100) + 'px';
+                letterElement.style.top = (centerY + (Math.random() - 0.5) * 100) + 'px';
+                
+                // Random colors for celebration
+                const celebrationColors = [
+                    'rgba(34, 197, 94, 0.8)',
+                    'rgba(16, 185, 129, 0.8)',
+                    'rgba(5, 150, 105, 0.8)',
+                    'rgba(52, 211, 153, 0.8)'
+                ];
+                letterElement.style.color = celebrationColors[Math.floor(Math.random() * celebrationColors.length)];
+                
+                letterExplosionBackground.appendChild(letterElement);
+                
+                // Remove after animation
+                setTimeout(() => {
+                    if (letterElement.parentNode) {
+                        letterElement.parentNode.removeChild(letterElement);
+                    }
+                }, 4000);
+            }, i * 150);
+        }
+    }
+    
+    function createGameStartExplosion() {
+        if (!letterExplosionBackground) return;
+        
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const numberOfLetters = 20;
+        
+        for (let i = 0; i < numberOfLetters; i++) {
+            setTimeout(() => {
+                const letter = letters[Math.floor(Math.random() * letters.length)];
+                const letterElement = document.createElement('div');
+                letterElement.className = 'exploding-letter';
+                letterElement.textContent = letter;
+                
+                // Random position across the screen
+                letterElement.style.left = Math.random() * 100 + '%';
+                letterElement.style.top = Math.random() * 100 + '%';
+                
+                letterExplosionBackground.appendChild(letterElement);
+                
+                // Remove after animation
+                setTimeout(() => {
+                    if (letterElement.parentNode) {
+                        letterElement.parentNode.removeChild(letterElement);
+                    }
+                }, 3000);
+            }, i * 100);
+        }
+    }
+    
+    function cleanupLetterAnimations() {
+        // Clear all intervals
+        letterAnimationIntervals.forEach(interval => clearInterval(interval));
+        letterAnimationIntervals = [];
+        
+        // Remove background container
+        if (letterExplosionBackground && letterExplosionBackground.parentNode) {
+            letterExplosionBackground.parentNode.removeChild(letterExplosionBackground);
+            letterExplosionBackground = null;
+        }
+        
+        // Remove letter explosion mode from game container
+        if (gameContainer) {
+            gameContainer.classList.remove('letter-explosion-mode');
+        }
+    }
+    
     // Initialisation
     function init() {
-        // Ajouter les événements
-        startGameBtn.addEventListener('click', startGame);
-        showHintBtn.addEventListener('click', showHint);
+        console.log('Initializing Word Search game...');
         
+        // Initialize letter explosion background
+        initializeLetterExplosionBackground();
+        
+        // Ajouter les événements avec support iOS Safari
+        if (startGameBtn) {
+            startGameBtn.addEventListener('click', startGame);
+            // Add touch support for iOS Safari
+            if (isTouchDevice) {
+                startGameBtn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    startGame();
+                });
+            }
+        }
+        
+        if (showHintBtn) {
+            showHintBtn.addEventListener('click', showHint);
+            // Add touch support for iOS Safari
+            if (isTouchDevice) {
+                showHintBtn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    showHint();
+                });
+            }
+            
+            // Ensure button is properly styled for iOS Safari
+            showHintBtn.style.webkitTapHighlightColor = 'transparent';
+            showHintBtn.style.webkitUserSelect = 'none';
+            showHintBtn.style.userSelect = 'none';
+            showHintBtn.style.webkitTouchCallout = 'none';
+        }
+        
+        console.log('Word Search game initialized successfully');
     }
     
     // Démarrer le jeu
     async function startGame() {
         try {
+            // Create game start explosion
+            createGameStartExplosion();
+            
             // Changer l'interface pour l'écran de jeu
             preGameScreen.classList.remove('active');
             activeGameScreen.classList.add('active');
@@ -452,16 +813,28 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Afficher un indice
     function showHint() {
-        if (!gameActive || foundWords.length >= words.length) return;
+        console.log('showHint called - gameActive:', gameActive, 'foundWords:', foundWords.length, 'totalWords:', words.length);
+        
+        if (!gameActive || foundWords.length >= words.length) {
+            console.log('showHint early return - game not active or all words found');
+            return;
+        }
         
         // Trouver un mot qui n'a pas encore été trouvé
         const remainingWords = words.filter(word => !foundWords.includes(word.word));
         
-        if (remainingWords.length === 0) return;
+        if (remainingWords.length === 0) {
+            console.log('showHint early return - no remaining words');
+            return;
+        }
+        
+        console.log('Remaining words:', remainingWords.length);
         
         // Choisir un mot aléatoire parmi les mots restants
         const randomWord = remainingWords[Math.floor(Math.random() * remainingWords.length)];
         const word = randomWord.word.toUpperCase().replace(/[^A-Z]/g, '');
+        
+        console.log('Selected hint word:', word);
         
         // Trouver la position du mot dans la grille
         let hintPosition = null;
@@ -480,39 +853,99 @@ document.addEventListener('DOMContentLoaded', () => {
             if (hintPosition) break;
         }
         
+        console.log('Hint position found:', hintPosition);
+        
         if (hintPosition) {
-            // Animation d'entrée et de sortie pour la notification
-            setTimeout(() => {
-                hintNotification.classList.add('show');
-            }, 100);
-            
-            setTimeout(() => {
-                hintNotification.classList.remove('show');
+            try {
+                // Create hint notification for iOS Safari compatibility
+                const hintNotification = document.createElement('div');
+                hintNotification.className = 'hint-notification';
+                hintNotification.innerHTML = `
+                    <div class="hint-icon">💡</div>
+                    <div class="hint-content">
+                        <div class="hint-title">Indice</div>
+                        <div class="hint-message">Regardez le mot <span>"${randomWord.word}"</span></div>
+                    </div>
+                `;
+                
+                // iOS Safari specific styles
+                hintNotification.style.position = 'fixed';
+                hintNotification.style.top = '20px';
+                hintNotification.style.left = '50%';
+                hintNotification.style.transform = 'translateX(-50%)';
+                hintNotification.style.zIndex = '9999';
+                hintNotification.style.backgroundColor = 'rgba(106, 17, 203, 0.95)';
+                hintNotification.style.color = 'white';
+                hintNotification.style.padding = '1rem 1.5rem';
+                hintNotification.style.borderRadius = '12px';
+                hintNotification.style.boxShadow = '0 10px 25px rgba(106, 17, 203, 0.3)';
+                hintNotification.style.display = 'flex';
+                hintNotification.style.alignItems = 'center';
+                hintNotification.style.gap = '1rem';
+                hintNotification.style.maxWidth = '90%';
+                hintNotification.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+                hintNotification.style.opacity = '0';
+                hintNotification.style.transition = 'all 0.4s ease';
+                hintNotification.style.pointerEvents = 'none';
+                
+                // Add to body for iOS Safari compatibility
+                document.body.appendChild(hintNotification);
+                console.log('Hint notification created and added to body');
+                
+                // Force reflow for iOS Safari
+                hintNotification.offsetHeight;
+                
+                // Animation d'entrée et de sortie pour la notification
                 setTimeout(() => {
-                    hintNotification.remove();
-                }, 500);
-            }, 3000);
-            
-            // Déterminer le type d'indice à afficher (aléatoire entre 3 types)
-            const hintType = Math.floor(Math.random() * 3);
-            
-            switch (hintType) {
-                case 0: // Type 1: Montrer la première lettre
-                    highlightFirstLetter(hintPosition);
-                    break;
-                case 1: // Type 2: Montrer la direction du mot
-                    showDirectionHint(hintPosition);
-                    break;
-                case 2: // Type 3: Montrer un aperçu rapide du mot complet
-                    flashEntireWord(hintPosition);
-                    break;
-            }
+                    hintNotification.style.opacity = '1';
+                    hintNotification.style.transform = 'translateX(-50%) translateY(0)';
+                    console.log('Hint notification shown');
+                }, 100);
+                
+                setTimeout(() => {
+                    hintNotification.style.opacity = '0';
+                    hintNotification.style.transform = 'translateX(-50%) translateY(-20px)';
+                    setTimeout(() => {
+                        if (hintNotification.parentNode) {
+                            hintNotification.parentNode.removeChild(hintNotification);
+                            console.log('Hint notification removed');
+                        }
+                    }, 500);
+                }, 3000);
+                
+                // Déterminer le type d'indice à afficher (aléatoire entre 3 types)
+                const hintType = Math.floor(Math.random() * 3);
+                console.log('Hint type selected:', hintType);
+                
+                switch (hintType) {
+                    case 0: // Type 1: Montrer la première lettre
+                        console.log('Showing first letter hint');
+                        highlightFirstLetter(hintPosition);
+                        break;
+                    case 1: // Type 2: Montrer la direction du mot
+                        console.log('Showing direction hint');
+                        showDirectionHint(hintPosition);
+                        break;
+                    case 2: // Type 3: Montrer un aperçu rapide du mot complet
+                        console.log('Showing flash word hint');
+                        flashEntireWord(hintPosition);
+                        break;
+                }
                 
                 // Réduire le score pour avoir utilisé un indice
                 score = Math.max(0, score - 20);
                 scoreDisplay.textContent = score;
+                console.log('Score reduced for hint usage. New score:', score);
+                
+            } catch (error) {
+                console.error('Error in showHint function:', error);
+                // Fallback: simple alert for iOS Safari
+                alert(`Indice: Cherchez le mot "${randomWord.word}"`);
             }
+        } else {
+            console.warn('No hint position found for word:', word);
         }
+    }
     
     // Mettre en évidence la première lettre comme indice
     function highlightFirstLetter(hintPosition) {
@@ -543,41 +976,78 @@ document.addEventListener('DOMContentLoaded', () => {
             const arrow = document.createElement('div');
             arrow.className = 'direction-arrow';
             
-            // Positionner la flèche
-            const firstRect = firstCell.getBoundingClientRect();
-            const lastRect = lastCell.getBoundingClientRect();
-            const gameBoard = document.querySelector('.game-board');
-            const gameBoardRect = gameBoard.getBoundingClientRect();
-            
-            // Calcul pour positionner la flèche relativement au gameBoard
-            const startX = firstRect.left + firstRect.width / 2 - gameBoardRect.left;
-            const startY = firstRect.top + firstRect.height / 2 - gameBoardRect.top;
-            const endX = lastRect.left + lastRect.width / 2 - gameBoardRect.left;
-            const endY = lastRect.top + lastRect.height / 2 - gameBoardRect.top;
-            
-            // Calculer l'angle de la flèche
-            const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI;
-            
-            // Calculer la longueur de la flèche
-            const length = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-            
-            // Appliquer les styles à la flèche
-            arrow.style.width = `${length}px`;
-            arrow.style.left = `${startX}px`;
-            arrow.style.top = `${startY}px`;
-            arrow.style.transform = `rotate(${angle}deg)`;
-            
-            gameBoard.appendChild(arrow);
+            try {
+                // Positionner la flèche avec protection pour iOS Safari
+                const firstRect = firstCell.getBoundingClientRect();
+                const lastRect = lastCell.getBoundingClientRect();
+                const gameBoard = document.querySelector('.game-board');
+                
+                if (!gameBoard) {
+                    console.warn('Game board not found for hint arrow');
+                    return;
+                }
+                
+                const gameBoardRect = gameBoard.getBoundingClientRect();
+                
+                // Calcul pour positionner la flèche relativement au gameBoard avec protection iOS Safari
+                const startX = Math.max(0, firstRect.left + firstRect.width / 2 - gameBoardRect.left);
+                const startY = Math.max(0, firstRect.top + firstRect.height / 2 - gameBoardRect.top);
+                const endX = Math.max(0, lastRect.left + lastRect.width / 2 - gameBoardRect.left);
+                const endY = Math.max(0, lastRect.top + lastRect.height / 2 - gameBoardRect.top);
+                
+                // Calculer l'angle de la flèche
+                const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI;
+                
+                // Calculer la longueur de la flèche
+                const length = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+                
+                // Appliquer les styles à la flèche avec support iOS Safari
+                arrow.style.position = 'absolute';
+                arrow.style.width = `${Math.max(10, length)}px`;
+                arrow.style.height = '3px';
+                arrow.style.backgroundColor = '#ff6b6b';
+                arrow.style.left = `${startX}px`;
+                arrow.style.top = `${startY}px`;
+                arrow.style.transform = `rotate(${angle}deg)`;
+                arrow.style.transformOrigin = '0 50%';
+                arrow.style.zIndex = '1000';
+                arrow.style.borderRadius = '2px';
+                arrow.style.boxShadow = '0 2px 4px rgba(255, 107, 107, 0.3)';
+                arrow.style.opacity = '0';
+                arrow.style.transition = 'opacity 0.3s ease';
+                
+                // iOS Safari specific styles
+                arrow.style.webkitTransform = `rotate(${angle}deg)`;
+                arrow.style.webkitTransformOrigin = '0 50%';
+                arrow.style.webkitTransition = 'opacity 0.3s ease';
+                
+                gameBoard.appendChild(arrow);
+                
+                // Force reflow for iOS Safari
+                arrow.offsetHeight;
+                
+                // Animate in
+                setTimeout(() => {
+                    arrow.style.opacity = '1';
+                }, 50);
+                
+            } catch (error) {
+                console.warn('Error positioning hint arrow on iOS Safari:', error);
+            }
             
             // Supprimer les éléments d'indice après un délai
             setTimeout(() => {
                 firstCell.classList.remove('hint-start');
                 lastCell.classList.remove('hint-end');
-                arrow.classList.add('fade-out');
                 
-                setTimeout(() => {
-                    arrow.remove();
-                }, 500);
+                if (arrow.parentNode) {
+                    arrow.style.opacity = '0';
+                    setTimeout(() => {
+                        if (arrow.parentNode) {
+                            arrow.parentNode.removeChild(arrow);
+                        }
+                    }, 300);
+                }
             }, 2000);
         }
     }
@@ -699,6 +1169,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (wordElement) {
             wordElement.classList.add('found');
             
+            // Create word found explosion at the center of the screen
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            createWordFoundExplosion(word, centerX, centerY);
+            
             // Mettre à jour le marqueur avec une coche
             const marker = wordElement.querySelector('.word-marker');
             if (marker) {
@@ -783,6 +1258,12 @@ document.addEventListener('DOMContentLoaded', () => {
         timer = 600;
         
         clearInterval(gameTimer);
+        
+        // Clean up letter animations
+        cleanupLetterAnimations();
+        
+        // Reinitialize letter explosion background
+        initializeLetterExplosionBackground();
         
         // Réinitialiser l'interface
         if (postGameScreen) postGameScreen.classList.remove('active');
