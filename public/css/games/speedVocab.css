@@ -21,23 +21,33 @@
   z-index: -1;
 }
 
-.particle {
+.particles .particle {
   position: absolute;
-  width: 4px;
-  height: 4px;
-  background: linear-gradient(45deg, #f32804, #f8fc25);
-  border-radius: 50%;
+  width: 7px;
+  height: 7px;
+  background: linear-gradient(45deg, #f32804, #f8fc25) !important;
+  border-radius: 50% !important;
   animation: particleFloat 15s linear infinite;
   opacity: 0.6;
+  box-sizing: border-box !important;
+  /* Ensure particles are always square and circular */
+  aspect-ratio: 1 / 1 !important;
+  /* Fallback for very small particles */
+  min-width: 1px !important;
+  min-height: 1px !important;
+  /* Ensure visibility */
+  display: block !important;
+  /* Force circular shape */
+  border-radius: 50% !important;
 }
 
 .particle:nth-child(odd) {
-  background: linear-gradient(45deg, #ff6b6b, #e54404);
+  background: linear-gradient(45deg, #ff6b6b, #e54404) !important;
   animation-duration: 12s;
 }
 
 .particle:nth-child(3n) {
-  background: linear-gradient(45deg, #d78304, #de0606);
+  background: linear-gradient(45deg, #d78304, #de0606) !important;
   animation-duration: 18s;
 }
 
@@ -1329,7 +1339,89 @@
   }
 }
 
+/* Temporary debugging styles for particles */
+@media (max-width: 432px) {
+  .particles .particle {
+    width: 8px !important;
+    height: 8px !important;
+    min-width: 8px !important;
+    min-height: 8px !important;
+    border-radius: 50% !important;
+    box-sizing: border-box !important;
+    opacity: 0.8 !important;
+    animation-duration: 12s;
+    aspect-ratio: 1 / 1 !important;
+  }
+  
+  .particles .particle:nth-child(odd) {
+    animation-duration: 10s;
+  }
+  
+  .particles .particle:nth-child(3n) {
+    animation-duration: 14s;
+
+  }
+  
+  .particles {
+    opacity: 1 !important;
+  }
+  
+  .speed-line {
+    width: 1.5px !important;
+    height: 15px !important;
+    opacity: 0.4;
+  }
+  
+  .speed-line:nth-child(odd) {
+    animation-duration: 1s;
+  }
+  
+  .speed-line:nth-child(3n) {
+    animation-duration: 1.5s;
+  }
+}
+
 @media (max-width: 412px) {
+  .particles .particle {
+    width: 8px !important;
+    height: 8px !important;
+    min-width: 8px !important;
+    min-height: 8px !important;
+    border-radius: 50% !important;
+    box-sizing: border-box !important;
+    opacity: 0.8 !important;
+    animation-duration: 12s;
+    aspect-ratio: 1 / 1 !important;
+
+  }
+  
+  .particles .particle:nth-child(odd) {
+    animation-duration: 8s;
+  }
+  
+  .particles .particle:nth-child(3n) {
+    animation-duration: 12s;
+
+  }
+  
+  .particles {
+    opacity: 0.7;
+  }
+  
+  .speed-line {
+    width: 1px !important;
+    height: 12px !important;
+    opacity: 0.3;
+  }
+  
+  .speed-line:nth-child(odd) {
+    animation-duration: 0.8s;
+  }
+  
+  .speed-line:nth-child(3n) {
+    animation-duration: 1.2s;
+  }
+  
   .rules-list {
     grid-template-columns: 1fr 1fr 1fr !important;
     grid-template-rows: 1fr !important;
@@ -1370,7 +1462,169 @@
     font-size: 24px;
   }
 }
+
+@media (max-width: 394px) {
+  .particles .particle {
+    width: 5px !important;
+    height: 5px !important;
+    min-width: 5px !important;
+    min-height: 5px !important;
+    border-radius: 50% !important;
+    box-sizing: border-box !important;
+    opacity: 0.8 !important;
+    animation-duration: 12s;
+    aspect-ratio: 1 / 1 !important;
+  }
+  
+  .particles .particle:nth-child(odd) {
+    animation-duration: 6s;
+  }
+  
+  .particles .particle:nth-child(3n) {
+    animation-duration: 10s;
+  }
+  
+  .particles {
+    opacity: 0.6;
+  }
+  
+  .speed-line {
+    width: 1px !important;
+    height: 10px !important;
+    opacity: 0.25;
+  }
+  
+  .speed-line:nth-child(odd) {
+    animation-duration: 0.7s;
+  }
+  
+  .speed-line:nth-child(3n) {
+    animation-duration: 1s;
+  }
+  
+  .rules-list {
+    grid-template-columns: 1fr 1fr 1fr !important;
+    grid-template-rows: 1fr !important;
+    gap: 1.2rem !important;
+    width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  .rules-list li {
+    padding: 1.8rem 1.3rem;
+    min-height: 95px;
+    font-size: 0.65rem !important;
+  }
+  
+  .rules-list li::before {
+    font-size: 2.2rem;
+    margin-bottom: 0.8rem;
+  }
+  
+  .pre-game-screen h2 {
+    font-size: 1.9rem;
+  }
+  
+  .pre-game-screen h2 i {
+    width: 48px;
+    height: 48px;
+    margin-right: 0.7rem;
+  }
+  
+  .pre-game-screen h2 i::before {
+    top: 4px;
+    left: 4px;
+    width: 32px;
+    height: 32px;
+  }
+  
+  .pre-game-screen h2 i::after {
+    font-size: 22px;
+  }
+}
+
 @media (max-width: 360px) {
+  .particles .particle {
+    width: 5px !important;
+    height: 5px !important;
+    min-width: 5px !important;
+    min-height: 5px !important;
+    border-radius: 50% !important;
+    box-sizing: border-box !important;
+    opacity: 0.8 !important;
+    animation-duration: 12s;
+    aspect-ratio: 1 / 1 !important;
+  }
+  
+  .particles .particle:nth-child(odd) {
+    animation-duration: 5s;
+  }
+  
+  .particles .particle:nth-child(3n) {
+    animation-duration: 8s;
+  }
+  
+  .particles {
+    opacity: 0.5;
+    /* Performance optimization for very small screens */
+    will-change: transform;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+  
+  .speed-line {
+    width: 0.8px !important;
+    height: 8px !important;
+    opacity: 0.2;
+    /* Performance optimization */
+    will-change: transform;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+  
+  .speed-line:nth-child(odd) {
+    animation-duration: 0.6s;
+  }
+  
+  .speed-line:nth-child(3n) {
+    animation-duration: 0.9s;
+  }
+  
+  /* Reduce animation complexity on very small screens */
+  @keyframes particleFloat {
+    0% {
+      transform: translateY(100vh) translateX(0);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.3;
+    }
+    90% {
+      opacity: 0.3;
+    }
+    100% {
+      transform: translateY(-50px) translateX(50px);
+      opacity: 0;
+    }
+  }
+  
+  @keyframes speedLineMove {
+    0% {
+      transform: translateX(-50px) translateY(100vh);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.2;
+    }
+    90% {
+      opacity: 0.2;
+    }
+    100% {
+      transform: translateX(50px) translateY(-50px);
+      opacity: 0;
+    }
+  }
+  
   .rules-list {
     grid-template-columns: 1fr 1fr 1fr !important;
     grid-template-rows: 1fr !important;
