@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const highScoreMessage = document.getElementById('high-score-message');
     const playAgainBtn = document.getElementById('play-again');
     const showHintBtn = document.getElementById('show-hint');
+  
     
     // Variables du jeu
     let gridSize = 8;
@@ -75,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Changer l'interface pour l'écran de jeu
             preGameScreen.classList.remove('active');
             activeGameScreen.classList.add('active');
+            activeGameScreen.style.display = 'block';
             
             // Définir l'état du jeu
             gameActive = true;

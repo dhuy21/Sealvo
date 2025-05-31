@@ -139,7 +139,9 @@ body[data-theme="dark"] {
 [data-theme="dark"] th {
   color: #ffffff !important;
 }
-
+[data-theme="dark"] .pre-game-screen h2 {
+  color: #8b5cf6 !important;
+}
 [data-theme="dark"] .animated-title {
   color: #ffffff !important;
 }
@@ -563,16 +565,13 @@ body[data-theme="dark"] {
 [data-theme="dark"] .game-area h4,
 [data-theme="dark"] .game-area h5,
 [data-theme="dark"] .game-area h6,
-[data-theme="dark"] .game-area h2,
 [data-theme="dark"] .game-area span,
 [data-theme="dark"] .game-area li
  {
   color: black !important;
 }
 
-[data-theme="dark"] .pre-game-screen h2,
 [data-theme="dark"] .pre-game-screen p,
-[data-theme="dark"] .pre-game-screen h3,
 [data-theme="dark"] .pre-game-screen h4,
 [data-theme="dark"] .pre-game-screen h5,
 [data-theme="dark"] .pre-game-screen h6,

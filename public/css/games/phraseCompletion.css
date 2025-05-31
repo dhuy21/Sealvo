@@ -23,6 +23,85 @@
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+/* Lightning Bolt Icon for Game Header */
+.game-header h1 i {
+  display: inline-block;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #8b5cf6 100%);
+  box-shadow: 
+      0 6px 20px rgba(139, 92, 246, 0.4),
+      inset 0 2px 0 rgba(255, 255, 255, 0.2),
+      inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+  animation: iconFloat 3s ease-in-out infinite;
+  transition: all 0.4s ease;
+  position: relative;
+  border: 3px solid #6d28d9;
+}
+
+.game-header h1 i::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a855f7 0%, #c084fc 50%, #a855f7 100%);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.3);
+  display: block;
+  z-index: 1;
+}
+
+.game-header h1 i::after {
+  content: '⚡';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  color: white;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: lightningGlow 2s ease-in-out infinite alternate;
+}
+
+.game-header h1 i:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 
+      0 12px 30px rgba(139, 92, 246, 0.5),
+      inset 0 2px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+}
+
+@keyframes lightningGlow {
+  from { 
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
+  }
+  to { 
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
+  }
+}
+
+@keyframes iconFloat {
+  0%, 100% {
+      transform: translateY(0);
+  }
+  50% {
+      transform: translateY(-4px);
+  }
 }
 
 .game-header:after {
@@ -154,19 +233,12 @@
 .pre-game-screen {
   text-align: center;
   margin-bottom: 2rem;
-  background-color: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   border-radius: 50px;
   padding: 2.5rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(240, 240, 255, 0.6);
   transition: all 0.3s ease;
 }
 
-.pre-game-screen:hover {
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
-}
+
 
 .error-box {
   background-color: #fff5f5;
@@ -209,32 +281,75 @@
   box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
 }
 
-
+/* Modern Rules Grid */
 .rules-list {
-  margin: 1.8rem 0;
-  padding-left: 1.5rem;
+  margin: 3rem 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 2rem;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .rules-list li {
-  margin-bottom: 1rem;
-  color: #4b5563;
-  line-height: 1.5;
+  margin: 0;
+  color: #475569;
+  line-height: 1.6;
   text-align: center;
   position: relative;
-  padding-left: 1.5rem;
+  padding: 2.5rem 2rem;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  list-style: none;
+  min-height: 160px;
+  box-shadow: 
+      0 8px 32px rgba(99, 102, 241, 0.06),
+      0 1px 0 rgba(255, 255, 255, 0.5) inset;
+  animation: cardFloat 6s ease-in-out infinite;
+  animation-delay: calc(var(--card-index, 0) * 0.2s);
+  font-weight: 500;
 }
+
 .rules-list li::before {
-  content: "•";
-  color: #6a11cb;
-  font-weight: bold;
-  font-size: 2rem;
-  margin-right: 0.5rem;
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+  animation: iconBounce 2s ease-in-out infinite;
+  filter: drop-shadow(0 2px 8px rgba(99, 102, 241, 0.2));
 }
 
+.rules-list li:hover {
+  transform: translateY(-8px) scale(1.02);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 
+      0 20px 40px rgba(99, 102, 241, 0.12),
+      0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
 
+@keyframes iconBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes cardFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.rules-list li:nth-child(1)::before { content: "📝"; }
+.rules-list li:nth-child(2)::before { content: "🎯"; }
+.rules-list li:nth-child(3)::before { content: "💡"; }
+.rules-list li:nth-child(4)::before { content: "🏆"; }
 
 .start-btn {
   display: inline-block;
@@ -594,17 +709,6 @@
   overflow: hidden;
 }
 
-.next-btn::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: 0.5s;
-}
-
 .next-btn:disabled {
   background: linear-gradient(135deg, #9ca3af, #d1d5db);
   cursor: not-allowed;
@@ -773,7 +877,6 @@
   opacity: 0;
   transform: scale(0.5);
 }
-
 
 @keyframes scoreReveal {
   from {
@@ -1093,8 +1196,8 @@
   
   .submit-btn,
   .next-btn {
-    border-radius: 12px;
-    flex: 1;
+    padding: 0.8rem 2rem;
+    font-size: 1rem;
   }
 }
 
@@ -1139,9 +1242,127 @@
   
   .submit-btn,
   .next-btn {
-    padding: 1rem 1.5rem;
-    border-radius: 12px;
+    padding: 0.8rem 2rem;
     font-size: 1rem;
-    flex: 1;
+  }
+}
+
+/* Pre-game Screen Title with Lightning Icon */
+.pre-game-screen h2 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 3rem;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8b5cf6 !important;
+    animation: titleSlideIn 1s ease-out 0.2s both;
+    letter-spacing: -0.01em;
+    transition: all 0.4s ease;
+}
+
+.pre-game-screen h2:hover {
+    transform: translateY(-2px);
+}
+
+.pre-game-screen h2 i {
+    display: inline-block;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #8b5cf6 100%);
+    margin-right: 1rem;
+    box-shadow: 
+        0 8px 25px rgba(139, 92, 246, 0.4),
+        inset 0 2px 0 rgba(255, 255, 255, 0.2),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+    animation: iconFloat 3s ease-in-out infinite;
+    transition: all 0.4s ease;
+    position: relative;
+    border: 3px solid #6d28d9;
+}
+
+.pre-game-screen h2 i::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a855f7 0%, #c084fc 50%, #a855f7 100%);
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.3);
+    display: block;
+    z-index: 1;
+}
+
+.pre-game-screen h2 i::after {
+    content: '⚡';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 28px;
+    color: white;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: lightningGlow 2s ease-in-out infinite alternate;
+}
+
+.pre-game-screen h2 i:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 
+        0 12px 30px rgba(139, 92, 246, 0.5),
+        inset 0 2px 0 rgba(255, 255, 255, 0.3),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+}
+
+@keyframes titleSlideIn {
+    from { opacity: 0; transform: translateY(-15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive Design */
+@media (max-width: 412px) {
+  .rules-list {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+    gap: 1.5rem;
+    max-width: 100%;
+  }
+  
+  .rules-list li {
+    padding: 2rem 1.5rem;
+    min-height: 140px;
+  }
+  
+  .rules-list li::before {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .pre-game-screen h2 {
+    font-size: 2rem;
+  }
+  
+  .pre-game-screen h2 i {
+    width: 50px;
+    height: 50px;
+    margin-right: 0.8rem;
+  }
+  
+  .pre-game-screen h2 i::before {
+    top: 5px;
+    left: 5px;
+    width: 34px;
+    height: 34px;
+  }
+  
+  .pre-game-screen h2 i::after {
+    font-size: 24px;
   }
 }
