@@ -95,6 +95,7 @@
   box-shadow: var(--card-shadow);
   padding: 22px;
   display: flex;
+  justify-content: center;
   align-items: center;
   transition: all var(--transition-speed);
   border: 1px solid rgba(0, 0, 0, 0.03);
@@ -154,8 +155,7 @@
     "filters mode-selector"
     "vocab-selector vocab-selector";
   grid-template-columns: 1fr 1fr;
-  justify-content: center;
-  align-items: start;
+
   gap: 25px;
   margin-bottom: 35px;
 }
@@ -1126,6 +1126,7 @@ p strong + span + span {
 .game-btn {
   background: linear-gradient(135deg, #ff9f43 0%, #ff6b6b 100%);
   box-shadow: 0 6px 12px rgba(255, 107, 107, 0.25);
+  text-decoration: none;
 }
 
 .game-btn:hover {
@@ -1559,7 +1560,7 @@ button:active, .btn:active {
 }
 
 /* Laptop Responsive Styles */
-@media screen and (min-width: 1024px) and (max-width: 1440px) {
+@media screen and (min-width: 800px) and (max-width: 1440px) {
   .learn-container {
     max-width: 1200px;
     padding: 0 30px;
