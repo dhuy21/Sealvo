@@ -1149,6 +1149,14 @@
     display: flex;
     align-items: center;
     transition: all 0.3s ease;
+    /* iOS Safari specific improvements */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    user-select: none;
+    touch-action: manipulation;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .game-footer .btn i {
@@ -1166,6 +1174,17 @@
     transform: translateX(-3px);
 }
 
+.game-footer .back-btn.touch-active {
+    background-color: #e5e7eb;
+    transform: translateX(-1px) scale(0.98);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.game-footer .back-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(75, 85, 99, 0.3);
+}
+
 .game-footer .learn-btn {
     background: linear-gradient(135deg, #3b82f6, #2563eb);
     color: #fff;
@@ -1175,6 +1194,17 @@
 .game-footer .learn-btn:hover {
     transform: translateX(3px);
     box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+}
+
+.game-footer .learn-btn.touch-active {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    transform: translateX(1px) scale(0.98);
+    box-shadow: 0 3px 12px rgba(59, 130, 246, 0.5);
+}
+
+.game-footer .learn-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
 }
 
 .next-btn {
@@ -1190,6 +1220,14 @@
     box-shadow: 0 5px 15px rgba(59, 130, 246, 0.2);
     position: relative;
     overflow: hidden;
+    /* iOS Safari specific improvements */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    user-select: none;
+    touch-action: manipulation;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .next-btn:disabled {
@@ -1206,6 +1244,20 @@
 .next-btn:not(:disabled):hover::before {
     left: 100%;
 }
+
+/* iOS Safari touch active state */
+.next-btn.touch-active {
+    transform: translateY(-1px) scale(0.98);
+    box-shadow: 0 3px 10px rgba(59, 130, 246, 0.4);
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+/* iOS Safari focus state */
+.next-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
 /* Responsive design */
 @media (max-width: 1200px) {
     .word-items-container {
@@ -2662,6 +2714,7 @@
     -webkit-touch-callout: none;
     user-select: none;
     touch-action: manipulation;
+    appearance: none;
     -webkit-appearance: none;
     -webkit-transform: translateZ(0);
     transform: translateZ(0);
