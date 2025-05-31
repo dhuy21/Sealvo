@@ -23,6 +23,14 @@ document.addEventListener('DOMContentLoaded', function() {
     let recognition = null;
     let isListening = false;
     let speechSupported = false;
+    let userGestureReceived = false; // Pour Safari iOS
+    let microphonePermissionGranted = false; // Pour Safari iOS
+    
+    // Variables pour les animations sonores
+    let soundWavesContainer = null;
+    let audioVisualizerContainer = null;
+    let floatingSoundIconsContainer = null;
+    let recordingWavesContainer = null;
     
     // Éléments DOM
     const startGameBtn = document.getElementById('start-game');
@@ -58,6 +66,240 @@ document.addEventListener('DOMContentLoaded', function() {
         activeGame: !!activeGameScreen,
         postGame: !!postGameScreen
     });
+    
+    // Initialize sound wave animations
+    initializeSoundWaveAnimations();
+    
+    // Initialiser la gestion des gestes utilisateur pour Safari iOS
+    initializeUserGestureHandling();
+    
+    // Fonction pour initialiser les animations de vagues sonores
+    function initializeSoundWaveAnimations() {
+        createSoundWaves();
+        createAudioVisualizer();
+        createFloatingSoundIcons();
+        createRecordingWaves();
+    }
+    
+    // Fonction pour initialiser la gestion des gestes utilisateur (Safari iOS)
+    function initializeUserGestureHandling() {
+        // Détecter les gestes utilisateur pour Safari iOS
+        const userGestureEvents = ['touchstart', 'touchend', 'mousedown', 'keydown', 'click'];
+        
+        function handleUserGesture() {
+            userGestureReceived = true;
+            console.log('Geste utilisateur détecté pour Safari iOS');
+            
+            // Retirer les écouteurs après le premier geste
+            userGestureEvents.forEach(event => {
+                document.removeEventListener(event, handleUserGesture, true);
+            });
+        }
+        
+        // Ajouter les écouteurs de gestes
+        userGestureEvents.forEach(event => {
+            document.addEventListener(event, handleUserGesture, true);
+        });
+        
+        // Pour Safari iOS, demander les permissions microphone dès que possible
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+            // Ajouter un message d'information pour iOS
+            setTimeout(() => {
+                if (feedbackText && !gameActive) {
+                    feedbackText.textContent = 'Appuyez sur l\'écran pour activer le microphone.';
+                }
+            }, 1000);
+        }
+    }
+    
+    // Function to set feedback text color based on theme
+    function setFeedbackTextColor(type) {
+        if (!feedbackText) return;
+        
+        // Remove all existing color classes
+        feedbackText.classList.remove('feedback-success', 'feedback-info', 'feedback-warning', 'feedback-error', 'feedback-neutral');
+        
+        // Add appropriate class based on type
+        switch (type) {
+            case 'success':
+                feedbackText.classList.add('feedback-success');
+                break;
+            case 'info':
+                feedbackText.classList.add('feedback-info');
+                break;
+            case 'warning':
+                feedbackText.classList.add('feedback-warning');
+                break;
+            case 'error':
+                feedbackText.classList.add('feedback-error');
+                break;
+            case 'neutral':
+            default:
+                feedbackText.classList.add('feedback-neutral');
+                break;
+        }
+    }
+    
+    // Fonction pour vérifier et demander les permissions microphone (Safari iOS)
+    async function checkMicrophonePermissions() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            console.warn('getUserMedia non supporté');
+            return false;
+        }
+        
+        try {
+            // Demander l'accès au microphone pour vérifier les permissions
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            
+            // Fermer immédiatement le stream
+            stream.getTracks().forEach(track => track.stop());
+            
+            microphonePermissionGranted = true;
+            console.log('Permission microphone accordée');
+            return true;
+        } catch (error) {
+            console.error('Permission microphone refusée:', error);
+            microphonePermissionGranted = false;
+            
+            if (feedbackText) {
+                feedbackText.textContent = 'Permission microphone requise. Activez-la dans les paramètres.';
+                setFeedbackTextColor('error');
+            }
+            
+            return false;
+        }
+    }
+    
+    // Fonction pour créer les vagues sonores de fond
+    function createSoundWaves() {
+        soundWavesContainer = document.createElement('div');
+        soundWavesContainer.className = 'sound-waves';
+        document.body.appendChild(soundWavesContainer);
+        
+        // Créer 12 vagues sonores (beaucoup plus)
+        for (let i = 1; i <= 12; i++) {
+            const soundWave = document.createElement('div');
+            soundWave.className = 'sound-wave';
+            soundWavesContainer.appendChild(soundWave);
+        }
+    }
+    
+    // Fonction pour créer le visualiseur audio
+    function createAudioVisualizer() {
+        audioVisualizerContainer = document.createElement('div');
+        audioVisualizerContainer.className = 'audio-visualizer';
+        document.body.appendChild(audioVisualizerContainer);
+        
+        // Créer 25 barres de visualisation (beaucoup plus)
+        for (let i = 1; i <= 25; i++) {
+            const visualizerBar = document.createElement('div');
+            visualizerBar.className = 'visualizer-bar';
+            audioVisualizerContainer.appendChild(visualizerBar);
+        }
+    }
+    
+    // Fonction pour créer les icônes sonores flottantes
+    function createFloatingSoundIcons() {
+        floatingSoundIconsContainer = document.createElement('div');
+        floatingSoundIconsContainer.className = 'floating-sound-icons';
+        document.body.appendChild(floatingSoundIconsContainer);
+        
+        const soundIcons = ['🎵', '🎶', '🔊', '🎤', '🎧', '🔉', '🎼', '🎺'];
+        
+        // Créer 8 icônes sonores flottantes (doublé)
+        for (let i = 0; i < 8; i++) {
+            const soundIcon = document.createElement('div');
+            soundIcon.className = 'sound-icon';
+            soundIcon.textContent = soundIcons[i];
+            floatingSoundIconsContainer.appendChild(soundIcon);
+        }
+    }
+    
+    // Fonction pour créer les vagues d'enregistrement
+    function createRecordingWaves() {
+        recordingWavesContainer = document.createElement('div');
+        recordingWavesContainer.className = 'recording-waves';
+        document.body.appendChild(recordingWavesContainer);
+        
+        // Créer 6 anneaux d'enregistrement (plus d'anneaux)
+        for (let i = 1; i <= 3; i++) {
+            const recordingRing = document.createElement('div');
+            recordingRing.className = 'recording-ring';
+            recordingWavesContainer.appendChild(recordingRing);
+        }
+    }
+    
+    // Fonction pour activer les vagues d'enregistrement
+    function activateRecordingWaves() {
+        if (recordingWavesContainer) {
+            recordingWavesContainer.classList.add('active');
+        }
+    }
+    
+    // Fonction pour désactiver les vagues d'enregistrement
+    function deactivateRecordingWaves() {
+        if (recordingWavesContainer) {
+            recordingWavesContainer.classList.remove('active');
+        }
+    }
+    
+    // Fonction pour activer l'effet de parole sur l'affichage du mot
+    function activateSpeakingEffect() {
+        if (currentWordDisplay) {
+            currentWordDisplay.parentElement.classList.add('speaking');
+            setTimeout(() => {
+                if (currentWordDisplay) {
+                    currentWordDisplay.parentElement.classList.remove('speaking');
+                }
+            }, 2000); // Durée de l'effet de parole
+        }
+    }
+    
+    // Fonction pour intensifier les animations pendant l'enregistrement
+    function intensifyAudioAnimations() {
+        if (audioVisualizerContainer) {
+            audioVisualizerContainer.style.opacity = '0.6';
+            const bars = audioVisualizerContainer.querySelectorAll('.visualizer-bar');
+            bars.forEach(bar => {
+                bar.style.animationDuration = '0.8s';
+            });
+        }
+        
+        if (soundWavesContainer) {
+            const waves = soundWavesContainer.querySelectorAll('.sound-wave');
+            waves.forEach(wave => {
+                wave.style.animationDuration = '2s';
+                wave.style.borderColor = 'rgba(229, 62, 62, 0.2)';
+            });
+        }
+    }
+    
+    // Fonction pour normaliser les animations
+    function normalizeAudioAnimations() {
+        if (audioVisualizerContainer) {
+            audioVisualizerContainer.style.opacity = '0.3';
+            const bars = audioVisualizerContainer.querySelectorAll('.visualizer-bar');
+            bars.forEach(bar => {
+                bar.style.animationDuration = '1.5s';
+            });
+        }
+        
+        if (soundWavesContainer) {
+            const waves = soundWavesContainer.querySelectorAll('.sound-wave');
+            waves.forEach((wave, index) => {
+                wave.style.animationDuration = '3s';
+                // Restaurer les couleurs originales
+                const colors = [
+                    'rgba(106, 17, 203, 0.15)',
+                    'rgba(37, 117, 252, 0.12)',
+                    'rgba(139, 92, 246, 0.1)',
+                    'rgba(106, 17, 203, 0.08)',
+                    'rgba(37, 117, 252, 0.1)'
+                ];
+                wave.style.borderColor = colors[index] || 'rgba(106, 17, 203, 0.1)';
+            });
+        }
+    }
     
     // Fonctions utilitaires
     function formatTime(ms) {
@@ -97,6 +339,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // Configurer la reconnaissance vocale
         setupSpeechRecognition();
         
+        // Message spécifique pour Safari iOS
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+            if (feedbackText) {
+                feedbackText.textContent = 'Jeu démarré. Appuyez sur le microphone pour commencer l\'enregistrement.';
+                setFeedbackTextColor('info');
+            }
+        }
+        
         // Charger le premier mot
         loadNewWord();
         
@@ -130,15 +380,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
         speechSupported = true;
         
-        // Créer l'instance de reconnaissance vocale
+        // Créer l'instance de reconnaissance vocale (Safari nécessite webkitSpeechRecognition)
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         recognition = new SpeechRecognition();
         
-        // Configuration de la reconnaissance
+        // Configuration spécifique pour Safari iOS
         recognition.continuous = false;
         recognition.interimResults = false;
         recognition.lang = 'en-US'; // Langue anglaise pour la prononciation
-        recognition.maxAlternatives = 3;
+        recognition.maxAlternatives = 1; // Réduire à 1 pour Safari
+        
+        // Configuration spécifique pour Safari iOS
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+            console.log('Configuration pour Safari iOS détectée');
+            recognition.continuous = false; // Obligatoire sur iOS
+            recognition.interimResults = false; // Obligatoire sur iOS
+            recognition.maxAlternatives = 1; // Limiter pour iOS
+            
+            // Ajouter un délai pour iOS Safari
+            recognition.grammars = undefined; // Pas supporté sur iOS
+        }
         
         // Événements de la reconnaissance vocale
         recognition.onstart = () => {
@@ -147,20 +408,41 @@ document.addEventListener('DOMContentLoaded', function() {
             if (recordBtn) {
                 recordBtn.classList.add('recording');
                 recordBtn.innerHTML = '<i class="fas fa-stop"></i> Arrêter';
+                recordBtn.disabled = false; // S'assurer que le bouton est activé
+            }
+            
+            // Activer les effets visuels d'enregistrement
+            activateRecordingWaves();
+            intensifyAudioAnimations();
+            
+            // Feedback visuel pour iOS
+            if (feedbackText) {
+                feedbackText.textContent = 'Écoute en cours... Parlez maintenant.';
+                setFeedbackTextColor('info');
             }
         };
         
         recognition.onresult = (event) => {
             console.log('Résultat de reconnaissance reçu');
-            const results = event.results[0];
-            const spokenText = results[0].transcript.toLowerCase().trim();
-            const confidence = results[0].confidence;
             
-            console.log('Texte reconnu:', spokenText);
-            console.log('Confiance:', confidence);
-            
-            // Traiter le résultat
-            processSpeechResult(spokenText, confidence);
+            if (event.results && event.results.length > 0) {
+                const results = event.results[0];
+                if (results && results.length > 0) {
+                    const spokenText = results[0].transcript.toLowerCase().trim();
+                    const confidence = results[0].confidence || 0.5; // Fallback pour Safari
+                    
+                    console.log('Texte reconnu:', spokenText);
+                    console.log('Confiance:', confidence);
+                    
+                    // Traiter le résultat
+                    processSpeechResult(spokenText, confidence);
+                } else {
+                    console.warn('Aucun résultat de reconnaissance disponible');
+                    if (feedbackText) {
+                        feedbackText.textContent = 'Aucun son détecté. Essayez de parler plus fort.';
+                    }
+                }
+            }
         };
         
         recognition.onerror = (event) => {
@@ -169,28 +451,51 @@ document.addEventListener('DOMContentLoaded', function() {
             if (recordBtn) {
                 recordBtn.classList.remove('recording');
                 recordBtn.innerHTML = '<i class="fas fa-microphone"></i> Enregistrer';
+                recordBtn.disabled = false;
             }
             
-            // Afficher un message d'erreur approprié
+            // Désactiver les effets visuels d'enregistrement
+            deactivateRecordingWaves();
+            normalizeAudioAnimations();
+            
+            // Messages d'erreur spécifiques pour Safari iOS
             let errorMessage = 'Erreur de reconnaissance vocale';
             switch (event.error) {
                 case 'no-speech':
-                    errorMessage = 'Aucune parole détectée. Essayez de parler plus fort.';
+                    errorMessage = 'Aucune parole détectée. Parlez plus fort et plus clairement.';
                     break;
                 case 'audio-capture':
-                    errorMessage = 'Impossible d\'accéder au microphone.';
+                    errorMessage = 'Impossible d\'accéder au microphone. Vérifiez les permissions.';
                     break;
                 case 'not-allowed':
-                    errorMessage = 'Permission microphone refusée.';
+                    errorMessage = 'Permission microphone refusée. Activez le microphone dans les paramètres.';
                     break;
                 case 'network':
-                    errorMessage = 'Erreur réseau. Vérifiez votre connexion.';
+                    errorMessage = 'Erreur réseau. Vérifiez votre connexion internet.';
                     break;
+                case 'aborted':
+                    errorMessage = 'Reconnaissance interrompue. Essayez à nouveau.';
+                    break;
+                case 'service-not-allowed':
+                    errorMessage = 'Service de reconnaissance non autorisé. Essayez de recharger la page.';
+                    break;
+                default:
+                    errorMessage = `Erreur: ${event.error}. Essayez de recharger la page.`;
             }
             
             if (feedbackText) {
                 feedbackText.textContent = errorMessage;
-                feedbackText.style.color = '#e53e3e';
+                setFeedbackTextColor('error');
+            }
+            
+            // Pour Safari iOS, suggérer de réessayer après une erreur
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                setTimeout(() => {
+                    if (feedbackText && feedbackText.textContent === errorMessage) {
+                        feedbackText.textContent = 'Appuyez sur le bouton microphone pour réessayer.';
+                        setFeedbackTextColor('neutral');
+                    }
+                }, 3000);
             }
         };
         
@@ -200,6 +505,21 @@ document.addEventListener('DOMContentLoaded', function() {
             if (recordBtn) {
                 recordBtn.classList.remove('recording');
                 recordBtn.innerHTML = '<i class="fas fa-microphone"></i> Enregistrer';
+                recordBtn.disabled = false;
+            }
+            
+            // Désactiver les effets visuels d'enregistrement
+            deactivateRecordingWaves();
+            normalizeAudioAnimations();
+            
+            // Message de fin pour iOS
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                setTimeout(() => {
+                    if (feedbackText && !feedbackText.textContent.includes('Vous avez dit')) {
+                        feedbackText.textContent = 'Reconnaissance terminée. Appuyez sur le microphone pour réessayer.';
+                        setFeedbackTextColor('neutral');
+                    }
+                }, 1000);
             }
         };
         
@@ -276,10 +596,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Fonction pour démarrer la reconnaissance vocale
+    // Fonction pour démarrer la reconnaissance vocale (améliorée pour Safari iOS)
     function startListening() {
         if (!recognition || !speechSupported) {
             console.error('Reconnaissance vocale non disponible');
+            if (feedbackText) {
+                feedbackText.textContent = 'Reconnaissance vocale non supportée sur ce navigateur.';
+                setFeedbackTextColor('error');
+            }
             return;
         }
         
@@ -288,23 +612,122 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        // Vérifications spéciales pour Safari iOS
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+            // Vérifier qu'un geste utilisateur a été reçu
+            if (!userGestureReceived) {
+                if (feedbackText) {
+                    feedbackText.textContent = 'Appuyez sur l\'écran puis sur le microphone.';
+                    setFeedbackTextColor('warning');
+                }
+                return;
+            }
+            
+            // Vérifier les permissions microphone pour iOS
+            if (!microphonePermissionGranted) {
+                checkMicrophonePermissions().then(granted => {
+                    if (granted) {
+                        // Réessayer après avoir obtenu les permissions
+                        setTimeout(() => startListening(), 500);
+                    }
+                });
+                return;
+            }
+            
+            // S'assurer que l'action est déclenchée par un geste utilisateur
+            if (!document.hasFocus()) {
+                if (feedbackText) {
+                    feedbackText.textContent = 'Appuyez sur l\'écran puis sur le microphone.';
+                    setFeedbackTextColor('warning');
+                }
+                return;
+            }
+        }
+        
         try {
-            recognition.start();
+            // Réinitialiser les messages précédents
+            if (recognizedText) recognizedText.textContent = '';
+            if (feedbackText) {
+                feedbackText.textContent = 'Préparation de l\'enregistrement...';
+                setFeedbackTextColor('info');
+            }
+            
+            // Démarrer la reconnaissance avec un petit délai pour iOS
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                setTimeout(() => {
+                    try {
+                        recognition.start();
+                    } catch (iosError) {
+                        console.error('Erreur iOS lors du démarrage:', iosError);
+                        handleRecognitionError(iosError);
+                    }
+                }, 200); // Délai plus long pour iOS
+            } else {
+                recognition.start();
+            }
+            
             console.log('Démarrage de la reconnaissance vocale');
         } catch (error) {
             console.error('Erreur lors du démarrage de la reconnaissance:', error);
+            handleRecognitionError(error);
         }
     }
     
-    // Fonction pour arrêter la reconnaissance vocale
+    // Fonction pour gérer les erreurs de reconnaissance (nouvelle)
+    function handleRecognitionError(error) {
+        isListening = false;
+        
+        if (recordBtn) {
+            recordBtn.classList.remove('recording');
+            recordBtn.innerHTML = '<i class="fas fa-microphone"></i> Enregistrer';
+        }
+        
+        deactivateRecordingWaves();
+        normalizeAudioAnimations();
+        
+        let errorMessage = 'Impossible de démarrer l\'enregistrement.';
+        
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+            errorMessage += ' Assurez-vous que le microphone est autorisé dans Safari.';
+        }
+        
+        if (feedbackText) {
+            feedbackText.textContent = errorMessage;
+            setFeedbackTextColor('error');
+        }
+        
+        // Suggérer de réessayer après un délai
+        setTimeout(() => {
+            if (feedbackText && feedbackText.textContent === errorMessage) {
+                feedbackText.textContent = 'Appuyez sur le microphone pour réessayer.';
+                setFeedbackTextColor('neutral');
+            }
+        }, 3000);
+    }
+    
+    // Fonction pour arrêter la reconnaissance vocale (améliorée)
     function stopListening() {
         if (!recognition || !isListening) return;
         
         try {
             recognition.stop();
             console.log('Arrêt de la reconnaissance vocale');
+            
+            if (feedbackText) {
+                feedbackText.textContent = 'Arrêt de l\'enregistrement...';
+                setFeedbackTextColor('neutral');
+            }
         } catch (error) {
             console.error('Erreur lors de l\'arrêt de la reconnaissance:', error);
+            
+            // Forcer l'arrêt en cas d'erreur
+            isListening = false;
+            if (recordBtn) {
+                recordBtn.classList.remove('recording');
+                recordBtn.innerHTML = '<i class="fas fa-microphone"></i> Enregistrer';
+            }
+            deactivateRecordingWaves();
+            normalizeAudioAnimations();
         }
     }
     
@@ -333,134 +756,148 @@ document.addEventListener('DOMContentLoaded', function() {
         const normalizedSpoken = spoken.toLowerCase().replace(/[^\w\s]/g, '').trim();
         const normalizedTarget = target.toLowerCase().replace(/[^\w\s]/g, '').trim();
         
-        // Correspondance exacte
+        console.log('Comparaison:', { spoken: normalizedSpoken, target: normalizedTarget });
+        
+        // Correspondance exacte - seule façon d'obtenir un score parfait
         if (normalizedSpoken === normalizedTarget) {
+            console.log('Correspondance exacte détectée');
             return Math.min(95 + (confidence * 5), 100);
         }
         
-        // Vérifier si le mot parlé contient le mot cible (pour les mots composés)
-        if (normalizedSpoken.includes(normalizedTarget) || normalizedTarget.includes(normalizedSpoken)) {
-            const containmentBonus = 20;
-            return Math.min(80 + containmentBonus + (confidence * 10), 95);
+        // Vérifier si le mot parlé contient le mot cible ou vice versa (pour les mots composés)
+        const spokenContainsTarget = normalizedSpoken.includes(normalizedTarget);
+        const targetContainsSpoken = normalizedTarget.includes(normalizedSpoken);
+        
+        if (spokenContainsTarget || targetContainsSpoken) {
+            console.log('Correspondance partielle détectée (mot contenu)');
+            // Réduire le score pour les correspondances partielles
+            const containmentScore = Math.min(75 + (confidence * 15), 85);
+            return Math.round(containmentScore);
         }
         
-        // Vérifier les variantes phonétiques communes
-        const phoneticVariants = getPhoneticVariants(normalizedTarget);
-        for (const variant of phoneticVariants) {
-            if (normalizedSpoken === variant) {
-                return Math.min(85 + (confidence * 10), 95);
+        // Calculer la similarité de Levenshtein (plus stricte)
+        const levenshteinSimilarity = calculateLevenshteinSimilarity(normalizedSpoken, normalizedTarget);
+        console.log('Similarité Levenshtein:', levenshteinSimilarity);
+        
+        // Seuil strict pour la similarité
+        if (levenshteinSimilarity < 0.6) {
+            console.log('Similarité trop faible, score bas');
+            return Math.max(10, Math.round(levenshteinSimilarity * 30)); // Score très bas pour mots très différents
+        }
+        
+        // Vérifier les variantes phonétiques communes seulement si la similarité est élevée
+        if (levenshteinSimilarity >= 0.7) {
+            const phoneticVariants = getPhoneticVariants(normalizedTarget);
+            for (const variant of phoneticVariants) {
+                if (normalizedSpoken === variant) {
+                    console.log('Variante phonétique détectée:', variant);
+                    return Math.min(80 + (confidence * 10), 90);
+                }
             }
         }
         
-        // Calculer la similarité pour les mots proches
-        const similarity = calculateSimilarity(normalizedSpoken, normalizedTarget);
+        // Score basé sur la similarité avec des seuils plus stricts
+        let baseAccuracy = levenshteinSimilarity * 70; // Réduire le multiplicateur
         
-        // Combiner la similarité avec la confiance de la reconnaissance
-        let baseAccuracy = similarity * 100;
-        let confidenceBonus = confidence * 15; // Bonus basé sur la confiance
-        
-        // Bonus pour les mots qui commencent ou finissent de la même façon
-        if (normalizedSpoken.length > 2 && normalizedTarget.length > 2) {
+        // Bonus pour les mots qui commencent ou finissent de la même façon (seulement si assez similaires)
+        if (levenshteinSimilarity >= 0.5 && normalizedSpoken.length > 2 && normalizedTarget.length > 2) {
             const startMatch = normalizedSpoken.substring(0, 2) === normalizedTarget.substring(0, 2);
             const endMatch = normalizedSpoken.slice(-2) === normalizedTarget.slice(-2);
             if (startMatch || endMatch) {
-                baseAccuracy += 10;
+                baseAccuracy += 5; // Bonus réduit
             }
         }
         
-        // Pénalité pour les mots très différents
-        if (similarity < 0.3) {
-            baseAccuracy *= 0.6;
+        // Pénalité pour les mots très différents en longueur
+        const lengthDifference = Math.abs(normalizedSpoken.length - normalizedTarget.length);
+        const maxLength = Math.max(normalizedSpoken.length, normalizedTarget.length);
+        const lengthSimilarity = 1 - (lengthDifference / maxLength);
+        
+        if (lengthSimilarity < 0.7) {
+            baseAccuracy *= 0.7; // Pénalité pour longueurs très différentes
         }
         
-        // Score final
-        let finalAccuracy = Math.min(baseAccuracy + confidenceBonus, 100);
+        // Bonus de confiance réduit
+        let confidenceBonus = confidence * 10; // Réduire le bonus de confiance
         
-        // Assurer un minimum de 15% si au moins quelque chose a été reconnu
-        if (normalizedSpoken.length > 0) {
+        // Score final avec plafond plus bas
+        let finalAccuracy = Math.min(baseAccuracy + confidenceBonus, 75); // Plafond à 75% pour les non-correspondances
+        
+        // Assurer un minimum seulement si quelque chose a été reconnu et est similaire
+        if (normalizedSpoken.length > 0 && levenshteinSimilarity >= 0.3) {
             finalAccuracy = Math.max(finalAccuracy, 15);
+        } else {
+            finalAccuracy = Math.max(finalAccuracy, 5); // Score très bas pour mots complètement différents
         }
         
+        console.log('Score final calculé:', Math.round(finalAccuracy));
         return Math.round(finalAccuracy);
     }
     
-    // Fonction pour obtenir des variantes phonétiques communes
+    // Fonction pour calculer la similarité de Levenshtein (plus précise)
+    function calculateLevenshteinSimilarity(str1, str2) {
+        if (str1 === str2) return 1.0;
+        if (str1.length === 0 || str2.length === 0) return 0.0;
+        
+        const matrix = [];
+        const len1 = str1.length;
+        const len2 = str2.length;
+        
+        // Initialiser la matrice
+        for (let i = 0; i <= len1; i++) {
+            matrix[i] = [i];
+        }
+        for (let j = 0; j <= len2; j++) {
+            matrix[0][j] = j;
+        }
+        
+        // Calculer la distance de Levenshtein
+        for (let i = 1; i <= len1; i++) {
+            for (let j = 1; j <= len2; j++) {
+                const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j] + 1,     // suppression
+                    matrix[i][j - 1] + 1,     // insertion
+                    matrix[i - 1][j - 1] + cost // substitution
+                );
+            }
+        }
+        
+        const distance = matrix[len1][len2];
+        const maxLength = Math.max(len1, len2);
+        
+        // Retourner la similarité (1 - distance normalisée)
+        return 1 - (distance / maxLength);
+    }
+    
+    // Fonction pour obtenir des variantes phonétiques communes (plus restrictive)
     function getPhoneticVariants(word) {
         const variants = [word];
         
-        // Variantes communes en anglais
+        // Variantes communes en anglais (plus restrictives)
         const phoneticRules = [
-            // Suppression du 'h' muet
-            [/^h/, ''],
-            // 'ph' -> 'f'
+            // 'ph' -> 'f' seulement si le mot contient 'ph'
             [/ph/g, 'f'],
-            // 'ght' -> 't'
-            [/ght/g, 't'],
-            // 'ck' -> 'k'
-            [/ck/g, 'k'],
-            // Doubles lettres -> simple
-            [/(.)\1+/g, '$1'],
-            // 'c' -> 'k' dans certains contextes
-            [/c([aou])/g, 'k$1'],
-            // 'y' -> 'i' en fin de mot
-            [/y$/g, 'i']
+            // 'ck' -> 'k' seulement en fin de mot
+            [/ck$/g, 'k'],
+            // Doubles lettres -> simple (seulement certaines)
+            [/ll/g, 'l'],
+            [/ss/g, 's'],
+            [/tt/g, 't'],
+            // 'c' -> 'k' dans certains contextes spécifiques
+            [/c([aou])/g, 'k$1']
         ];
         
         phoneticRules.forEach(([pattern, replacement]) => {
-            const variant = word.replace(pattern, replacement);
-            if (variant !== word && !variants.includes(variant)) {
-                variants.push(variant);
+            if (pattern.test(word)) { // Seulement si le pattern existe dans le mot
+                const variant = word.replace(pattern, replacement);
+                if (variant !== word && !variants.includes(variant)) {
+                    variants.push(variant);
+                }
             }
         });
         
         return variants;
-    }
-    
-    // Fonction pour calculer la similarité entre deux chaînes (algorithme de Jaro-Winkler simplifié)
-    function calculateSimilarity(str1, str2) {
-        if (str1 === str2) return 1.0;
-        if (str1.length === 0 || str2.length === 0) return 0.0;
-        
-        const maxDistance = Math.floor(Math.max(str1.length, str2.length) / 2) - 1;
-        const matches1 = new Array(str1.length).fill(false);
-        const matches2 = new Array(str2.length).fill(false);
-        let matches = 0;
-        let transpositions = 0;
-        
-        // Trouver les correspondances
-        for (let i = 0; i < str1.length; i++) {
-            const start = Math.max(0, i - maxDistance);
-            const end = Math.min(i + maxDistance + 1, str2.length);
-            
-            for (let j = start; j < end; j++) {
-                if (matches2[j] || str1[i] !== str2[j]) continue;
-                matches1[i] = matches2[j] = true;
-                matches++;
-                break;
-            }
-        }
-        
-        if (matches === 0) return 0.0;
-        
-        // Calculer les transpositions
-        let k = 0;
-        for (let i = 0; i < str1.length; i++) {
-            if (!matches1[i]) continue;
-            while (!matches2[k]) k++;
-            if (str1[i] !== str2[k]) transpositions++;
-            k++;
-        }
-        
-        const jaro = (matches / str1.length + matches / str2.length + (matches - transpositions / 2) / matches) / 3;
-        
-        // Bonus Winkler pour les préfixes communs
-        let prefix = 0;
-        for (let i = 0; i < Math.min(str1.length, str2.length, 4); i++) {
-            if (str1[i] === str2[i]) prefix++;
-            else break;
-        }
-        
-        return jaro + (0.1 * prefix * (1 - jaro));
     }
     
     // Fonction pour mettre à jour la précision
@@ -478,17 +915,17 @@ document.addEventListener('DOMContentLoaded', function() {
             let message = '';
             if (accuracy >= 90) {
                 message = 'Excellent ! Prononciation parfaite !';
-                feedbackText.style.color = '#48bb78';
                 perfectPronunciations++;
-            } else if (accuracy >= 70) {
-                message = 'Bien ! Bonne prononciation !';
-                feedbackText.style.color = '#4299e1';
-            } else if (accuracy >= 50) {
+            } else if (accuracy >= 75) {
+                message = 'Très bien ! Bonne prononciation !';
+            } else if (accuracy >= 60) {
+                message = 'Bien ! Prononciation correcte !';
+            } else if (accuracy >= 40) {
                 message = 'Pas mal ! Continuez à vous entraîner !';
-                feedbackText.style.color = '#f6ad55';
-            } else {
+            } else if (accuracy >= 20) {
                 message = 'Essayez encore ! Écoutez bien la prononciation.';
-                feedbackText.style.color = '#e53e3e';
+            } else {
+                message = 'Mot incorrect. Réessayez en écoutant attentivement.';
             }
             feedbackText.textContent = message;
         }
@@ -608,17 +1045,46 @@ document.addEventListener('DOMContentLoaded', function() {
         playWordBtn.addEventListener('click', () => {
             if (currentWord && currentWord.audio) {
                 const audio = new Audio(currentWord.audio);
+                
+                // Activer l'effet de parole pendant la lecture audio
+                activateSpeakingEffect();
+                
                 audio.play();
             }
         });
     }
     
     if (recordBtn) {
-        recordBtn.addEventListener('click', () => {
-            if (isListening) {
-                stopListening();
+        recordBtn.addEventListener('click', async () => {
+            // Pour Safari iOS, vérifier les permissions au premier clic
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !microphonePermissionGranted) {
+                console.log('Premier clic sur Safari iOS - vérification des permissions');
+                
+                if (feedbackText) {
+                    feedbackText.textContent = 'Vérification des permissions microphone...';
+                    setFeedbackTextColor('info');
+                }
+                
+                const granted = await checkMicrophonePermissions();
+                if (!granted) {
+                    return; // Arrêter si les permissions ne sont pas accordées
+                }
+                
+                // Petit délai pour laisser le temps aux permissions de s'activer
+                setTimeout(() => {
+                    if (isListening) {
+                        stopListening();
+                    } else {
+                        startListening();
+                    }
+                }, 300);
             } else {
-                startListening();
+                // Comportement normal pour les autres navigateurs ou après permissions accordées
+                if (isListening) {
+                    stopListening();
+                } else {
+                    startListening();
+                }
             }
         });
     }

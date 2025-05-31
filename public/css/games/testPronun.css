@@ -9,6 +9,367 @@
     overflow: hidden;
 }
 
+/* Sound Wave Animation Background */
+.sound-waves {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    overflow: hidden;
+}
+
+.sound-wave {
+    position: absolute;
+    border-radius: 50%;
+    border: 3px solid rgba(106, 17, 203, 0.1);
+    animation: soundWaveExpand 4s ease-out infinite;
+}
+
+.sound-wave:nth-child(1) {
+    top: 10%;
+    left: 5%;
+    width: 200px;
+    height: 200px;
+    animation-delay: 0s;
+    border-color: rgba(106, 17, 203, 0.2);
+}
+
+.sound-wave:nth-child(2) {
+    top: 50%;
+    right: 10%;
+    width: 300px;
+    height: 300px;
+    animation-delay: 1s;
+    border-color: rgba(37, 117, 252, 0.18);
+}
+
+.sound-wave:nth-child(3) {
+    bottom: 20%;
+    left: 15%;
+    width: 180px;
+    height: 180px;
+    animation-delay: 2s;
+    border-color: rgba(139, 92, 246, 0.15);
+}
+
+.sound-wave:nth-child(4) {
+    top: 30%;
+    right: 30%;
+    width: 250px;
+    height: 250px;
+    animation-delay: 0.5s;
+    border-color: rgba(106, 17, 203, 0.12);
+}
+
+.sound-wave:nth-child(5) {
+    bottom: 10%;
+    right: 5%;
+    width: 220px;
+    height: 220px;
+    animation-delay: 1.5s;
+    border-color: rgba(37, 117, 252, 0.16);
+}
+
+.sound-wave:nth-child(6) {
+    top: 5%;
+    left: 40%;
+    width: 160px;
+    height: 160px;
+    animation-delay: 2.5s;
+    border-color: rgba(139, 92, 246, 0.14);
+}
+
+.sound-wave:nth-child(7) {
+    top: 70%;
+    left: 30%;
+    width: 280px;
+    height: 280px;
+    animation-delay: 3s;
+    border-color: rgba(106, 17, 203, 0.13);
+}
+
+
+
+@keyframes soundWaveExpand {
+    0% {
+        transform: scale(0.3);
+        opacity: 0.9;
+        border-width: 4px;
+    }
+    30% {
+        transform: scale(0.8);
+        opacity: 0.6;
+        border-width: 3px;
+    }
+    70% {
+        transform: scale(1.5);
+        opacity: 0.3;
+        border-width: 2px;
+    }
+    100% {
+        transform: scale(2.5);
+        opacity: 0;
+        border-width: 1px;
+    }
+}
+
+/* Audio Visualizer Bars */
+.audio-visualizer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 150px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.4;
+}
+
+.visualizer-bar {
+    width: 6px;
+    background: linear-gradient(to top, rgba(106, 17, 203, 0.8), rgba(37, 117, 252, 0.6), rgba(139, 92, 246, 0.4));
+    border-radius: 3px;
+    animation: visualizerPulse 1.2s ease-in-out infinite;
+}
+
+.visualizer-bar:nth-child(1) { height: 30px; animation-delay: 0s; }
+.visualizer-bar:nth-child(2) { height: 55px; animation-delay: 0.1s; }
+.visualizer-bar:nth-child(3) { height: 80px; animation-delay: 0.2s; }
+.visualizer-bar:nth-child(4) { height: 45px; animation-delay: 0.3s; }
+.visualizer-bar:nth-child(5) { height: 70px; animation-delay: 0.4s; }
+.visualizer-bar:nth-child(6) { height: 35px; animation-delay: 0.5s; }
+.visualizer-bar:nth-child(7) { height: 60px; animation-delay: 0.6s; }
+.visualizer-bar:nth-child(8) { height: 85px; animation-delay: 0.7s; }
+.visualizer-bar:nth-child(9) { height: 50px; animation-delay: 0.8s; }
+.visualizer-bar:nth-child(10) { height: 40px; animation-delay: 0.9s; }
+.visualizer-bar:nth-child(11) { height: 65px; animation-delay: 1s; }
+.visualizer-bar:nth-child(12) { height: 55px; animation-delay: 1.1s; }
+.visualizer-bar:nth-child(13) { height: 75px; animation-delay: 1.2s; }
+.visualizer-bar:nth-child(14) { height: 42px; animation-delay: 1.3s; }
+.visualizer-bar:nth-child(15) { height: 68px; animation-delay: 1.4s; }
+.visualizer-bar:nth-child(16) { height: 38px; animation-delay: 1.5s; }
+.visualizer-bar:nth-child(17) { height: 72px; animation-delay: 1.6s; }
+.visualizer-bar:nth-child(18) { height: 48px; animation-delay: 1.7s; }
+.visualizer-bar:nth-child(19) { height: 62px; animation-delay: 1.8s; }
+.visualizer-bar:nth-child(20) { height: 52px; animation-delay: 1.9s; }
+.visualizer-bar:nth-child(21) { height: 78px; animation-delay: 2s; }
+.visualizer-bar:nth-child(22) { height: 44px; animation-delay: 2.1s; }
+.visualizer-bar:nth-child(23) { height: 66px; animation-delay: 2.2s; }
+.visualizer-bar:nth-child(24) { height: 58px; animation-delay: 2.3s; }
+.visualizer-bar:nth-child(25) { height: 74px; animation-delay: 2.4s; }
+
+@keyframes visualizerPulse {
+    0%, 100% {
+        transform: scaleY(0.2);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scaleY(1.2);
+        opacity: 0.9;
+    }
+}
+
+/* Floating Sound Icons */
+.floating-sound-icons {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.sound-icon {
+    position: absolute;
+    font-size: 2rem;
+    opacity: 0.15;
+    animation: floatingSoundIcon 10s ease-in-out infinite;
+}
+
+.sound-icon:nth-child(1) {
+    top: 12%;
+    left: 8%;
+    animation-delay: 0s;
+}
+
+.sound-icon:nth-child(2) {
+    top: 20%;
+    right: 12%;
+    animation-delay: 2.5s;
+}
+
+.sound-icon:nth-child(3) {
+    bottom: 30%;
+    left: 18%;
+    animation-delay: 5s;
+}
+
+.sound-icon:nth-child(4) {
+    bottom: 20%;
+    right: 22%;
+    animation-delay: 7.5s;
+}
+
+.sound-icon:nth-child(5) {
+    top: 35%;
+    left: 45%;
+    animation-delay: 1.5s;
+}
+
+.sound-icon:nth-child(6) {
+    top: 60%;
+    right: 35%;
+    animation-delay: 4s;
+}
+
+.sound-icon:nth-child(7) {
+    bottom: 45%;
+    left: 60%;
+    animation-delay: 6.5s;
+}
+
+.sound-icon:nth-child(8) {
+    top: 25%;
+    left: 75%;
+    animation-delay: 3s;
+}
+
+@keyframes floatingSoundIcon {
+    0%, 100% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0.15;
+    }
+    25% {
+        transform: translateY(-30px) rotate(8deg);
+        opacity: 0.25;
+    }
+    50% {
+        transform: translateY(-15px) rotate(-5deg);
+        opacity: 0.2;
+    }
+    75% {
+        transform: translateY(-35px) rotate(12deg);
+        opacity: 0.3;
+    }
+}
+
+/* Pulsing Sound Rings for Active Recording */
+.recording-waves {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    height: 400px;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.recording-waves.active {
+    opacity: 1;
+}
+
+.recording-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 3px solid rgba(229, 62, 62, 0.4);
+    animation: recordingRingPulse 1.2s ease-out infinite;
+}
+
+.recording-ring:nth-child(1) {
+    width: 80px;
+    height: 80px;
+    animation-delay: 0s;
+}
+
+.recording-ring:nth-child(2) {
+    width: 160px;
+    height: 160px;
+    animation-delay: 0.2s;
+}
+
+.recording-ring:nth-child(3) {
+    width: 240px;
+    height: 240px;
+    animation-delay: 0.4s;
+}
+
+.recording-ring:nth-child(4) {
+    width: 320px;
+    height: 320px;
+    animation-delay: 0.6s;
+}
+
+.recording-ring:nth-child(5) {
+    width: 400px;
+    height: 400px;
+    animation-delay: 0.8s;
+}
+
+.recording-ring:nth-child(6) {
+    width: 120px;
+    height: 120px;
+    animation-delay: 0.3s;
+}
+
+@keyframes recordingRingPulse {
+    0% {
+        transform: translate(-50%, -50%) scale(0.4);
+        opacity: 0.9;
+        border-width: 4px;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(0.7);
+        opacity: 0.5;
+        border-width: 3px;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1.3);
+        opacity: 0;
+        border-width: 1px;
+    }
+}
+
+/* Enhanced Sound Wave Effect for Word Display */
+.word-display.speaking::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    border-radius: 20px;
+    background: 
+        radial-gradient(ellipse at center, rgba(106, 17, 203, 0.05) 0%, transparent 70%),
+        radial-gradient(ellipse at center, rgba(37, 117, 252, 0.03) 20%, transparent 80%);
+    z-index: -1;
+    animation: speakingPulse 2s ease-in-out infinite;
+}
+
+@keyframes speakingPulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.3;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.05);
+        opacity: 0.6;
+    }
+}
+
 /* Animated Background - Hustle & Clock Theme */
 .game-container::before {
     content: '';
@@ -932,6 +1293,48 @@
     transition: all 0.3s ease;
 }
 
+/* Feedback text color classes for theme compatibility */
+.feedback-text.feedback-success {
+    color: #10b981 !important;
+}
+
+.feedback-text.feedback-info {
+    color: #2563eb !important;
+}
+
+.feedback-text.feedback-warning {
+    color: #f59e0b !important;
+}
+
+.feedback-text.feedback-error {
+    color: #e53e3e !important;
+}
+
+.feedback-text.feedback-neutral {
+    color: #6b7280 !important;
+}
+
+/* Dark mode feedback text colors */
+[data-theme="dark"] .feedback-text.feedback-success {
+    color: #34d399 !important;
+}
+
+[data-theme="dark"] .feedback-text.feedback-info {
+    color: #60a5fa !important;
+}
+
+[data-theme="dark"] .feedback-text.feedback-warning {
+    color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .feedback-text.feedback-error {
+    color: #f87171 !important;
+}
+
+[data-theme="dark"] .feedback-text.feedback-neutral {
+    color: #d1d5db !important;
+}
+
 /* Word List */
 .word-list-container {
     margin-top: 2rem;
@@ -1321,29 +1724,102 @@
         padding: 1.2rem;
     }
     
-    .game-header h1 {
-        font-size: 1.9rem;
-        gap: 0.8rem;
-        flex-direction: column;
-        text-align: center;
+    /* Sound Wave Responsive Adjustments */
+    .sound-waves .sound-wave {
+        animation-duration: 5s; /* Slower for better mobile performance */
     }
     
-    .game-header h1 i {
-        width: 45px;
-        height: 45px;
-        margin-right: 0;
-        margin-bottom: 0.5rem;
+    .sound-wave:nth-child(1) {
+        width: 120px;
+        height: 120px;
     }
     
-    .game-header h1 i::before {
-        top: 3px;
-        left: 3px;
-        width: 33px;
-        height: 33px;
+    .sound-wave:nth-child(2) {
+        width: 160px;
+        height: 160px;
     }
     
-    .game-header h1 i::after {
-        font-size: 22px;
+    .sound-wave:nth-child(3) {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .sound-wave:nth-child(4) {
+        width: 140px;
+        height: 140px;
+    }
+    
+    .sound-wave:nth-child(5) {
+        width: 110px;
+        height: 110px;
+    }
+    
+    .sound-wave:nth-child(6) {
+        width: 90px;
+        height: 90px;
+    }
+    
+    /* Hide some waves on mobile for performance */
+    .sound-wave:nth-child(n+7) {
+        display: none;
+    }
+    
+    /* Audio Visualizer Mobile Adjustments */
+    .audio-visualizer {
+        height: 80px;
+        opacity: 0.25;
+    }
+    
+    .visualizer-bar {
+        width: 4px;
+        animation-duration: 2s; /* Slower for mobile */
+    }
+    
+    /* Reduce number of visualizer bars on mobile */
+    .visualizer-bar:nth-child(n+16) {
+        display: none;
+    }
+    
+    /* Recording Waves Mobile Adjustments */
+    .recording-waves {
+        width: 250px;
+        height: 250px;
+    }
+    
+    .recording-ring:nth-child(1) {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .recording-ring:nth-child(2) {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .recording-ring:nth-child(3) {
+        width: 150px;
+        height: 150px;
+    }
+    
+    .recording-ring:nth-child(4) {
+        width: 200px;
+        height: 200px;
+    }
+    
+    /* Hide extra recording rings on mobile */
+    .recording-ring:nth-child(n+5) {
+        display: none;
+    }
+    
+    /* Floating Sound Icons Mobile */
+    .floating-sound-icons .sound-icon {
+        font-size: 1.5rem;
+        animation-duration: 12s; /* Slower for mobile */
+    }
+    
+    /* Hide some floating icons on mobile */
+    .floating-sound-icons .sound-icon:nth-child(n+5) {
+        display: none;
     }
     
     /* Pre-game Screen Improvements */
@@ -1455,6 +1931,44 @@
     .game-container {
         min-width: auto;
         padding: 1rem;
+    }
+    
+    /* Sound Wave Responsive Adjustments */
+    .sound-waves .sound-wave {
+        animation-duration: 6s;
+    }
+    
+    /* Hide more waves on smaller mobile screens */
+    .sound-wave:nth-child(n+6) {
+        display: none;
+    }
+    
+    .audio-visualizer {
+        height: 70px;
+        opacity: 0.2;
+    }
+    
+    .visualizer-bar {
+        width: 3px;
+        animation-duration: 2.5s;
+    }
+    
+    .visualizer-bar:nth-child(n+13) {
+        display: none;
+    }
+    
+    .recording-waves {
+        width: 200px;
+        height: 200px;
+    }
+    
+    .floating-sound-icons .sound-icon {
+        font-size: 1.3rem;
+        animation-duration: 14s;
+    }
+    
+    .floating-sound-icons .sound-icon:nth-child(n+4) {
+        display: none;
     }
     
     .game-header h1 {
@@ -1593,6 +2107,33 @@
     .game-container {
         min-width: auto;
         padding: 0.9rem;
+    }
+    
+    /* Sound Wave Performance Optimizations */
+    .sound-waves .sound-wave {
+        animation-duration: 8s;
+    }
+    
+    .sound-wave:nth-child(n+4) {
+        display: none; /* Hide most waves for performance */
+    }
+    
+    .audio-visualizer {
+        height: 50px;
+        opacity: 0.15;
+    }
+    
+    .visualizer-bar:nth-child(n+10) {
+        display: none;
+    }
+    
+    .recording-waves {
+        width: 150px;
+        height: 150px;
+    }
+    
+    .floating-sound-icons .sound-icon:nth-child(n+3) {
+        display: none; /* Reduce floating icons */
     }
     
     .game-header h1 {
@@ -1807,6 +2348,37 @@
     .game-container {
         min-width: auto;
         padding: 0.8rem;
+    }
+    
+    /* Minimal Sound Wave Animations for Performance */
+    .sound-waves .sound-wave {
+        animation-duration: 10s;
+    }
+    
+    .sound-wave:nth-child(n+3) {
+        display: none; /* Show only 2 waves */
+    }
+    
+    .audio-visualizer {
+        height: 40px;
+        opacity: 0.1;
+    }
+    
+    .visualizer-bar:nth-child(n+8) {
+        display: none;
+    }
+    
+    .recording-waves {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .recording-ring:nth-child(n+3) {
+        display: none; /* Show only 2 rings */
+    }
+    
+    .floating-sound-icons .sound-icon:nth-child(n+2) {
+        display: none; /* Show only 1 icon */
     }
     
     .game-header h1 {
@@ -2086,6 +2658,37 @@
 @keyframes titleSlideIn {
     from { opacity: 0; transform: translateY(-15px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* Floating Sound Icons Mobile */
+.floating-sound-icons .sound-icon {
+    font-size: 1.2rem;
+    animation-duration: 10s; /* Slower for mobile */
+}
+
+.game-header h1 {
+    font-size: 1.9rem;
+    gap: 0.8rem;
+    flex-direction: column;
+    text-align: center;
+}
+
+.game-header h1 i {
+    width: 45px;
+    height: 45px;
+    margin-right: 0;
+    margin-bottom: 0.5rem;
+}
+
+.game-header h1 i::before {
+    top: 3px;
+    left: 3px;
+    width: 33px;
+    height: 33px;
+}
+
+.game-header h1 i::after {
+    font-size: 22px;
 }
 
 
