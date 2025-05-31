@@ -5,6 +5,292 @@
     margin: 0 auto;
     padding: 2rem;
     font-family: 'Poppins', sans-serif;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Animated Background - Hustle & Clock Theme */
+.game-container::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(106, 17, 203, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(37, 117, 252, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(139, 92, 246, 0.02) 0%, transparent 50%);
+    z-index: -2;
+    animation: backgroundPulse 8s ease-in-out infinite;
+}
+
+.game-container::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        radial-gradient(2px 2px at 20px 30px, rgba(106, 17, 203, 0.1), transparent),
+        radial-gradient(2px 2px at 40px 70px, rgba(37, 117, 252, 0.08), transparent),
+        radial-gradient(1px 1px at 90px 40px, rgba(139, 92, 246, 0.06), transparent),
+        radial-gradient(1px 1px at 130px 80px, rgba(106, 17, 203, 0.05), transparent),
+        radial-gradient(2px 2px at 160px 30px, rgba(37, 117, 252, 0.04), transparent);
+    background-repeat: repeat;
+    background-size: 200px 100px;
+    z-index: -1;
+    animation: floatingDots 15s linear infinite;
+    opacity: 0.6;
+}
+
+/* Clock Hands Animation */
+.game-area::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 100px;
+    height: 100px;
+    background: 
+        conic-gradient(from 0deg, transparent 0deg, rgba(106, 17, 203, 0.1) 30deg, transparent 60deg),
+        conic-gradient(from 90deg, transparent 0deg, rgba(37, 117, 252, 0.08) 45deg, transparent 90deg);
+    border-radius: 50%;
+    z-index: -1;
+    animation: clockRotation 12s linear infinite;
+    opacity: 0.7;
+}
+
+.game-area::after {
+    content: '';
+    position: absolute;
+    bottom: -30px;
+    left: -30px;
+    width: 60px;
+    height: 60px;
+    background: 
+        conic-gradient(from 180deg, transparent 0deg, rgba(139, 92, 246, 0.12) 60deg, transparent 120deg);
+    border-radius: 50%;
+    z-index: -1;
+    animation: clockRotation 8s linear infinite reverse;
+    opacity: 0.5;
+}
+
+/* Hustle Energy Waves */
+.pre-game-screen::before,
+.active-game-screen::before,
+.post-game-screen::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        linear-gradient(45deg, transparent 30%, rgba(106, 17, 203, 0.02) 50%, transparent 70%),
+        linear-gradient(-45deg, transparent 30%, rgba(37, 117, 252, 0.02) 50%, transparent 70%);
+    z-index: -1;
+    animation: energyWaves 6s ease-in-out infinite;
+    pointer-events: none;
+}
+
+/* Speed Lines for Hustle Effect */
+.word-display::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: 
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 2px,
+            rgba(106, 17, 203, 0.03) 2px,
+            rgba(106, 17, 203, 0.03) 4px
+        );
+    z-index: -1;
+    animation: speedLines 3s linear infinite;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.word-display:hover::before {
+    opacity: 1;
+}
+
+/* Time Pressure Indicators */
+.timer-display.warning::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+    background: 
+        linear-gradient(45deg, rgba(229, 62, 62, 0.1), transparent, rgba(229, 62, 62, 0.1));
+    border-radius: 25px;
+    z-index: -1;
+    animation: urgentPulse 1s ease-in-out infinite;
+}
+
+/* Floating Time Elements */
+.game-header::before {
+    content: '⏰';
+    position: absolute;
+    top: -20px;
+    right: 10%;
+    font-size: 1.5rem;
+    opacity: 0.3;
+    animation: floatingClock 10s ease-in-out infinite;
+    z-index: -1;
+}
+
+.game-header::after {
+    content: '⚡';
+    position: absolute;
+    top: -15px;
+    left: 15%;
+    font-size: 1.2rem;
+    opacity: 0.4;
+    animation: floatingBolt 8s ease-in-out infinite;
+    z-index: -1;
+}
+
+/* Background Animation Keyframes */
+@keyframes backgroundPulse {
+    0%, 100% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.02);
+    }
+}
+
+@keyframes floatingDots {
+    0% {
+        transform: translateX(0) translateY(0);
+    }
+    25% {
+        transform: translateX(-10px) translateY(-5px);
+    }
+    50% {
+        transform: translateX(-20px) translateY(0);
+    }
+    75% {
+        transform: translateX(-10px) translateY(5px);
+    }
+    100% {
+        transform: translateX(0) translateY(0);
+    }
+}
+
+@keyframes clockRotation {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes energyWaves {
+    0%, 100% {
+        opacity: 0.3;
+        transform: translateX(0) scale(1);
+    }
+    33% {
+        opacity: 0.6;
+        transform: translateX(10px) scale(1.01);
+    }
+    66% {
+        opacity: 0.4;
+        transform: translateX(-5px) scale(0.99);
+    }
+}
+
+@keyframes speedLines {
+    0% {
+        left: -100%;
+        opacity: 0;
+    }
+    50% {
+        opacity: 0.8;
+    }
+    100% {
+        left: 100%;
+        opacity: 0;
+    }
+}
+
+@keyframes urgentPulse {
+    0%, 100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
+}
+
+@keyframes floatingClock {
+    0%, 100% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0.3;
+    }
+    25% {
+        transform: translateY(-10px) rotate(90deg);
+        opacity: 0.5;
+    }
+    50% {
+        transform: translateY(-5px) rotate(180deg);
+        opacity: 0.4;
+    }
+    75% {
+        transform: translateY(-15px) rotate(270deg);
+        opacity: 0.6;
+    }
+}
+
+@keyframes floatingBolt {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+        opacity: 0.4;
+    }
+    33% {
+        transform: translateY(-8px) scale(1.1);
+        opacity: 0.7;
+    }
+    66% {
+        transform: translateY(-3px) scale(0.9);
+        opacity: 0.5;
+    }
+}
+
+/* Enhanced Timer Warning Animation */
+#timer.warning {
+    color: #e53e3e;
+    animation: pulse 1s infinite, timerShake 0.5s ease-in-out infinite;
+    position: relative;
+}
+
+@keyframes timerShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    75% { transform: translateX(2px); }
+}
+
+/* Pause Animation Control */
+.game-container.paused::before,
+.game-container.paused::after,
+.game-container.paused .game-area::before,
+.game-container.paused .game-area::after {
+    animation-play-state: paused;
 }
 
 /* Game Header Styles */
@@ -241,15 +527,10 @@
 
 /* Game Area */
 .game-area {
-
- 
     border-radius: 20px;
     padding: 2.5rem;
-    
     transition: all 0.3s ease;
 }
-
-
 
 /* Game Screens */
 .pre-game-screen,
@@ -261,7 +542,6 @@
     transition: opacity 0.5s ease, transform 0.5s ease;
     transform: translateY(10px);
 }
-
 
 .pre-game-screen.active,
 .active-game-screen.active,
@@ -437,7 +717,6 @@
     border-radius: 20px;
     flex: 1;
     transition: all 0.3s ease;
-
 }
 
 .words-display:hover,
@@ -464,16 +743,6 @@
     color: #2d3748;
     font-size: 1.4rem;
     font-weight: 600;
-}
-
-#timer.warning {
-    color: #e53e3e;
-    animation: pulse 1s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
 }
 
 /* Word Display */
@@ -1749,8 +2018,6 @@
         padding: 0.9rem 1.5rem;
     }
 }
-
-
 
 /* Lightning Bolt Icon matching the provided image */
 .pre-game-screen h2 i {
