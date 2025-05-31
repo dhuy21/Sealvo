@@ -1,10 +1,262 @@
-/* Phrase Completion Game - Modern & Elegant Design */
+/* Phrase Completion Game - Modern & Elegant Design with Sunshine Rays */
 .game-container {
   max-width: 1000px;
   min-width: 1000px;
   margin: 0 auto;
   padding: 2rem;
   font-family: 'Poppins', sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Sunshine Rays Background Animation */
+.game-container::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    conic-gradient(from 0deg at 50% 50%, 
+      transparent 0deg, 
+      rgba(255, 235, 59, 0.15) 10deg, 
+      transparent 20deg,
+      transparent 30deg,
+      rgba(255, 193, 7, 0.12) 40deg,
+      transparent 50deg,
+      transparent 60deg,
+      rgba(255, 235, 59, 0.15) 70deg,
+      transparent 80deg,
+      transparent 90deg,
+      rgba(255, 152, 0, 0.10) 100deg,
+      transparent 110deg,
+      transparent 120deg,
+      rgba(255, 235, 59, 0.15) 130deg,
+      transparent 140deg,
+      transparent 150deg,
+      rgba(255, 193, 7, 0.12) 160deg,
+      transparent 170deg,
+      transparent 180deg,
+      rgba(255, 235, 59, 0.15) 190deg,
+      transparent 200deg,
+      transparent 210deg,
+      rgba(255, 152, 0, 0.10) 220deg,
+      transparent 230deg,
+      transparent 240deg,
+      rgba(255, 235, 59, 0.15) 250deg,
+      transparent 260deg,
+      transparent 270deg,
+      rgba(255, 193, 7, 0.12) 280deg,
+      transparent 290deg,
+      transparent 300deg,
+      rgba(255, 235, 59, 0.15) 310deg,
+      transparent 320deg,
+      transparent 330deg,
+      rgba(255, 152, 0, 0.10) 340deg,
+      transparent 350deg,
+      transparent 360deg);
+  animation: sunshineRaysRotation 30s linear infinite;
+  z-index: -3;
+}
+
+.game-container::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    conic-gradient(from 15deg at 50% 50%, 
+      transparent 0deg, 
+      rgba(255, 223, 0, 0.08) 8deg, 
+      transparent 16deg,
+      transparent 24deg,
+      rgba(255, 193, 7, 0.06) 32deg,
+      transparent 40deg,
+      transparent 48deg,
+      rgba(255, 223, 0, 0.08) 56deg,
+      transparent 64deg,
+      transparent 72deg,
+      rgba(255, 152, 0, 0.05) 80deg,
+      transparent 88deg,
+      transparent 96deg,
+      rgba(255, 223, 0, 0.08) 104deg,
+      transparent 112deg,
+      transparent 120deg,
+      rgba(255, 193, 7, 0.06) 128deg,
+      transparent 136deg,
+      transparent 144deg,
+      rgba(255, 223, 0, 0.08) 152deg,
+      transparent 160deg,
+      transparent 168deg,
+      rgba(255, 152, 0, 0.05) 176deg,
+      transparent 184deg,
+      transparent 192deg,
+      rgba(255, 223, 0, 0.08) 200deg,
+      transparent 208deg,
+      transparent 216deg,
+      rgba(255, 193, 7, 0.06) 224deg,
+      transparent 232deg,
+      transparent 240deg,
+      rgba(255, 223, 0, 0.08) 248deg,
+      transparent 256deg,
+      transparent 264deg,
+      rgba(255, 152, 0, 0.05) 272deg,
+      transparent 280deg,
+      transparent 288deg,
+      rgba(255, 223, 0, 0.08) 296deg,
+      transparent 304deg,
+      transparent 312deg,
+      rgba(255, 193, 7, 0.06) 320deg,
+      transparent 328deg,
+      transparent 336deg,
+      rgba(255, 223, 0, 0.08) 344deg,
+      transparent 352deg,
+      transparent 360deg);
+  animation: sunshineRaysRotation 45s linear infinite reverse;
+  z-index: -2;
+}
+
+@keyframes sunshineRaysRotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Central Sun Source */
+.game-container {
+  position: relative;
+}
+
+.game-container:before {
+  content: '';
+  position: fixed;
+  top: 20%;
+  left: 20%;
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle, 
+    rgba(255, 235, 59, 0.3) 0%, 
+    rgba(255, 193, 7, 0.2) 30%, 
+    rgba(255, 152, 0, 0.1) 60%, 
+    transparent 100%);
+  border-radius: 50%;
+  animation: sunPulse 8s ease-in-out infinite;
+  z-index: -4;
+  filter: blur(2px);
+}
+
+@keyframes sunPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.9;
+  }
+}
+
+/* Enhanced Sunshine Ray Focus Rings */
+.sunshine-focus-ring {
+  position: absolute;
+  border: 2px solid rgba(255, 193, 7, 0.3);
+  border-radius: 50%;
+  animation: sunshineFocusPulse 7s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+  backdrop-filter: blur(3px);
+  box-shadow: 0 0 60px rgba(255, 193, 7, 0.1);
+}
+
+.sunshine-focus-ring:nth-child(1) {
+  width: 220px;
+  height: 220px;
+  top: 15%;
+  left: 15%;
+  animation-delay: 0s;
+  border-color: rgba(255, 235, 59, 0.25);
+}
+
+.sunshine-focus-ring:nth-child(2) {
+  width: 180px;
+  height: 180px;
+  top: 65%;
+  right: 20%;
+  animation-delay: 2.5s;
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.sunshine-focus-ring:nth-child(3) {
+  width: 120px;
+  height: 120px;
+  bottom: 25%;
+  left: 25%;
+  animation-delay: 5s;
+  border-color: rgba(255, 152, 0, 0.25);
+}
+
+@keyframes sunshineFocusPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+    box-shadow: 0 0 60px rgba(255, 193, 7, 0.1);
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 0.6;
+    box-shadow: 0 0 100px rgba(255, 193, 7, 0.2);
+  }
+}
+
+/* Floating Sunshine Ray Elements */
+.floating-sunshine-element {
+  position: absolute;
+  font-size: 2rem;
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: -1;
+  animation: sunshineFloat 12s ease-in-out infinite;
+  filter: drop-shadow(0 2px 8px rgba(255, 193, 7, 0.2));
+  color: rgba(255, 193, 7, 0.6);
+}
+
+@keyframes sunshineFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 0.3;
+  }
+  25% {
+    transform: translateY(-25px) rotate(5deg) scale(1.1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(-15px) rotate(-3deg) scale(0.9);
+    opacity: 0.6;
+  }
+  75% {
+    transform: translateY(-30px) rotate(3deg) scale(1.05);
+    opacity: 0.4;
+  }
+}
+
+/* Modern Sunshine Ray Mode */
+.game-container.enhanced-sunshine-mode {
+  animation: sunshineGlow 12s ease-in-out infinite;
+}
+
+@keyframes sunshineGlow {
+  0%, 100% {
+    filter: brightness(1) saturate(1) hue-rotate(0deg);
+  }
+  50% {
+    filter: brightness(1.05) saturate(1.15) hue-rotate(15deg);
+  }
 }
 
 .game-header {
