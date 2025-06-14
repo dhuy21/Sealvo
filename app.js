@@ -72,6 +72,45 @@ app.engine('hbs', engine({
 app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'app/views'));
 
-app.listen(port, () =>
+const server = app.listen(port, () =>
     console.log(`App listening at http://localhost:${port}`),
 );
+
+// Graceful shutdown handling
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  server.close(() => {
+    console.log('HTTP server closed.');
+    // Close database pool
+    if (global.dbConnection && global.dbConnection.end) {
+      global.dbConnection.end().then(() => {
+        console.log('Database pool closed.');
+        process.exit(0);
+      }).catch((err) => {
+        console.error('Error closing database pool:', err);
+        process.exit(1);
+      });
+    } else {
+      process.exit(0);
+    }
+  });
+});
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT received, shutting down gracefully...');
+  server.close(() => {
+    console.log('HTTP server closed.');
+    // Close database pool
+    if (global.dbConnection && global.dbConnection.end) {
+      global.dbConnection.end().then(() => {
+        console.log('Database pool closed.');
+        process.exit(0);
+      }).catch((err) => {
+        console.error('Error closing database pool:', err);
+        process.exit(1);
+      });
+    } else {
+      process.exit(0);
+    }
+  });
+});
