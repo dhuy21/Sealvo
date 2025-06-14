@@ -51,14 +51,14 @@ class Word {
     // Ajouter un nouveau mot
     async create(wordData, userId) {
         // Démarrer une transaction
-        
+        let transaction;
         try {
             console.log(`Démarrage transaction pour le mot: ${wordData.word}`);
-            await global.dbConnection.beginTransaction();
+            transaction = await global.dbConnection.beginTransaction();
             
             // 1. Insérer le mot dans la table words
             console.log(`Insertion dans words: ${wordData.word}, ${wordData.subject}`);
-            const [wordResult] = await global.dbConnection.execute(
+            const [wordResult] = await transaction.execute(
                 'INSERT INTO words (word, subject) VALUES (?, ?)',
                 [wordData.word, wordData.subject]
             );
@@ -67,7 +67,7 @@ class Word {
 
             // 2. Insérer les détails du mot
             console.log(`Insertion dans word_details pour word_id: ${wordId}`);
-            const [detailResult] = await global.dbConnection.execute(
+            const [detailResult] = await transaction.execute(
                 'INSERT INTO word_details (word_id, type, meaning, synonyms, antonyms, example, grammar) VALUES (?, ?, ?, ?, ?, ?, ?)',
                 [
                     wordId,
@@ -84,7 +84,7 @@ class Word {
 
             // 3. Insérer la prononciation
             console.log(`Insertion dans word_pronunciations pour detail_id: ${detailId}`);
-            await global.dbConnection.execute(
+            await transaction.execute(
                 'INSERT INTO word_pronunciations (detail_id, pronunciation) VALUES (?, ?)',
                 [detailId, wordData.pronunciation]
             );
@@ -92,24 +92,26 @@ class Word {
             // 4. Associer le mot à l'utilisateur avec le niveau spécifié
             console.log(`Insertion dans learning pour user_id: ${userId}, word_id: ${wordId}, level: ${wordData.level}`);
             console.log(typeof wordData.level);
-            await global.dbConnection.execute(
+            await transaction.execute(
                 'INSERT INTO learning (user_id, word_id, level) VALUES (?, ?, ?)',
                 [userId, wordId,wordData.level.toString()]
             );
             
             // Valider la transaction
             console.log(`Commit de la transaction pour le mot: ${wordData.word}`);
-            await global.dbConnection.commit();
+            await transaction.commit();
             console.log(`Transaction validée avec succès pour le mot: ${wordData.word}`);
             return wordId;
         } catch (error) {
             // Annuler la transaction en cas d'erreur
             console.error(`ROLLBACK pour le mot ${wordData.word}:`, error);
-            try {
-                await global.dbConnection.rollback();
-                console.log(`Rollback réussi pour le mot: ${wordData.word}`);
-            } catch (rollbackError) {
-                console.error(`Erreur lors du rollback pour le mot ${wordData.word}:`, rollbackError);
+            if (transaction) {
+                try {
+                    await transaction.rollback();
+                    console.log(`Rollback réussi pour le mot: ${wordData.word}`);
+                } catch (rollbackError) {
+                    console.error(`Erreur lors du rollback pour le mot ${wordData.word}:`, rollbackError);
+                }
             }
             throw error;
         }
@@ -187,18 +189,19 @@ class Word {
     }
 
     async updateWord(wordData, wordId, userId) {
+        let transaction;
         try {
-            await global.dbConnection.beginTransaction();
+            transaction = await global.dbConnection.beginTransaction();
             // Mettre à jour le mot dans la table words
             console.log(`Mise à jour du mot dans words: ${wordData.word}, ${wordData.subject}`);
-            const [result] = await global.dbConnection.execute(
+            const [result] = await transaction.execute(
                 'UPDATE words SET word = ?, subject = ? WHERE word_id = ?',
                 [wordData.word, wordData.subject, wordId]
             );
             console.log(`Mot mis à jour avec succès: ${wordId}`);
             // Mettre à jour les détails du mot
             console.log(`Mise à jour des détails du mot pour word_id: ${wordId}`);
-            await global.dbConnection.execute(
+            await transaction.execute(
                 'UPDATE word_details SET type = ?, meaning = ?, synonyms = ?, antonyms = ?, example = ?, grammar = ? WHERE word_id = ?',
                 [
                     wordData.type,
@@ -212,26 +215,32 @@ class Word {
             );
             // Mettre à jour la prononciation
             console.log(`Mise à jour de la prononciation pour detail_id: ${wordId}`);
-            await global.dbConnection.execute(
+            await transaction.execute(
                 'UPDATE word_pronunciations SET pronunciation = ? WHERE detail_id = ?',
                 [wordData.pronunciation, wordId]
             );
             // Mettre à jour l'association avec l'utilisateur
             console.log(`Mise à jour de l'association avec l'utilisateur pour word_id: ${wordId}`);
-            await global.dbConnection.execute(
+            await transaction.execute(
                 'UPDATE learning SET level = ? WHERE word_id = ? AND user_id = ?',
                 [wordData.level, wordId, userId]
             );
            
             // Valider la transaction
             console.log(`Commit de la transaction pour le mot: ${wordData.word}`);  
-            await global.dbConnection.commit();
+            await transaction.commit();
             console.log(`Transaction validée avec succès pour le mot: ${wordData.word}`);
             return wordId;  
         } catch (error) {
             // Annuler la transaction en cas d'erreur
             console.error(`ROLLBACK pour le mot ${wordData.word}:`, error);
-            await global.dbConnection.rollback(); 
+            if (transaction) {
+                try {
+                    await transaction.rollback();
+                } catch (rollbackError) {
+                    console.error(`Erreur lors du rollback pour le mot ${wordData.word}:`, rollbackError);
+                }
+            }
             console.error('Erreur lors de la mise à jour du mot:', error);
             throw error;
         }
