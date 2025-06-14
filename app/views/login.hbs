@@ -98,29 +98,4 @@
     </div>
   </div>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Password visibility toggle
-      const togglePassword = document.getElementById('togglePassword');
-      const password = document.getElementById('password');
 
-      if (togglePassword && password) {
-        togglePassword.addEventListener('click', function() {
-          const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-          password.setAttribute('type', type);
-          this.querySelector('i').classList.toggle('fa-eye');
-          this.querySelector('i').classList.toggle('fa-eye-slash');
-        });
-      }
-
-      // Animate form elements sequentially
-      const animatedElements = document.querySelectorAll('.form-group, .form-options, .btn-submit, .auth-separator, .social-login, .auth-footer');
-      
-      animatedElements.forEach(function(element) {
-        const delay = element.dataset.delay || 0;
-        setTimeout(function() {
-          element.classList.add('animate-in');
-        }, delay);
-      });
-    });
-  </script>
