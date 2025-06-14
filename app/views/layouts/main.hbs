@@ -4,6 +4,7 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
         <title>{{title}}  | SealVo</title>
         <!-- Favicon links -->
         <link rel="icon" href="/images/logo.png" type="image/png">
@@ -12,16 +13,7 @@
         <meta name="theme-color" content="#2575fc">
         
         <!-- Early Dark Mode Detection -->
-        <script>
-            // Apply the saved theme immediately to prevent flashing
-            (function() {
-                const savedTheme = localStorage.getItem('theme');
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                const theme = savedTheme || (prefersDark ? 'dark' : 'light');
-                document.documentElement.setAttribute('data-theme', theme);
-                document.documentElement.classList.add(theme + '-theme');
-            })();
-        </script>
+        <script src="/js/theme-init.js" nonce="{{nonce}}"></script>
         
         <!-- Font Awesome -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -45,14 +37,15 @@
 
         
         <!-- App scripts -->
-        <script src="/js/darkMode.js"></script>
-        <script src="/js/home.js"></script>
-        <script src="/js/aboutme.js"></script>
-        <script src="/js/games/flashMatch.js"></script>
-        <script src="/js/games/wordScramble.js"></script>
-        <script src="/js/games/vocabQuiz.js"></script>
-        <script src="/js/games/speedVocab.js"></script>
-        <script src="/js/games/phraseCompletion.js"></script>
-        <script src="/js/games/testPronun.js"></script>
+        <script src="/js/auth.js" nonce="{{nonce}}"></script>
+        <script src="/js/darkMode.js" nonce="{{nonce}}"></script>
+        <script src="/js/home.js" nonce="{{nonce}}"></script>
+        <script src="/js/aboutme.js" nonce="{{nonce}}"></script>
+        <script src="/js/games/flashMatch.js" nonce="{{nonce}}"></script>
+        <script src="/js/games/wordScramble.js" nonce="{{nonce}}"></script>
+        <script src="/js/games/vocabQuiz.js" nonce="{{nonce}}"></script>
+        <script src="/js/games/speedVocab.js" nonce="{{nonce}}"></script>
+        <script src="/js/games/phraseCompletion.js" nonce="{{nonce}}"></script>
+        <script src="/js/games/testPronun.js" nonce="{{nonce}}"></script>
     </body>
 </html>
