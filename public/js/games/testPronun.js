@@ -1,12 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Vérifier si nous sommes sur la page du jeu TestPronun
-    if (!document.getElementById('testPronun-screen')) {
-        // Nous ne sommes pas sur la page TestPronun, ne pas exécuter le script
-        return;
-    }
-    
-    console.log('TestPronun game script loaded');
-    
+
     // Variables du jeu
     let currentWord = null;
     let previousWordId = null;

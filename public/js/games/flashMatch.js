@@ -1,9 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Vérifier si nous sommes sur la page du jeu FlashMatch
-    if (!document.getElementById('game-board')) {
-        // Nous ne sommes pas sur la page FlashMatch, ne pas exécuter le script
-        return;
-    }
     
     // Create animated bubbles for background
     createAnimatedBubbles();

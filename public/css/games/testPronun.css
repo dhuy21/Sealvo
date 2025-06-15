@@ -866,8 +866,13 @@
     color: #e53e3e;
     margin-bottom: 1.5rem;
     display: block;
+    animation: bounce 2s infinite;
 }
-
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-10px); }
+    60% { transform: translateY(-5px); }
+}
 .add-words-btn {
     margin-top: 1.5rem;
     background: linear-gradient(45deg, #3b82f6, #2563eb);
@@ -2349,7 +2354,6 @@
         min-width: auto;
         padding: 0.8rem;
     }
-    
     /* Minimal Sound Wave Animations for Performance */
     .sound-waves .sound-wave {
         animation-duration: 10s;
@@ -2588,6 +2592,62 @@
         max-width: 280px;
         justify-content: center;
         padding: 0.9rem 1.5rem;
+    }
+
+    /* Force specific styles for game footer to override global responsive styles */
+    .game-container .game-footer,
+    body .game-container .game-footer {
+        margin: 1rem 0 !important;
+        gap: 0.3rem !important;
+        padding: 0 0.3rem !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 0.8rem !important;
+    }
+    
+    .game-container .game-footer .btn,
+    body .game-container .game-footer .btn {
+        font-size: 0.8rem !important;
+        padding: 0.7rem 0.8rem !important;
+        max-width: 120px !important;
+        min-width: 80px !important;
+        text-align: center !important;
+        border-radius: 50px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+        flex: 0 0 auto !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        line-height: 1 !important;
+        vertical-align: middle !important;
+    }
+}
+
+/* Additional override for screens 370px and below to ensure proper display */
+@media (max-width: 370px) {
+    .game-container .game-footer .btn,
+    body .game-container .game-footer .btn,
+    body .game-footer .btn {
+        font-size: 0.75rem !important;
+        padding: 0.6rem 0.7rem !important;
+        max-width: 110px !important;
+        min-width: 75px !important;
+        text-align: center !important;
+        border-radius: 50px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+        flex: 0 0 auto !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        line-height: 1 !important;
+        vertical-align: middle !important;
     }
 }
 

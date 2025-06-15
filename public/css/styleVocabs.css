@@ -449,6 +449,11 @@
   margin-bottom: 20px;
 }
 
+.delete-all-form {
+  display: inline-block;
+  margin: 0;
+}
+
 /* 3D Button Base Styles */
 .add-word-btn,
 .learn-btn,
@@ -574,6 +579,22 @@
   box-shadow: none;
 }
 
+@media (max-width: 768px) {
+  .btn-danger {
+    margin-left: 0 !important;
+  }
+  
+  .delete-all-form {
+    width: 100%;
+    max-width: 340px;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+  }
+}
+
 .btn-danger::before {
   background: #910c32;
   box-shadow: 0 0 0 2px #ee0979;
@@ -650,6 +671,34 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+  .action-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+    padding: 50px 35px 60px;
+    margin: 0 auto 30px;
+    max-width: 420px;
+    width: 100%;
+    min-height: 200px;
+    overflow: visible !important;
+    box-sizing: border-box;
+  }
+  
+  .add-word-btn,
+  .learn-btn,
+  .btn-danger {
+    width: 100%;
+    max-width: 340px;
+    margin-bottom: 0;
+    margin-left: 0;
+    justify-content: center;
+    align-self: center;
+    display: flex;
+    position: relative;
+    z-index: 1;
+  }
+  
   .add-word-btn,
   .learn-btn,
   .btn-danger,
