@@ -596,15 +596,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
-        
-        oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.2);
-        
-        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+
+        // Error sound: descending low frequencies
+        oscillator.frequency.setValueAtTime(300, audioContext.currentTime); // Low frequency
+        oscillator.frequency.exponentialRampToValueAtTime(150, audioContext.currentTime + 0.6); // Descending
+
+        gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
         
         oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.2);
+        oscillator.stop(audioContext.currentTime + 0.6);
     }
     
     // Fonction pour mettre à jour le niveau d'intensité
