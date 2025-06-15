@@ -963,7 +963,6 @@
     padding: 0;
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: 1fr 1fr 1fr;
     gap: 2rem;
     max-width: 700px;
     margin-left: auto;
@@ -2228,13 +2227,6 @@
     }
     
     /* Active Game Screen Layout */
-    .active-game-screen {
-        display: flex;
-        flex-direction: column;
-        gap: 1.2rem;
-        padding: 1.2rem;
-    }
-    
     .game-info {
         order: 1;
         flex-direction: column;
@@ -2411,9 +2403,7 @@
     }
     
     /* Pre-game Screen Improvements */
-    .pre-game-screen {
-        padding: 1rem 0.6rem;
-    }
+
     
     .pre-game-screen h2 {
         font-size: 1.8rem !important;
@@ -2442,7 +2432,6 @@
     /* Rules List Grid - Very compact 2x3 layout */
     .rules-list {
         grid-template-columns: 1fr 1fr;
-        grid-template-rows: repeat(3, auto);
         gap: 3rem !important;
         max-width: 100%;
         margin: 1.8rem auto;
@@ -2471,14 +2460,6 @@
         margin-top: 1.2rem;
         width: 100%;
         max-width: 240px;
-    }
-    
-    /* Active Game Screen Layout */
-    .active-game-screen {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-        padding: 0.8rem;
     }
     
     .game-info {

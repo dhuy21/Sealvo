@@ -134,14 +134,14 @@ document.addEventListener('DOMContentLoaded', function() {
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
         
-        oscillator.frequency.setValueAtTime(220, audioContext.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(180, audioContext.currentTime + 0.25);
+        oscillator.frequency.setValueAtTime(280, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(160, audioContext.currentTime + 0.5);
         
-        gainNode.gain.setValueAtTime(0.06, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.25);
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
         
         oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.25);
+        oscillator.stop(audioContext.currentTime + 0.5);
     }
     
     // Fonction pour créer des particules adorables
