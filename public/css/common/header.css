@@ -345,7 +345,87 @@
   box-shadow: var(--shadow-md);
 }
 
-.logout-btn {
+/* Animated Logout Button Styles */
+.logout-btn.animated-logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition-duration: .3s;
+  box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.12);
+  background-color: rgb(255, 65, 65);
+  text-decoration: none;
+}
+
+/* Sign icon container */
+.logout-btn.animated-logout-btn .sign {
+  width: 100%;
+  transition-duration: .3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logout-btn.animated-logout-btn .sign svg {
+  width: 12px;
+}
+
+.logout-btn.animated-logout-btn .sign svg path {
+  fill: white;
+}
+
+/* Text */
+.logout-btn.animated-logout-btn .text {
+  position: absolute;
+  right: 0%;
+  width: 0%;
+  opacity: 0;
+  color: white;
+  font-size: 0.85em;
+  font-weight: 600;
+  transition-duration: .3s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+/* Hover effect on button width */
+.logout-btn.animated-logout-btn:hover {
+  width: 100px;
+  border-radius: 30px;
+  transition-duration: .3s;
+}
+
+.logout-btn.animated-logout-btn:hover .sign {
+  width: 35%;
+  transition-duration: .3s;
+  padding-left: 15px;
+}
+
+/* Hover effect button's text */
+.logout-btn.animated-logout-btn:hover .text {
+  opacity: 1;
+  width: 65%;
+  transition-duration: .3s;
+  padding-right: 12px;
+  padding-left: 8px;
+}
+
+/* Button click effect */
+.logout-btn.animated-logout-btn:active {
+  transform: translate(2px, 2px);
+}
+
+/* Fallback for old logout buttons without animated class */
+.logout-btn:not(.animated-logout-btn) {
   display: flex;
   align-items: center;
   padding: 8px 15px;
@@ -357,12 +437,12 @@
   transition: var(--transition);
 }
 
-.logout-btn i {
+.logout-btn:not(.animated-logout-btn) i {
   margin-right: 8px;
   font-size: 14px;
 }
 
-.logout-btn:hover {
+.logout-btn:not(.animated-logout-btn):hover {
   background: rgba(220, 53, 69, 0.2);
   transform: translateY(-2px);
   color: #dc3545;
@@ -568,6 +648,33 @@
     justify-content: center;
   }
   
+  /* Responsive styles for animated logout button */
+  .logout-btn.animated-logout-btn {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .logout-btn.animated-logout-btn .sign svg {
+    width: 10px;
+  }
+  
+  .logout-btn.animated-logout-btn:hover {
+    width: 85px;
+  }
+  
+  .logout-btn.animated-logout-btn:hover .sign {
+    padding-left: 12px;
+  }
+  
+  .logout-btn.animated-logout-btn:hover .text {
+    padding-right: 10px;
+    padding-left: 6px;
+  }
+  
+  .logout-btn.animated-logout-btn .text {
+    font-size: 0.8em;
+  }
+  
   .body-noscroll {
     overflow: hidden;
   }
@@ -590,6 +697,33 @@
   
   .header-container {
     padding: 12px 16px;
+  }
+  
+  /* Smaller animated logout button for mobile */
+  .logout-btn.animated-logout-btn {
+    width: 26px;
+    height: 26px;
+  }
+  
+  .logout-btn.animated-logout-btn .sign svg {
+    width: 9px;
+  }
+  
+  .logout-btn.animated-logout-btn:hover {
+    width: 75px;
+  }
+  
+  .logout-btn.animated-logout-btn:hover .sign {
+    padding-left: 10px;
+  }
+  
+  .logout-btn.animated-logout-btn:hover .text {
+    padding-right: 8px;
+    padding-left: 5px;
+  }
+  
+  .logout-btn.animated-logout-btn .text {
+    font-size: 0.75em;
   }
 }
 

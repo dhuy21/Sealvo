@@ -1,13 +1,8 @@
 /* Flash Match Game Styles - Modern & Lovely Design */
 .game-container {
-    max-width: 1000px;
-    min-width: 1000px;
-    margin: 0 auto;
-    padding: 2rem;
     font-family: 'Inter', 'Poppins', sans-serif;
-    min-height: 100vh;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
 
 }
 
@@ -430,7 +425,7 @@
     flex: 1;
     border-radius: 32px;
     padding: 3rem;
-    min-height: 500px;
+    min-height: auto;
     position: relative;
     transition: all 0.4s ease;
 }
@@ -456,32 +451,18 @@
 
 /* Modern Error Box */
 .error-box {
-    background: linear-gradient(135deg, #fef2f2, #ffffff);
-    border: 2px solid rgba(239, 68, 68, 0.2);
-    padding: 2.5rem;
-    border-radius: 24px;
-    margin-bottom: 3rem;
+    background-color: #fff5f5;
+    border-left: 4px solid #e53e3e;
+    padding: 1.8rem;
+    border-radius: 12px;
+    margin-bottom: 2.5rem;
     text-align: center;
-    box-shadow: 
-        0 8px 32px rgba(239, 68, 68, 0.1),
-        0 1px 0 rgba(255, 255, 255, 0.5) inset;
-    transition: all 0.4s ease;
-    position: relative;
-    overflow: hidden;
-}
-
-.error-box::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.3), transparent);
-}
-
-.error-box:hover {
-    transform: translateY(-4px);
+    box-shadow: 0 5px 15px rgba(229, 62, 62, 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .error-box:hover {
+    transform: translateY(-3px);
     box-shadow: 
         0 16px 40px rgba(239, 68, 68, 0.15),
         0 1px 0 rgba(255, 255, 255, 0.6) inset;
@@ -1577,16 +1558,41 @@
 /* Responsive Design */
 @media (max-width: 950px) {
     .game-container {
-        min-width: auto;
         padding: 1.5rem;
+    }
+    
+    .game-header {
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+    }
+    
+    .game-stats {
+        margin-bottom: 2rem;
+        gap: 1.5rem;
     }
     
     .game-area {
         gap: 2rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .game-screen {
+        padding: 2rem;
+        min-height: auto;
+    }
+    
+    .error-box {
+        margin-bottom: 1.5rem;
+        padding: 1.5rem;
     }
     
     .leaderboard {
         flex: auto;
+        padding: 2rem;
+    }
+    
+    .game-board {
+        gap: 1rem;
     }
     
     .game-board.grid-4,
@@ -1617,6 +1623,7 @@
     .game-info {
         gap: 1rem;
         align-items: center;
+        margin-bottom: 2rem;
     }
     
     .moves-display,
@@ -1624,31 +1631,27 @@
     .pairs-display {
         width: 100%;
         max-width: 300px;
-    }
-    
-    .game-footer {
-        flex-direction: column;
-        gap: 1rem;
-    }
-    
-    .game-footer .btn {
-        width: 100%;
-        text-align: center;
-        justify-content: center;
+        padding: 1.2rem 1.5rem;
     }
     
     .action-buttons {
         flex-direction: column;
         gap: 1rem;
+        margin-top: 2rem;
     }
     
     .final-score {
         font-size: 3rem;
     }
     
+    .final-score-container {
+        margin: 2rem 0;
+    }
+    
     .game-summary {
         flex-direction: column;
         gap: 1rem;
+        margin: 2rem 0;
     }
 
     .rules-list {
@@ -1656,7 +1659,7 @@
         grid-template-rows: 1fr 1fr;
         gap: 1.5rem;
         max-width: 600px;
-        margin: 3rem auto;
+        margin: 2rem auto;
         padding: 0;
         justify-items: center;
         align-items: stretch;
@@ -1666,6 +1669,8 @@
         width: 100%;
         max-width: 280px;
         margin: 0;
+        padding: 2rem 1.5rem;
+        min-height: 140px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -1675,10 +1680,29 @@
     
     .game-header h1 {
         font-size: 2.5rem;
+        margin-bottom: 0.8rem;
+    }
+    
+    .game-description {
+        font-size: 1rem;
     }
     
     .stat-box {
         min-width: auto;
+        padding: 1.5rem;
+    }
+    
+    .start-btn {
+        margin-top: 2rem;
+        padding: 1rem 2.5rem;
+    }
+    
+    .game-footer {
+        margin-top: 1.5rem;
+    }
+    
+    .high-score-message {
+        margin: 2rem 0;
         padding: 1.5rem;
     }
 }
@@ -2327,5 +2351,23 @@
         width: 6px;
         height: 6px;
     }
+
+    .game-footer {
+        justify-content: space-evenly !important;
+        margin: 0 -0.9rem !important;
+        gap: 0 !important;
+      }
+    
+      .game-footer .btn {
+        padding: 0.7rem 0.4rem !important;
+        font-size: 0.7rem !important;
+        flex: none !important;
+        width: 30% !important;
+        margin: 0 0.5% !important;
+        flex-shrink: 0 !important;
+        text-align: center !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+      }
 }
 

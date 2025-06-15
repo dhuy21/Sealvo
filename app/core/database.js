@@ -18,7 +18,7 @@ async function connect() {
         rejectUnauthorized: true
       },
       // Connection pool settings
-      connectionLimit: 10,
+      connectionLimit: 170,
       queueLimit: 0,
       // Connection timeout and cleanup
       idleTimeout: 300000, // 5 minutes

@@ -5,10 +5,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Vérifier si nous sommes sur la page du jeu Word Search
     // On vérifie un élément unique qui n'existe que sur cette page
-    if (!document.getElementById('word-search-grid')) {
-        // Nous ne sommes pas sur la page Word Search, ne pas exécuter le script
-        return;
-    }
     
     // Éléments du DOM
     const gameContainer = document.getElementById('game-container');
