@@ -157,6 +157,13 @@
     color: #e53e3e;
     margin-bottom: 1.5rem;
     display: block;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-10px); }
+    60% { transform: translateY(-5px); }
 }
 
 .add-words-btn {
@@ -1440,6 +1447,24 @@
         font-size: 1rem;
         min-width: 150px;
     }
+
+        .game-footer {
+          justify-content: space-evenly !important;
+          margin: 0 -0.9rem !important;
+          gap: 0 !important;
+        }
+      
+        .game-footer .btn {
+          padding: 0.7rem 0.4rem !important;
+          font-size: 0.7rem !important;
+          flex: none !important;
+          width: 30% !important;
+          margin: 0 0.5% !important;
+          flex-shrink: 0 !important;
+          text-align: center !important;
+          white-space: nowrap !important;
+          overflow: visible !important;
+        }
 }
 
 /* Pre-game Screen Title with Lightning Icon */

@@ -106,11 +106,11 @@ class Word {
             // Annuler la transaction en cas d'erreur
             console.error(`ROLLBACK pour le mot ${wordData.word}:`, error);
             if (transaction) {
-                try {
+            try {
                     await transaction.rollback();
-                    console.log(`Rollback réussi pour le mot: ${wordData.word}`);
-                } catch (rollbackError) {
-                    console.error(`Erreur lors du rollback pour le mot ${wordData.word}:`, rollbackError);
+                console.log(`Rollback réussi pour le mot: ${wordData.word}`);
+            } catch (rollbackError) {
+                console.error(`Erreur lors du rollback pour le mot ${wordData.word}:`, rollbackError);
                 }
             }
             throw error;

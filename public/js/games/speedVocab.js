@@ -59,6 +59,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle window resize for responsive particles
     window.addEventListener('resize', updateMobileSettings);
+
+    // Verify required elements exist before initializing
+    if (!activeGameScreen || !preGameScreen || !postGameScreen) {
+        console.log('Required game elements not found, skipping initialization');
+        return;
+    }
     
     // Function to update mobile settings based on screen size
     function updateMobileSettings() {
@@ -150,6 +156,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour créer les lignes de vitesse
     function createSpeedLines() {
+        if (!activeGameScreen) {
+            console.log('activeGameScreen not found, skipping speed lines creation');
+            return;
+        }
+        
         const speedLinesContainer = document.createElement('div');
         speedLinesContainer.className = 'speed-lines';
         activeGameScreen.appendChild(speedLinesContainer);
