@@ -13,12 +13,8 @@ async function connect() {
       password: process.env.DB_PASSWORD,
       database: process.env.DB_DATABASE,
       port: process.env.DB_PORT,
-      ssl: {
-        // Azure MySQL requires SSL with mode=require
-        rejectUnauthorized: true
-      },
       // Connection pool settings
-      connectionLimit: 170,
+      connectionLimit: 10,
       queueLimit: 0,
       // Connection timeout and cleanup
       idleTimeout: 300000, // 5 minutes
