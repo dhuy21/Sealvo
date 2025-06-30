@@ -172,7 +172,7 @@ class UserController {
             console.log('session do not exist', req.session);
             return res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
         }
-        
+        console.log('session exist', req.session.user);
         res.render('dashboard', {
             title: 'Tableau de bord',
             user: req.session.user
