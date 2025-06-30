@@ -46,7 +46,8 @@ class UserController {
             const islearningWords = await learningModel.getNumWordsByLevel(user.id, '0') + await learningModel.getNumWordsByLevel(user.id, '1') + await learningModel.getNumWordsByLevel(user.id, '2');
             console.log('islearningWords', islearningWords);
             // Créer une session utilisateur (sans stocker le mot de passe)
-            req.session.user = {
+            try {
+                req.session.user = {
                 id: user.id,
                 username: user.username, 
                 streak: user.streak,
@@ -58,7 +59,11 @@ class UserController {
                 learnedWords,
                 newWords,
                 islearningWords
-            };
+                };
+            } catch (error) {
+                console.error('Erreur lors de la connexion:', error);
+                res.redirect('/login?error=Une erreur est survenue. Veuillez réessayer plus tard.');
+            }
             
             // Rediriger vers le tableau de bord
             res.redirect('/dashboard');
@@ -172,7 +177,7 @@ class UserController {
             console.log('session do not exist', req.session);
             return res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
         }
-        console.log('session exist', req.session.user);
+        console.log('session exist', req.session);
         res.render('dashboard', {
             title: 'Tableau de bord',
             user: req.session.user
