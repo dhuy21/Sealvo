@@ -60,8 +60,9 @@ class UserController {
                 newWords,
                 islearningWords
                 };
+                console.log('session exist', req.session.user);
             } catch (error) {
-                console.error('Erreur lors de la connexion:', error);
+                console.log('Erreur lors de la connexion:', error);
                 res.redirect('/login?error=Une erreur est survenue. Veuillez réessayer plus tard.');
             }
             
