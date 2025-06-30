@@ -169,6 +169,7 @@ class UserController {
     dashboard(req, res) {
         // Vérifier si l'utilisateur est connecté
         if (!req.session.user) {
+            console.log('session do not exist', req.session);
             return res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
         }
         
