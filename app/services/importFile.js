@@ -4,6 +4,7 @@ const path = require('path');
 const xlsx = require('xlsx');
 const multer = require('multer');
 const { PDFDocument } = require('pdf-lib');
+const geminiService = require('./gemini');
 
 // Configurer le stockage des fichiers uploadés
 const storage = multer.diskStorage({
@@ -50,6 +51,7 @@ const processExcelFile = async (filePath) => {
             const row = data[i];
             if (row.length >= 6) { // Au moins les champs obligatoires
                 words.push({
+                    id: i,
                     word: row[0] || '',
                     subject: row[1] || '',
                     type: row[2] || '',
@@ -93,6 +95,16 @@ const processPdfFile = async (filePath) => {
     }
 };
 
+const replaceExample = (words, words_with_examples) => {
+    for (const word of words) {
+        for (const word_with_example of words_with_examples) {
+            if (word.id === word_with_example.id) {
+                word.example = word_with_example.example;
+            }
+        }
+    }
+    return words;
+}
 
 class ImportFile {
     async importWords(req, res) {
@@ -123,6 +135,7 @@ class ImportFile {
                 const fileExt = path.extname(req.file.originalname).toLowerCase();
                 
                 let words = [];
+                let words_no_example = [];
                 
                 // Traiter le fichier selon son type
                 if (['.xlsx', '.xls', '.csv'].includes(fileExt)) {
@@ -140,6 +153,43 @@ class ImportFile {
                         error: 'Aucun mot n\'a été trouvé dans le fichier importé'
                     });
                 }
+
+                for (const word of words) {
+                    try {
+                        if (!word.meaning || !word.type || !word.word) {
+                            continue;
+                        } else if (word.example === '') {
+                            words_no_example.push({
+                                id: word.id,
+                                word: word.word,
+                                meaning: word.meaning,
+                                type: word.type
+                            });
+                        }
+                    } catch (error) {
+                        console.error(`Erreur lors de l'ajout du mot ${word.word}:`, error);
+                    }
+                }
+                
+                if (words_no_example.length > 0) {
+                    console.log('🔄 Generating examples for words without examples...');
+                    console.log(`📊 Words to process: ${words_no_example.length}`);
+                    
+                    try {
+                        const words_with_examples = await geminiService.generateExemple(words_no_example);
+                        console.log('📋 Generated examples:', words_with_examples);
+                        
+                        if (Array.isArray(words_with_examples) && words_with_examples.length > 0) {
+                            console.log('✅ Examples generated successfully');
+                            words = replaceExample(words, words_with_examples);
+                        } else {
+                            console.log('⚠️ No examples were generated');
+                        }
+                    } catch (error) {
+                        console.error('❌ Error generating examples:', error);
+                        // Continue without examples if Gemini fails
+                    }
+                }
                 
                 // Ajouter chaque mot à la base de données
                 let successCount = 0;
@@ -147,28 +197,24 @@ class ImportFile {
                 
                 console.log(`Traitement de ${words.length} mots à importer`);
                 
+                console.log(words);
                 for (const wordData of words) {
                     try {
                         // Vérifier que les champs obligatoires sont présents
                         if (!wordData.word || !wordData.subject || !wordData.type || 
-                            !wordData.meaning || !wordData.example) {
-                            console.log(`Mot ignoré (champs manquants): ${JSON.stringify(wordData)}`);
+                            !wordData.meaning ) {
                             errorCount++;
                             continue;
                         }
                         
                         // Assurer que level est défini
                         if (wordData.level === undefined || wordData.level === null) {
-                            console.log(`Niveau non défini pour le mot: ${wordData.word}, utilisation du niveau par défaut`);
                             wordData.level = 'x'; // Niveau par défaut
                         }
-                        
-                        console.log(`Tentative d'ajout du mot: ${wordData.word}, niveau: ${wordData.level}`);
-                        const wordId = await wordModel.create(wordData, req.session.user.id);
-                        console.log(`Mot ajouté avec succès, ID: ${wordId}`);
 
-                        
+                        await wordModel.create(wordData, req.session.user.id);
                         successCount++;
+
                     } catch (error) {
                         console.error(`Erreur lors de l'ajout du mot ${wordData.word}:`, error);
                         errorCount++;
