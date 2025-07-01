@@ -110,6 +110,7 @@ class GoogleAuthController {
         } catch (error) {
             console.error('Google authentication error:', error);
             return res.redirect('/login?error=Authentication failed');
+            
         }
     }
 }
