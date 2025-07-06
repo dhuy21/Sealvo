@@ -13,12 +13,12 @@ class WordScrambleController {
 
     async getRandomWordForScramble(req, res) {
         try {
-            
+            const package_id = req.query.package;
             // Récupérer tous les mots de l'utilisateur
-            const wordIds = await learningModel.findWordsByLevel(req.session.user.id, levelGame);
+            const detailWordsIds = await learningModel.findWordsByLevel(package_id, levelGame);
             let words = [];
-            for (const wordId of wordIds) {
-                const word = await wordModel.findById(wordId.word_id);
+            for (const detailWordId of detailWordsIds) {
+                const word = await wordModel.findById(detailWordId.detail_id);
                 words.push(word);
             }
             

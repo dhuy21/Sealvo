@@ -14,11 +14,11 @@ class SpeedVocabController {
             if (!req.session.user) {
                 return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
             }
-        
+            const package_id = req.query.package;
             const previousWordId = req.query.previous || null; // Récupérer l'ID du mot précédent
             
             const words = await learningModel.findRandomWordsExcluding(
-                req.session.user.id, 
+                package_id, 
                 previousWordId, 
                 1,
                 levelGame

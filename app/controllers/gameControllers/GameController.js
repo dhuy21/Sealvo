@@ -19,12 +19,14 @@ class GameController {
             return res.render('games/index', {
                 title: 'Jeux éducatifs',
                 user: req.session.user,
-                stats: stats
+                stats: stats,
+                package_id: req.query.package
             });
         } catch (error) {
             console.error('Erreur lors du chargement de la page des jeux:', error);
             return res.status(500).render('error', {
                 title: 'Erreur',
+                package_id: req.query.package,
                 message: 'Une erreur est survenue lors du chargement de la page des jeux.',
                 error: process.env.NODE_ENV === 'development' ? error : {}
             });
@@ -35,18 +37,19 @@ class GameController {
      * Affiche la page d'un jeu spécifique
      */
     async showGame(req, res) {
+        const package_id = req.query.package;
         try {
             // Vérifier si l'utilisateur est connecté
             if (!req.session.user) {
                 return res.redirect('/login?error=Vous devez être connecté pour accéder aux jeux');
             }
-            
+                        
             const gameType = req.params.gameType;
             
             // Vérifier si le type de jeu est valide
             const validGames = ['wordScramble', 'flashMatch', 'speedVocab', 'vocabQuiz', 'phraseCompletion', 'wordSearch', 'testPronun'];
             if (!validGames.includes(gameType)) {
-                return res.redirect('/games?error=Type de jeu invalide');
+                return res.redirect(`/games?package=${package_id}&error=Type de jeu invalide`);
             }
             
             // Convertir le format camelCase en format snake_case pour la base de données
@@ -59,7 +62,6 @@ class GameController {
             const leaderboard = await gameScoresModel.getLeaderboard(dbGameType, 5);
             
             // Nombre de mots dans le vocabulaire de l'utilisateur
-            console.log('User ID from session:', req.session.user.id, 'Type:', typeof req.session.user.id);
             const levelGame = {
                 'flashMatch': 'x',
                 'vocabQuiz': 'x',
@@ -72,10 +74,10 @@ class GameController {
 
             let wordCount = 0;
             let WordCountlevel = 0;
+            
             try {
-                wordCount = await learningModel.countUserWordsByLevel(req.session.user.id, levelGame[gameType]);
-                WordCountlevel = await learningModel.getNumWordsByLevel(req.session.user.id, levelGame[gameType]);
-                console.log(`Retrieved word count: ${wordCount}, level: ${levelGame[gameType]}`);
+                wordCount = await learningModel.countUserWordsByLevel(package_id, levelGame[gameType]);
+                WordCountlevel = await learningModel.getNumWordsByLevel(package_id, levelGame[gameType]);
             } catch (countError) {
                 console.error('Error counting user words:', countError);
                 // Continue with word count as 0
@@ -86,7 +88,6 @@ class GameController {
             if (gameType === 'flashMatch') minWordsRequired = 6;
             
             let errorMessage = null;
-            console.log('Word count:', wordCount, 'Min words required:', minWordsRequired);
 
             if (wordCount < minWordsRequired || WordCountlevel == 0) {
                 errorMessage = `Vous devez avoir au moins ${minWordsRequired} mots au niveau ${levelGame[gameType]} dans votre vocabulaire pour jouer à ce jeu.`;
@@ -118,6 +119,7 @@ class GameController {
             
             return res.render(`games/${gameType}`, {
                 title: `${gameTitles[gameType]}`,
+                package_id: package_id,
                 user: req.session.user,
                 highScore: highScore,
                 leaderboard: leaderboard,
@@ -130,6 +132,7 @@ class GameController {
             console.error(`Erreur lors du chargement du jeu ${req.params.gameType}:`, error);
             return res.status(500).render('error', {
                 title: 'Erreur',
+                package_id: package_id,
                 message: 'Une erreur est survenue lors du chargement du jeu.',
                 error: process.env.NODE_ENV === 'development' ? error : {}
             });

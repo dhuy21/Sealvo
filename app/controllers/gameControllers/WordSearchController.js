@@ -19,9 +19,9 @@ class WordSearchController {
             // Déterminer le nombre de mots à récupérer en fonction de la difficulté
             const wordCount = 15;
             const gridSize = 18;
-            
+            const package_id = req.query.package;
             // Récupérer des mots aléatoires du vocabulaire de l'utilisateur
-            const words = await learningModel.getRandomUserWords(req.session.user.id, wordCount, levelGame);
+            const words = await learningModel.getRandomUserWords(package_id, wordCount, levelGame);
             
             if (!words || words.length === 0) {
                 return res.status(404).json({ error: 'Aucun mot trouvé dans votre vocabulaire.' });
@@ -30,6 +30,7 @@ class WordSearchController {
             // Formater les données de sortie
             const wordList = words.map(word => ({
                 id: word.word_id,
+                detail_id: word.detail_id,
                 word: word.word,
                 meaning: word.meaning
             }));

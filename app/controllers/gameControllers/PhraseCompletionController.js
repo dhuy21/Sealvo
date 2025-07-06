@@ -19,7 +19,8 @@ class PhraseCompletionController {
             }
             
             // Compter le nombre de mots disponibles pour ce niveau
-            const wordCount = await learningModel.countUserWordsByLevel(req.session.user.id, levelGame);
+            const package_id = req.query.package;
+            const wordCount = await learningModel.countUserWordsByLevel(package_id, levelGame);
             
             return res.json({
                 success: true,
@@ -37,11 +38,11 @@ class PhraseCompletionController {
             if (!req.session.user) {
                 return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
             }
-            
+            const package_id = req.query.package;
             const previousWordId = req.query.previousWordId || null;
             
             // Récupérer un mot aléatoire du vocabulaire de l'utilisateur
-            const words = await learningModel.findRandomWordsExcluding(req.session.user.id, previousWordId, 1, levelGame);
+            const words = await learningModel.findRandomWordsExcluding(package_id, previousWordId, 1, levelGame);
             
             if (!words || words.length === 0) {
                 return res.status(404).json({ error: 'Aucun mot trouvé dans votre vocabulaire.' });
@@ -60,7 +61,6 @@ class PhraseCompletionController {
                 const parts = word.word.split(' ');
                 const excludedWords = ['something', 'someone', 'somebody', 'somebody', 'anything', 'everything', 'sth', 'sb', 'smth'];
                 const keptWords = parts.filter(w => !excludedWords.includes(w.toLowerCase()));
-                console.log('Kept words:', keptWords);
                 // Remplacer le mot par un blanc
                 if (keptWords.length > 0) {
                     // Tạo biểu thức chính quy cho từng từ cần thay thế

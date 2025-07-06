@@ -196,7 +196,7 @@
       <button id="save-progress" class="action-btn">
         <i class="fas fa-save"></i> Sauvegarder
       </button>
-      <a href="/games/flashMatch" class="action-btn game-btn">
+      <a href="/games/flashMatch?package={{package_id}}" class="action-btn game-btn">
         <i class="fas fa-gamepad"></i> Jouer pour apprendre
       </a>
     </div>
@@ -206,14 +206,14 @@
       <i class="fas fa-book"></i>
       <h3>Aucun mot dans votre vocabulaire</h3>
       <p>Commencez à ajouter des mots pour pouvoir les apprendre.</p>
-      <a href="/monVocabs/add" class="btn">Ajouter votre premier mot</a>
+      <a href="/monVocabs/add?package={{package_id}}" class="btn">Ajouter votre premier mot</a>
     </div>
   {{/if}}
   
   <div id="words-data" data-words="{{json words}}"></div>
 
   <div class="home-cta">
-    <a href="/monVocabs" class="btn back-btn">
+    <a href="/monVocabs?package={{package_id}}" class="btn back-btn">
       <i class="fas fa-arrow-left"></i> Retour à mon vocabulaire
     </a>
   </div>

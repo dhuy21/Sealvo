@@ -7,6 +7,7 @@ const gameRouter = require('./game/game');
 const apiRouter = require('./api');
 const authRouter = require('./auth/auth');
 const newUserDashboard = require('./user/dashboard');
+const newUserPackages = require('./package/package');
 const levelProgressRouter = require('./level_progress');
 // Import controllers
 
@@ -26,6 +27,7 @@ function route(app) {
     app.use('/logout', newUserLogout);
     app.use('/monVocabs', newVocabsRouter);
     app.use('/dashboard', newUserDashboard);
+    app.use('/myPackages', newUserPackages);
     app.use('/games', gameRouter);
     app.use('/api', apiRouter);
     app.use('/auth', authRouter);

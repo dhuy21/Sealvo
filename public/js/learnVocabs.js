@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (wordsContainer && wordsContainer.dataset.words) {
         try {
             allWords = JSON.parse(wordsContainer.dataset.words);
-            console.log(`Successfully loaded ${allWords.length} words from data attribute`);
         } catch (e) {
             console.error('Erreur lors du parsing des mots:', e);
         }
@@ -131,7 +130,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Mettre à jour l'affichage de la carte
     function updateCardDisplay() {
-      console.log(`Updating card display. Currently have ${currentWords.length} words, index: ${currentIndex}`);
       
       if (currentWords.length === 0) {
         console.error('No words available to display');
