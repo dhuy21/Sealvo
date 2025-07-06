@@ -47,19 +47,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const finalAccuracyDisplay = document.getElementById('final-accuracy');
     const perfectCountDisplay = document.getElementById('perfect-count');
     const highScoreMessage = document.getElementById('high-score-message');
+    const packageId = document.getElementById('package-id').getAttribute('data-package');
     
     // Écrans de jeu
     const preGameScreen = document.querySelector('.pre-game-screen');
     const activeGameScreen = document.querySelector('.active-game-screen');
     const postGameScreen = document.querySelector('.post-game-screen');
-    
-    console.log('DOM elements found:', {
-        startBtn: !!startGameBtn,
-        preGame: !!preGameScreen,
-        activeGame: !!activeGameScreen,
-        postGame: !!postGameScreen
-    });
-    
+
     // Initialize sound wave animations
     initializeSoundWaveAnimations();
     
@@ -148,7 +142,6 @@ document.addEventListener('DOMContentLoaded', function() {
             stream.getTracks().forEach(track => track.stop());
             
             microphonePermissionGranted = true;
-            console.log('Permission microphone accordée');
             return true;
         } catch (error) {
             console.error('Permission microphone refusée:', error);
@@ -309,7 +302,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour démarrer le jeu
     function startGame() {
-        console.log('Starting game...');
         
         // Réinitialiser les variables
         currentWord = null;
@@ -347,11 +339,9 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Switching to active game screen...');
         if (preGameScreen) {
             preGameScreen.classList.remove('active');
-            console.log('Pre-game screen hidden');
         }
         if (activeGameScreen) {
             activeGameScreen.classList.add('active');
-            console.log('Active game screen shown');
         }
         if (postGameScreen) {
             postGameScreen.classList.remove('active');
@@ -416,16 +406,12 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         recognition.onresult = (event) => {
-            console.log('Résultat de reconnaissance reçu');
             
             if (event.results && event.results.length > 0) {
                 const results = event.results[0];
                 if (results && results.length > 0) {
                     const spokenText = results[0].transcript.toLowerCase().trim();
                     const confidence = results[0].confidence || 0.5; // Fallback pour Safari
-                    
-                    console.log('Texte reconnu:', spokenText);
-                    console.log('Confiance:', confidence);
                     
                     // Traiter le résultat
                     processSpeechResult(spokenText, confidence);
@@ -526,7 +512,7 @@ document.addEventListener('DOMContentLoaded', function() {
             attemptCount = 0;
         }
         
-        fetch(`/games/testPronun/word?previous=${previousWordId || ''}`, {
+        fetch(`/games/testPronun/word?package=${packageId}&previous=${previousWordId || ''}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -541,7 +527,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Vérifier si le nouveau mot est le même que le précédent
-            if (previousWordId && data.id === previousWordId) {
+            if (previousWordId && data.detail_id === previousWordId) {
                 attemptCount++;
                 console.log(`Mot identique au précédent (tentative ${attemptCount}), rechargement...`);
                 
@@ -555,13 +541,12 @@ document.addEventListener('DOMContentLoaded', function() {
             attemptCount = 0;
             
             // Stocker l'ID du mot actuel
-            previousWordId = data.id;
+            previousWordId = data.detail_id;
             
             // Mettre à jour le mot courant
             currentWord = data;
             wordsList.push(data);
             
-            console.log('New word loaded:', data.word);
             
             // Afficher le mot et sa prononciation phonétique
             if (currentWordDisplay) currentWordDisplay.textContent = data.word;
@@ -774,7 +759,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Seuil strict pour la similarité
         if (levenshteinSimilarity < 0.6) {
-            console.log('Similarité trop faible, score bas');
             return Math.max(10, Math.round(levenshteinSimilarity * 30)); // Score très bas pour mots très différents
         }
         
@@ -1001,7 +985,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour suivre la progression de niveau
     function trackLevelProgress(isSuccessful) {
-        fetch('/level-progress/track', {
+        fetch(`/level-progress/track?package=${packageId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1089,6 +1073,4 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
-    console.log('TestPronun game script initialization complete');
 });

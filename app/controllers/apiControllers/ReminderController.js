@@ -25,7 +25,7 @@ class ReminderController {
             const users = await UserModel.getAllUsers();
             for (const user of users) {
                 // Vérifie si l'utilisateur a des mots à réviser aujourd'hui
-                const wordsToday = await LearningModel.findWordsTodayToLearn(user.id);
+                const wordsToday = await LearningModel.findWordsTodayToLearnAllPackages(user.id);
                 
                 // N'envoie un email que si l'utilisateur a des mots à réviser
                 if (wordsToday && wordsToday.length > 0) {

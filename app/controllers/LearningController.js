@@ -10,16 +10,16 @@ class LearningController {
     async generateEmail(user_id) {
         try {
             // Récupération des données pour le template
-            const wordIds = await learningModel.findWordsTodayToLearn(user_id);
+            const detailWordsIds = await learningModel.findWordsTodayToLearnAllPackages(user_id);
             const user = await userModel.findById(user_id);
             const streakData = await userModel.findStreakById(user_id);
             
             // Récupérer les détails complets des mots
             let allWords = [];
-            if (wordIds && wordIds.length > 0) {
+            if (detailWordsIds && detailWordsIds.length > 0) {
                 // Récupérer les détails de chaque mot
-                for (const item of wordIds) {
-                    const wordDetails = await wordModel.findById(item.word_id);
+                for (const item of detailWordsIds) {
+                    const wordDetails = await wordModel.findById(item.detail_id);
                     if (wordDetails) {
                         allWords.push(wordDetails);
                     }
@@ -36,12 +36,6 @@ class LearningController {
                     isLevel2: word.level === '2' || word.level === 2,
                 };
             });
-            
-            console.log('Données récupérées pour l\'email:');
-            console.log(`- User: ${user ? user.username : 'Non trouvé'}`);
-            console.log(`- Words count: ${totalWords}`);
-            console.log(`- Words shown: ${words.length}`);
-            console.log(`- Streak: ${streakData ? JSON.stringify(streakData) : 'Non disponible'}`);
             
             // Transformer les données de streak pour le template
             let streak = null;
@@ -65,7 +59,6 @@ class LearningController {
             }
             
             const templateSource = fs.readFileSync(templatePath, 'utf8');
-            console.log('Template chargé, longueur:', templateSource.length);
             
             // Tenter de compiler le template avec try/catch spécifique
             let template;

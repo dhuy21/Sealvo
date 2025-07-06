@@ -41,10 +41,9 @@ class UserController {
             }
             
             const totalWords = await wordModel.countUserWords(user.id);
-            const learnedWords = await learningModel.getNumWordsByLevel(user.id, 'v');
-            const newWords = await learningModel.getNumWordsByLevel(user.id, 'x');
-            const islearningWords = await learningModel.getNumWordsByLevel(user.id, '0') + await learningModel.getNumWordsByLevel(user.id, '1') + await learningModel.getNumWordsByLevel(user.id, '2');
-            console.log('islearningWords', islearningWords);
+            const learnedWords = await learningModel.getNumWordsByLevelAllPackages(user.id, 'v');
+            const newWords = await learningModel.getNumWordsByLevelAllPackages(user.id, 'x');
+            const islearningWords = await learningModel.getNumWordsByLevelAllPackages(user.id, '0') + await learningModel.getNumWordsByLevelAllPackages(user.id, '1') + await learningModel.getNumWordsByLevelAllPackages(user.id, '2');
             // Créer une session utilisateur (sans stocker le mot de passe)
             try {
                 req.session.user = {
@@ -60,9 +59,8 @@ class UserController {
                 newWords,
                 islearningWords
                 };
-                console.log('session exist', req.session.user);
             } catch (error) {
-                console.log('Erreur lors de la connexion:', error);
+                console.error('Erreur lors de la connexion:', error);
                 res.redirect('/login?error=Une erreur est survenue. Veuillez réessayer plus tard.');
             }
             
@@ -175,10 +173,9 @@ class UserController {
     dashboard(req, res) {
         // Vérifier si l'utilisateur est connecté
         if (!req.session.user) {
-            console.log('session do not exist', req.session);
+            console.error('session do not exist', req.session);
             return res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
         }
-        console.log('session exist', req.session);
         res.render('dashboard', {
             title: 'Tableau de bord',
             user: req.session.user

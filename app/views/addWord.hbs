@@ -4,7 +4,7 @@
   <h1>Ajouter un nouveau mot</h1>
 
   <div class="import-section">
-    <form action="/monVocabs/add/import" method="POST" enctype="multipart/form-data" class="import-form">
+    <form action="/monVocabs/add/import?package={{package_id}}" method="POST" enctype="multipart/form-data" class="import-form">
       <div class="file-upload-container">
         <input type="file" id="vocab-file" name="file" accept=".xlsx,.xls,.csv,.pdf" class="file-input">
         <label for="vocab-file" class="file-label">
@@ -55,7 +55,7 @@
   {{/if}}
   
     <!-- Formulaire pour ajouter plusieurs mots -->
-    <form action="/monVocabs/add" method="POST" class="word-form multiple-words-form">
+    <form action="/monVocabs/add?package={{package_id}}" method="POST" class="word-form multiple-words-form">
       <input type="hidden" name="isMultipleWords" value="true">
 
       <div class="table-responsive">
@@ -63,6 +63,7 @@
           <thead>
             <tr>
               <th>Mot</th>
+              <th>Langue</th>
               <th>Sujet</th>
               <th>Type</th>
               <th>Prononciation</th>
@@ -78,6 +79,7 @@
           <tbody id="word-rows">
             <tr class="word-row">
               <td><input type="text" name="words[]" required placeholder="Mot" class="form-control"></td>
+              <td><input type="text" name="language_codes[]" required placeholder="Langue" class="form-control"></td>
               <td><input type="text" name="subjects[]" required placeholder="Sujet" class="form-control"></td>
               <td>
                 <select name="types[]" required class="form-control">
@@ -125,7 +127,7 @@
     </form>
   
   <div class="form-actions">
-    <a href="/monVocabs" class="btn btn-tertiary">Annuler</a>
+    <a href="/monVocabs?package={{package_id}}" class="btn btn-tertiary">Annuler</a>
   </div>
 </div>
 
@@ -156,6 +158,7 @@
         newRow.className = 'word-row';
         newRow.innerHTML = `
           <td><input type="text" name="words[]" required placeholder="Mot" class="form-control"></td>
+          <td><input type="text" name="language_codes[]" required placeholder="Langue" class="form-control"></td>
           <td><input type="text" name="subjects[]" required placeholder="Sujet" class="form-control"></td>
           <td>
             <select name="types[]" required class="form-control">

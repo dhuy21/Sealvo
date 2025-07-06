@@ -1,5 +1,5 @@
 <link rel="stylesheet" href="/css/games/vocabQuiz.css">
-<div class="game-container">
+<div class="game-container" id="package-id" data-package="{{package_id}}">
     <div class="game-header">
         <h1>{{gameTitle}}</h1>
         <p class="game-description">{{gameDescription}}</p>
@@ -9,7 +9,7 @@
     <div class="error-box">
         <i class="fas fa-exclamation-triangle"></i>
         <p>{{errorMessage}}</p>
-        <a href="/monVocabs/add" class="btn add-words-btn">Ajouter des mots</a>
+        <a href="/monVocabs/add?package={{package_id}}" class="btn add-words-btn">Ajouter des mots</a>
     </div>
     {{else}}
     
@@ -92,7 +92,7 @@
                 
                 <div class="action-buttons">
                     <button id="play-again" class="play-again-btn">Rejouer</button>
-                    <a href="/games" class="back-btn">Retour aux jeux</a>
+                    <a href="/games?package={{package_id}}" class="back-btn">Retour aux jeux</a>
                 </div>
             </div>
         </div>
@@ -100,13 +100,13 @@
     {{/if}}
     
     <div class="game-footer">
-        <a href="/games" class="btn back-btn">
+        <a href="/games?package={{package_id}}" class="btn back-btn">
             <i class="fas fa-arrow-left"></i> Retour aux jeux
         </a>
-        <a href="/monVocabs/learn" class="btn learn-btn">
+        <a href="/monVocabs/learn?package={{package_id}}" class="btn learn-btn">
             <i class="fas fa-book"></i> Apprendre
         </a>
-        <a href="/games/phraseCompletion" class="btn next-btn">
+        <a href="/games/phraseCompletion?package={{package_id}}" class="btn next-btn">
             <i class="fas fa-arrow-right"></i> Jeu suivant
         </a>
     </div>

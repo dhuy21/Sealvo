@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const correctAnswersDisplay = document.getElementById('correct-answers');
     const accuracyDisplay = document.getElementById('accuracy');
     const highScoreMessage = document.getElementById('high-score-message');
+    const packageId = document.getElementById('package-id').getAttribute('data-package');
     
     // Écrans de jeu
     const preGameScreen = document.querySelector('.pre-game-screen');
@@ -267,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fonction pour démarrer le jeu
     function startGame() {
         // Vérifier le nombre de mots disponibles
-        fetch('/games/vocabQuiz/available-words', {
+        fetch(`/games/vocabQuiz/available-words?package=${packageId}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -284,8 +285,6 @@ document.addEventListener('DOMContentLoaded', function() {
             availableWords = data.count;
             totalQuestions = Math.min(availableWords, maxQuestions);
             totalQuestions += parseInt(0.5*availableWords);
-            console.log('Nombre de mots disponibles:', availableWords);
-            console.log('Nombre de questions:', totalQuestions);
             
             // Continuer l'initialisation du jeu
             initializeGame();
@@ -331,7 +330,7 @@ document.addEventListener('DOMContentLoaded', function() {
         resultMessage.className = 'result-message';
         
         // Appel à l'API pour obtenir une question
-        fetch(`/games/vocabQuiz/question`, {
+        fetch(`/games/vocabQuiz/question?package=${packageId}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -555,7 +554,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour suivre la progression de niveau
     function trackLevelProgress(isSuccessful) {
-        fetch('/level-progress/track', {
+        fetch(`/level-progress/track?package=${packageId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

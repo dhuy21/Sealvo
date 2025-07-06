@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const finalTime = document.getElementById('final-time');
     const finalMoves = document.getElementById('final-moves');
     const highScoreMessage = document.getElementById('high-score-message');
+    const packageId = document.getElementById('package-id').getAttribute('data-package');
     
     // Écrans de jeu
     const preGameScreen = document.querySelector('.pre-game-screen');
@@ -140,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fonction pour charger les cartes
     function loadCards() {
         // Faire la requête API pour obtenir les cartes
-        fetch(`/games/flashMatch/cards`, {
+        fetch(`/games/flashMatch/cards?package=${packageId}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -406,7 +407,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour suivre la progression de niveau
     function trackLevelProgress(isSuccessful) {
-        fetch('/level-progress/track', {
+        fetch(`/level-progress/track?package=${packageId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

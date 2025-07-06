@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const wordsFoundDisplay = document.getElementById('words-found');
     const accuracyDisplay = document.getElementById('accuracy');
     const highScoreMessage = document.getElementById('high-score-message');
+    const packageId = document.getElementById('package-id').getAttribute('data-package');
     
     // Écrans de jeu
     const preGameScreen = document.querySelector('.pre-game-screen');
@@ -71,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function loadNextWord() {
         // Simuler une requête à l'API pour obtenir un mot
         // Dans une vraie implémentation, vous feriez un appel fetch à votre API
-        fetch('/games/wordScramble/word', {
+        fetch(`/games/wordScramble/word?package=${packageId}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -110,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Simuler une vérification de la réponse
         // Dans une vraie implémentation, vous feriez un appel fetch à votre API
-        fetch('/games/wordScramble/check', {
+        fetch(`/games/wordScramble/check?package=${packageId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -149,7 +150,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Simuler un saut de mot
         // Dans une vraie implémentation, vous feriez un appel fetch à votre API
-        fetch('/games/wordScramble/skip', {
+        fetch(`/games/wordScramble/skip?package=${packageId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -253,7 +254,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour suivre la progression de niveau
     function trackLevelProgress(isSuccessful) {
-        fetch('/level-progress/track', {
+        fetch(`/level-progress/track?package=${packageId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
