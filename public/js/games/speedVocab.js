@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const wpmDisplay = document.getElementById('wpm');
     const playAgainBtn = document.getElementById('play-again');
     const highScoreMessage = document.getElementById('high-score-message');
+    const packageId = document.getElementById('speed-vocab').getAttribute('data-package');
     
     // Écrans de jeu
     const preGameScreen = document.querySelector('.pre-game-screen');
@@ -62,7 +63,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Verify required elements exist before initializing
     if (!activeGameScreen || !preGameScreen || !postGameScreen) {
-        console.log('Required game elements not found, skipping initialization');
         return;
     }
     
@@ -157,7 +157,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fonction pour créer les lignes de vitesse
     function createSpeedLines() {
         if (!activeGameScreen) {
-            console.log('activeGameScreen not found, skipping speed lines creation');
             return;
         }
         
@@ -294,7 +293,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Simuler une requête à l'API pour obtenir un mot
-        fetch(`/games/speedVocab/word?previous=${previousWordId || ''}`, {
+        fetch(`/games/speedVocab/word?previous=${previousWordId || ''}&package=${packageId}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -308,9 +307,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Vérifier si le nouveau mot est le même que le précédent
-            if (previousWordId && data.word_id === previousWordId) {
+            if (previousWordId && data.detail_id === previousWordId) {
                 attemptCount++;
-                console.log(`Mot identique au précédent (tentative ${attemptCount}), rechargement...`);
                 
                 // Attendre un peu avant de réessayer pour éviter les problèmes de timing
                 setTimeout(() => {
@@ -323,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function() {
             attemptCount = 0;
             
             // Stocker l'ID du mot actuel comme "précédent" pour la prochaine fois
-            previousWordId = data.word_id;
+            previousWordId = data.detail_id;
             
             // Mettre à jour le mot courant
             currentWord = data;
@@ -521,7 +519,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour suivre la progression de niveau
     function trackLevelProgress(isSuccessful) {
-        fetch('/level-progress/track', {
+        fetch(`/level-progress/track?package=${packageId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

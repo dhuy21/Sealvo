@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const avgTimeDisplay = document.getElementById('avg-time');
     const highScoreMessage = document.getElementById('high-score-message');
     const playAgainBtn = document.getElementById('play-again');
-    
+    const package_id = document.getElementById('package-id').getAttribute('data-package');
     // Écrans de jeu
     const preGameScreen = document.querySelector('.pre-game-screen');
     const activeGameScreen = document.querySelector('.active-game-screen');
@@ -315,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fonction pour démarrer le jeu
     function startGame() {
         // Vérifier le nombre de mots disponibles
-        fetch('/games/phraseCompletion/available-words', {
+        fetch(`/games/phraseCompletion/available-words?package=${package_id}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -405,7 +405,7 @@ document.addEventListener('DOMContentLoaded', function() {
         startQuestionTime = Date.now();
         
         // Charger une nouvelle phrase du serveur
-        fetch(`/games/phraseCompletion/phrase?previousWordId=${previousWordId || ''}`, {
+        fetch(`/games/phraseCompletion/phrase?previousWordId=${previousWordId || ''}&package=${package_id}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -421,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Stocker les données de la phrase courante
             currentPhrase = data;
-            previousWordId = data.word_id;
+            previousWordId = data.detail_id;
             correctWord = data.word;
             
             // Formater la phrase avec un espace pour saisir le mot
@@ -474,7 +474,7 @@ document.addEventListener('DOMContentLoaded', function() {
             wordMeaning.textContent = `Signification: ${currentPhrase.meaning}`;
         }
         
-        fetch(`/games/phraseCompletion/check`, {
+        fetch(`/games/phraseCompletion/check?package=${package_id}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -559,7 +559,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour passer à la phrase suivante
     function goToNextPhrase() {
-        console.log('Going to next phrase');
         
         // Si c'est la dernière question, terminer le jeu
         if (questionsAnswered >= totalQuestions) {
@@ -664,7 +663,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour suivre la progression de niveau
     function trackLevelProgress(isSuccessful) {
-        fetch('/level-progress/track', {
+        fetch(`/level-progress/track?package=${package_id}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

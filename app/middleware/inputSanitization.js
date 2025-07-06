@@ -54,12 +54,10 @@ const initializeInputSanitization = (app) => {
   // Apply route-specific sanitization
   Object.entries(sanitizationRoutes).forEach(([name, config]) => {
     app.use(config.path, sanitizeInput(config.fields));
-    console.log(`Input sanitization configured for ${config.path}`);
   });
 
   // Apply general sanitization for all POST routes
   app.use(generalSanitizationMiddleware);
-  console.log('General input sanitization middleware initialized');
 };
 
 module.exports = {

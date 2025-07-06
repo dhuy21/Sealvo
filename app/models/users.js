@@ -91,15 +91,6 @@ class User {
             const password = userData.password;
             const ava = userData.ava || 1; // Default avatar is 1
             
-            // Log the values being inserted (without sensitive info)
-            console.log('Creating user with values:', {
-                id: userId,
-                username: username,
-                email: email, 
-                hasPassword: !!password,
-                ava: ava
-            });
-            
             // Insérer l'utilisateur avec l'ID généré
             const [result] = await global.dbConnection.execute(
                 'INSERT INTO users (id, username, email, password, ava) VALUES (?, ?, ?, ?, ?)', 

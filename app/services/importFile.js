@@ -53,15 +53,16 @@ const processExcelFile = async (filePath) => {
                 words.push({
                     id: i,
                     word: row[0] || '',
-                    subject: row[1] || '',
-                    type: row[2] || '',
-                    pronunciation: row[3] || '',
-                    meaning: row[4] || '',
-                    example: row[5] || '',
-                    synonyms: row[6] || '',
-                    antonyms: row[7] || '',
-                    grammar: row[8] || '',
-                    level: row[9] 
+                    language_code: row[1] || '',
+                    subject: row[2] || '',
+                    type: row[3] || '',
+                    pronunciation: row[4] || '',
+                    meaning: row[5] || '',
+                    example: row[6] || '',
+                    synonyms: row[7] || '',
+                    antonyms: row[8] || '',
+                    grammar: row[9] || '',
+                    level: row[10] 
                 });
             }
         }
@@ -83,10 +84,6 @@ const processPdfFile = async (filePath) => {
         // Extraction de texte basique - cette partie peut nécessiter un module plus avancé
         // comme pdf.js ou pdfjs-extract pour une extraction complète du texte
         const words = [];
-        
-        // Note: Ce code est un placeholder. L'extraction réelle du texte PDF
-        // nécessitera une bibliothèque plus spécialisée
-        console.log('Traitement de PDF non implémenté de manière complète');
         
         return words;
     } catch (error) {
@@ -118,6 +115,7 @@ class ImportFile {
                 if (err) {
                     return res.render('addWord', {
                         title: 'Ajouter un mot',
+                        package_id: req.query.package,
                         user: req.session.user,
                         error: err.message
                     });
@@ -126,6 +124,7 @@ class ImportFile {
                 if (!req.file) {
                     return res.render('addWord', {
                         title: 'Ajouter un mot',
+                        package_id: req.query.package,
                         user: req.session.user,
                         error: 'Aucun fichier n\'a été téléchargé'
                     });
@@ -149,6 +148,7 @@ class ImportFile {
                 if (words.length === 0) {
                     return res.render('addWord', {
                         title: 'Ajouter un mot',
+                        package_id: req.query.package,
                         user: req.session.user,
                         error: 'Aucun mot n\'a été trouvé dans le fichier importé'
                     });
@@ -162,6 +162,7 @@ class ImportFile {
                             words_no_example.push({
                                 id: word.id,
                                 word: word.word,
+                                language_code: word.language_code,
                                 meaning: word.meaning,
                                 type: word.type
                             });
@@ -172,8 +173,7 @@ class ImportFile {
                 }
                 
                 if (words_no_example.length > 0) {
-                    console.log('🔄 Generating examples for words without examples...');
-                    console.log(`📊 Words to process: ${words_no_example.length}`);
+                    console.log('Generating examples for words without examples...');
                     
                     try {
                         const words_with_examples = await geminiService.generateExemple(words_no_example);
@@ -194,14 +194,11 @@ class ImportFile {
                 // Ajouter chaque mot à la base de données
                 let successCount = 0;
                 let errorCount = 0;
-                
-                console.log(`Traitement de ${words.length} mots à importer`);
-                
-                console.log(words);
+            
                 for (const wordData of words) {
                     try {
                         // Vérifier que les champs obligatoires sont présents
-                        if (!wordData.word || !wordData.subject || !wordData.type || 
+                        if (!wordData.word || !wordData.language_code || !wordData.subject || !wordData.type || 
                             !wordData.meaning ) {
                             errorCount++;
                             continue;
@@ -212,7 +209,9 @@ class ImportFile {
                             wordData.level = 'x'; // Niveau par défaut
                         }
 
-                        await wordModel.create(wordData, req.session.user.id);
+                        const package_id = req.query.package;
+
+                        await wordModel.create(wordData, package_id);
                         successCount++;
 
                     } catch (error) {
@@ -220,19 +219,18 @@ class ImportFile {
                         errorCount++;
                     }
                 }
-                
+                const package_id = req.query.package;
                 // Supprimer le fichier temporaire
                 fs.unlinkSync(filePath);
-                
-                console.log(`Importation terminée: ${successCount} succès, ${errorCount} erreurs`);
-                
+                    
                 // Rediriger avec un message de succès
-                res.redirect(`/monVocabs?success=${successCount} mot(s) importé(s) avec succès. ${errorCount} erreur(s)`);
+                res.redirect(`/monVocabs?package=${package_id}&success=${successCount} mot(s) importé(s) avec succès. ${errorCount} erreur(s)`);
             });
         } catch (error) {
             console.error('Erreur lors de l\'importation des mots:', error);
             res.render('addWord', {
                 title: 'Ajouter un mot',
+                package_id: req.query.package,
                 user: req.session.user,
                 error: 'Une erreur est survenue lors de l\'importation des mots'
             });
