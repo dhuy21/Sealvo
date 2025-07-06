@@ -15,7 +15,7 @@ class FlashMatchController {
             if (!req.session.user) {
                 return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
             }
-            
+            const package_id = req.query.package;
             // Déterminer le nombre de paires en fonction de la difficulté
             let pairsCount = 15; // Par défaut
             
@@ -23,10 +23,10 @@ class FlashMatchController {
             const maxPairsCount = 15; // Par défaut
             
             // Récupérer tous les mots de l'utilisateur
-            const wordIds = await learningModel.findWordsByLevel(req.session.user.id, levelGame);
+            const detailWordsIds = await learningModel.findWordsByLevel(package_id, levelGame);
             let words = [];
-            for (const wordId of wordIds) {
-                const word = await wordModel.findById(wordId.word_id);
+            for (const detailWordId of detailWordsIds) {
+                const word = await wordModel.findById(detailWordId.detail_id);
                 words.push(word);
             }
             

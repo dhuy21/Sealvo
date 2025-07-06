@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const highScoreMessage = document.getElementById('high-score-message');
     const playAgainBtn = document.getElementById('play-again');
     const showHintBtn = document.getElementById('show-hint');
+    const packageId = document.getElementById('package-id').getAttribute('data-package');
   
     
     // Letter explosion background variables
@@ -64,7 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Letter explosion background functions
     function initializeLetterExplosionBackground() {
-        console.log('Initializing letter explosion background...');
         
         // Clean up any existing background
         if (letterExplosionBackground && letterExplosionBackground.parentNode) {
@@ -84,12 +84,9 @@ document.addEventListener('DOMContentLoaded', () => {
         letterExplosionBackground.style.overflow = 'hidden';
         document.body.appendChild(letterExplosionBackground);
         
-        console.log('Letter explosion background created:', letterExplosionBackground);
-        
         // Add letter explosion mode to game container
         if (gameContainer) {
             gameContainer.classList.add('letter-explosion-mode');
-            console.log('Added letter-explosion-mode to game container');
         }
         
         // Start background letter animations
@@ -97,7 +94,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Create immediate welcome explosion sequence
         setTimeout(() => {
-            console.log('Creating welcome explosion sequence...');
             createRandomLetterBurst();
         }, 500);
         
@@ -136,7 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 4000 + Math.random() * 4000); // Every 4-8 seconds
         
         letterAnimationIntervals.push(burstInterval, explodingInterval, spiralInterval);
-        console.log('Background animation intervals created:', letterAnimationIntervals.length);
         
         // Create immediate explosion when starting
         setTimeout(() => {
@@ -387,7 +382,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialisation
     function init() {
-        console.log('Initializing Word Search game...');
         
         // Initialize letter explosion background
         initializeLetterExplosionBackground();
@@ -483,7 +477,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        console.log('Word Search game initialized successfully');
     }
     
     // Démarrer le jeu
@@ -506,7 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
             startTime = Date.now();
             
             // Charger les mots depuis le serveur
-            const response = await fetch(`/games/wordSearch/words`);
+            const response = await fetch(`/games/wordSearch/words?package=${packageId}`);
             const data = await response.json();
             
             if (!response.ok) {
@@ -871,10 +864,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Afficher un indice
     function showHint() {
-        console.log('showHint called - gameActive:', gameActive, 'foundWords:', foundWords.length, 'totalWords:', words.length);
         
         if (!gameActive || foundWords.length >= words.length) {
-            console.log('showHint early return - game not active or all words found');
             return;
         }
         
@@ -882,17 +873,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const remainingWords = words.filter(word => !foundWords.includes(word.word));
         
         if (remainingWords.length === 0) {
-            console.log('showHint early return - no remaining words');
             return;
         }
-        
-        console.log('Remaining words:', remainingWords.length);
         
         // Choisir un mot aléatoire parmi les mots restants
         const randomWord = remainingWords[Math.floor(Math.random() * remainingWords.length)];
         const word = randomWord.word.toUpperCase().replace(/[^A-Z]/g, '');
-        
-        console.log('Selected hint word:', word);
         
         // Trouver la position du mot dans la grille
         let hintPosition = null;
@@ -910,8 +896,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (hintPosition) break;
         }
-        
-        console.log('Hint position found:', hintPosition);
         
         if (hintPosition) {
             try {
@@ -948,7 +932,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Add to body for iOS Safari compatibility
                 document.body.appendChild(hintNotification);
-                console.log('Hint notification created and added to body');
                 
                 // Force reflow for iOS Safari
                 hintNotification.offsetHeight;
@@ -957,7 +940,6 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                     hintNotification.style.opacity = '1';
                     hintNotification.style.transform = 'translateX(-50%) translateY(0)';
-                    console.log('Hint notification shown');
             }, 100);
             
             setTimeout(() => {
@@ -966,26 +948,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => {
                         if (hintNotification.parentNode) {
                             hintNotification.parentNode.removeChild(hintNotification);
-                            console.log('Hint notification removed');
                         }
                 }, 500);
             }, 3000);
             
             // Déterminer le type d'indice à afficher (aléatoire entre 3 types)
             const hintType = Math.floor(Math.random() * 3);
-                console.log('Hint type selected:', hintType);
             
             switch (hintType) {
                 case 0: // Type 1: Montrer la première lettre
-                        console.log('Showing first letter hint');
                     highlightFirstLetter(hintPosition);
                     break;
                 case 1: // Type 2: Montrer la direction du mot
-                        console.log('Showing direction hint');
                     showDirectionHint(hintPosition);
                     break;
                 case 2: // Type 3: Montrer un aperçu rapide du mot complet
-                        console.log('Showing flash word hint');
                     flashEntireWord(hintPosition);
                     break;
             }
@@ -993,7 +970,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Réduire le score pour avoir utilisé un indice
                 score = Math.max(0, score - 20);
                 scoreDisplay.textContent = score;
-                console.log('Score reduced for hint usage. New score:', score);
                 
             } catch (error) {
                 console.error('Error in showHint function:', error);
@@ -1334,7 +1310,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Fonction pour suivre la progression de niveau
     function trackLevelProgress(isSuccessful) {
-        fetch('/level-progress/track', {
+        fetch(`/level-progress/track?package=${packageId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

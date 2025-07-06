@@ -17,14 +17,14 @@ class VocabQuizController {
             if (!req.session.user) {
                 return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
             }
-            
+            const package_id = req.query.package;
             const optionsCount = 6
             
             // Récupérer tous les mots de l'utilisateur
-            const wordIds = await learningModel.findWordsByLevel(req.session.user.id, levelGame);
+            const detailWordsIds = await learningModel.findWordsByLevel(package_id, levelGame);
             let words = [];
-            for (const wordId of wordIds) {
-                const word = await wordModel.findById(wordId.word_id);
+            for (const detailWordId of detailWordsIds) {
+                const word = await wordModel.findById(detailWordId.detail_id);
                 words.push(word);
             }
             
@@ -101,7 +101,8 @@ class VocabQuizController {
             }
             
             // Compter le nombre de mots disponibles pour ce niveau
-            const wordCount = await learningModel.countUserWordsByLevel(req.session.user.id, levelGame);
+            const package_id = req.query.package;
+            const wordCount = await learningModel.countUserWordsByLevel(package_id, levelGame);
             
             return res.json({
                 success: true,
