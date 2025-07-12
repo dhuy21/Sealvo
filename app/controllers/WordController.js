@@ -11,7 +11,7 @@ class WordController {
             }
             const package_id = req.query.package;
             // Récupérer tous les mots de l'utilisateur
-            const words = await wordModel.findWordsByUserId(package_id);
+            const words = await wordModel.findWordsByPackageId(package_id);
 
             // Grouper les mots par niveau
             const wordsByLevel = {};
@@ -363,7 +363,7 @@ class WordController {
             }
 
             // Récupérer les mots de l'utilisateur
-            const words = await wordModel.findWordsByUserId(package_id);
+            const words = await wordModel.findWordsByPackageId(package_id);
             const wordIdsToReview = await learningModel.findWordsTodayToLearn(package_id);
 
             // Add dueToday flag to each word

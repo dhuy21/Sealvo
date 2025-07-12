@@ -58,9 +58,6 @@
       </div>
     </div>
     
-    <button class="btn btn-primary create-package-btn" id="createPackageBtn">
-      <i class="fas fa-plus"></i> Créer un package
-    </button>
   </div>
 
   <!-- Search Bar -->
@@ -68,32 +65,46 @@
     <div class="search-form">
       <div class="input-group">
         <input 
-          type="text" 
+          type="search" 
           id="search-input"
-          placeholder="Rechercher un package..."
+          placeholder="Rechercher ..."
           class="search-input"
         >
         <button type="button" id="search-btn" class="search-btn">
           <i class="fas fa-search"></i>
         </button>
-        <button type="button" id="clear-search-btn" class="clear-search-btn" style="display: none;">
-          <i class="fas fa-times"></i>
-        </button>
       </div>
     </div>
+    <button class="continue-application" id="createPackageBtn">
+      <div>
+          <div class="pencil"></div>
+          <div class="folder">
+              <div class="top">
+                  <svg viewBox="0 0 24 27">
+                      <path d="M1,0 L23,0 C23.5522847,-1.01453063e-16 24,0.44771525 24,1 L24,8.17157288 C24,8.70200585 23.7892863,9.21071368 23.4142136,9.58578644 L20.5857864,12.4142136 C20.2107137,12.7892863 20,13.2979941 20,13.8284271 L20,26 C20,26.5522847 19.5522847,27 19,27 L1,27 C0.44771525,27 6.76353751e-17,26.5522847 0,26 L0,1 C-6.76353751e-17,0.44771525 0.44771525,1.01453063e-16 1,0 Z"></path>
+                  </svg>
+              </div>
+              <div class="paper"></div>
+          </div>
+      </div>
+      <span><div class="fas fa-plus"></div></span>
+    </button>
   </div>
 
   <!-- Filter Options -->
   <div class="filter-container fade-in">
     <div class="filter-tabs">
-      <button class="filter-tab active" data-filter="all">
-        <i class="fas fa-list"></i> Tous
+      <button class="filter-tab active" data-filter="my-packages">
+        <i class="fas fa-user"></i> Mes Packages
+      </button>
+      <button class="filter-tab" data-filter="all-public">
+        <i class="fas fa-globe"></i> Packages Publics
       </button>
       <button class="filter-tab" data-filter="private">
         <i class="fas fa-lock"></i> Privés
       </button>
       <button class="filter-tab" data-filter="public">
-        <i class="fas fa-globe"></i> Publics
+        <i class="fas fa-share"></i> Mes Publics
       </button>
       <button class="filter-tab" data-filter="protected">
         <i class="fas fa-shield-alt"></i> Protégés
@@ -101,20 +112,25 @@
     </div>
   </div>
 
-  <!-- Packages Grid -->
+  <!-- My Packages Grid -->
   <div class="packages-grid fade-in" id="packagesGrid">
     {{#if packages.length}}
       {{#each packages}}
-        <div class="package-card" data-package-id="{{this.package_id}}" data-mode="{{this.mode}}">
+        <div class="package-card {{#unless this.is_active}}inactive{{/unless}}" data-package-id="{{this.package_id}}" data-mode="{{this.mode}}">
           <div class="package-card-header">
-            <div class="package-mode-badge mode-{{this.mode}}">
-              {{#if (eq this.mode 'private')}}
-                <i class="fas fa-lock"></i> Privé
-              {{else if (eq this.mode 'public')}}
-                <i class="fas fa-globe"></i> Public
-              {{else if (eq this.mode 'protected')}}
-                <i class="fas fa-shield-alt"></i> Protégé
-              {{/if}}
+            <div class="package-badges">
+              <div class="package-mode-badge mode-{{this.mode}}">
+                {{#if (eq this.mode 'private')}}
+                  <i class="fas fa-lock"></i> Privé
+                {{else if (eq this.mode 'public')}}
+                  <i class="fas fa-globe"></i> Public
+                {{else if (eq this.mode 'protected')}}
+                  <i class="fas fa-shield-alt"></i> Protégé
+                {{/if}}
+              </div>
+              <div class="status-badge {{#if this.is_active}}active{{else}}inactive{{/if}}">
+                {{#if this.is_active}}Actif{{else}}Inactif{{/if}}
+              </div>
             </div>
             <div class="package-actions">
               <button class="action-btn edit-btn" data-package-id="{{this.package_id}}" title="Modifier">
@@ -135,11 +151,24 @@
           </div>
           
           <div class="package-card-footer">
-            <button class="btn btn-primary view-package-btn" data-package-id="{{this.package_id}}">
-              <i class="fas fa-eye"></i> Voir le package
+            <button class=" pushable view-package-btn" data-package-id="{{this.package_id}}">
+              <span class="shadow"></span>
+              <span class="edge"></span>
+              <span class="front custom-front" > <i class="fas fa-eye"> </i> Voir</span>
             </button>
-            <button class="btn btn-secondary learn-package-btn" data-package-id="{{this.package_id}}">
-              <i class="fas fa-graduation-cap"></i> Apprendre
+            <button class=" pushable learn-package-btn" data-package-id="{{this.package_id}}">
+              <span class="shadow"></span>
+              <span class="edge"></span>
+              <span class="front"> <i class="fas fa-graduation-cap"></i> Apprendre</span>
+            </button>
+            <button class="pushable toggle-activation-btn {{#if this.is_active}}pushable-warning{{else}}pushable-success{{/if}}" data-package-id="{{this.package_id}}">
+              <span class="shadow {{#if this.is_active}}shadow-warning{{else}}shadow-success{{/if}}"></span>
+              <span class="edge {{#if this.is_active}}edge-warning{{else}}edge-success{{/if}}"></span>
+              <span class="front {{#if this.is_active}}front-warning{{else}}front-success{{/if}}"> {{#if this.is_active}}
+                <i class="fas fa-pause"></i> Désactiver
+              {{else}}
+                <i class="fas fa-play"></i> Activer
+              {{/if}}
             </button>
           </div>
         </div>
@@ -154,6 +183,64 @@
         <button class="btn btn-primary create-first-package-btn">
           <i class="fas fa-plus"></i> Créer mon premier package
         </button>
+      </div>
+    {{/if}}
+  </div>
+
+  <!-- Public Packages Grid -->
+  <div class="packages-grid fade-in" id="publicPackagesGrid" style="display: none;">
+    {{#if publicPackages.length}}
+      {{#each publicPackages}}
+        <div class="package-card public-package" data-package-id="{{this.package_id}}" data-mode="{{this.mode}}" data-owner="{{this.username}}">
+          <div class="package-card-header">
+            <div class="package-badges">
+              <div class="package-mode-badge mode-{{this.mode}}">
+                <i class="fas fa-globe"></i> Public
+              </div>
+              <div class="owner-badge">
+                <i class="fas fa-user"></i> {{this.username}}
+              </div>
+            </div>
+          </div>
+          
+          <div class="package-card-body">
+            <div class="package-public-icon">
+              <!-- From Uiverse.io by FWDJc -->
+              <div class="eye-lid">
+                <div class="eye">
+                  <div class="cornea">
+                    <div class="white-pupil"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <h3 class="package-name">{{this.package_name}}</h3>
+            <p class="package-description">{{this.package_description}}</p>
+          </div>
+          
+          <div class="package-card-footer">
+            <button class="pushable view-public-package-btn" data-package-id="{{this.package_id}}">
+              <span class="shadow"></span>
+              <span class="edge"></span>
+              <span class="front"> <i class="fas fa-eye"> </i> Voir</span>
+            </button>
+            {{#unless (eq this.user_id ../user.id)}}
+            <button class="pushable copy-package-btn" data-package-id="{{this.package_id}}">
+              <span class="shadow-copy"></span>
+              <span class="edge-copy"></span>
+              <span class="front-copy"> <i class="fas fa-download"> </i> Copier</span>
+            </button>
+            {{/unless}}
+          </div>
+        </div>
+      {{/each}}
+    {{else}}
+      <div class="empty-state">
+        <div class="empty-icon">
+          <i class="fas fa-globe"></i>
+        </div>
+        <h3>Aucun package public trouvé</h3>
+        <p>Il n'y a actuellement aucun package public disponible</p>
       </div>
     {{/if}}
   </div>
