@@ -19,7 +19,7 @@ class ReminderController {
         this.reminder = this.reminder.bind(this);
         this.sendEmail = this.sendEmail.bind(this);
     }
-
+    
     async reminder(req, res) {
         try {
             const users = await UserModel.getAllUsers();

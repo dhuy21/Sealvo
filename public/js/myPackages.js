@@ -11,11 +11,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Variables globales
     let allPackages = [];
-    let currentFilter = 'all';
+    let allPublicPackages = [];
+    let currentFilter = 'my-packages';
     let currentEditId = null;
 
     // Éléments DOM
     const packagesGrid = document.getElementById('packagesGrid');
+    const publicPackagesGrid = document.getElementById('publicPackagesGrid');
     const searchInput = document.getElementById('search-input');
     const searchBtn = document.getElementById('search-btn');
     const clearSearchBtn = document.getElementById('clear-search-btn');
@@ -51,7 +53,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Charger les données des packages depuis le DOM
     function loadPackagesData() {
-        const packageCards = document.querySelectorAll('.package-card');
+        // Charger les packages de l'utilisateur
+        const packageCards = document.querySelectorAll('#packagesGrid .package-card');
         allPackages = [];
 
         packageCards.forEach(card => {
@@ -65,7 +68,23 @@ document.addEventListener('DOMContentLoaded', function() {
             allPackages.push(packageData);
         });
 
-        console.log(`Loaded ${allPackages.length} packages`);
+        // Charger les packages publics
+        const publicPackageCards = document.querySelectorAll('#publicPackagesGrid .package-card');
+        allPublicPackages = [];
+
+        publicPackageCards.forEach(card => {
+            const packageData = {
+                id: card.dataset.packageId,
+                mode: card.dataset.mode,
+                owner: card.dataset.owner,
+                name: card.querySelector('.package-name')?.textContent || '',
+                description: card.querySelector('.package-description')?.textContent || '',
+                element: card
+            };
+            allPublicPackages.push(packageData);
+        });
+
+        console.log(`Loaded ${allPackages.length} user packages and ${allPublicPackages.length} public packages`);
     }
 
     // Configuration des event listeners
@@ -132,6 +151,24 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.learn-package-btn').forEach(btn => {
             btn.addEventListener('click', handleLearnPackage);
         });
+
+        // Toggle activation buttons
+        document.querySelectorAll('.toggle-activation-btn').forEach(btn => {
+            btn.addEventListener('click', handleToggleActivation);
+        });
+
+        // Public package buttons
+        document.querySelectorAll('.view-public-package-btn').forEach(btn => {
+            btn.addEventListener('click', handlePublicViewPackage);
+        });
+
+        document.querySelectorAll('.learn-public-package-btn').forEach(btn => {
+            btn.addEventListener('click', handleLearnPackage);
+        });
+
+        document.querySelectorAll('.copy-package-btn').forEach(btn => {
+            btn.addEventListener('click', handleCopyPackage);
+        });
     }
 
     // Gestion de la recherche
@@ -152,15 +189,24 @@ document.addEventListener('DOMContentLoaded', function() {
         // Afficher le bouton clear
         showClearButton();
 
-        // Filtrer les packages
-        filterPackages(searchTerm, currentFilter);
+        // Filtrer selon la vue actuelle
+        if (currentFilter === 'all-public') {
+            filterPublicPackages(searchTerm);
+        } else {
+            filterPackages(searchTerm, currentFilter);
+        }
     }
 
     // Effacer la recherche
     function clearSearch() {
         searchInput.value = '';
         hideClearButton();
-        filterPackages('', currentFilter);
+        
+        if (currentFilter === 'all-public') {
+            filterPublicPackages('');
+        } else {
+            filterPackages('', currentFilter);
+        }
     }
 
     // Afficher/masquer le bouton clear
@@ -195,9 +241,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // Mettre à jour le filtre actuel
         currentFilter = e.target.dataset.filter;
         
-        // Appliquer le filtre
-        const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
-        filterPackages(searchTerm, currentFilter);
+        // Gérer l'affichage des grilles
+        if (currentFilter === 'all-public') {
+            packagesGrid.style.display = 'none';
+            publicPackagesGrid.style.display = 'grid';
+            filterPublicPackages();
+        } else {
+            packagesGrid.style.display = 'grid';
+            publicPackagesGrid.style.display = 'none';
+            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            filterPackages(searchTerm, currentFilter);
+        }
 
         // Animation de l'onglet
         e.target.style.transform = 'scale(0.95)';
@@ -207,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Filtrer les packages
-    function filterPackages(searchTerm = '', filter = 'all') {
+    function filterPackages(searchTerm = '', filter = 'my-packages') {
         let visibleCount = 0;
         let hasResults = false;
 
@@ -216,7 +270,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 package.name.toLowerCase().includes(searchTerm) ||
                 package.description.toLowerCase().includes(searchTerm);
             
-            const matchesFilter = filter === 'all' || package.mode === filter;
+            let matchesFilter = true;
+            if (filter === 'private' || filter === 'public' || filter === 'protected') {
+                matchesFilter = package.mode === filter;
+            }
             
             const shouldShow = matchesSearch && matchesFilter;
             
@@ -232,9 +289,37 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Afficher/masquer le message "aucun résultat"
-        toggleNoResults(!hasResults && (searchTerm !== '' || filter !== 'all'));
+        toggleNoResults(!hasResults && (searchTerm !== '' || filter !== 'my-packages'));
         
         console.log(`Filtered packages: ${visibleCount} visible`);
+    }
+
+    // Filtrer les packages publics
+    function filterPublicPackages(searchTerm = '') {
+        let visibleCount = 0;
+        let hasResults = false;
+
+        allPublicPackages.forEach(package => {
+            const matchesSearch = searchTerm === '' || 
+                package.name.toLowerCase().includes(searchTerm) ||
+                package.description.toLowerCase().includes(searchTerm) ||
+                package.owner.toLowerCase().includes(searchTerm);
+            
+            if (package.element) {
+                if (matchesSearch) {
+                    showPackageCard(package.element, visibleCount);
+                    visibleCount++;
+                    hasResults = true;
+                } else {
+                    hidePackageCard(package.element);
+                }
+            }
+        });
+
+        // Afficher/masquer le message "aucun résultat"
+        toggleNoResults(!hasResults && searchTerm !== '');
+        
+        console.log(`Filtered public packages: ${visibleCount} visible`);
     }
 
     // Afficher une carte de package avec animation
@@ -415,7 +500,7 @@ document.addEventListener('DOMContentLoaded', function() {
             package_description: formData.get('package_description'),
             mode: formData.get('mode')
         };
-        
+        console.log(packageData.mode);
         try {
             let response;
             if (currentEditId) {
@@ -526,18 +611,156 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Voir un package
     function handleViewPackage(e) {
-        const packageId = e.target.closest('.view-package-btn').dataset.packageId;
+        const packageId = e.target.closest('.view-package-btn').getAttribute('data-package-id');
+
         window.location.href = `/monVocabs?package=${packageId}`;
         
         animateButton(e.target.closest('.view-package-btn'));
     }
 
+    // Voir un package public
+    function handlePublicViewPackage(e) {
+        const packageId = e.target.closest('.view-public-package-btn').getAttribute('data-package-id');
+        window.location.href = `/monVocabs?package=${packageId}`;
+        
+        animateButton(e.target.closest('.view-public-package-btn'));
+    }
     // Apprendre un package
     function handleLearnPackage(e) {
         const packageId = e.target.closest('.learn-package-btn').dataset.packageId;
         window.location.href = `/monVocabs/learn?package=${packageId}`;
         
         animateButton(e.target.closest('.learn-package-btn'));
+    }
+
+    // Changer l'activation d'un package
+    async function handleToggleActivation(e) {
+        const packageId = e.target.closest('.toggle-activation-btn').dataset.packageId;
+        const button = e.target.closest('.toggle-activation-btn');
+        const packageCard = button.closest('.package-card');
+        
+        // Désactiver le bouton pendant le traitement
+        button.disabled = true;
+        button.classList.add('loading');
+        
+        try {
+            const response = await fetch(`/myPackages/toggle-activation/${packageId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Mettre à jour l'interface
+                updatePackageActivationUI(packageCard, data.isActive);
+                
+                showNotification(data.message, 'success');
+                
+                // Recharger les données
+                loadPackagesData();
+                
+            } else {
+                const errorData = await response.json();
+                showNotification(errorData.message || 'Erreur lors du changement d\'activation', 'error');
+            }
+        } catch (error) {
+            console.error('Erreur lors du changement d\'activation:', error);
+            showNotification('Erreur de connexion', 'error');
+        } finally {
+            button.disabled = false;
+            button.classList.remove('loading');
+        }
+        
+        animateButton(button);
+    }
+
+    // Copier un package public
+    async function handleCopyPackage(e) {
+        const packageId = e.target.closest('.copy-package-btn').getAttribute('data-package-id');
+        const button = e.target.closest('.copy-package-btn');
+        
+        button.disabled = true;
+        
+        try {
+            // Copier le package
+            const response = await fetch(`/myPackages/copy/${packageId}`, {
+                method: 'POST'
+            });
+            if (response.ok) {
+                showNotification('Package copié avec succès', 'success');
+                // Rediriger vers la page de gestion des packages
+                window.location.href = '/myPackages';
+            } else {
+                const errorData = await response.json();
+                showNotification(errorData.message || 'Erreur lors de la copie', 'error');
+            }
+        } catch (error) {
+            console.error('Erreur lors de la copie:', error);
+            showNotification('Erreur lors de la copie du package', 'error');
+        } finally {
+            button.disabled = false;
+            button.classList.remove('loading');
+        }
+        
+        animateButton(button);
+    }
+
+    // Mettre à jour l'interface d'activation du package
+    function updatePackageActivationUI(packageCard, isActive) {
+        const toggleBtn = packageCard.querySelector('.toggle-activation-btn');
+        const statusBadge = packageCard.querySelector('.status-badge');
+        const shadow = toggleBtn.querySelector('.shadow');
+        const edge = toggleBtn.querySelector('.edge');
+        const front = toggleBtn.querySelector('.front');
+        
+        if (isActive) {
+            packageCard.classList.remove('inactive');
+            toggleBtn.classList.remove('pushable-success');
+            toggleBtn.classList.add('pushable-warning');
+            
+            // Update shadow classes
+            shadow.classList.remove('shadow-success');
+            shadow.classList.add('shadow-warning');
+            
+            // Update edge classes
+            edge.classList.remove('edge-success');
+            edge.classList.add('edge-warning');
+            
+            // Update front classes and content
+            front.classList.remove('front-success');
+            front.classList.add('front-warning');
+            front.innerHTML = '<i class="fas fa-pause"></i> Désactiver';
+            
+            if (statusBadge) {
+                statusBadge.textContent = 'Actif';
+                statusBadge.className = 'status-badge active';
+            }
+        } else {
+            packageCard.classList.add('inactive');
+            toggleBtn.classList.remove('pushable-warning');
+            toggleBtn.classList.add('pushable-success');
+            
+            // Update shadow classes
+            shadow.classList.remove('shadow-warning');
+            shadow.classList.add('shadow-success');
+            
+            // Update edge classes
+            edge.classList.remove('edge-warning');
+            edge.classList.add('edge-success');
+            
+            // Update front classes and content
+            front.classList.remove('front-warning');
+            front.classList.add('front-success');
+            front.innerHTML = '<i class="fas fa-play"></i> Activer';
+            
+            if (statusBadge) {
+                statusBadge.textContent = 'Inactif';
+                statusBadge.className = 'status-badge inactive';
+            }
+        }
     }
 
     // Animation des boutons
@@ -557,19 +780,27 @@ document.addEventListener('DOMContentLoaded', function() {
         // Créer la nouvelle notification
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
+        let icon = 'fa-exclamation-triangle'; // error par défaut
+        if (type === 'success') icon = 'fa-check-circle';
+        if (type === 'info') icon = 'fa-info-circle';
+        
         notification.innerHTML = `
             <div class="notification-content">
-                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
+                <i class="fas ${icon}"></i>
                 <span>${message}</span>
             </div>
         `;
         
         // Ajouter les styles
+        let bgColor = '#EF4444'; // error par défaut
+        if (type === 'success') bgColor = '#10B981';
+        if (type === 'info') bgColor = '#3B82F6';
+        
         notification.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
-            background: ${type === 'success' ? '#10B981' : '#EF4444'};
+            background: ${bgColor};
             color: white;
             padding: 1rem 1.5rem;
             border-radius: 12px;

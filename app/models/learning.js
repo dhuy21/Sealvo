@@ -77,6 +77,17 @@ class Learning {
             throw error;
         }
     }
+
+    //function to stock a word in a package
+    async stockWord(package_id, detail_id, level){
+        try {
+            const [rows] = await global.dbConnection.execute('INSERT INTO learning (package_id, detail_id, level) VALUES (?, ?, ?)', [package_id, detail_id, level]);
+            return rows[0] || null;
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour du niveau d\'apprentissage :', error);
+            throw error;
+        }
+    }
     // function to get the number of words of user in all packages by level
     async getNumWordsByLevelAllPackages(user_id, level) {
         try {
@@ -117,7 +128,7 @@ class Learning {
                  FROM learning l
                  JOIN packages p ON l.package_id = p.package_id
                  JOIN users u ON p.user_id = u.id
-                 WHERE u.id = ?
+                 WHERE u.id = ? AND p.is_active = true
                    AND (
                        (level = 'x' AND DATE_ADD(DATE(date_memorized), INTERVAL 0 DAY) <= CURDATE()) OR
                        (level = '0' AND DATE_ADD(DATE(date_memorized), INTERVAL 2 DAY) <= CURDATE()) OR
