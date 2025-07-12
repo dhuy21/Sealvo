@@ -495,9 +495,13 @@ body[data-theme="dark"] {
   color: rgba(255, 255, 255, 0.6) !important;
 }
 
-[data-theme="dark"] .search-btn,
-[data-theme="dark"] .clear-search-btn {
+[data-theme="dark"] .search-btn {
   background: rgba(106, 17, 203, 0.3) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .clear-search-btn {
+  background: #e02a2a !important;
   color: #ffffff !important;
 }
 

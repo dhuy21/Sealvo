@@ -19,6 +19,7 @@ class LearningController {
             if (detailWordsIds && detailWordsIds.length > 0) {
                 // Récupérer les détails de chaque mot
                 for (const item of detailWordsIds) {
+                    console.log(item.package_id);
                     const wordDetails = await wordModel.findById(item.detail_id);
                     if (wordDetails) {
                         allWords.push(wordDetails);

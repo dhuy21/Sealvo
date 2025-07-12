@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS packages (
     package_description TEXT NOT NULL,
     created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     mode ENUM('protected', 'private', 'public') NOT NULL DEFAULT 'private',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     PRIMARY KEY (package_id),
     FOREIGN KEY (user_id) REFERENCES users(id)
         ON DELETE CASCADE
