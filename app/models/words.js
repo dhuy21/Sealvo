@@ -1,8 +1,8 @@
 const db = require('../core/database');
 
 class Word {
-    // Récupérer tous les mots de l'utilisateur
-    async findWordsByUserId(package_id) {
+    // Récupérer tous les mots d'un package
+    async findWordsByPackageId(package_id) {
         try {
             const [rows] = await global.dbConnection.execute(
                 'SELECT wd.detail_id, w.word_id, w.word, w.language_code, wd.meaning, wd.type, wd.synonyms, wd.antonyms, wd.example, wd.grammar, wd.pronunciation, ln.level, ln.package_id ' +
