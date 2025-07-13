@@ -105,10 +105,24 @@ function initMouseTracker() {
  */
 function initProgressBars() {
     const progressBars = document.querySelectorAll('.progress-bar-fill');
-    
+    const maxStreakDays = 30; // Définir le maximum de jours pour 100%
+    let streakDaysForfire = 0;
     progressBars.forEach(bar => {
-        const targetWidth = bar.getAttribute('data-width') || '0';
+        let streakDays = parseInt(bar.getAttribute('data-width') || '0');
         
+        if (streakDays >= maxStreakDays) {
+            streakDaysForfire = Math.floor( ( streakDays/maxStreakDays ) ) * maxStreakDays ;
+            streakDays = streakDays % maxStreakDays;
+            console.log(streakDaysForfire,streakDays);
+        }
+        
+        // Update fire text
+        const fireStreakText = document.getElementById('fireStreakText');
+        if (fireStreakText) {
+            fireStreakText.textContent = parseInt(streakDaysForfire);
+        }
+        
+        const targetWidth = Math.min((streakDays / maxStreakDays) * 100, 100);
         // Use Intersection Observer to trigger animation when visible
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -128,15 +142,22 @@ function initProgressBars() {
     const progressPercentage = document.getElementById('progress-percentage');
     if (progressPercentage) {
         const progressBar = document.querySelector('.progress-bar-fill');
-        const targetWidth = progressBar ? (progressBar.getAttribute('data-width') || '0') : '0';
+        let streakDays = parseInt(progressBar ? (progressBar.getAttribute('data-width') || '0') : '0');
         
-        let currentWidth = 0;
+        if (streakDays >= maxStreakDays) {
+            streakDaysForfire = ( streakDays/maxStreakDays ) * maxStreakDays;
+            streakDays = streakDays % maxStreakDays;
+            console.log(streakDaysForfire,streakDays);
+        }
+        const targetPercentage = Math.min((streakDays / maxStreakDays) * 100, 100);
+        let currentPercentage = 0;
         const interval = setInterval(() => {
-            if (currentWidth >= parseInt(targetWidth)) {
+            if (currentPercentage >= targetPercentage) {
                 clearInterval(interval);
+                progressPercentage.innerHTML = `<i class="fas fa-trophy" style="color: #FFCC70; margin-right: 0.25rem;"></i>${streakDays}`;
             } else {
-                currentWidth++;
-                progressPercentage.textContent = `${currentWidth}%`;
+                currentPercentage++;
+                progressPercentage.innerHTML = `<i class="fas fa-trophy" style="color: #FFCC70; margin-right: 0.25rem;"></i>${Math.round((currentPercentage / 100) * streakDays)}/${maxStreakDays} jours`;
             }
         }, 20);
     }

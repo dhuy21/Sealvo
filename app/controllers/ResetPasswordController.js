@@ -5,6 +5,7 @@ const fs = require('fs');
 const bcrypt = require('bcryptjs')
 const path = require('path');
 const nodemailer = require('nodemailer');
+require('dotenv').config();
 //Variables d'environnement\
 
 const transporter = nodemailer.createTransport({
@@ -12,8 +13,8 @@ const transporter = nodemailer.createTransport({
     port: 587,
     secure: false, // true for port 465, false for other ports
     auth: {
-      user: "huynguyen2182004@gmail.com",
-      pass: "veukortqhlbrhsig",
+      user: process.env.USER_GMAIL,
+      pass: process.env.USER_PASS,
     },
 });
 

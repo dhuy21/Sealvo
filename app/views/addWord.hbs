@@ -8,12 +8,87 @@
       <div class="file-upload-container">
         <input type="file" id="vocab-file" name="file" accept=".xlsx,.xls,.csv,.pdf" class="file-input">
         <label for="vocab-file" class="file-label">
-          <span class="file-icon">📄</span>
-          <span class="file-text">Choisir un fichier</span>
+          <span class="file-icon" id="file-icon">📄</span>
+          <span class="file-text" id="file-text">Choisir un fichier</span>
+          <div class="loader" id="loader" style="display: none;">
+            <div class="book-wrapper">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="white"
+                viewBox="0 0 126 75"
+                class="book"
+              >
+                <rect
+                  stroke-width="5"
+                  stroke="#e05452"
+                  rx="7.5"
+                  height="70"
+                  width="121"
+                  y="2.5"
+                  x="2.5"
+                ></rect>
+                <line
+                  stroke-width="5"
+                  stroke="#e05452"
+                  y2="75"
+                  x2="63.5"
+                  x1="63.5"
+                ></line>
+                <path
+                  stroke-linecap="round"
+                  stroke-width="4"
+                  stroke="#c18949"
+                  d="M25 20H50"
+                ></path>
+                <path
+                  stroke-linecap="round"
+                  stroke-width="4"
+                  stroke="#c18949"
+                  d="M101 20H76"
+                ></path>
+                <path
+                  stroke-linecap="round"
+                  stroke-width="4"
+                  stroke="#c18949"
+                  d="M16 30L50 30"
+                ></path>
+                <path
+                  stroke-linecap="round"
+                  stroke-width="4"
+                  stroke="#c18949"
+                  d="M110 30L76 30"
+                ></path>
+              </svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="#ffffff74"
+                viewBox="0 0 65 75"
+                class="book-page"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-width="4"
+                  stroke="#c18949"
+                  d="M40 20H15"
+                ></path>
+                <path
+                  stroke-linecap="round"
+                  stroke-width="4"
+                  stroke="#c18949"
+                  d="M49 30L15 30"
+                ></path>
+                <path
+                  stroke-width="5"
+                  stroke="#e05452"
+                  d="M2.5 2.5H55C59.1421 2.5 62.5 5.85786 62.5 10V65C62.5 69.1421 59.1421 72.5 55 72.5H2.5V2.5Z"
+                ></path>
+              </svg>
+            </div>
+        </div>
         </label>
         <span class="selected-file-name">Aucun fichier sélectionné</span>
       </div>
-      <button type="submit" class="btn btn-primary import-btn">Importer du vocabulaire</button>
+      <button type="submit" class="btn btn-primary import-btn" id="import-btn">Importer du vocabulaire</button>
     </form>
     
     <div class="format-info">
@@ -26,7 +101,7 @@
           <p>Pour que l'importation fonctionne correctement:</p>
           <ol>
             <li>Créez un fichier Excel avec les colonnes dans le bon ordre</li>
-            <li>Assurez-vous que chaque ligne contient au moins: Mot, Sujet, Type, Signification et Exemple</li>
+            <li>Assurez-vous que chaque ligne contient au moins: Mot, Sujet, Langue, Type, Signification</li>
             <li>Pour le type, utilisez uniquement: noun, verb, adjective, adverb, ph.v, idiom, collocation</li>
             <li>Pour le niveau, utilisez <strong>uniquement les chiffres</strong> x, 0, 1, 2 ou v (pas de texte comme "Niveau 1")</li>
             <li>Limitez la taille du fichier à moins de 5 Mo</li>
@@ -131,87 +206,5 @@
   </div>
 </div>
 
-<script nonce="{{nonce}}">
-  document.addEventListener('DOMContentLoaded', function() {
-    // Fonction pour le fichier d'importation
-    const fileInput = document.getElementById('vocab-file');
-    const fileNameDisplay = document.querySelector('.selected-file-name');
-    
-    if (fileInput && fileNameDisplay) {
-      fileInput.addEventListener('change', function() {
-        if (this.files.length > 0) {
-          fileNameDisplay.textContent = this.files[0].name;
-        } else {
-          fileNameDisplay.textContent = 'Aucun fichier sélectionné';
-        }
-      });
-    }
-    
-    // Fonctions pour le formulaire multi-mots
-    const addRowButton = document.getElementById('add-row');
-    const wordRows = document.getElementById('word-rows');
-    
-    if (addRowButton && wordRows) {
-      // Ajouter une nouvelle ligne
-      addRowButton.addEventListener('click', function() {
-        const newRow = document.createElement('tr');
-        newRow.className = 'word-row';
-        newRow.innerHTML = `
-          <td><input type="text" name="words[]" required placeholder="Mot" class="form-control"></td>
-          <td><input type="text" name="language_codes[]" required placeholder="Langue" class="form-control"></td>
-          <td><input type="text" name="subjects[]" required placeholder="Sujet" class="form-control"></td>
-          <td>
-            <select name="types[]" required class="form-control">
-              <option value="" disabled selected>Type</option>
-              <option value="noun">Nom</option>
-              <option value="verb">Verbe</option>
-              <option value="adjective">Adjectif</option>
-              <option value="adverb">Adverbe</option>
-              <option value="ph.v">Ph.V</option>
-              <option value="idiom">Idiom</option>
-              <option value="collocation">Colloc</option>
-            </select>
-          </td>
-          <td><input type="text" name="pronunciations[]" placeholder="Prononciation" class="form-control"></td>
-          <td><input type="text" name="meanings[]" required placeholder="Signification" class="form-control"></td>
-          <td><input type="text" name="examples[]" required placeholder="Exemple" class="form-control"></td>
-          <td><input type="text" name="synonyms[]" placeholder="Synonymes" class="form-control"></td>
-          <td><input type="text" name="antonyms[]" placeholder="Antonymes" class="form-control"></td>
-          <td><input type="text" name="grammars[]" placeholder="Grammaire" class="form-control"></td>
-          <td>
-            <select name="levels[]" required class="form-control">
-              <option value="x">Niveau x</option>
-              <option value="0">Niveau 0</option>
-              <option value="1">Niveau 1</option>
-              <option value="2">Niveau 2</option>
-            </select>
-          </td>
-          <td>
-            <button type="button" class="btn btn-danger remove-row"><i class="fas fa-trash"></i></button>
-          </td>
-        `;
-        wordRows.appendChild(newRow);
-        
-        // Ajouter l'écouteur d'événement pour supprimer la ligne
-        setupRemoveRowListeners();
-      });
-      
-      // Fonction pour configurer les écouteurs de suppression de ligne
-      function setupRemoveRowListeners() {
-        document.querySelectorAll('.remove-row').forEach(button => {
-          button.addEventListener('click', function() {
-            // Ne pas permettre de supprimer la dernière ligne
-            if (wordRows.querySelectorAll('.word-row').length > 1) {
-              this.closest('.word-row').remove();
-            } else {
-              alert('Vous devez avoir au moins une ligne');
-            }
-          });
-        });
-      }
-      
-      // Configurer les écouteurs au chargement initial
-      setupRemoveRowListeners();
-    }
-  });
-</script>
+<script src="/js/addWord.js" nonce="{{nonce}}"></script>
+

@@ -224,7 +224,10 @@ class ImportFile {
                 fs.unlinkSync(filePath);
                     
                 // Rediriger avec un message de succès
-                res.redirect(`/monVocabs?package=${package_id}&success=${successCount} mot(s) importé(s) avec succès. ${errorCount} erreur(s)`);
+                res.status(200).json({
+                    success: true,
+                    message: `${successCount} mot(s) importé(s) avec succès. ${errorCount} erreur(s)`
+                });
             });
         } catch (error) {
             console.error('Erreur lors de l\'importation des mots:', error);
