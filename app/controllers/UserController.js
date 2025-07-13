@@ -50,8 +50,8 @@ class UserController {
                 id: user.id,
                 username: user.username, 
                 streak: user.streak,
-                last_login: user.last_login, //convertir en date dd/mm/yyyy
-                created_at: user.created_at,
+                last_login: new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(user.last_login), //convertir en date dd/mm/yyyy
+                created_at: new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(user.created_at),
                 email: user.email,
                 avatar: user.ava,
                 totalWords,
