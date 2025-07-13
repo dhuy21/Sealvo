@@ -2,14 +2,15 @@ const UserModel = require('../../models/users');
 const LearningModel = require('../../models/learning');
 const LearningController = require('../LearningController');
 const nodemailer = require('nodemailer');
+require('dotenv').config();
 
 const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 587,
     secure: false, // true for port 465, false for other ports
     auth: {
-      user: "huynguyen2182004@gmail.com",
-      pass: "izhzdkulllzsozsm",
+      user: process.env.USER_GMAIL,
+      pass: process.env.USER_PASS,
     },
 });
 

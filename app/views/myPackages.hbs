@@ -195,7 +195,11 @@
           <div class="package-card-header">
             <div class="package-badges">
               <div class="package-mode-badge mode-{{this.mode}}">
-                <i class="fas fa-globe"></i> Public
+                {{#if (eq this.mode 'public')}}
+                  <i class="fas fa-globe"></i> Public
+                {{else if (eq this.mode 'protected')}}
+                  <i class="fas fa-shield-alt"></i> Protégé
+                {{/if}}
               </div>
               <div class="owner-badge">
                 <i class="fas fa-user"></i> {{this.username}}

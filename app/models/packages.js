@@ -36,7 +36,7 @@ class Package {
     async findAllPublicPackages() {
         try {
             const [result] = await global.dbConnection.execute(
-                'SELECT p.*, u.username FROM packages p JOIN users u ON p.user_id = u.id WHERE p.mode = "public"  ORDER BY p.created_at DESC'
+                'SELECT p.*, u.username FROM packages p JOIN users u ON p.user_id = u.id WHERE p.mode = "public" or p.mode = "protected" ORDER BY p.created_at DESC'
             );
             return result;
         } catch (error) {
