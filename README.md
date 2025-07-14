@@ -1,16 +1,16 @@
 <div align="center">
 
 # 🎯 Web Vocab v0 | SealVo 
-### *Révolutionnez votre apprentissage du vocabulaire avec l'IA*
+### *Révolutionnez votre apprentissage du vocabulaire avec la révision espacée*
 
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge)
 ![Version](https://img.shields.io/badge/Version-0.1.0-blue?style=for-the-badge)
 ![Node.js](https://img.shields.io/badge/Node.js-v18+-339933?style=for-the-badge&logo=nodedotjs)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
 
-**🚀 Une plateforme d'apprentissage intelligente qui transforme l'étude du vocabulaire en une expérience interactive et addictive !**
+**🚀 Une plateforme d'apprentissage moderne qui transforme l'étude du vocabulaire en une expérience interactive et motivante !**
 
-[🎮 Démo Live](#) • [📖 Documentation](#) • [🐛 Signaler un Bug](#) • [💡 Demander une Fonctionnalité](#)
+[🎮 Démo Live](https://sealvo.it.com) • [📖 Documentation](#) • [🐛 Signaler un Bug](https://) • [💡 Demander une Fonctionnalité](#)
 
 ---
 
@@ -18,17 +18,17 @@
 
 ## 🌟 Aperçu Rapide
 
-> **SealVo** combine l'intelligence artificielle de Google Generative AI avec un système de révision espacée pour créer l'expérience d'apprentissage de vocabulaire la plus efficace et engageante.
+> **SealVo** est une application web moderne qui combine un système de révision espacée intelligent avec une interface gamifiée pour créer l'expérience d'apprentissage de vocabulaire la plus efficace et engageante.
 
 ### ✨ Pourquoi SealVo ?
 
 <details>
-<summary>🧠 <strong>IA Intégrée</strong> - Powered by Google Generative AI</summary>
+<summary>🎯 <strong>Révision Espacée Intelligente</strong> - Mémorisation optimisée</summary>
 
-- Génération automatique de définitions contextuelles
-- Suggestions intelligentes de mots similaires
-- Adaptation personnalisée au niveau de l'utilisateur
-- Correction et amélioration automatique des entrées
+- Algorithme de répétition espacée personnalisé
+- Adaptation automatique selon vos performances
+- Rappels intelligents pour optimiser la rétention
+- Suivi des intervalles de révision optimaux
 
 </details>
 
@@ -53,7 +53,7 @@
 </details>
 
 <details>
-<summary>🔒 <strong>Sécurité Enterprise</strong> - Protection maximale</summary>
+<summary>🔒 <strong>Sécurité & Performance</strong> - Protection maximale</summary>
 
 - Helmet.js pour les en-têtes de sécurité
 - Sanitization avancée avec DOMPurify
@@ -66,24 +66,27 @@
 
 ## 🎯 Fonctionnalités Principales
 
-### 📚 **Gestion Intelligente du Vocabulaire**
+### 📚 **Gestion Avancée du Vocabulaire**
 ```javascript
-// Exemple d'ajout de mot avec IA
-const word = await addWordWithAI({
+// Exemple d'ajout de mot avec contexte
+const word = await addWord({
   word: "serendipity",
+  definition: "Pleasant surprise or fortunate discovery",
   context: "literature",
-  userLevel: "advanced"
+  difficulty: "advanced",
+  package: "Advanced English"
 });
-// ✨ L'IA génère automatiquement définitions, exemples et synonymes
+// ✨ Intégration automatique dans le système de révision
 ```
 
 | Fonctionnalité | Description | Status |
 |---|---|---|
-| 🤖 **AI-Powered Definitions** | Génération automatique avec Google AI | ✅ |
 | 📊 **Analytics Dashboard** | Tracking complet des performances | ✅ |
 | 🎯 **Learning Games** | Jeux interactifs d'apprentissage | ✅ |
 | 📁 **Package System** | Organisation thématique avancée | ✅ |
+| 🔄 **Spaced Repetition** | Système de révision espacée | ✅ |
 | 📱 **Mobile-First** | Interface responsive optimisée | ✅ |
+| 🤖 **AI Assistance** | Aide optionnelle pour définitions | 🔄 |
 
 ### 🎮 **Système de Jeux Intégré**
 - **Memory Cards** : Jeu de mémoire avec vos mots
@@ -98,8 +101,15 @@ const word = await addWordWithAI({
 ├── 📝 50 mots importés
 ├── 🎯 Difficulté: Intermédiaire
 ├── 📊 Progression: 75%
+├── 🔄 Prochaine révision: 2h
 └── 🎮 3 jeux débloqués
 ```
+
+### 🧠 **Système de Révision Espacée**
+- **Algorithme adaptatif** : Intervalles personnalisés selon vos performances
+- **Courbe d'oubli** : Optimisation basée sur la recherche scientifique
+- **Rappels intelligents** : Notifications au moment optimal
+- **Suivi de progression** : Visualisation de votre amélioration
 
 ---
 
@@ -108,12 +118,12 @@ const word = await addWordWithAI({
 <details>
 <summary>🔧 <strong>Stack Technologique Complète</strong></summary>
 
-### **Backend Powerhouse**
+### **Backend Robuste**
 - **Node.js** + **Express 5** : Serveur haute performance
 - **MySQL2** : Base de données relationnelle optimisée
-- **Google Generative AI** : Intelligence artificielle avancée
 - **Handlebars** : Templates dynamiques
-- **Node-cron** : Tâches automatisées
+- **Node-cron** : Tâches automatisées et rappels
+- **Multer** : Gestion des uploads de fichiers
 
 ### **Frontend Moderne**
 - **Vanilla JavaScript ES6+** : Performance native
@@ -128,6 +138,11 @@ const word = await addWordWithAI({
 - **Morgan** : Logging des requêtes
 - **Validator** : Validation des données
 
+### **Outils Optionnels**
+- **Google Generative AI** : Assistance pour définitions (optionnel)
+- **PDF-lib** : Traitement des fichiers PDF
+- **XLSX** : Import/Export Excel
+
 </details>
 
 <details>
@@ -137,21 +152,22 @@ const word = await addWordWithAI({
 📁 SealVo Architecture
 ├── 🎯 app/
 │   ├── 🎮 controllers/     # Logique métier
-│   │   ├── api/           # API REST
-│   │   ├── auth/          # Authentification
-│   │   └── games/         # Contrôleurs de jeux
+│   │   ├── apiControllers/ # API REST
+│   │   ├── SiteController.js # Pages principales
+│   │   └── LearningController.js # Système d'apprentissage
 │   ├── 📊 models/         # Modèles de données
 │   │   ├── User.js        # Gestion utilisateurs
 │   │   ├── Word.js        # Vocabulaire
-│   │   └── Package.js     # Système de packages
+│   │   ├── Package.js     # Système de packages
+│   │   └── Learning.js    # Révision espacée
 │   ├── 🛡️ middleware/     # Middleware sécurité
 │   │   ├── auth.js        # Authentification
 │   │   ├── sanitization.js # Nettoyage XSS
 │   │   └── validation.js  # Validation données
 │   ├── 🔄 services/       # Services métier
-│   │   ├── aiService.js   # Google AI
-│   │   ├── emailService.js # Notifications
-│   │   └── gameService.js # Logique jeux
+│   │   ├── learningService.js # Algorithme révision
+│   │   ├── emailService.js    # Notifications
+│   │   └── gameService.js     # Logique jeux
 │   └── 🎨 views/          # Templates Handlebars
        ├── layouts/       # Layouts réutilisables
        ├── partials/      # Composants
@@ -192,13 +208,9 @@ npm run dev
 ### **Configuration Avancée** 🔧
 
 <details>
-<summary>📧 <strong>Configuration Email & AI</strong></summary>
+<summary>📧 <strong>Configuration Email & Base de Données</strong></summary>
 
 ```env
-# 🤖 Google Generative AI
-GOOGLE_AI_API_KEY=your-google-ai-key
-AI_MODEL=gemini-1.5-flash
-
 # 📧 Configuration Email
 USER_GMAIL=votre-app@gmail.com
 USER_PASS=votre-mot-de-passe-app
@@ -218,6 +230,10 @@ BCRYPT_ROUNDS=12
 # 🚀 Serveur
 PORT=3000
 NODE_ENV=development
+
+# 🤖 IA (Optionnel)
+GOOGLE_AI_API_KEY=your-google-ai-key  # Optionnel pour assistance IA
+AI_MODEL=gemini-1.5-flash
 ```
 
 </details>
@@ -254,22 +270,30 @@ CREATE DATABASE sealvo_db;
    Package: "Vocabulaire Professionnel"
    Catégorie: Business
    Niveau: Intermédiaire
+   Objectif: 50 mots/semaine
    ```
 
 3. **Ajoutez vos mots** 📝
    ```
-   🤖 Saisie assistée par IA
-   📊 Suggestions contextuelles
-   🎯 Exemples automatiques
+   📝 Saisie manuelle ou import Excel
+   📊 Définitions contextuelles
+   🎯 Classification automatique par difficulté
+   ```
+
+4. **Commencez l'apprentissage** 🧠
+   ```
+   🔄 Révision espacée personnalisée
+   🎮 Jeux d'apprentissage variés
+   📈 Suivi de progression en temps réel
    ```
 
 ### **🎮 Modes d'Apprentissage**
 
 | Mode | Description | Durée | Efficacité |
 |------|-------------|-------|------------|
-| 🚀 **Speed Learning** | Apprentissage rapide | 5-10 min | ⭐⭐⭐⭐⭐ |
-| 🧠 **Memory Cards** | Répétition espacée | 15-20 min | ⭐⭐⭐⭐ |
-| 🎯 **Game Mode** | Apprentissage ludique | 10-15 min | ⭐⭐⭐⭐⭐ |
+| 🚀 **Speed Learning** | Apprentissage intensif | 5-10 min | ⭐⭐⭐⭐⭐ |
+| 🧠 **Spaced Repetition** | Révision espacée | 15-20 min | ⭐⭐⭐⭐⭐ |
+| 🎯 **Game Mode** | Apprentissage ludique | 10-15 min | ⭐⭐⭐⭐ |
 | 📊 **Analytics** | Révision ciblée | Variable | ⭐⭐⭐⭐ |
 
 ---
@@ -284,8 +308,9 @@ const userStats = {
   streakDays: 23,
   accuracy: 94.5,
   timeSpent: "2h 34m",
-  favoriteCategory: "Business English",
-  nextReview: "14:30"
+  favoritePackage: "Business English",
+  nextReview: "14:30",
+  completionRate: 87.3
 };
 ```
 
@@ -294,6 +319,12 @@ const userStats = {
 - **Fire Animation** : Visualisation dynamique
 - **Récompenses** : Badges et accomplissements
 - **Challenges** : Défis hebdomadaires
+
+### **📊 Métriques d'Apprentissage**
+- **Courbe de progression** : Visualisation de l'amélioration
+- **Temps de réponse** : Analyse de la vitesse
+- **Taux de rétention** : Efficacité de la mémorisation
+- **Mots maîtrisés** : Suivi des acquis
 
 ---
 
@@ -325,6 +356,7 @@ const userStats = {
 | 🌍 **Mode Hors-ligne** | 📋 Planifié | Q2 2024 |
 | 👥 **Collaboration** | 💡 Recherche | Q3 2024 |
 | 📱 **App Mobile** | 🎯 Roadmap | Q4 2024 |
+| 🧠 **IA Avancée** | 💡 Amélioration | Q2 2024 |
 
 ### **🤝 Contribuer**
 
@@ -368,12 +400,12 @@ git push origin feature/nouvelle-fonctionnalite
 3. Redémarrez le serveur
 ```
 
-**Q: L'IA ne fonctionne pas**
+**Q: Le système de révision ne fonctionne pas**
 ```bash
 # Vérification
-1. Vérifiez GOOGLE_AI_API_KEY dans .env
-2. Testez la connexion API
-3. Consultez les logs : npm run dev
+1. Vérifiez la configuration de node-cron
+2. Consultez les logs de learning service
+3. Vérifiez les données utilisateur en base
 ```
 
 **Q: Problème d'import de fichiers**
@@ -409,16 +441,16 @@ copies of the Software...
 ```
 
 ### **🙏 Remerciements**
-- **Google Generative AI** : Pour l'intelligence artificielle
 - **Express.js Community** : Pour le framework robuste
 - **Open Source Contributors** : Pour les packages utilisés
+- **Learning Science Research** : Pour les principes de révision espacée
 - **Beta Testers** : Pour les retours précieux
 
 ---
 
 <div align="center">
 
-### 🎯 **SealVo - Où l'apprentissage rencontre l'innovation**
+### 🎯 **SealVo - Maîtrisez le vocabulaire avec la science**
 
 **Made with ❤️ by the SealVo Team**
 
@@ -426,7 +458,7 @@ copies of the Software...
 
 ---
 
-![Footer](https://img.shields.io/badge/Powered_by-Node.js_+_AI-blue?style=for-the-badge&logo=nodedotjs)
+![Footer](https://img.shields.io/badge/Powered_by-Learning_Science-blue?style=for-the-badge&logo=nodedotjs)
 ![Footer](https://img.shields.io/badge/Built_with-❤️-red?style=for-the-badge)
 ![Footer](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
