@@ -10,7 +10,7 @@
 
 **🚀 Une plateforme d'apprentissage moderne qui transforme l'étude du vocabulaire en une expérience interactive et motivante !**
 
-[🎮 Démo Live](https://sealvo.it.com) • [📖 Documentation](#) • [🐛 Signaler un Bug](https://) • [💡 Demander une Fonctionnalité](#)
+[🎮 Démo Live](https://sealvo.it.com) • [📖 About me ](https://sealvo.it.com/aboutme) • [🐛 Signaler un Bug](https://sealvo.it.com/feedback) 
 
 ---
 
@@ -18,18 +18,16 @@
 
 ## 🌟 Aperçu Rapide
 
-> **SealVo** est une application web moderne qui combine un système de révision espacée intelligent avec une interface gamifiée pour créer l'expérience d'apprentissage de vocabulaire la plus efficace et engageante.
+> **SealVo** est une application web moderne qui combine un système de révision espacée intelligent de Flashcards avec une interface gamifiée pour créer l'expérience d'apprentissage de vocabulaire la plus efficace et engageante.
 
 ### ✨ Pourquoi SealVo ?
 
 <details>
 <summary>🎯 <strong>Révision Espacée Intelligente</strong> - Mémorisation optimisée</summary>
 
-- Algorithme de répétition espacée personnalisé
 - Adaptation automatique selon vos performances
 - Rappels intelligents pour optimiser la rétention
 - Suivi des intervalles de révision optimaux
-
 </details>
 
 <details>
@@ -37,7 +35,6 @@
 
 - Système de streaks avec animations visuelles
 - Jeux interactifs intégrés (`/games/`)
-- Défis quotidiens et récompenses
 - Progress tracking avec statistiques détaillées
 
 </details>
@@ -47,6 +44,7 @@
 
 - Création de packages thématiques (`myPackages.hbs`)
 - Import/Export de vocabulaire par lots
+- Generer les exemples intelligentes par l'appel API de Google Gemini-2.5-flash
 - Partage de packages entre utilisateurs
 - Gestion avancée des collections
 
@@ -67,49 +65,31 @@
 ## 🎯 Fonctionnalités Principales
 
 ### 📚 **Gestion Avancée du Vocabulaire**
-```javascript
-// Exemple d'ajout de mot avec contexte
-const word = await addWord({
-  word: "serendipity",
-  definition: "Pleasant surprise or fortunate discovery",
-  context: "literature",
-  difficulty: "advanced",
-  package: "Advanced English"
-});
-// ✨ Intégration automatique dans le système de révision
-```
+
 
 | Fonctionnalité | Description | Status |
 |---|---|---|
-| 📊 **Analytics Dashboard** | Tracking complet des performances | ✅ |
-| 🎯 **Learning Games** | Jeux interactifs d'apprentissage | ✅ |
 | 📁 **Package System** | Organisation thématique avancée | ✅ |
-| 🔄 **Spaced Repetition** | Système de révision espacée | ✅ |
+| 🌐 **Partage de packages entre utilisateurs** | 3 options de partage (protected, private, public) | ✅ |
+| 🔄 **Spaced Repetition** | Système d'appel de révision espacée | ✅ |
 | 📱 **Mobile-First** | Interface responsive optimisée | ✅ |
-| 🤖 **AI Assistance** | Aide optionnelle pour définitions | 🔄 |
+| 🤖 **AI Assistance (Googel Gemini-2.5-Flash)** | Aide optionnelle pour generer les exemples | ✅ |
 
 ### 🎮 **Système de Jeux Intégré**
 - **Memory Cards** : Jeu de mémoire avec vos mots
-- **Word Hunt** : Chasse aux mots chronométrée
-- **Synonym Challenge** : Défis de synonymes
-- **Speed Learning** : Apprentissage rapide gamifié
+- **Phrases Completition** : Jeu de complétion de phrases avec vos mots
+- **Speed Vocab** : Jeu de vitesse de taper des mots 
+- **Prononciation** : Jeu de prononciation de mots
+- **Quiz** : Jeu de quiz avec vos mots
+- **Word Scramble** : Jeu de désordre de mots
+- **Word Search** : Jeu de recherche de mots
 
-### 📦 **Gestion des Packages**
-```bash
-# Structure des packages
-📦 Mon Package "Business English"
-├── 📝 50 mots importés
-├── 🎯 Difficulté: Intermédiaire
-├── 📊 Progression: 75%
-├── 🔄 Prochaine révision: 2h
-└── 🎮 3 jeux débloqués
-```
 
 ### 🧠 **Système de Révision Espacée**
-- **Algorithme adaptatif** : Intervalles personnalisés selon vos performances
-- **Courbe d'oubli** : Optimisation basée sur la recherche scientifique
+
 - **Rappels intelligents** : Notifications au moment optimal
 - **Suivi de progression** : Visualisation de votre amélioration
+- **Statistiques** : Visualisation de votre progression
 
 ---
 
@@ -126,7 +106,7 @@ const word = await addWord({
 - **Multer** : Gestion des uploads de fichiers
 
 ### **Frontend Moderne**
-- **Vanilla JavaScript ES6+** : Performance native
+- **JavaScript** : Performance native
 - **CSS Grid/Flexbox** : Layouts responsives
 - **Web APIs** : Notifications, localStorage, etc.
 - **Progressive Enhancement** : Expérience dégradée gracieuse
@@ -140,7 +120,7 @@ const word = await addWord({
 
 ### **Outils Optionnels**
 - **Google Generative AI** : Assistance pour définitions (optionnel)
-- **PDF-lib** : Traitement des fichiers PDF
+- **Nodemailer** : Envoi d'emails
 - **XLSX** : Import/Export Excel
 
 </details>
@@ -152,26 +132,55 @@ const word = await addWord({
 📁 SealVo Architecture
 ├── 🎯 app/
 │   ├── 🎮 controllers/     # Logique métier
-│   │   ├── apiControllers/ # API REST
+│   │   ├── gameControllers/ # Logique des jeux
 │   │   ├── SiteController.js # Pages principales
-│   │   └── LearningController.js # Système d'apprentissage
+│   │   ├── LearningController.js # Système d'apprentissage
+│   │   └── UserController.js # Gestion utilisateurs
+│   │   └── WordController.js # Gestion des mots
+│   │   └── PackageController.js # Gestion des packages
+│   │   └── ...
+│   ├── 📊 routes/         # Routes
+│   │   ├── api.js        # API REST
+│   │   ├── auth/         # Authentification
+│   │   ├── user/         # Gestion utilisateurs
+│   │   ├── vocab/         # Gestion des mots
+│   │   ├── game/        # Interfaces de jeux
+│   │   ├── level_progress.js # Système de progression de niveau
+│   │   ├── package/      # Gestion des packages
+│   │   ├── site.js       # Pages principales
+│   │   └── ...
+│   ├── 📊 core/         # Core
+│   │   ├── database.js # Connexion à la base de données
+│   │   ├── database.sql # Création des tables
+│   │   └── ...
 │   ├── 📊 models/         # Modèles de données
-│   │   ├── User.js        # Gestion utilisateurs
-│   │   ├── Word.js        # Vocabulaire
-│   │   ├── Package.js     # Système de packages
-│   │   └── Learning.js    # Révision espacée
+│   │   ├── users.js        # Gestion utilisateurs
+│   │   ├── words.js        # Vocabulaire
+│   │   ├── packages.js     # Système de packages
+│   │   └── learning.js    # Révision espacée
 │   ├── 🛡️ middleware/     # Middleware sécurité
-│   │   ├── auth.js        # Authentification
+│   │   ├── inputSanitization.js        # Authentification
 │   │   ├── sanitization.js # Nettoyage XSS
-│   │   └── validation.js  # Validation données
+│   │   └── security.js  # Validation données
+│   │   └── session.js  # Gestion des sessions
 │   ├── 🔄 services/       # Services métier
-│   │   ├── learningService.js # Algorithme révision
-│   │   ├── emailService.js    # Notifications
-│   │   └── gameService.js     # Logique jeux
+│   │   ├── gemini.js # Google Gemini-2.5-Flash
+│   │   ├── importFile.js # Importation de fichiers
+│   │   └── ...
 │   └── 🎨 views/          # Templates Handlebars
-       ├── layouts/       # Layouts réutilisables
-       ├── partials/      # Composants
-       └── games/         # Interfaces de jeux
+│        ├── mails/          # Mails templates
+│        ├── games/         # Interfaces de jeux
+│        ├── layouts/       # Layouts réutilisables
+│        ├── partials/      # Composants
+│        └── ...
+|
+├── 📊 public/         # Public
+│   ├── css/          # CSS
+│   ├── js/           # JavaScript
+│   ├── images/       # Images
+│   └── ...
+|
+app.js # Point d'entrée du serveur
 ```
 
 </details>
@@ -198,10 +207,10 @@ cd Web_vocab_v0/src
 npm install
 
 # 3. Configuration rapide
-cp app/config/.env.example app/config/.env
-nano app/config/.env  # Éditez vos variables
+cp src/app/config/.env.example src/app/config/.env
+nano src/app/config/.env  # Éditez vos variables
 
-# 4. Démarrage immédiat
+# 4. Démarrage immédiat ( mode du developpement en local)
 npm run dev
 ```
 
@@ -211,29 +220,33 @@ npm run dev
 <summary>📧 <strong>Configuration Email & Base de Données</strong></summary>
 
 ```env
-# 📧 Configuration Email
-USER_GMAIL=votre-app@gmail.com
-USER_PASS=votre-mot-de-passe-app
-
-# 🗄️ Base de Données
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=sealvo_db
-DB_USER=root
-DB_PASSWORD=votre-password
-
-# 🔐 Sécurité
-SESSION_SECRET=votre-cle-super-secrete-aleatoire
-JWT_SECRET=votre-jwt-secret
-BCRYPT_ROUNDS=12
-
-# 🚀 Serveur
+# 🖥️ Server Configuration 
 PORT=3000
 NODE_ENV=development
 
-# 🤖 IA (Optionnel)
-GOOGLE_AI_API_KEY=your-google-ai-key  # Optionnel pour assistance IA
-AI_MODEL=gemini-1.5-flash
+# 🗄️ Database Configuration 
+DB_HOST= name_of_your_host
+DB_DATABASE= name_of_your_database
+DB_PORT= 3306
+DB_USER= name_of_your_user
+DB_PASSWORD= name_of_your_password
+DB_DIALECT= mysql
+
+# 🔐 Google Auth Configuration 
+GOOGLE_CLIENT_ID= id_of_your_google_client
+GOOGLE_CLIENT_SECRET= secret_of_your_google_client
+
+# 🤖 Gemini API Key 
+GEMINI_API_KEY = key_of_your_gemini_api
+
+# 📧 Email Configuration 
+USER_GMAIL = name_of_your_gmail
+USER_PASS = password_of_your_gmai_given_by_password_app
+
+# 🌐 URL Configuration 
+BASE_URL=https://your_domain.com/
+DOMAIN=your_domain
+
 ```
 
 </details>
@@ -241,12 +254,14 @@ AI_MODEL=gemini-1.5-flash
 <details>
 <summary>🗄️ <strong>Configuration Base de Données</strong></summary>
 
-```sql
--- Création automatique des tables
-CREATE DATABASE sealvo_db;
+```bash
+-- Création automatique des tables par le fichier database.sql
+cd src/app/core
+mysql -u user_name -p < database.sql
+
+Or you can connect to your database mysql with your favorite tool and execute the file database.sql
 
 -- Les tables sont créées automatiquement au démarrage
--- Vérifiez les migrations dans app/core/database.js
 ```
 
 </details>
@@ -261,23 +276,26 @@ CREATE DATABASE sealvo_db;
    ```
    📧 Email + mot de passe sécurisé
    ✅ Vérification automatique
-   🎨 Personnalisation du profil
+   🎨 Personnalisation du profil par choix de l'avatar 
+   🔒 Les passwords sont hachés avec bcryptjs dans la base de données
+
+   Or simplement, vous pouvez se connecter avec votre compte Google 
+
    ```
 
 2. **Créez votre premier package** 📦
    ```javascript
    // Interface intuitive
    Package: "Vocabulaire Professionnel"
-   Catégorie: Business
-   Niveau: Intermédiaire
-   Objectif: 50 mots/semaine
+   Description: "Vocabulaire pour les professionnels"
+   Mode de visibilité: "Public"
    ```
 
 3. **Ajoutez vos mots** 📝
    ```
-   📝 Saisie manuelle ou import Excel
-   📊 Définitions contextuelles
-   🎯 Classification automatique par difficulté
+   📝 Saisie manuelle ou import Excel (xlsx, xls)
+   📊 Exemples, contextuelles générées par l'API de Google Gemini-2.5-Flash
+   🎯 Classification automatique par le niveau de mémorisation
    ```
 
 4. **Commencez l'apprentissage** 🧠
@@ -287,45 +305,21 @@ CREATE DATABASE sealvo_db;
    📈 Suivi de progression en temps réel
    ```
 
-### **🎮 Modes d'Apprentissage**
+### **🎮 Modes d'Apprentissage (Spaced Repetition et flashcards)**
 
 | Mode | Description | Durée | Efficacité |
 |------|-------------|-------|------------|
-| 🚀 **Speed Learning** | Apprentissage intensif | 5-10 min | ⭐⭐⭐⭐⭐ |
-| 🧠 **Spaced Repetition** | Révision espacée | 15-20 min | ⭐⭐⭐⭐⭐ |
+| 🚀 **Meaning to Word** | Apprentissage intensif | 5-10 min | ⭐⭐⭐⭐⭐ |
+| 🧠 **Word to Meaning** | Révision espacée | 15-20 min | ⭐⭐⭐⭐⭐ |
 | 🎯 **Game Mode** | Apprentissage ludique | 10-15 min | ⭐⭐⭐⭐ |
-| 📊 **Analytics** | Révision ciblée | Variable | ⭐⭐⭐⭐ |
 
 ---
 
 ## 📊 Statistiques & Performance
 
-### **📈 Dashboard Avancé**
-```javascript
-// Exemple de métriques disponibles
-const userStats = {
-  totalWords: 1247,
-  streakDays: 23,
-  accuracy: 94.5,
-  timeSpent: "2h 34m",
-  favoritePackage: "Business English",
-  nextReview: "14:30",
-  completionRate: 87.3
-};
-```
 
 ### **🎯 Système de Streaks**
 - **Streak Counter** : Suivi des jours consécutifs
-- **Fire Animation** : Visualisation dynamique
-- **Récompenses** : Badges et accomplissements
-- **Challenges** : Défis hebdomadaires
-
-### **📊 Métriques d'Apprentissage**
-- **Courbe de progression** : Visualisation de l'amélioration
-- **Temps de réponse** : Analyse de la vitesse
-- **Taux de rétention** : Efficacité de la mémorisation
-- **Mots maîtrisés** : Suivi des acquis
-
 ---
 
 ## 🛡️ Sécurité & Performance
@@ -341,7 +335,6 @@ const userStats = {
 ### **⚡ Optimisations Performance**
 - 🚀 **Lazy Loading** : Chargement progressif
 - 📱 **Mobile-First** : Responsive design
-- 🎯 **Caching** : Mise en cache intelligente
 - 📊 **Analytics** : Monitoring en temps réel
 
 ---
@@ -352,11 +345,11 @@ const userStats = {
 
 | Feature | Status | ETA |
 |---------|--------|-----|
-| 🎤 **Reconnaissance Vocale** | 🔄 En développement | Q1 2024 |
-| 🌍 **Mode Hors-ligne** | 📋 Planifié | Q2 2024 |
-| 👥 **Collaboration** | 💡 Recherche | Q3 2024 |
-| 📱 **App Mobile** | 🎯 Roadmap | Q4 2024 |
-| 🧠 **IA Avancée** | 💡 Amélioration | Q2 2024 |
+| 🌍 **Mode Hors-ligne** | 📋 Planifié 
+| 🎯 **Recompenses selon le niveau de streak** | 🔄 En travail 
+| 👥 **Collaboration** | 💡 Recherche 
+| 📱 **App Mobile** | 🎯 Roadmap 
+| 🧠 **IA Avancée** | 💡 Amélioration 
 
 ### **🤝 Contribuer**
 
@@ -418,14 +411,6 @@ git push origin feature/nouvelle-fonctionnalite
 
 </details>
 
-### **📞 Support Community**
-
-- 💬 **Discord** : [Rejoindre la communauté](#)
-- 🐛 **Issues** : [Signaler un bug](#)
-- 📚 **Wiki** : [Documentation complète](#)
-- 📧 **Email** : support@sealvo.com
-
----
 
 ## 📄 Licence & Crédits
 
@@ -443,6 +428,10 @@ copies of the Software...
 ### **🙏 Remerciements**
 - **Express.js Community** : Pour le framework robuste
 - **Open Source Contributors** : Pour les packages utilisés
+- **Google Gemini-2.5-Flash** : Pour les définitions contextuelles
+- **Uiverse.io** : Pour les UI/UX design
+- **Pexels** : Pour les images
+- **Printerest** : Pour les avatars
 - **Learning Science Research** : Pour les principes de révision espacée
 - **Beta Testers** : Pour les retours précieux
 
