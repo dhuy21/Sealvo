@@ -92,14 +92,14 @@
             <td>{{grammar}}</td>
             <td>
               <div class="action-buttons">
-                <form action="/monVocabs/edit/{{word_id}}?package={{package_id}}" method="POST" class="edit-form" onsubmit="return false;">
-                  <button type="submit" class="edit-btn" title="Modifier" data-id="{{word_id}}">
+                <form action="/monVocabs/edit/{{detail_id}}?package={{package_id}}" method="POST" class="edit-form" onsubmit="return false;">
+                  <button type="submit" class="edit-btn" title="Modifier" data-id="{{detail_id}}">
                     <i class="fas fa-edit"></i>
                   </button>
                 </form>
 
-                <form action="/monVocabs/delete/{{word_id}}?package={{package_id}}" method="POST" class="delete-form" onsubmit="return false;">
-                  <button type="submit" class="delete-btn" title="Supprimer" data-id="{{word_id}}">
+                <form action="/monVocabs/delete/{{detail_id}}?package={{package_id}}" method="POST" class="delete-form" onsubmit="return false;">
+                  <button type="submit" class="delete-btn" title="Supprimer" data-id="{{detail_id}}">
                     <i class="fas fa-trash"></i>
                   </button>
                 </form>

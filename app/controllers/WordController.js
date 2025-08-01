@@ -312,10 +312,10 @@ class WordController {
             }
 
             // Récupérer les données du formulaire
-            const { word, language_code, subject, type, meaning, pronunciation, synonyms, antonyms, example, grammar, level } = req.body;
+            const { word, language_code, type, meaning, pronunciation, synonyms, antonyms, example, grammar, level } = req.body;
 
             // Vérifier que les champs obligatoires sont présents
-            if (!word || !language_code || !subject || !type || !meaning || !example) {
+            if (!word || !language_code || !type || !meaning || !example) {
                 return res.status(403).json({
                     success: false,
                     message: 'Veuillez remplir tous les champs obligatoires'
