@@ -50,7 +50,6 @@ class VocabQuizController {
                     meaning: word.meaning
                 }));
                 // Ajouter l'option correcte
-                console.log(questionWords[i].incorrectOptions);
                 if (questionWords[i].type) {
                     questionWords[i].correctMeaning = `${questionWords[i].type} : `;
                     questionWords[i].correctMeaning += questionWords[i].meaning;
