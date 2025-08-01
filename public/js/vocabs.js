@@ -149,13 +149,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function handleDeleteClick(e) {
     e.preventDefault();
-    const wordId = this.getAttribute('data-id');
+    const detailId = this.getAttribute('data-id');
     this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     
     // Add visual feedback
     const row = this.closest('tr');
     
-    fetch(`/monVocabs/delete/${wordId}`, {
+    fetch(`/monVocabs/delete/${detailId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -257,13 +257,13 @@ function handleDeleteClick(e) {
 
 function handleEditClick(e) {
     e.preventDefault();
-    const wordId = this.getAttribute('data-id');
+    const detailId = this.getAttribute('data-id');
     const row = this.closest('tr');
     
     if (!row.dataset.editing) {
         // Sauvegarder les valeurs originales pour pouvoir annuler
         const originalValues = [];
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < 9; i++) {
             originalValues.push(row.cells[i].textContent.trim());
         }
         row.dataset.originalValues = JSON.stringify(originalValues);
@@ -279,9 +279,10 @@ function handleEditClick(e) {
         
         // Mot (cell 0)
         cellContents.push(`<input type="text" class="edit-input" value="${row.cells[0].textContent.trim()}" required>`);
-        
-        // Type (cell 1)
-        const typeText = row.cells[1].textContent.trim();
+        //language_code (cell 1)
+        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[1].textContent.trim()}" required>`);
+        // Type (cell 2)
+        const typeText = row.cells[2].textContent.trim();
         cellContents.push(`
             <select class="edit-input" required>
                 <option value="noun" ${typeText === 'noun' ? 'selected' : ''}>Nom</option>
@@ -294,23 +295,23 @@ function handleEditClick(e) {
             </select>
         `);
         
-        // Meaning (cell 2)
-        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[2].textContent.trim()}" required>`);
+        // Meaning (cell 3)
+        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[3].textContent.trim()}" required>`);
         
-        // Pronunciation (cell 3)
-        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[3].textContent.trim()}">`);
-        
-        // Synonyms (cell 4)
+        // Pronunciation (cell 4)
         cellContents.push(`<input type="text" class="edit-input" value="${row.cells[4].textContent.trim()}">`);
         
-        // Antonyms (cell 5)
+        // Synonyms (cell 5)
         cellContents.push(`<input type="text" class="edit-input" value="${row.cells[5].textContent.trim()}">`);
         
-        // Example (cell 6)
-        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[6].textContent.trim()}" required>`);
+        // Antonyms (cell 6)
+        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[6].textContent.trim()}">`);
         
-        // Grammar (cell 7)
-        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[7].textContent.trim()}">`);
+        // Example (cell 7)
+        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[7].textContent.trim()}" required>`);
+        
+        // Grammar (cell 8)
+        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[8].textContent.trim()}">`);
         
         // Appliquer les inputs aux cellules
         for (let i = 0; i < cellContents.length; i++) {
@@ -318,9 +319,9 @@ function handleEditClick(e) {
         }
         
         // Remplacer les boutons d'action
-        row.cells[8].innerHTML = `
+        row.cells[9].innerHTML = `
             <div class="action-buttons">
-                <button type="button" class="save-btn" title="Valider" data-id="${wordId}">
+                <button type="button" class="save-btn" title="Valider" data-id="${detailId}">
                     <i class="fas fa-check"></i>
                 </button>
             
@@ -367,20 +368,20 @@ function cancelEdit() {
         }
         
         // Récupérer l'ID du mot
-        const wordId = row.querySelector('.save-btn')?.getAttribute('data-id') || 
-                      this.closest('.action-buttons')?.querySelector('.save-btn')?.getAttribute('data-id');
+        const detailId = row.querySelector('.save-btn')?.getAttribute('data-id') || 
+                        this.closest('.action-buttons')?.querySelector('.save-btn')?.getAttribute('data-id');
         
         // Restaurer les boutons d'action
-        row.cells[8].innerHTML = `
+        row.cells[9].innerHTML = `
             <div class="action-buttons">
-                <form action="/monVocabs/edit/${wordId}" method="POST" class="edit-form" onsubmit="return false;">
-                    <button type="submit" class="edit-btn" title="Modifier" data-id="${wordId}">
+                <form action="/monVocabs/edit/${detailId}" method="POST" class="edit-form" onsubmit="return false;">
+                    <button type="submit" class="edit-btn" title="Modifier" data-id="${detailId}">
                         <i class="fas fa-edit"></i>
                     </button>
                 </form>
 
-                <form action="/monVocabs/delete/${wordId}" method="POST" class="delete-form" onsubmit="return false;">
-                    <button type="submit" class="delete-btn" title="Supprimer" data-id="${wordId}">
+                <form action="/monVocabs/delete/${detailId}" method="POST" class="delete-form" onsubmit="return false;">
+                    <button type="submit" class="delete-btn" title="Supprimer" data-id="${detailId}">
                         <i class="fas fa-trash"></i>
                     </button>
                 </form>
@@ -399,28 +400,31 @@ function cancelEdit() {
 
 function saveWord() {
     const row = this.closest('tr');
-    const wordId = this.getAttribute('data-id');
+    const detailId = this.getAttribute('data-id');
     
     // Collecter les données du formulaire
     const word = row.cells[0].querySelector('input').value.trim();
-    const type = row.cells[1].querySelector('select').value;
-    const meaning = row.cells[2].querySelector('input').value.trim();
-    const pronunciation = row.cells[3].querySelector('input').value.trim();
-    const synonyms = row.cells[4].querySelector('input').value.trim();
-    const antonyms = row.cells[5].querySelector('input').value.trim();
-    const example = row.cells[6].querySelector('input').value.trim();
-    const grammar = row.cells[7].querySelector('input').value.trim();
+    const language_code = row.cells[1].querySelector('input').value.trim();
+    const type = row.cells[2].querySelector('select').value;
+    const meaning = row.cells[3].querySelector('input').value.trim();
+    const pronunciation = row.cells[4].querySelector('input').value.trim();
+    const synonyms = row.cells[5].querySelector('input').value.trim();
+    const antonyms = row.cells[6].querySelector('input').value.trim();
+    const example = row.cells[7].querySelector('input').value.trim();
+    const grammar = row.cells[8].querySelector('input').value.trim();
     const level = row.querySelector('.level-select').value;
     
     // Valider les champs obligatoires
-    if (!word || !type || !meaning || !example) {
+    if (!word || !language_code || !type || !meaning || !example) {
         showNotification('Veuillez remplir tous les champs obligatoires', 'error');
         return;
     }
     
+    
     // Préparation des données pour l'envoi
     const wordData = {
         word,
+        language_code,
         type,
         meaning,
         pronunciation,
@@ -428,8 +432,7 @@ function saveWord() {
         antonyms,
         example,
         grammar,
-        level,
-        subject: 'General' // Valeur par défaut pour le sujet, à adapter si nécessaire
+        level
     };
     
     // Afficher un indicateur de chargement
@@ -437,7 +440,7 @@ function saveWord() {
     this.disabled = true;
     
     // Envoyer les données au serveur
-    fetch(`/monVocabs/edit/${wordId}`, {
+    fetch(`/monVocabs/edit/${detailId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -455,25 +458,26 @@ function saveWord() {
             
             // Mettre à jour les cellules
             row.cells[0].textContent = word;
-            row.cells[1].textContent = type;
-            row.cells[2].textContent = meaning;
-            row.cells[3].textContent = pronunciation;
-            row.cells[4].textContent = synonyms;
-            row.cells[5].textContent = antonyms;
-            row.cells[6].textContent = example;
-            row.cells[7].textContent = grammar;
+            row.cells[1].textContent = language_code;
+            row.cells[2].textContent = type;
+            row.cells[3].textContent = meaning;
+            row.cells[4].textContent = pronunciation;
+            row.cells[5].textContent = synonyms;
+            row.cells[6].textContent = antonyms;
+            row.cells[7].textContent = example;
+            row.cells[8].textContent = grammar;
             
             // Restaurer les boutons d'action
-            row.cells[8].innerHTML = `
+            row.cells[9].innerHTML = `
                 <div class="action-buttons">
-                    <form action="/monVocabs/edit/${wordId}" method="POST" class="edit-form" onsubmit="return false;">
-                        <button type="submit" class="edit-btn" title="Modifier" data-id="${wordId}">
+                    <form action="/monVocabs/edit/${detailId}" method="POST" class="edit-form" onsubmit="return false;">
+                        <button type="submit" class="edit-btn" title="Modifier" data-id="${detailId}">
                             <i class="fas fa-edit"></i>
                         </button>
                     </form>
 
-                    <form action="/monVocabs/delete/${wordId}" method="POST" class="delete-form" onsubmit="return false;">
-                        <button type="submit" class="delete-btn" title="Supprimer" data-id="${wordId}">
+                    <form action="/monVocabs/delete/${detailId}" method="POST" class="delete-form" onsubmit="return false;">
+                        <button type="submit" class="delete-btn" title="Supprimer" data-id="${detailId}">
                             <i class="fas fa-trash"></i>
                         </button>
                     </form>

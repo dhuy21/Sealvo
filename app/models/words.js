@@ -56,14 +56,24 @@ class Word {
         let transaction;
         try {
             transaction = await global.dbConnection.beginTransaction();
-            
+            let wordId
             // 1. Insérer le mot dans la table words
-            const [wordResult] = await transaction.execute(
-                'INSERT INTO words (word, subject, language_code) VALUES (?, ?, ?)',
+            // Vérifier si le mot existe déjà dans la table words
+            const [existingWord] = await transaction.execute(
+                'SELECT word_id FROM words WHERE word = ? AND subject = ? AND language_code = ?',
                 [wordData.word, wordData.subject, wordData.language_code]
             );
-            const wordId = wordResult.insertId;
-
+            if (existingWord.length === 0) {
+                // Insérer le mot dans la table words
+                const [wordResult] = await transaction.execute(
+                    'INSERT INTO words (word, subject, language_code) VALUES (?, ?, ?)',
+                    [wordData.word, wordData.subject, wordData.language_code]
+                );
+                 wordId = wordResult.insertId;
+            } else {
+                wordId = existingWord[0].word_id;
+            }
+            
             // 2. Insérer les détails du mot
             const [detailResult] = await transaction.execute(
                 'INSERT INTO word_details (word_id, type, meaning, pronunciation, synonyms, antonyms, example, grammar) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -165,18 +175,57 @@ class Word {
         }
     }
 
-    async updateWord(wordData, wordId, packageId) {
+    async updateWord(wordData, detailId, packageId) {
         let transaction;
         try {
             transaction = await global.dbConnection.beginTransaction();
-            // Mettre à jour le mot dans la table words
-            const [result] = await transaction.execute(
-                'UPDATE words SET word = ?, subject = ? WHERE word_id = ?',
-                [wordData.word, wordData.subject, wordId]
+            
+            // 1. Récupérer les infos actuelles
+            const [currentDetails] = await transaction.execute(
+                'SELECT wd.*, w.word, w.subject, w.language_code FROM word_details wd ' +
+                'JOIN words w ON wd.word_id = w.word_id WHERE wd.detail_id = ?',
+                [detailId]
             );
-            // Mettre à jour les détails du mot
+            
+            if (!currentDetails.length) {
+                throw new Error('Mot non trouvé');
+            }
+            
+            const current = currentDetails[0];
+            const wordChanged = current.word !== wordData.word || 
+                               current.subject !== wordData.subject || 
+                               current.language_code !== wordData.language_code;
+            
+            let wordId = current.word_id;
+            
+            // 2. Si le mot de base a changé, gérer le nouveau mot
+            if (wordChanged) {
+                const [existingWord] = await transaction.execute(
+                    'SELECT word_id FROM words WHERE word = ? AND subject = ? AND language_code = ?',
+                    [wordData.word, wordData.subject, wordData.language_code]
+                );
+                
+                if (existingWord.length === 0) {
+                    // Créer nouveau mot dans words
+                    const [wordResult] = await transaction.execute(
+                        'INSERT INTO words (word, subject, language_code) VALUES (?, ?, ?)',
+                        [wordData.word, wordData.subject, wordData.language_code]
+                    );
+                    wordId = wordResult.insertId;
+                } else {
+                    wordId = existingWord[0].word_id;
+                }
+                
+                // Mettre à jour le word_id dans word_details
+                await transaction.execute(
+                    'UPDATE word_details SET word_id = ? WHERE detail_id = ?',
+                    [wordId, detailId]
+                );
+            }
+            
+            // 3. Mettre à jour les détails du mot (spécifique à l'utilisateur)
             await transaction.execute(
-                'UPDATE word_details SET type = ?, meaning = ?, pronunciation = ?, synonyms = ?, antonyms = ?, example = ?, grammar = ? WHERE word_id = ?',
+                'UPDATE word_details SET type = ?, meaning = ?, pronunciation = ?, synonyms = ?, antonyms = ?, example = ?, grammar = ? WHERE detail_id = ?',
                 [
                     wordData.type,
                     wordData.meaning,
@@ -185,20 +234,20 @@ class Word {
                     wordData.antonyms,
                     wordData.example,
                     wordData.grammar,
-                    wordId
+                    detailId
                 ]
             );
 
-            // Mettre à jour l'association avec l'utilisateur
+            // 4. Mettre à jour l'association avec l'utilisateur
             await transaction.execute(
                 'UPDATE learning SET level = ? WHERE detail_id = ? AND package_id = ?',
-                [wordData.level, wordId, packageId]
+                [wordData.level, detailId, packageId]
             );
 
             // Valider la transaction 
             await transaction.commit();
             
-            return wordId;  
+            return detailId;  
         } catch (error) {
             // Annuler la transaction en cas d'erreur
             console.error(`ROLLBACK pour le mot ${wordData.word}:`, error);
