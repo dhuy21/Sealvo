@@ -11,7 +11,7 @@ const isAuthenticated = (req, res, next) => {
 };
 
 // Routes pour le jeu Vocab Quiz
-router.get('/question', isAuthenticated, vocabQuizController.getQuestionForVocabQuiz);
+router.get('/questions', isAuthenticated, vocabQuizController.getQuestionForVocabQuiz);
 
 // Route pour obtenir le nombre de mots disponibles
 router.get('/available-words', isAuthenticated, vocabQuizController.getAvailableWordsCount);
