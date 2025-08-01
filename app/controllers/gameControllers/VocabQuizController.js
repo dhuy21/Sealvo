@@ -35,49 +35,48 @@ class VocabQuizController {
             }
             
             // Mélanger les mots
-            const shuffledWords = this.shuffleArray([...words]);
-            
-            // Sélectionner un mot pour la question
-            const questionWord = shuffledWords[0];
-            
-            // Sélectionner des mots pour les options incorrectes
-            const incorrectOptions = shuffledWords.slice(1, optionsCount);
-            
-            // Créer les options
-            const options = [];
-            
-            // Ajouter l'option correcte
-            let correctMeaning = '';
-            if (questionWord.type) {
-                correctMeaning += `${questionWord.type} : `;
+            let questionWords = [];
+
+            for (let i = 0; i < words.length; i++) {
+
+                const shuffledWords = this.shuffleArray([...words]);
+                // Sélectionner un mot pour la question
+                questionWords[i] = shuffledWords[0];
+                // Sélectionner des mots pour les options incorrectes (copie des objets)
+                questionWords[i].incorrectOptions = shuffledWords.slice(1, optionsCount).map(word => ({
+                    id: word.id,
+                    word: word.word,
+                    type: word.type,
+                    meaning: word.meaning
+                }));
+                // Ajouter l'option correcte
+                console.log(questionWords[i].incorrectOptions);
+                if (questionWords[i].type) {
+                    questionWords[i].correctMeaning = `${questionWords[i].type} : `;
+                    questionWords[i].correctMeaning += questionWords[i].meaning;
+                    questionWords[i].options = [];
+                    questionWords[i].options.push(questionWords[i].correctMeaning);
+                }
+                // Ajouter les options incorrectes
+                questionWords[i].incorrectOptions.forEach(word => {
+                    let meaning = '';
+                    if (word.type) {
+                        meaning += `${word.type} : `;
+                    }
+                    meaning += word.meaning;
+                    
+                    questionWords[i].options.push(meaning);
+                });
+
+                // Mélanger les options
+                questionWords[i].options = this.shuffleArray(questionWords[i].options);
+
+                // Trouver l'index de la bonne réponse dans les options mélangées
+                questionWords[i].correctIndex = questionWords[i].options.findIndex(option => option === questionWords[i].correctMeaning);
             }
-            correctMeaning += questionWord.meaning;
-            
-            options.push(correctMeaning);
-            
-            // Ajouter les options incorrectes
-            incorrectOptions.forEach(word => {
-                let meaning = '';
-                if (word.type) {
-                    meaning += `${word.type} : `;
-                }
-                meaning += word.meaning;
-                
-                options.push(meaning);
-            });
-            
-            // Mélanger les options
-            const shuffledOptions = this.shuffleArray(options);
-            
-            // Trouver l'index de la bonne réponse dans les options mélangées
-            const correctIndex = shuffledOptions.findIndex(option => option === correctMeaning);
-            
+          
             return res.json({
-                question: {
-                    word: questionWord.word,
-                    options: shuffledOptions,
-                    correctIndex: correctIndex
-                }
+                questionWords: questionWords
             });
         } catch (error) {
             console.error('Erreur lors de la récupération d\'une question:', error);
