@@ -312,7 +312,7 @@ document.addEventListener('DOMContentLoaded', function() {
         progressDisplay.textContent = `1/${totalQuestions}`;
         
         // Charger la première question
-        loadNextQuestion();
+        loadQuestions();
         
         // Afficher l'écran de jeu actif
         preGameScreen.classList.remove('active');
@@ -321,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Fonction pour charger la prochaine question
-    function loadNextQuestion() {
+    function loadQuestions() {
         // Add modern lovely new question animation
         addNewQuestionAnimation();
         
@@ -474,11 +474,41 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fonction pour passer à la question suivante
     function goToNextQuestion() {
         if (currentQuestionIndex < totalQuestions) {
-            loadNextQuestion();
+            // Add modern lovely new question animation
+            addNewQuestionAnimation();
+            
+            // Réinitialiser l'état des boutons
+            nextQuestionBtn.disabled = true;
+            resultMessage.textContent = '';
+            resultMessage.className = 'result-message';
+            
+            currentQuestion = questionWords[currentQuestionIndex];
+            
+            
+            // Mettre à jour l'affichage de la question avec animation plus visible
+            quizWordDisplay.textContent = currentQuestion.word;
+            quizWordDisplay.classList.add('revealing');
+            setTimeout(() => {
+                quizWordDisplay.classList.remove('revealing');
+            }, 1200);
+            
+            // Générer les options
+            generateOptions(currentQuestion.options, currentQuestion.correctIndex);
+            
+            // Mettre à jour la progression avec animation plus visible
+            currentQuestionIndex++;
+            progressDisplay.textContent = `${currentQuestionIndex}/${totalQuestions}`;
+            progressDisplay.classList.add('updating');
+            setTimeout(() => {
+                progressDisplay.classList.remove('updating');
+            }, 800);
+
         } else {
             endGame();
         }
     }
+
+
     
     // Fonction pour terminer le jeu
     function endGame() {
