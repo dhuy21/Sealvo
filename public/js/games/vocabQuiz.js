@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Variables du jeu
     let currentQuestion = null;
+    let questionWords = [];
     let currentQuestionIndex = 0;
     let score = 0;
     let correctAnswers = 0;
@@ -16,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let optionsCount = 6; // Par défaut
     let currentSelectedOption = null;
     let availableWords = 0;
-    const maxQuestions = 30;
+    const maxQuestions = 300;
     
     // Animation variables
     let audioContext = null;
@@ -318,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
         activeGameScreen.classList.add('active');
         postGameScreen.classList.remove('active');
     }
-    
+
     // Fonction pour charger la prochaine question
     function loadNextQuestion() {
         // Add modern lovely new question animation
@@ -329,8 +330,8 @@ document.addEventListener('DOMContentLoaded', function() {
         resultMessage.textContent = '';
         resultMessage.className = 'result-message';
         
-        // Appel à l'API pour obtenir une question
-        fetch(`/games/vocabQuiz/question?package=${packageId}`, {
+        // Appel à l'API pour obtenir des questions
+        fetch(`/games/vocabQuiz/questions?package=${packageId}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -338,6 +339,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
+
             if (data.error) {
                 console.error(data.error);
                 resultMessage.textContent = data.error;
@@ -345,17 +347,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            currentQuestion = data.question;
+            for (let i=0; i < totalQuestions; i++) {
+                
+                questionWords[i] = data.questionWords[i % data.questionWords.length];
+
+            }
+
+
+            currentQuestion = questionWords[currentQuestionIndex];
+            
             
             // Mettre à jour l'affichage de la question avec animation plus visible
-            quizWordDisplay.textContent = data.question.word;
+            quizWordDisplay.textContent = currentQuestion.word;
             quizWordDisplay.classList.add('revealing');
             setTimeout(() => {
                 quizWordDisplay.classList.remove('revealing');
             }, 1200);
             
             // Générer les options
-            generateOptions(data.question.options, data.question.correctIndex);
+            generateOptions(currentQuestion.options, currentQuestion.correctIndex);
             
             // Mettre à jour la progression avec animation plus visible
             currentQuestionIndex++;
