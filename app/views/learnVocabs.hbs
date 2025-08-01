@@ -1,4 +1,3 @@
-
 <link rel="stylesheet" href="/css/learnVocabs.css">
 <div class="learn-container">
   <h1 class="learn-title">Apprendre mon vocabulaire</h1>
@@ -106,44 +105,49 @@
         <span id="current-card">1</span> / <span id="total-cards">{{words.length}}</span>
       </div>
       
-      <div class="flashcard" id="flashcard">
-        <div class="flashcard-inner">
-          <div class="flashcard-front">
-            <span class="card-type">{{words.[0].type}}</span>
-            <h2 class="card-content">{{words.[0].word}}</h2>
-            <div class="hint-container">
-              <button id="hint-button" class="hint-btn"><i class="fas fa-lightbulb"></i> Indice</button>
-              <p id="hint-text" class="hint-text"></p>
+      <div class="flashcard-with-navigation">
+        <button id="prev-card" class="nav-btn-left" disabled>
+          <i class="fas fa-chevron-left"></i>
+        </button>
+
+        <div class="flashcard" id="flashcard">
+          <div class="flashcard-inner">
+            <div class="flashcard-front">
+              <span class="card-type">{{words.[0].type}}</span>
+              <h2 class="card-content">{{words.[0].word}}</h2>
+              <div class="hint-container">
+                <button id="hint-button" class="hint-btn"><i class="fas fa-lightbulb"></i> Indice</button>
+                <p id="hint-text" class="hint-text"></p>
+              </div>
+              <p class="card-prompt">Cliquez pour voir la traduction</p>
             </div>
-            <p class="card-prompt">Cliquez pour voir la traduction</p>
-          </div>
-          <div class="flashcard-back">
-            <span class="card-type">{{words.[0].type}}</span>
-            <h2 class="card-content">{{words.[0].meaning}}</h2>
-            <div class="card-details">
-              <p><strong>Exemple:</strong> <span class="example-text">{{words.[0].example}}</span></p>
-              {{#if words.[0].pronunciation}}
-                <p><strong>Prononciation:</strong> <span class="pronunciation-text">{{words.[0].pronunciation}}</span></p>
-                <button class="pronunciation-btn" data-text="{{words.[0].word}}">
-                  <i class="fas fa-volume-up"></i> Écouter
-                </button>
-              {{/if}}
-              {{#if words.[0].synonyms}}
-                <p><strong>Synonymes:</strong> {{words.[0].synonyms}}</p>
-              {{/if}}
-              {{#if words.[0].antonyms}}
-                <p><strong>Antonymes:</strong> {{words.[0].antonyms}}</p>
-              {{/if}}
+            <div class="flashcard-back">
+              <span class="card-type">{{words.[0].type}}</span>
+              <h2 class="card-content">{{words.[0].meaning}}</h2>
+              <div class="card-details">
+                <div class="example-text"><strong>Exemple:</strong> {{words.[0].example}} </div>
+                {{#if words.[0].pronunciation}}
+                  <div class="pronunciation-text"><strong>Prononciation:</strong> {{words.[0].pronunciation}}</div>
+                  <button class="pronunciation-btn" data-text="{{words.[0].word}}">
+                    <i class="fas fa-volume-up"></i> Écouter
+                  </button>
+                {{/if}}
+                {{#if words.[0].synonyms}}
+                  <p><strong>Synonymes:</strong> {{words.[0].synonyms}}</p>
+                {{/if}}
+                {{#if words.[0].antonyms}}
+                  <p><strong>Antonymes:</strong> {{words.[0].antonyms}}</p>
+                {{/if}}
+              </div>
             </div>
           </div>
         </div>
+
+        <button id="next-card" class="nav-btn-right">
+          <i class="fas fa-chevron-right"></i>
+        </button>
       </div>
       
-      <div class="flashcard-navigation">
-        <button id="prev-card" class="nav-btn" disabled>
-          <i class="fas fa-chevron-left"></i> Précédent
-        </button>
-        
         <div class="knowledge-buttons">
           <button class="knowledge-btn" data-level="0">
             <i class="fas fa-times"></i> Je ne sais pas
@@ -155,11 +159,6 @@
             <i class="fas fa-check"></i> Je sais
           </button>
         </div>
-        
-        <button id="next-card" class="nav-btn">
-          Suivant <i class="fas fa-chevron-right"></i>
-        </button>
-      </div>
     </div>
     
     <div class="progress-container">

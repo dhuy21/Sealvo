@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS words (
     language_code VARCHAR(2) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (word_id),
+    UNIQUE KEY uq_words_word_subject_lang (word, subject, language_code),
     CHECK (language_code IN ('en', 'fr', 'es', 'de', 'it', 
     'ja', 'zh', 'ar', 'pt', 'ru', 'tr', 'vi', 'ko', 'th', 
     'id', 'ms', 'hi', 'bn', 'pl', 'nl', 'sv', 'fi', 'uk', 
