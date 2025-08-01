@@ -117,7 +117,7 @@ class ImportFile {
                         title: 'Ajouter un mot',
                         package_id: req.query.package,
                         user: req.session.user,
-                        error: err.message
+                        error: errMessage
                     });
                 }
                 
@@ -136,6 +136,7 @@ class ImportFile {
                 let words = [];
                 let words_no_example = [];
                 
+                let errExample = 0;
                 // Traiter le fichier selon son type
                 if (['.xlsx', '.xls', '.csv'].includes(fileExt)) {
                     // Traiter les fichiers Excel
@@ -157,6 +158,7 @@ class ImportFile {
                 for (const word of words) {
                     try {
                         if (!word.meaning || !word.type || !word.word) {
+                            errExample ++ ;
                             continue;
                         } else if (word.example === '') {
                             words_no_example.push({
@@ -193,14 +195,14 @@ class ImportFile {
                 
                 // Ajouter chaque mot à la base de données
                 let successCount = 0;
-                let errorCount = 0;
+                let errChamps = 0;
             
                 for (const wordData of words) {
                     try {
                         // Vérifier que les champs obligatoires sont présents
                         if (!wordData.word || !wordData.language_code || !wordData.subject || !wordData.type || 
                             !wordData.meaning ) {
-                            errorCount++;
+                                errChamps ++ ;
                             continue;
                         }
                         
@@ -216,17 +218,16 @@ class ImportFile {
 
                     } catch (error) {
                         console.error(`Erreur lors de l'ajout du mot ${wordData.word}:`, error);
-                        errorCount++;
+                        errChamps ++ ;
                     }
                 }
-                const package_id = req.query.package;
                 // Supprimer le fichier temporaire
                 fs.unlinkSync(filePath);
                     
                 // Rediriger avec un message de succès
                 res.status(200).json({
                     success: true,
-                    message: `${successCount} mot(s) importé(s) avec succès. ${errorCount} erreur(s)`
+                    message: `${successCount} mot(s) importé(s) avec succès. ${errChamps} erreur(s) de champs obligatoires. ${errExample} erreur(s) de generation d'exemples`
                 });
             });
         } catch (error) {
