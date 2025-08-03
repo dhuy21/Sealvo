@@ -20,7 +20,7 @@ class VocabQuizController {
             const package_id = req.query.package;
             const optionsCount = 6
             
-            // Récupérer tous les mots de l'utilisateur
+            // Récupérer tous les mots de package selon le niveau de jeu
             const detailWordsIds = await learningModel.findWordsByLevel(package_id, levelGame);
             let words = [];
             for (const detailWordId of detailWordsIds) {
@@ -38,10 +38,15 @@ class VocabQuizController {
             let questionWords = [];
 
             for (let i = 0; i < words.length; i++) {
+                let correctMeaning = [];
 
                 const shuffledWords = this.shuffleArray([...words]);
                 // Sélectionner un mot pour la question
                 questionWords[i] = shuffledWords[0];
+                
+                // Initialiser correctIndex comme un array
+                questionWords[i].correctIndex = [];
+
                 // Sélectionner des mots pour les options incorrectes (copie des objets)
                 questionWords[i].incorrectOptions = shuffledWords.slice(1, optionsCount).map(word => ({
                     id: word.id,
@@ -51,12 +56,13 @@ class VocabQuizController {
                 }));
                 // Ajouter l'option correcte
                 if (questionWords[i].type) {
-                    questionWords[i].correctMeaning = `${questionWords[i].type} : `;
-                    questionWords[i].correctMeaning += questionWords[i].meaning;
+                    correctMeaning[0] = `${questionWords[i].type} : `;
+                    correctMeaning[0] += questionWords[i].meaning;
                     questionWords[i].options = [];
-                    questionWords[i].options.push(questionWords[i].correctMeaning);
+                    questionWords[i].options.push(correctMeaning[0]);
                 }
-                // Ajouter les options incorrectes
+
+                // Ajouter les options incorrectes et verifier si un mot a plusieurs significations
                 questionWords[i].incorrectOptions.forEach(word => {
                     let meaning = '';
                     if (word.type) {
@@ -64,14 +70,21 @@ class VocabQuizController {
                     }
                     meaning += word.meaning;
                     
-                    questionWords[i].options.push(meaning);
+                    if ( questionWords[i].word === word.word ) {
+                        correctMeaning.push(meaning);
+                        questionWords[i].options.push(meaning);
+                    }else{
+                        questionWords[i].options.push(meaning);
+                    }    
                 });
 
                 // Mélanger les options
                 questionWords[i].options = this.shuffleArray(questionWords[i].options);
 
                 // Trouver l'index de la bonne réponse dans les options mélangées
-                questionWords[i].correctIndex = questionWords[i].options.findIndex(option => option === questionWords[i].correctMeaning);
+                for (let j = 0; j < correctMeaning.length; j++) {
+                    questionWords[i].correctIndex.push(questionWords[i].options.findIndex(option => option === correctMeaning[j]));
+                }
             }
           
             return res.json({

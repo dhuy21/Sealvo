@@ -160,7 +160,7 @@ class Word {
     async findById(detailId) {
         try {
             const [rows] = await global.dbConnection.execute(
-                'SELECT wd.detail_id as id, w.word, w.subject, wd.type, wd.meaning, wd.synonyms, wd.antonyms, ' +
+                'SELECT wd.detail_id as id, w.word, w.language_code, w.subject, wd.type, wd.meaning, wd.synonyms, wd.antonyms, ' +
                 'wd.example, wd.grammar, wd.pronunciation, ln.level, ln.package_id ' +
                 'FROM words w ' +
                 'JOIN word_details wd ON w.word_id = wd.word_id ' +

@@ -1,5 +1,7 @@
 const wordModel = require('../models/words');
 const learningModel = require('../models/learning');
+const geminiService = require('../services/gemini');
+
 
 class WordController {
     // Afficher la page de vocabulaire
@@ -18,7 +20,7 @@ class WordController {
             words.forEach(word => {
                 // S'assurer que level est une clé valide (0, 1, 2, x)
                 const level = word.level;
-                
+                word.example = word.example.replace(/\*\*([^\*]+)\*\*/g, '$1');
                 if (!wordsByLevel[level]) {
                     wordsByLevel[level] = [];
                 }
@@ -61,46 +63,30 @@ class WordController {
     
     // Traiter la soumission du formulaire d'ajout de mot(s)
     async addWordPost(req, res) {
+         // Vérifier si l'utilisateur est connecté
+         if (!req.session.user) {
+            return res.redirect('/login?error=Vous devez être connecté pour ajouter un mot');
+        }
+
         try {
-            // Vérifier si l'utilisateur est connecté
-            if (!req.session.user) {
-                return res.redirect('/login?error=Vous devez être connecté pour ajouter un mot');
-            }
-            
             // Déterminer si c'est un envoi de plusieurs mots
             const isMultipleWords = req.body.isMultipleWords === 'true';
             const package_id = req.query.package;
+            let wordsData = [];
+            let words_no_example = [];
+            let words_with_error_example = [];
             
             if (isMultipleWords) {
                 // Traitement de plusieurs mots
                 const { words, language_codes, subjects, types, meanings, pronunciations, synonyms, antonyms, examples, grammars, levels } = req.body;
-                
-                // Vérifier que les tableaux sont bien définis et ont la même longueur
-                if (!words || !Array.isArray(words) || words.length === 0) {
-                    return res.render('addWord', {
-                        title: 'Ajouter des mots',
-                        package_id: package_id,
-                        user: req.session.user,
-                        multipleWords: true,
-                        error: 'Veuillez ajouter au moins un mot',
-                        formData: req.body
-                    });
-                }
-                
                 const wordCount = words.length;
-                let successCount = 0;
-                let errors = [];
                 
                 // Traiter chaque mot
                 for (let i = 0; i < wordCount; i++) {
-                    // Vérifier les champs obligatoires pour chaque mot
-                    if (!words[i] || !language_codes[i] || !subjects[i] || !types[i] || !meanings[i] || !examples[i] || levels[i] === undefined) {
-                        errors.push(`Ligne ${i+1}: Veuillez remplir tous les champs obligatoires`);
-                        continue;
-                    }
                     
                     // Créer le mot dans la base de données
                     const wordData = {
+                        id: i,
                         word: words[i],
                         language_code: language_codes[i],
                         subject: subjects[i],
@@ -113,47 +99,38 @@ class WordController {
                         grammar: grammars[i] || '',
                         level: levels[i]
                     };
-                    
-                    try {
-                        await wordModel.create(wordData, package_id);
-                        successCount++;
-                    } catch (err) {
-                        errors.push(`Erreur lors de l'ajout du mot "${words[i]}": ${err.message}`);
+
+                    if (wordData.example === '') {
+                        words_no_example.push({
+                            id: wordData.id,
+                            word: wordData.word,
+                            language_code: wordData.language_code,
+                            meaning: wordData.meaning,
+                            type: wordData.type
+                        });
+                    } else if (wordData.example !== '') {
+                        words_with_error_example.push({
+                            id: wordData.id,
+                            word: wordData.word,
+                            language_code: wordData.language_code,
+                            meaning: wordData.meaning,
+                            type: wordData.type,
+                            example: wordData.example
+                        });
                     }
+
+                    wordsData.push(wordData);
                 }
                 
-                // Rediriger avec les résultats
-                if (successCount > 0) {
-                    const message = `${successCount} mot(s) ajouté(s) avec succès${errors.length > 0 ? '. Certaines erreurs sont survenues.' : ''}`;
-                    return res.redirect(`/monVocabs?package=${package_id}&success=${encodeURIComponent(message)}`);
-                } else {
-                    return res.render('addWord', {
-                        title: 'Ajouter des mots',
-                        package_id: package_id,
-                        user: req.session.user,
-                        multipleWords: true,
-                        error: 'Aucun mot n\'a pu être ajouté. ' + errors.join('. '),
-                        formData: req.body
-                    });
-                }
             } else {
+
                 // Traitement d'un seul mot (fonctionnalité existante)
                 // Récupérer les données du formulaire
                 const { word, language_code, subject, type, meaning, pronunciation, synonyms, antonyms, example, grammar, level } = req.body;
                 
-                // Vérifier que les champs obligatoires sont présents
-                if (!word || !language_code || !subject || !type || !meaning || !example || level === undefined) {
-                    return res.render('addWord', {
-                        title: 'Ajouter un mot',
-                        package_id: package_id,
-                        user: req.session.user,
-                        error: 'Veuillez remplir tous les champs obligatoires',
-                        formData: req.body
-                    });
-                }
-                
                 // Créer le mot dans la base de données
                 const wordData = {
+                    id: 0,
                     word,
                     language_code,
                     subject,
@@ -166,13 +143,100 @@ class WordController {
                     grammar: grammar || '',
                     level
                 };
-                
-                await wordModel.create(wordData, package_id);
-                
-                // Rediriger vers la page de vocabulaire avec un message de succès
-                res.redirect(`/monVocabs?package=${package_id}&success=Mot ajouté avec succès`);
+
+                if (wordData.example === '') {
+                    words_no_example.push({
+                        id: wordData.id,
+                        word: wordData.word,
+                        language_code: wordData.language_code,
+                        meaning: wordData.meaning,
+                        type: wordData.type
+                    });
+                } else if (wordData.example !== '') {
+                    words_with_error_example.push({
+                        id: wordData.id,
+                        word: wordData.word,
+                        language_code: wordData.language_code,
+                        meaning: wordData.meaning,
+                        type: wordData.type,
+                        example: wordData.example
+                    });
+                }
+
+                wordsData.push(wordData);
             }
+
+            let errExample = 0;
+            // Générer des exemples pour les mots sans exemples
+            if (words_no_example.length > 0) {
+                console.log('Generating examples for words without examples...');
+                
+                try {
+                    const words_with_examples = await geminiService.generateExemple(words_no_example);
+                    if (Array.isArray(words_with_examples) && words_with_examples.length > 0) {
+                        console.log('✅ Examples generated successfully');
+                        console.log('Words with examples:', words_with_examples);
+                        wordsData = await geminiService.replaceExample(wordsData, words_with_examples);
+                    } else {
+                        console.log('⚠️ No examples were generated');
+                        errExample ++ ;
+                    }
+                } catch (error) {
+                    console.error('❌ Error generating examples:', error);
+                }
+            }
+            // Corriger les exemples des mots avec des exemples en erreur
+            if (words_with_error_example.length > 0) {
+                console.log('Correcting examples for words with error examples...');
+                try {
+                    const words_with_correct_examples = await geminiService.modifyExample(words_with_error_example);
+                    if (Array.isArray(words_with_correct_examples) && words_with_correct_examples.length > 0) {
+                        console.log('✅ Examples corrected successfully');
+                        console.log('Words with correct examples:', words_with_correct_examples);
+                        wordsData = await geminiService.replaceExample(wordsData, words_with_correct_examples);
+                    } else {
+                        console.log('⚠️ No examples were corrected');
+                        errExample ++ ;
+                    }
+                } catch (error) {
+                    console.error('❌ Error correcting examples:', error);
+                }
+            }
+
+            // Ajouter chaque mot à la base de données
+            let successCount = 0;
+            let errChamps = 0;
+        
+            for (const wordData of wordsData) {
+                try {
+                    // Vérifier que les champs obligatoires sont présents
+                    if (!wordData.word || !wordData.language_code || !wordData.subject || !wordData.type || 
+                        !wordData.meaning ) {
+                            errChamps ++ ;
+                        continue;
+                    }
+                    
+                    // Assurer que level est défini
+                    if (wordData.level === undefined || wordData.level === null) {
+                        wordData.level = 'x'; // Niveau par défaut
+                    }
+
+                    await wordModel.create(wordData, package_id);
+                    successCount++;
+
+                } catch (error) {
+                    console.error(`Erreur lors de l'ajout du mot ${wordData.word}:`, error);
+                    errChamps ++ ;
+                }
+            }
+
+            // Rediriger avec un message de succès
+            res.status(200).json({
+                success: true,
+                message: `${successCount} mot(s) importé(s) avec succès. ${errChamps} erreur(s) de champs obligatoires. ${errExample} erreur(s) de generation d'exemples`
+            });
             
+
         } catch (error) {
             console.error('Erreur lors de l\'ajout du mot:', error);
             res.render('addWord', {
@@ -322,8 +386,12 @@ class WordController {
                 });
             }
 
+            let words_no_example = [];
+            let words_with_error_example = [];
+
             // Mettre à jour le mot dans la base de données
-            const wordData = {
+            let wordData = {
+                id: 0,
                 word,
                 language_code,
                 subject,
@@ -336,6 +404,62 @@ class WordController {
                 grammar: grammar || '',
                 level
             };
+
+            if (wordData.example === '') {
+                words_no_example.push({
+                    id: wordData.id,
+                    word: wordData.word,
+                    language_code: wordData.language_code,
+                    meaning: wordData.meaning,
+                    type: wordData.type
+                });
+            } else if (wordData.example !== '') {
+                words_with_error_example.push({
+                    id: wordData.id,
+                    word: wordData.word,
+                    language_code: wordData.language_code,
+                    meaning: wordData.meaning,
+                    type: wordData.type,
+                    example: wordData.example
+                });
+            }
+
+            let errExample = 0;
+            // Générer des exemples pour les mots sans exemples
+            if (words_no_example.length > 0) {
+                console.log('Generating examples for words without examples...');
+                
+                try {
+                    const words_with_examples = await geminiService.generateExemple(words_no_example);
+                    if (Array.isArray(words_with_examples) && words_with_examples.length > 0) {
+                        console.log('✅ Examples generated successfully');
+                        console.log('Words with examples:', words_with_examples);
+                        wordData = await geminiService.replaceExample(wordData, words_with_examples);
+                    } else {
+                        console.log('⚠️ No examples were generated');
+                        errExample ++ ;
+                    }
+                } catch (error) {
+                    console.error('❌ Error generating examples:', error);
+                }
+            }
+            // Corriger les exemples des mots avec des exemples en erreur
+            if (words_with_error_example.length > 0) {
+                console.log('Correcting examples for words with error examples...');
+                try {
+                    const words_with_correct_examples = await geminiService.modifyExample(words_with_error_example);
+                    if (Array.isArray(words_with_correct_examples) && words_with_correct_examples.length > 0) {
+                        console.log('✅ Examples corrected successfully');
+                        console.log('Words with correct examples:', words_with_correct_examples);
+                        wordData = await geminiService.replaceExample(wordData, words_with_correct_examples);
+                    } else {
+                        console.log('⚠️ No examples were corrected');
+                        errExample ++ ;
+                    }
+                } catch (error) {
+                    console.error('❌ Error correcting examples:', error);
+                }
+            }
 
             await wordModel.updateWord(wordData, detail_id, package_id);
 
@@ -369,6 +493,7 @@ class WordController {
             // Add dueToday flag to each word
             words.forEach(word => {
                 word.dueToday = wordIdsToReview.some(item => item.detail_id === word.detail_id);
+                word.example = word.example.replace(/\*\*([^\*]+)\*\*/g, '$1');
             });
 
             res.render('learnVocabs', {
