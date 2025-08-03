@@ -8,7 +8,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Variables du jeu
     let currentWord = null;
+    let currentIndex = 0;
     let score = 0;
+    let words = [];
     let correctAnswers = 0;
     let totalAttempts = 0;
     let wordsPlayed = 0;
@@ -45,7 +47,6 @@ document.addEventListener('DOMContentLoaded', function() {
         correctAnswers = 0;
         totalAttempts = 0;
         wordsPlayed = 0;
-        timer = 200;
         gameActive = true;
         currentWord = null;
         
@@ -72,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function loadNextWord() {
         // Simuler une requête à l'API pour obtenir un mot
         // Dans une vraie implémentation, vous feriez un appel fetch à votre API
-        fetch(`/games/wordScramble/word?package=${packageId}`, {
+        fetch(`/games/wordScramble/words?package=${packageId}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -84,16 +85,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error(data.error);
                 return;
             }
-            
-            scrambledWordDisplay.textContent = data.scrambled;
-            wordMeaningDisplay.textContent = data.meaning;
+            words = data.words;
+            timer = 150+words.length*30;
+            const randomIndex = Math.floor(Math.random() * words.length);
+            currentIndex = randomIndex;
+            const selectedWord = words[currentIndex];
+
+            scrambledWordDisplay.textContent = selectedWord.scrambled;
+            wordMeaningDisplay.textContent = selectedWord.meaning;
             wordInput.value = '';
             resultMessage.textContent = '';
             resultMessage.className = 'result-message';
             
             // Stocker le mot correct pour vérification ultérieure
-            currentWord = data.word;
-            return data.word;
+            currentWord = selectedWord.word;
+            return currentWord;
         })
         .catch(error => {
             console.error('Erreur lors du chargement du mot:', error);
@@ -109,39 +115,22 @@ document.addEventListener('DOMContentLoaded', function() {
         
         totalAttempts++;
         
-        // Simuler une vérification de la réponse
-        // Dans une vraie implémentation, vous feriez un appel fetch à votre API
-        fetch(`/games/wordScramble/check?package=${packageId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                answer: answer,
-                correctWord: currentWord
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.correct) {
+        // Vérifier si la réponse est correcte
+        if (answer.toLowerCase() === currentWord.toLowerCase()) {
                 score += 10;
                 correctAnswers++;
                 resultMessage.textContent = 'Correct !';
                 resultMessage.className = 'result-message correct';
                 currentScoreDisplay.textContent = score;
-            } else {
-                resultMessage.textContent = `Incorrect ! La réponse était : ${data.answer}`;
-                resultMessage.className = 'result-message incorrect';
-            }
+        } else {
+            resultMessage.textContent = `Incorrect ! La réponse était : ${currentWord}`;
+            resultMessage.className = 'result-message incorrect';
+        }
             
             wordsPlayed++;
             
             // Charger le prochain mot après un court délai
             setTimeout(loadNextWord, 1500);
-        })
-        .catch(error => {
-            console.error('Erreur lors de la vérification de la réponse:', error);
-        });
     }
     
     // Fonction pour passer un mot
@@ -149,29 +138,32 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!gameActive) return;
         
         // Simuler un saut de mot
-        // Dans une vraie implémentation, vous feriez un appel fetch à votre API
-        fetch(`/games/wordScramble/skip?package=${packageId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                currentWord: currentWord
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            resultMessage.textContent = `Passé ! La réponse était : ${currentWord || data.answer}`;
-            resultMessage.className = 'result-message skipped';
+
+        resultMessage.textContent = `Passé ! La réponse était : ${currentWord}`;
+        resultMessage.className = 'result-message skipped';
             
-            wordsPlayed++;
+        wordsPlayed++;
             
-            // Charger le prochain mot après un court délai
-            setTimeout(loadNextWord, 1500);
-        })
-        .catch(error => {
-            console.error('Erreur lors du passage du mot:', error);
-        });
+        // Charger le prochain mot après un court délai
+        setTimeout(() => {
+            let randomIndex = Math.floor(Math.random() * words.length);
+
+            while (randomIndex === currentIndex) {
+                randomIndex = Math.floor(Math.random() * words.length);
+            }
+            currentIndex = randomIndex;
+            const selectedWord = words[currentIndex];
+
+            scrambledWordDisplay.textContent = selectedWord.scrambled;
+            wordMeaningDisplay.textContent = selectedWord.meaning;
+            wordInput.value = '';
+            resultMessage.textContent = '';
+            resultMessage.className = 'result-message';
+            
+            // Stocker le mot correct pour vérification ultérieure
+            currentWord = selectedWord.word;
+            return currentWord;
+        }, 1500);
     }
     
     // Fonction pour mettre à jour le timer

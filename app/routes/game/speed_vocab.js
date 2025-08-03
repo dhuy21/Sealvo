@@ -11,6 +11,6 @@ const isAuthenticated = (req, res, next) => {
 };
 
 // Route pour récupérer un mot pour le jeu SpeedVocab
-router.get('/word', isAuthenticated, speedVocabController.getWordForSpeedVocab);
+router.get('/words', isAuthenticated, speedVocabController.getWordsForSpeedVocab);
 
 module.exports = router;

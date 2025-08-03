@@ -11,10 +11,6 @@ const isAuthenticated = (req, res, next) => {
 };
 
 // Routes pour le jeu Word Scramble
-router.get('/word', isAuthenticated, wordScrambleController.getRandomWordForScramble);
-router.post('/check', isAuthenticated, wordScrambleController.checkWordScrambleAnswer);
-router.post('/skip', isAuthenticated, wordScrambleController.skipWordInScramble);
-
-
+router.get('/words', isAuthenticated, wordScrambleController.getRandomWordsForScramble);
 
 module.exports = router;

@@ -2,7 +2,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Variables du jeu
     let currentWord = null;
-    let previousWordId = null;
+    let words = [];
+    let currentIndex = 0;
     let attemptCount = 0;
     let gameActive = false;
     let timerInterval = null;
@@ -321,8 +322,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Démarrer le timer
         timerInterval = setInterval(updateTimer, 1000);
         
-        // Configurer la reconnaissance vocale
-        setupSpeechRecognition();
         
         // Message spécifique pour Safari iOS
         if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
@@ -334,6 +333,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Charger le premier mot
         loadNewWord();
+
+        
         
         // Afficher l'écran de jeu actif
         console.log('Switching to active game screen...');
@@ -370,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Configuration spécifique pour Safari iOS
         recognition.continuous = false;
         recognition.interimResults = false;
-        recognition.lang = 'en-US'; // Langue anglaise pour la prononciation
+        recognition.lang = 'en-US';
         recognition.maxAlternatives = 1; // Réduire à 1 pour Safari
         
         // Configuration spécifique pour Safari iOS
@@ -512,7 +513,7 @@ document.addEventListener('DOMContentLoaded', function() {
             attemptCount = 0;
         }
         
-        fetch(`/games/testPronun/word?package=${packageId}&previous=${previousWordId || ''}`, {
+        fetch(`/games/testPronun/words?package=${packageId}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -525,32 +526,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Une erreur est survenue lors du chargement du mot.');
                 return;
             }
-            
-            // Vérifier si le nouveau mot est le même que le précédent
-            if (previousWordId && data.detail_id === previousWordId) {
-                attemptCount++;
-                console.log(`Mot identique au précédent (tentative ${attemptCount}), rechargement...`);
-                
-                setTimeout(() => {
-                    loadNewWord();
-                }, 100);
-                return;
-            }
+
+            words = data.words;
+
             
             // Réinitialiser le compteur de tentatives
             attemptCount = 0;
-            
-            // Stocker l'ID du mot actuel
-            previousWordId = data.detail_id;
+            const randomIndex = Math.floor(Math.random() * words.length);
+            currentIndex = randomIndex;
             
             // Mettre à jour le mot courant
-            currentWord = data;
-            wordsList.push(data);
-            
+            currentWord = words[currentIndex];
             
             // Afficher le mot et sa prononciation phonétique
-            if (currentWordDisplay) currentWordDisplay.textContent = data.word;
-            if (phoneticSpellingDisplay) phoneticSpellingDisplay.textContent = data.pronunciation ;
+            if (currentWordDisplay) currentWordDisplay.textContent = currentWord.word;
+            if (phoneticSpellingDisplay) phoneticSpellingDisplay.textContent = currentWord.pronunciation ;
             
             // Réinitialiser l'affichage de feedback
             if (accuracyMeter) {
@@ -566,6 +556,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(() => {
                     currentWordDisplay.classList.remove('fadeIn');
                 }, 500);
+            }
+            
+            // Configurer la reconnaissance vocale
+            setupSpeechRecognition();
+            
+            // Définir la langue après l'initialisation de la reconnaissance vocale
+            if (recognition && currentWord.language_code) {
+                recognition.lang = currentWord.language_code;
             }
         })
         .catch(error => {
@@ -918,7 +916,45 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 2000);
         } else {
             setTimeout(() => {
-                loadNewWord();
+
+                // Réinitialiser le compteur de tentatives
+                attemptCount = 0;
+                let randomIndex = Math.floor(Math.random() * words.length);
+                while (currentIndex === randomIndex) {
+                    randomIndex = Math.floor(Math.random() * words.length);
+                }
+                currentIndex = randomIndex;
+                
+                // Mettre à jour le mot courant
+                currentWord = words[currentIndex];
+                
+                // Afficher le mot et sa prononciation phonétique
+                if (currentWordDisplay) currentWordDisplay.textContent = currentWord.word;
+                if (phoneticSpellingDisplay) phoneticSpellingDisplay.textContent = currentWord.pronunciation ;
+                
+                // Réinitialiser l'affichage de feedback
+                if (accuracyMeter) {
+                    const meterFill = accuracyMeter.querySelector('.meter-fill');
+                    if (meterFill) meterFill.style.width = '0%';
+                }
+                if (recognizedText) recognizedText.textContent = '';
+                if (feedbackText) feedbackText.textContent = '';
+                
+                // Animation d'apparition du mot
+                if (currentWordDisplay) {
+                    currentWordDisplay.classList.add('fadeIn');
+                    setTimeout(() => {
+                        currentWordDisplay.classList.remove('fadeIn');
+                    }, 500);
+                }
+
+                // Configurer la reconnaissance vocale
+                setupSpeechRecognition();
+                
+                // Définir la langue après l'initialisation de la reconnaissance vocale
+                if (recognition && currentWord.language_code) {
+                    recognition.lang = currentWord.language_code;
+                }
             }, 2000);
         }
     }
