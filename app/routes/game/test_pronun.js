@@ -11,6 +11,6 @@ const isAuthenticated = (req, res, next) => {
 };
 
 //Route pour récupérer les mots pour le jeu
-router.get('/word', isAuthenticated, testPronunController.getWordForTestPronun);
+router.get('/words', isAuthenticated, testPronunController.getWordsForTestPronun);
 
 module.exports = router;

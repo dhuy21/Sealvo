@@ -6,31 +6,38 @@ const levelGame = 'x';
 class TestPronunController {
 
 
-    async getWordForTestPronun(req, res) {
+    async getWordsForTestPronun(req, res) {
         try {
-            // Vérifier si l'utilisateur est connecté
-            if (!req.session.user) {
-                return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
-            }
             const package_id = req.query.package;
-            const previousWordId = req.query.previous || null; // Récupérer l'ID du mot précédent
 
-            // Récupérer des mots aléatoires du vocabulaire de l'utilisateur
-            const words = await learningModel.findRandomWordsExcluding(
-                package_id, 
-                previousWordId, 
-                1,
-                levelGame
-            );
-            if (!words || words.length === 0) {
-                return res.status(404).json({ error: 'Aucun mot trouvé dans votre vocabulaire.' });
+            // Récupérer tous les mots de l'utilisateur
+            const detailWordsIds = await learningModel.findWordsByLevel(package_id, levelGame);
+            let words = [];
+            for (const detailWordId of detailWordsIds) {
+                let word = await wordModel.findById(detailWordId.detail_id);
+
+                // Construire une définition à partir des détails du mot
+                let meaning = '';
+                if (word.type) {
+                    meaning += `${word.type} : `;
+                }
+                meaning += word.meaning;
+
+                words.push({
+                    word: word.word,
+                    meaning: meaning,
+                    pronunciation: word.pronunciation,
+                    language_code: word.language_code
+                });
             }
+            
+            return res.json({
+                words: words
+            });
 
-            return res.json(words[0]);
-           
         } catch (error) {
-            console.error('Erreur lors de la récupération des mots pour le jeu:', error);
-            return res.status(500).json({ error: 'Une erreur est survenue lors de la récupération des mots pour le jeu.' });
+            console.error('Erreur lors de la récupération d\'un mot aléatoire:', error);
+            return res.status(500).json({ error: 'Une erreur est survenue lors de la récupération d\'un mot.' });
         }
     }
 

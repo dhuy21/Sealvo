@@ -11,10 +11,7 @@ const isAuthenticated = (req, res, next) => {
 };
 
 // Route pour récupérer une phrase pour le jeu
-router.get('/phrase', isAuthenticated, phraseCompletionController.getPhraseForCompletion);
-
-// Route pour vérifier la réponse à une phrase
-router.post('/check', isAuthenticated, phraseCompletionController.checkPhraseAnswer);
+router.get('/phrases', isAuthenticated, phraseCompletionController.getPhrasesForCompletion);
 
 // Route pour obtenir le nombre de mots disponibles
 router.get('/available-words', isAuthenticated, phraseCompletionController.getAvailableWordsCount);
