@@ -7,8 +7,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Variables du jeu
     let currentWord = null;
+    let words = [];
     let previousWordId = null; // Stocke l'ID du mot précédent au lieu du mot entier
     let attemptCount = 0; // Compteur pour éviter les boucles infinies
+    let currentIndex = 0;
     let score = 0;
     let timer = 150;
     let gameActive = false;
@@ -286,14 +288,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Réinitialiser le compteur de tentatives si c'est un nouveau chargement (pas une répétition)
         if (attemptCount === 0) {
             console.log("Chargement d'un nouveau mot...");
-        } else if (attemptCount > 5) {
-            // Éviter les boucles infinies si le vocabulaire est très limité
-            console.log("Vocabulaire limité, acceptation du même mot après 5 tentatives");
-            attemptCount = 0; // Réinitialiser pour le prochain chargement
-        }
+        } 
         
         // Simuler une requête à l'API pour obtenir un mot
-        fetch(`/games/speedVocab/word?previous=${previousWordId || ''}&package=${packageId}`, {
+        fetch(`/games/speedVocab/words?package=${packageId}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -305,30 +303,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error(data.error);
                 return;
             }
-            
-            // Vérifier si le nouveau mot est le même que le précédent
-            if (previousWordId && data.detail_id === previousWordId) {
-                attemptCount++;
-                
-                // Attendre un peu avant de réessayer pour éviter les problèmes de timing
-                setTimeout(() => {
-                    loadNewWord(); // Relancer la fonction pour obtenir un mot différent
-                }, 100);
-                return;
-            }
-            
-            // Réinitialiser le compteur de tentatives
-            attemptCount = 0;
-            
-            // Stocker l'ID du mot actuel comme "précédent" pour la prochaine fois
-            previousWordId = data.detail_id;
+            words = data.words;
+            timer = 100+words.length*8;
+            // Initialiser le compteur de tentatives
+            attemptCount = 0; //
+            const randomIndex = Math.floor(Math.random() * words.length);
+            currentIndex = randomIndex;
             
             // Mettre à jour le mot courant
-            currentWord = data;
+            currentWord = words[currentIndex];
             
             // Afficher le mot et sa signification
-            wordDisplay.textContent = data.word;
-            meaningDisplay.textContent = data.meaning || '';
+            wordDisplay.textContent = currentWord.word;
+            meaningDisplay.textContent = currentWord.meaning || '';
             
             // Animation d'apparition du mot
             wordDisplay.classList.add('fadeIn');
@@ -390,7 +377,33 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Charger un nouveau mot
             wordInput.value = '';
-            loadNewWord();
+            // Add energy animation when loading new word
+            addWordEnergyAnimation();
+        
+            // Réinitialiser le compteur de tentatives si c'est un nouveau chargement (pas une répétition)
+            if (attemptCount === 0) {
+                console.log("Chargement d'un nouveau mot...");
+            } 
+            // Vérifier si le nouveau mot est le même que le précédent
+            let randomIndex = Math.floor(Math.random() * words.length);
+
+            while (currentIndex === randomIndex) {
+                randomIndex = Math.floor(Math.random() * words.length);
+            }
+            currentIndex = randomIndex;
+             // Mettre à jour le mot courant
+             currentWord = words[currentIndex];
+            
+             // Afficher le mot et sa signification
+             wordDisplay.textContent = currentWord.word;
+             meaningDisplay.textContent = currentWord.meaning || '';
+             
+             // Animation d'apparition du mot
+             wordDisplay.classList.add('fadeIn');
+             setTimeout(() => {
+                 wordDisplay.classList.remove('fadeIn');
+             }, 500);
+
         } else if (userInput.length >= correctWord.length) {
             // Mot incorrect
             wordsTyped++;
@@ -413,7 +426,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 wordInput.classList.remove('incorrect');
                 wordInput.classList.remove('incorrect-shake');
                 wordInput.value = '';
-                loadNewWord();
+                
+                // Add energy animation when loading new word
+                addWordEnergyAnimation();
+        
+                // Réinitialiser le compteur de tentatives si c'est un nouveau chargement (pas une répétition)
+                if (attemptCount === 0) {
+                    console.log("Chargement d'un nouveau mot...");
+                }
+                // Vérifier si le nouveau mot est le même que le précédent
+                let randomIndex = Math.floor(Math.random() * words.length);
+
+                while (currentIndex === randomIndex) {
+                    randomIndex = Math.floor(Math.random() * words.length);
+                }
+                currentIndex = randomIndex;
+
+                // Mettre à jour le mot courant
+                currentWord = words[currentIndex];
+                
+                // Afficher le mot et sa signification
+                wordDisplay.textContent = currentWord.word;
+                meaningDisplay.textContent = currentWord.meaning || '';
+                
+                // Animation d'apparition du mot
+                wordDisplay.classList.add('fadeIn');
+                setTimeout(() => {
+                    wordDisplay.classList.remove('fadeIn');
+                }, 500);
             }, 500);
         }
     }

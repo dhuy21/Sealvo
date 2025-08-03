@@ -12,19 +12,19 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Variables du jeu
     let currentPhrase = null;
-    let correctWord = null;
-    let previousWordId = null;
+    let correctWords = [];
+    let phrases = [];
     let score = 0;
     let timer = 300;
     let gameActive = false;
     let timerInterval = null;
-    let questionsAnswered = 0;
     let correctAnswers = 0;
     let streak = 0;
     let bestStreak = 0;
     let totalQuestions = 0; // Valeur par défaut qui sera mise à jour
     let availableWords = 0; // Nombre de mots disponibles pour ce niveau
-    const maxQuestions = 20; // Maximum de questions
+    let currentQuestionIndex = 0;
+    const maxQuestions = 100; // Maximum de questions
 
     
     let timePerQuestion = [];
@@ -330,8 +330,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Mettre à jour le nombre total de questions en fonction des mots disponibles
             availableWords = data.count;
-            totalQuestions = Math.min(availableWords, maxQuestions) ;
-            totalQuestions += parseInt(0.5*availableWords); // Maximum 20 questions ou le nombre de mots disponibles
+            totalQuestions = Math.min(availableWords, maxQuestions) ; // Maximum 100 questions ou le nombre de mots disponibles
+            totalQuestions += parseInt(0.5*availableWords);
             console.log('Nombre de mots disponibles:', availableWords);
             console.log('Nombre de questions:', totalQuestions);
             
@@ -358,7 +358,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Mettre à jour l'affichage
         scoreDisplay.textContent = score;
-        questionCountDisplay.textContent = `0/${totalQuestions}`;
+        questionCountDisplay.textContent = `${currentQuestionIndex}/${totalQuestions}`;
         timerDisplay.textContent = timer;
         
         console.log('Starting game, loading first phrase');
@@ -405,7 +405,7 @@ document.addEventListener('DOMContentLoaded', function() {
         startQuestionTime = Date.now();
         
         // Charger une nouvelle phrase du serveur
-        fetch(`/games/phraseCompletion/phrase?previousWordId=${previousWordId || ''}&package=${package_id}`, {
+        fetch(`/games/phraseCompletion/phrases?package=${package_id}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -419,13 +419,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
+            for (let i=0; i < totalQuestions; i++) {
+                
+                phrases[i] = data.phrases[i % data.phrases.length];
+
+            }
+
             // Stocker les données de la phrase courante
-            currentPhrase = data;
-            previousWordId = data.detail_id;
-            correctWord = data.word;
+            currentPhrase = phrases[currentQuestionIndex];
+            correctWords = currentPhrase.correctWords;
             
             // Formater la phrase avec un espace pour saisir le mot
-            const formattedPhrase = data.phrase;
+            const formattedPhrase = currentPhrase.phrase;
             
             // Effet de machine à écrire pour la phrase
             phraseDisplay.innerHTML = '';
@@ -462,35 +467,26 @@ document.addEventListener('DOMContentLoaded', function() {
         timePerQuestion.push(questionTime);
         
         // Mettre à jour le compteur de questions
-        questionsAnswered++;
-        questionCountDisplay.textContent = `${questionsAnswered}/${totalQuestions}`;
+        currentQuestionIndex++;
+        questionCountDisplay.textContent = `${currentQuestionIndex}/${totalQuestions}`;
         
         // Désactiver l'input et le bouton de validation
         wordInput.disabled = true;
         submitBtn.disabled = true;
         
+        console.log(currentPhrase);
+        console.log(currentPhrase.meaningWord);
+        console.log(currentPhrase && currentPhrase.meaningWord);
         // Afficher la signification du mot
-        if (currentPhrase && currentPhrase.meaning) {
-            wordMeaning.textContent = `Signification: ${currentPhrase.meaning}`;
+        if (currentPhrase && currentPhrase.meaningWord) {
+            console.log('Displaying meaning');
+            wordMeaning.textContent = `Signification: ${currentPhrase.meaningWord}`;
         }
         
-        fetch(`/games/phraseCompletion/check?package=${package_id}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ userInput, correctWord })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                console.error(data.error);
-                return;
-            }
-        
-            const isCorrect = data.correct;
-        
-            if (isCorrect) {
+        // Vérifier si la réponse est correcte
+        const isCorrect = correctWords.includes(userInput.toLowerCase());
+
+        if (isCorrect) {
                 // Réponse correcte
                 correctAnswers++;
                 streak++;
@@ -525,8 +521,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 wordInput.classList.add('correct');
                 
                 // Remplacer le blanc par le mot correct en vert
-                phraseDisplay.innerHTML = currentPhrase.phrase.replace('_____', `<span class="blank correct">${correctWord}</span>`);
-            } else {
+                phraseDisplay.innerHTML = currentPhrase.phrase.replace('_____', `<span class="blank correct">${correctWords.join(' ')}</span>`);
+        } else {
             // Réponse incorrecte
                 streak = 0;
                 
@@ -535,39 +531,62 @@ document.addEventListener('DOMContentLoaded', function() {
                 createConstellationEffect(false);
                 
                 // Feedback
-                feedbackMessage.textContent = `Incorrect. La bonne réponse était "${correctWord}"`;
+                feedbackMessage.textContent = `Incorrect. La bonne réponse était "${correctWords.join(' ')}"`;
                 feedbackMessage.className = 'feedback-message incorrect';
                 wordInput.classList.remove('incorrect', 'correct');
                 wordInput.classList.add('incorrect');
                 
                 // Remplacer le blanc par le mot correct en rouge
-                phraseDisplay.innerHTML = currentPhrase.phrase.replace('_____', `<span class="blank incorrect">${correctWord}</span>`);
-            }
+                phraseDisplay.innerHTML = currentPhrase.phrase.replace('_____', `<span class="blank incorrect">${correctWords.join(' ')}</span>`);
+        }
         
         // Activer le bouton Suivant
-            nextPhraseBtn.disabled = false;
+        nextPhraseBtn.disabled = false;
             
-            // Si c'est la dernière question, changer le texte du bouton
-            if (questionsAnswered >= totalQuestions) {
-                nextPhraseBtn.textContent = 'Voir les résultats';
-            }
-        })
-        .catch(error => {
-            console.error('Erreur lors de la vérification de la réponse:', error);
-        });
+        // Si c'est la dernière question, changer le texte du bouton
+        if (currentQuestionIndex >= totalQuestions) {
+            nextPhraseBtn.textContent = 'Voir les résultats';
+        }
+        
     }
     
     // Fonction pour passer à la phrase suivante
     function goToNextPhrase() {
         
         // Si c'est la dernière question, terminer le jeu
-        if (questionsAnswered >= totalQuestions) {
+        if (currentQuestionIndex >= totalQuestions) {
             endGame();
             return;
         }
         
         // Sinon, charger une nouvelle phrase
-        loadNewPhrase();
+        // Réinitialiser l'état de la question
+        wordInput.value = '';
+        wordInput.classList.remove('correct', 'incorrect');
+        wordInput.removeAttribute('disabled');
+        submitBtn.disabled = false;
+        feedbackMessage.textContent = '';
+        feedbackMessage.className = 'feedback-message';
+        nextPhraseBtn.disabled = true;
+        wordMeaning.textContent = '';
+        hintText.textContent = '';
+        attempts = 0;
+        
+        // Enregistrer le temps de début pour calculer le temps par question
+        startQuestionTime = Date.now();
+        // Stocker les données de la phrase courante
+        currentPhrase = phrases[currentQuestionIndex];
+        correctWords = currentPhrase.correctWords;
+        
+        // Formater la phrase avec un espace pour saisir le mot
+        const formattedPhrase = currentPhrase.phrase;
+        
+        // Effet de machine à écrire pour la phrase
+        phraseDisplay.innerHTML = '';
+        createTypewriterEffect(phraseDisplay, formattedPhrase, 30);
+        
+        // Focus sur l'input
+        wordInput.focus();
     }
     
     // Fonction pour mettre à jour le timer
@@ -591,7 +610,7 @@ document.addEventListener('DOMContentLoaded', function() {
         clearInterval(timerInterval);
         
         // Calculer les statistiques
-        const accuracy = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
+        const accuracy = currentQuestionIndex > 0 ? Math.round((correctAnswers / currentQuestionIndex) * 100) : 0;
         
         // Calculer le temps moyen par question
         const avgTime = timePerQuestion.length > 0 
@@ -600,7 +619,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Mettre à jour l'écran de fin de jeu
         finalScoreDisplay.textContent = score;
-        correctAnswersDisplay.textContent = `${correctAnswers}/${questionsAnswered}`;
+        correctAnswersDisplay.textContent = `${correctAnswers}/${totalQuestions}`;
         accuracyDisplay.textContent = `${accuracy}%`;
         bestStreakDisplay.textContent = bestStreak;
         avgTimeDisplay.textContent = `${avgTime}s`;
@@ -608,7 +627,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Check if game was completed successfully
         const minAccuracy = 70; // 70% accuracy
         const minQuestionsAnswered = Math.ceil(totalQuestions * 0.8); // 80% completion
-        const isSuccessful = accuracy >= minAccuracy && questionsAnswered >= minQuestionsAnswered;
+        const isSuccessful = accuracy >= minAccuracy && currentQuestionIndex >= minQuestionsAnswered;
         
         // Track level progress
         trackLevelProgress(isSuccessful);
@@ -642,9 +661,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 game_type: 'phrase_completion',
                 score: score,
                 details: {
-                    questions_answered: questionsAnswered,
+                    questions_answered: currentQuestionIndex,
                     correct_answers: correctAnswers,
-                    accuracy: questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0,
+                    accuracy: currentQuestionIndex > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0,
                     best_streak: bestStreak,
                     avg_time: timePerQuestion.length > 0 
                         ? Math.round(timePerQuestion.reduce((a, b) => a + b, 0) / timePerQuestion.length * 10) / 10

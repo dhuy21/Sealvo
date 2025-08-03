@@ -1,13 +1,13 @@
 const gameScoresModel = require('../../models/game_scores');
 const learningModel = require('../../models/learning');
+const wordModel = require('../../models/words');
 const levelGame = '0';
 
 class PhraseCompletionController {
     constructor() {
         // Bind all methods to maintain 'this' context
 
-        this.getPhraseForCompletion = this.getPhraseForCompletion.bind(this);
-        this.checkPhraseAnswer = this.checkPhraseAnswer.bind(this);
+        this.getPhrasesForCompletion = this.getPhrasesForCompletion.bind(this);
         this.getAvailableWordsCount = this.getAvailableWordsCount.bind(this);
     }
 
@@ -32,79 +32,59 @@ class PhraseCompletionController {
         }
     }
    
-    async getPhraseForCompletion(req, res) {
+    async getPhrasesForCompletion(req, res) {
         try {
             // Vérifier si l'utilisateur est connecté
             if (!req.session.user) {
                 return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
             }
             const package_id = req.query.package;
-            const previousWordId = req.query.previousWordId || null;
-            
-            // Récupérer un mot aléatoire du vocabulaire de l'utilisateur
-            const words = await learningModel.findRandomWordsExcluding(package_id, previousWordId, 1, levelGame);
-            
-            if (!words || words.length === 0) {
-                return res.status(404).json({ error: 'Aucun mot trouvé dans votre vocabulaire.' });
+
+            // Récupérer tous les mots de package selon le niveau de jeu
+            const detailWordsIds = await learningModel.findWordsByLevel(package_id, levelGame);
+            let words = [];
+            for (const detailWordId of detailWordsIds) {
+                const word = await wordModel.findById(detailWordId.detail_id);
+                words.push(word);
             }
+
+            let phrases = [];
             
-            const word = words[0];
-            
-            // Générer une phrase avec le mot, basée sur l'exemple du mot ou en créant une nouvelle
-            let phrase = '';
-            let blankPosition = 0;
-            
-            if (word.example && word.example.trim() !== '') {
-                // Utiliser l'exemple existant si disponible
-                phrase = word.example;
-                //Split the example into words and filter out excluded words
-                const parts = word.word.split(' ');
-                const excludedWords = ['something', 'someone', 'somebody', 'somebody', 'anything', 'everything', 'sth', 'sb', 'smth'];
-                const keptWords = parts.filter(w => !excludedWords.includes(w.toLowerCase()));
-                // Remplacer le mot par un blanc
-                if (keptWords.length > 0) {
-                    // Tạo biểu thức chính quy cho từng từ cần thay thế
-                    keptWords.forEach(wordToBlank => {
-                      const regex = new RegExp(`\\b${wordToBlank}\\b`, 'gi');
-                      phrase = phrase.replace(regex, '_____');
-                    });
-                  
-                    // Nếu cần tìm vị trí đầu tiên của blank
-                    blankPosition = phrase.indexOf('_____');
-                  }
+            for (const word of words) {
+                // Générer une phrase avec le mot, basée sur l'exemple du mot ou en créant une nouvelle
+                let phrase = '';
+                let correctWords = [];
+                
+                if (word.example && word.example.trim() !== '') {
+                    // Utiliser l'exemple existant si disponible
+                    phrase = word.example
+                    
+                    // Remplacer le mot par un blanc
+                    if (phrase.length > 0) {
+                        //Chercher les mots entre ** et **
+                        const regex = /\*\*([^\*]+)\*\*/g;
+                         correctWords = [...phrase.matchAll(regex)].map(m => m[1]);
+
+                        // Remplacer les mots entre ** et ** par des blancs
+                        phrase = phrase.replace(regex, '_____');
+                    }
+                }
+                phrases.push({
+                    phrase: phrase,
+                    word: word.word,
+                    meaningWord: word.meaning,
+                    correctWords: correctWords,  // Nous envoyons directement le mot correct pour la vérification côté client
+                });
             }
-            
+            phrases = this.shuffleArray(phrases);
+
             return res.json({
-                word_id: word.word_id,
-                phrase: phrase,
-                blankPosition: blankPosition,
-                word: word.word,  // Nous envoyons directement le mot correct pour la vérification côté client
-                meaning: word.meaning,
+                phrases: phrases,
             });
+
         } catch (error) {
             console.error('Erreur lors de la génération d\'une phrase:', error);
             res.status(500).json({ error: 'Une erreur est survenue lors de la génération d\'une phrase.' });
-        }
-    }
-
-    async checkPhraseAnswer(req, res) {
-        try {
-            // Vérifier si l'utilisateur est connecté
-            if (!req.session.user) {
-                return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
-            }
-            
-            const { userInput, correctWord } = req.body;
-            
-            // Comparer en ignorant la casse
-            const isCorrect = userInput.toLowerCase() === correctWord.toLowerCase();
-            
-            return res.json({
-                correct: isCorrect
-            });
-        } catch (error) {
-            console.error('Erreur lors de la vérification de la réponse:', error);
-            res.status(500).json({ error: 'Une erreur est survenue lors de la vérification de la réponse.' });
         }
     }
 

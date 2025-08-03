@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let totalQuestions = 10;
     let gameActive = false;
     let optionsCount = 6; // Par défaut
-    let currentSelectedOption = null;
     let availableWords = 0;
     const maxQuestions = 300;
     
@@ -385,7 +384,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fonction pour générer les options
     function generateOptions(options, correctIndex) {
         optionsContainer.innerHTML = '';
-        
+        let currentSelectedOptions = [];
         options.forEach((option, index) => {
             const optionBtn = document.createElement('button');
             optionBtn.className = 'option-btn';
@@ -401,10 +400,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Sélectionner cette option
                     this.classList.add('selected');
-                    currentSelectedOption = index;
+                    currentSelectedOptions.push(index);
                     
                     // Vérifier la réponse
-                    checkAnswer(index, correctIndex);
+                    if (currentSelectedOptions.length === correctIndex.length) {
+                        checkAnswer(currentSelectedOptions, correctIndex);
+                    }
                 }
             });
             
@@ -412,16 +413,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Fonction pour vérifier la réponse
-    function checkAnswer(selectedIndex, correctIndex) {
+    // Fonction pour vérifier la réponse (ou les réponses)
+    function checkAnswer(selectedIndexes, correctIndexes) {
         const options = document.querySelectorAll('.option-btn');
         
-        // Marquer la bonne réponse
-        options[correctIndex].classList.add('correct');
-        
-        if (selectedIndex === correctIndex) {
+        // Vérifier si les réponses sont correctes
+        if (selectedIndexes.every(index => correctIndexes.includes(index))) {
+
             // Réponse correcte
-            score += 10;
+            score += 10*selectedIndexes.length;
             correctAnswers++;
             
             // Play modern lovely success sound
@@ -442,9 +442,11 @@ document.addEventListener('DOMContentLoaded', function() {
             resultMessage.textContent = 'Excellent ! 🎉';
             resultMessage.className = 'result-message correct';
         } else {
-            // Réponse incorrecte
-            options[selectedIndex].classList.add('incorrect');
-            score = Math.max(0, score - 5); // Éviter un score négatif
+            // Réponses incorrectes
+            for (let i = 0; i < selectedIndexes.length; i++) {
+                options[selectedIndexes[i]].classList.add('incorrect');
+            }
+            score = Math.max(0, score - 5*selectedIndexes.length); // Éviter un score négatif
             
             // Play modern lovely error sound
             playErrorSound();
@@ -459,6 +461,12 @@ document.addEventListener('DOMContentLoaded', function() {
             resultMessage.className = 'result-message incorrect';
         }
         
+        
+        // Marquer les bonnes réponses
+        for (let i = 0; i < correctIndexes.length; i++) {
+            options[correctIndexes[i]].classList.remove('incorrect');
+            options[correctIndexes[i]].classList.add('correct');
+        }
         // Mettre à jour le score
         currentScoreDisplay.textContent = score;
         
@@ -481,7 +489,7 @@ document.addEventListener('DOMContentLoaded', function() {
             nextQuestionBtn.disabled = true;
             resultMessage.textContent = '';
             resultMessage.className = 'result-message';
-            
+
             currentQuestion = questionWords[currentQuestionIndex];
             
             

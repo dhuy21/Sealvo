@@ -92,17 +92,6 @@ const processPdfFile = async (filePath) => {
     }
 };
 
-const replaceExample = (words, words_with_examples) => {
-    for (const word of words) {
-        for (const word_with_example of words_with_examples) {
-            if (word.id === word_with_example.id) {
-                word.example = word_with_example.example;
-            }
-        }
-    }
-    return words;
-}
-
 class ImportFile {
     async importWords(req, res) {
         try {
@@ -135,6 +124,8 @@ class ImportFile {
                 
                 let words = [];
                 let words_no_example = [];
+                let words_with_error_example = [];
+                const package_id = req.query.package;
                 
                 let errExample = 0;
                 // Traiter le fichier selon son type
@@ -168,6 +159,15 @@ class ImportFile {
                                 meaning: word.meaning,
                                 type: word.type
                             });
+                        } else if (word.example !== '') {
+                            words_with_error_example.push({
+                                id: word.id,
+                                word: word.word,
+                                language_code: word.language_code,
+                                meaning: word.meaning,
+                                type: word.type,
+                                example: word.example
+                            });
                         }
                     } catch (error) {
                         console.error(`Erreur lors de l'ajout du mot ${word.word}:`, error);
@@ -179,20 +179,35 @@ class ImportFile {
                     
                     try {
                         const words_with_examples = await geminiService.generateExemple(words_no_example);
-                        console.log('📋 Generated examples:', words_with_examples);
-                        
                         if (Array.isArray(words_with_examples) && words_with_examples.length > 0) {
                             console.log('✅ Examples generated successfully');
-                            words = replaceExample(words, words_with_examples);
+                            console.log('Words with examples:', words_with_examples);
+                            words = await geminiService.replaceExample(words, words_with_examples);
                         } else {
                             console.log('⚠️ No examples were generated');
                         }
                     } catch (error) {
                         console.error('❌ Error generating examples:', error);
-                        // Continue without examples if Gemini fails
+                    }
+                }
+
+                if (words_with_error_example.length > 0) {
+                    console.log('Correcting examples for words with error examples...');
+                    try {
+                        const words_with_correct_examples = await geminiService.modifyExample(words_with_error_example);
+                        if (Array.isArray(words_with_correct_examples) && words_with_correct_examples.length > 0) {
+                            console.log('✅ Examples corrected successfully');
+                            console.log('Words with correct examples:', words_with_correct_examples);
+                            words = await geminiService.replaceExample(words, words_with_correct_examples);
+                        } else {
+                            console.log('⚠️ No examples were corrected');
+                        }
+                    } catch (error) {
+                        console.error('❌ Error correcting examples:', error);
                     }
                 }
                 
+
                 // Ajouter chaque mot à la base de données
                 let successCount = 0;
                 let errChamps = 0;
@@ -211,7 +226,6 @@ class ImportFile {
                             wordData.level = 'x'; // Niveau par défaut
                         }
 
-                        const package_id = req.query.package;
 
                         await wordModel.create(wordData, package_id);
                         successCount++;
@@ -223,7 +237,6 @@ class ImportFile {
                 }
                 // Supprimer le fichier temporaire
                 fs.unlinkSync(filePath);
-                    
                 // Rediriger avec un message de succès
                 res.status(200).json({
                     success: true,
