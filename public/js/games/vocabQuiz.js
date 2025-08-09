@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let correctAnswers = 0;
     let totalQuestions = 10;
     let gameActive = false;
+    let currentTime = 0;
+    let startTime;
+    let timerInterval;
     let optionsCount = 6; // Par défaut
     let availableWords = 0;
     const maxQuestions = 300;
@@ -33,9 +36,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const progressDisplay = document.getElementById('progress');
     const finalScoreDisplay = document.getElementById('final-score');
     const correctAnswersDisplay = document.getElementById('correct-answers');
+    const trackLevelMessage = document.getElementById('track-level-message');
     const accuracyDisplay = document.getElementById('accuracy');
-    const highScoreMessage = document.getElementById('high-score-message');
     const packageId = document.getElementById('package-id').getAttribute('data-package');
+    const loader = document.getElementById('loader');
     
     // Écrans de jeu
     const preGameScreen = document.querySelector('.pre-game-screen');
@@ -47,21 +51,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour initialiser les effets modernes et adorables du quiz
     function initializeQuizEffects() {
-        createFocusRings();
         createLovelyFloatingElements();
         initializeAudio();
         startModernBackgroundAnimation();
     }
     
-    // Fonction pour créer les anneaux de focus modernes
-    function createFocusRings() {
-        for (let i = 0; i < 5; i++) {
-            const ring = document.createElement('div');
-            ring.className = 'quiz-focus-ring';
-            ring.style.animationDelay = `${i * 1.2}s`;
-            document.querySelector('.game-container').appendChild(ring);
-        }
-    }
+
     
     // Fonction pour créer des éléments flottants adorables
     function createLovelyFloatingElements() {
@@ -301,6 +296,15 @@ document.addEventListener('DOMContentLoaded', function() {
         correctAnswers = 0;
         currentQuestionIndex = 0;
         gameActive = true;
+        currentTime = 0;
+        startTime = null;
+        timerInterval = null;
+        // Show loader immediately when starting game
+        quizWordDisplay.textContent = '';
+        loader.removeAttribute('style');
+        optionsContainer.innerHTML = '';
+        resultMessage.textContent = '';
+        nextQuestionBtn.disabled = true;
         
         // Start modern lovely quiz effects
         activeGameScreen.classList.add('quiz-active');
@@ -310,8 +314,8 @@ document.addEventListener('DOMContentLoaded', function() {
         currentScoreDisplay.textContent = score;
         progressDisplay.textContent = `1/${totalQuestions}`;
         
-        // Charger la première question
-        loadQuestions();
+        // Charger la première question with shorter delay
+        setTimeout(loadQuestions, 3000);
         
         // Afficher l'écran de jeu actif
         preGameScreen.classList.remove('active');
@@ -355,17 +359,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
             currentQuestion = questionWords[currentQuestionIndex];
             
-            
-            // Mettre à jour l'affichage de la question avec animation plus visible
+            // Hide loader and show question with animation
             quizWordDisplay.textContent = currentQuestion.word;
+            loader.setAttribute('style', 'display: none;');
             quizWordDisplay.classList.add('revealing');
             setTimeout(() => {
                 quizWordDisplay.classList.remove('revealing');
             }, 1200);
             
+            
+            
             // Générer les options
             generateOptions(currentQuestion.options, currentQuestion.correctIndex);
-            
+
+            // Démarrer le timer
+            startTime = Date.now();
+            timerInterval = setInterval(updateTimer, 1000);
+
             // Mettre à jour la progression avec animation plus visible
             currentQuestionIndex++;
             progressDisplay.textContent = `${currentQuestionIndex}/${totalQuestions}`;
@@ -378,7 +388,15 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Erreur lors du chargement de la question:', error);
             resultMessage.textContent = 'Erreur lors du chargement de la question. Veuillez réessayer.';
             resultMessage.className = 'result-message incorrect';
+            // Hide loader on error too
+            loader.setAttribute('style', 'display: none;');
         });
+    }
+
+    // Fonction pour mettre à jour le timer
+    function updateTimer() {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        currentTime = elapsed;   
     }
     
     // Fonction pour générer les options
@@ -412,6 +430,8 @@ document.addEventListener('DOMContentLoaded', function() {
             optionsContainer.appendChild(optionBtn);
         });
     }
+
+
     
     // Fonction pour vérifier la réponse (ou les réponses)
     function checkAnswer(selectedIndexes, correctIndexes) {
@@ -545,7 +565,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Mettre à jour l'écran de fin de jeu
         finalScoreDisplay.textContent = score;
         correctAnswersDisplay.textContent = correctAnswers;
-        accuracyDisplay.textContent = `${accuracy}%`;
+
+        const minutes = Math.floor(currentTime / 60);
+        const seconds = currentTime % 60;
+        if (accuracyDisplay) accuracyDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         
         // Check if game was completed successfully
         const minCorrectAnswers = Math.ceil(totalQuestions * 0.7); // 70% correct answers
@@ -554,22 +577,31 @@ document.addEventListener('DOMContentLoaded', function() {
         // Track level progress
         trackLevelProgress(isSuccessful);
         
-        // Vérifier si c'est un nouveau record
-        const currentHighScore = document.getElementById('game-container').dataset.highScore || 0;
-        if (score > currentHighScore) {
-            highScoreMessage.textContent = 'Nouveau record personnel ! 🏆';
-            highScoreMessage.classList.add('new-record');
-            
-            // Enregistrer le score
-            saveScore(score);
-        } else {
-            // Save score anyway
-            saveScore(score);
+        // Enregistrer le score
+        saveScore(score);
+        
+        // Afficher le message de progression de niveau
+        if (trackLevelMessage) {
+            if (isSuccessful) {
+                trackLevelMessage.textContent = 'Excellent travail ! Progressez les autres jeux de ce niveau 😍';
+                trackLevelMessage.classList.add('level-completed');
+            } else {
+                trackLevelMessage.textContent = 'Bon courage ! Réessayer ce jeu pour améliorer vos compétences 🤧' ;
+                trackLevelMessage.classList.remove('level-completed');
+            }
         }
         
         // Afficher l'écran de fin de jeu
-        activeGameScreen.classList.remove('active');
-        postGameScreen.classList.add('active');
+        console.log('Switching to post game screen...');
+        setTimeout(() => {
+            if (activeGameScreen) activeGameScreen.classList.remove('active');
+            if (postGameScreen) postGameScreen.classList.add('active');
+            console.log('Post game screen should now be visible');
+            
+            // Lancer l'animation confetti simple
+            launchConfetti();
+        }, 1000);
+
     }
     
     // Fonction pour enregistrer le score
@@ -627,6 +659,41 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Fonction pour lancer l'animation confetti avec confetti.js.org
+    function launchConfetti() {
+        const duration = 15* 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        const interval = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+          
+            if (timeLeft <= 0) {
+              return clearInterval(interval);
+            }
+          
+            const particleCount = 50 * (timeLeft / duration);
+          
+            // since particles fall down, start a bit higher than random
+            confetti(
+              Object.assign({}, defaults, {
+                particleCount,
+                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+              })
+            );
+            confetti(
+              Object.assign({}, defaults, {
+                particleCount,
+                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+              })
+            );
+          }, 250);
+    }
+
     // Événements
     if (startGameBtn) {
         startGameBtn.addEventListener('click', startGame);
@@ -639,4 +706,19 @@ document.addEventListener('DOMContentLoaded', function() {
     if (playAgainBtn) {
         playAgainBtn.addEventListener('click', startGame);
     }
+
+    // Fonction de test pour forcer l'affichage de l'écran de fin (pour débogage)
+    window.testEndGame = function() {
+        console.log('Testing end game...');
+        correctAnswers = totalQuestions;
+        endGame();
+    };
+    
+    // Ajouter un raccourci clavier pour tester (Ctrl+Shift+E)
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+            console.log('Test end game triggered by keyboard shortcut');
+            window.testEndGame();
+        }
+    });
 });
