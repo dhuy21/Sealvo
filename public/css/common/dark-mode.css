@@ -122,10 +122,33 @@ body[data-theme="dark"] {
   color: var(--btn-primary-text);
 }
 
-
-[data-theme="dark"] .feedback-container p,
 [data-theme="dark"] .recognized-text {
-  color: rgb(253, 245, 245) !important;
+  color: #01f34e !important;
+}
+
+[data-theme="dark"] .recognized-text:not(:empty)::before {
+  color: #ffffff !important;
+}
+
+/* Dark mode feedback text colors */
+[data-theme="dark"] .feedback-text.feedback-success {
+  color: #34d399 !important;
+}
+
+[data-theme="dark"] .feedback-text.feedback-info {
+  color: #60a5fa !important;
+}
+
+[data-theme="dark"] .feedback-text.feedback-warning {
+  color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .feedback-text.feedback-error {
+  color: #f87171 !important;
+}
+
+[data-theme="dark"] .feedback-text.feedback-neutral {
+  color: #d1d5db !important;
 }
 
 [data-theme="dark"] .current-word {

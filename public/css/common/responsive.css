@@ -25,37 +25,8 @@ img {
 }
 
 /* Responsive typography */
-@media (max-width: 1200px) {
-  html {
-    font-size: 15px;
-  }
-  
-  h1 {
-    font-size: 2.5rem;
-  }
-  
-  h2 {
-    font-size: 2rem;
-  }
-}
 
-@media (max-width: 992px) {
-  html {
-    font-size: 14px;
-  }
-  
-  h1 {
-    font-size: 2.3rem;
-  }
-  
-  h2 {
-    font-size: 1.8rem;
-  }
-  
-  h3 {
-    font-size: 1.5rem;
-  }
-}
+
 
 @media (max-width: 768px) {
   html {
