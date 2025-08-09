@@ -13,12 +13,17 @@ document.addEventListener('DOMContentLoaded', function() {
     let perfectPronunciations = 0;
     let wordsList = [];
     
-    // Variables pour la reconnaissance vocale (Web Speech API)
+    // Variables pour la reconnaissance vocale (Web Speech API) - Améliorées
     let recognition = null;
     let isListening = false;
     let speechSupported = false;
     let userGestureReceived = false; // Pour Safari iOS
     let microphonePermissionGranted = false; // Pour Safari iOS
+    let recognitionRetryCount = 0;
+    let maxRetries = 3;
+    let recognitionTimeout = null;
+    let isRecognitionInitialized = false;
+    let currentLanguage = 'en-US';
     
     // Variables pour les animations sonores
     let soundWavesContainer = null;
@@ -42,13 +47,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const recognizedText = document.getElementById('recognizedText');
     const feedbackText = document.getElementById('feedbackText');
     const wordListContainer = document.getElementById('wordList');
-    
+    const loader = document.getElementById('loader');
     const finalScoreDisplay = document.getElementById('final-score');
     const finalTimeDisplay = document.getElementById('final-time');
     const finalAccuracyDisplay = document.getElementById('final-accuracy');
     const perfectCountDisplay = document.getElementById('perfect-count');
     const highScoreMessage = document.getElementById('high-score-message');
     const packageId = document.getElementById('package-id').getAttribute('data-package');
+    const trackLevelMessage = document.getElementById('track-level-message');
     
     // Écrans de jeu
     const preGameScreen = document.querySelector('.pre-game-screen');
@@ -65,7 +71,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function initializeSoundWaveAnimations() {
         createSoundWaves();
         createAudioVisualizer();
-        createFloatingSoundIcons();
         createRecordingWaves();
     }
     
@@ -184,24 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
             audioVisualizerContainer.appendChild(visualizerBar);
         }
     }
-    
-    // Fonction pour créer les icônes sonores flottantes
-    function createFloatingSoundIcons() {
-        floatingSoundIconsContainer = document.createElement('div');
-        floatingSoundIconsContainer.className = 'floating-sound-icons';
-        document.body.appendChild(floatingSoundIconsContainer);
-        
-        const soundIcons = ['🎵', '🎶', '🔊', '🎤', '🎧', '🔉', '🎼', '🎺'];
-        
-        // Créer 8 icônes sonores flottantes (doublé)
-        for (let i = 0; i < 8; i++) {
-            const soundIcon = document.createElement('div');
-            soundIcon.className = 'sound-icon';
-            soundIcon.textContent = soundIcons[i];
-            floatingSoundIconsContainer.appendChild(soundIcon);
-        }
-    }
-    
+
     // Fonction pour créer les vagues d'enregistrement
     function createRecordingWaves() {
         recordingWavesContainer = document.createElement('div');
@@ -306,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Réinitialiser les variables
         currentWord = null;
-        previousWordId = null;
+
         gameActive = true;
         startTime = Date.now();
         completedWords = 0;
@@ -318,6 +306,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (wordsCountDisplay) wordsCountDisplay.textContent = completedWords;
         if (timerDisplay) timerDisplay.textContent = '00:00';
         if (accuracyValueDisplay) accuracyValueDisplay.textContent = '0%';
+        
+        currentWordDisplay.textContent = '';
+        phoneticSpellingDisplay.textContent = '';
+        loader.removeAttribute('style');
+        // Désactiver le bouton d'écoute au début
+        if (playWordBtn) {
+            playWordBtn.disabled = true;
+            playWordBtn.classList.add('disabled');
+        }
+
         
         // Démarrer le timer
         timerInterval = setInterval(updateTimer, 1000);
@@ -332,7 +330,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Charger le premier mot
-        loadNewWord();
+        setTimeout(loadNewWord, 7000);
 
         
         
@@ -349,8 +347,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Fonction pour configurer la reconnaissance vocale (Web Speech API)
+    // Fonction pour configurer la reconnaissance vocale (Web Speech API) - Améliorée
     function setupSpeechRecognition() {
+        // Éviter la recréation multiple de l'instance
+        if (isRecognitionInitialized && recognition) {
+            console.log('Reconnaissance vocale déjà initialisée');
+            return;
+        }
+        
         // Vérifier la compatibilité du navigateur
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
             console.error('Web Speech API non supportée par ce navigateur');
@@ -364,15 +368,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
         speechSupported = true;
         
+        // Nettoyer l'ancienne instance si elle existe
+        if (recognition) {
+            try {
+                recognition.abort();
+            } catch (e) {
+                console.log('Nettoyage de l\'ancienne instance');
+            }
+        }
+        
         // Créer l'instance de reconnaissance vocale (Safari nécessite webkitSpeechRecognition)
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         recognition = new SpeechRecognition();
         
-        // Configuration spécifique pour Safari iOS
+        // Configuration optimisée pour tous les navigateurs
         recognition.continuous = false;
         recognition.interimResults = false;
-        recognition.lang = 'en-US';
-        recognition.maxAlternatives = 1; // Réduire à 1 pour Safari
+        recognition.lang = currentLanguage;
+        recognition.maxAlternatives = 1;
         
         // Configuration spécifique pour Safari iOS
         if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
@@ -380,33 +393,61 @@ document.addEventListener('DOMContentLoaded', function() {
             recognition.continuous = false; // Obligatoire sur iOS
             recognition.interimResults = false; // Obligatoire sur iOS
             recognition.maxAlternatives = 1; // Limiter pour iOS
-            
-            // Ajouter un délai pour iOS Safari
             recognition.grammars = undefined; // Pas supporté sur iOS
         }
         
-        // Événements de la reconnaissance vocale
+        // Configuration pour Chrome/Edge
+        if (/Chrome|Edge/.test(navigator.userAgent)) {
+            console.log('Configuration pour Chrome/Edge détectée');
+            recognition.continuous = false;
+            recognition.interimResults = false;
+        }
+        
+        // Configuration pour Firefox
+        if (/Firefox/.test(navigator.userAgent)) {
+            console.log('Configuration pour Firefox détectée');
+            recognition.continuous = false;
+            recognition.interimResults = false;
+        }
+        
+        // Événements de la reconnaissance vocale - Améliorés
         recognition.onstart = () => {
             console.log('Reconnaissance vocale démarrée');
             isListening = true;
+            recognitionRetryCount = 0; // Réinitialiser le compteur de tentatives
+            
             if (recordBtn) {
                 recordBtn.classList.add('recording');
                 recordBtn.innerHTML = '<i class="fas fa-stop"></i> Arrêter';
-                recordBtn.disabled = false; // S'assurer que le bouton est activé
+                recordBtn.disabled = false;
             }
             
             // Activer les effets visuels d'enregistrement
             activateRecordingWaves();
             intensifyAudioAnimations();
             
-            // Feedback visuel pour iOS
+            // Feedback visuel amélioré
             if (feedbackText) {
                 feedbackText.textContent = 'Écoute en cours... Parlez maintenant.';
                 setFeedbackTextColor('info');
             }
+            
+            // Timeout de sécurité adaptatif selon le navigateur
+            const optimizations = getBrowserOptimizations();
+            recognitionTimeout = setTimeout(() => {
+                if (isListening) {
+                    console.log('Timeout de reconnaissance - arrêt automatique');
+                    stopListening();
+                }
+            }, optimizations.timeout);
         };
         
         recognition.onresult = (event) => {
+            // Nettoyer le timeout
+            if (recognitionTimeout) {
+                clearTimeout(recognitionTimeout);
+                recognitionTimeout = null;
+            }
             
             if (event.results && event.results.length > 0) {
                 const results = event.results[0];
@@ -414,20 +455,30 @@ document.addEventListener('DOMContentLoaded', function() {
                     const spokenText = results[0].transcript.toLowerCase().trim();
                     const confidence = results[0].confidence || 0.5; // Fallback pour Safari
                     
+                    console.log('Texte reconnu:', spokenText, 'Confiance:', confidence);
+                    
                     // Traiter le résultat
                     processSpeechResult(spokenText, confidence);
                 } else {
                     console.warn('Aucun résultat de reconnaissance disponible');
                     if (feedbackText) {
                         feedbackText.textContent = 'Aucun son détecté. Essayez de parler plus fort.';
+                        setFeedbackTextColor('warning');
                     }
                 }
             }
         };
         
         recognition.onerror = (event) => {
+            // Nettoyer le timeout
+            if (recognitionTimeout) {
+                clearTimeout(recognitionTimeout);
+                recognitionTimeout = null;
+            }
+            
             console.error('Erreur de reconnaissance vocale:', event.error);
             isListening = false;
+            
             if (recordBtn) {
                 recordBtn.classList.remove('recording');
                 recordBtn.innerHTML = '<i class="fas fa-microphone"></i> Enregistrer';
@@ -438,29 +489,38 @@ document.addEventListener('DOMContentLoaded', function() {
             deactivateRecordingWaves();
             normalizeAudioAnimations();
             
-            // Messages d'erreur spécifiques pour Safari iOS
+            // Gestion d'erreur améliorée avec retry automatique
             let errorMessage = 'Erreur de reconnaissance vocale';
+            let shouldRetry = false;
+            
             switch (event.error) {
                 case 'no-speech':
                     errorMessage = 'Aucune parole détectée. Parlez plus fort et plus clairement.';
+                    shouldRetry = recognitionRetryCount < maxRetries;
                     break;
                 case 'audio-capture':
                     errorMessage = 'Impossible d\'accéder au microphone. Vérifiez les permissions.';
+                    shouldRetry = false;
                     break;
                 case 'not-allowed':
                     errorMessage = 'Permission microphone refusée. Activez le microphone dans les paramètres.';
+                    shouldRetry = false;
                     break;
                 case 'network':
                     errorMessage = 'Erreur réseau. Vérifiez votre connexion internet.';
+                    shouldRetry = recognitionRetryCount < maxRetries;
                     break;
                 case 'aborted':
                     errorMessage = 'Reconnaissance interrompue. Essayez à nouveau.';
+                    shouldRetry = recognitionRetryCount < maxRetries;
                     break;
                 case 'service-not-allowed':
                     errorMessage = 'Service de reconnaissance non autorisé. Essayez de recharger la page.';
+                    shouldRetry = false;
                     break;
                 default:
                     errorMessage = `Erreur: ${event.error}. Essayez de recharger la page.`;
+                    shouldRetry = recognitionRetryCount < maxRetries;
             }
             
             if (feedbackText) {
@@ -468,20 +528,48 @@ document.addEventListener('DOMContentLoaded', function() {
                 setFeedbackTextColor('error');
             }
             
-            // Pour Safari iOS, suggérer de réessayer après une erreur
-            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+            // Retry automatique pour certaines erreurs
+            if (shouldRetry && recognitionRetryCount < maxRetries) {
+                recognitionRetryCount++;
+                console.log(`Tentative ${recognitionRetryCount}/${maxRetries}`);
+                
                 setTimeout(() => {
-                    if (feedbackText && feedbackText.textContent === errorMessage) {
-                        feedbackText.textContent = 'Appuyez sur le bouton microphone pour réessayer.';
-                        setFeedbackTextColor('neutral');
+                    if (feedbackText) {
+                        feedbackText.textContent = `Nouvelle tentative (${recognitionRetryCount}/${maxRetries})...`;
+                        setFeedbackTextColor('info');
                     }
-                }, 3000);
+                    startListening();
+                }, 1000);
+            } else {
+                recognitionRetryCount = 0; // Réinitialiser pour la prochaine fois
+                
+                // Si trop d'erreurs consécutives, réinitialiser complètement
+                if (recognitionRetryCount >= maxRetries * 2) {
+                    handleCompleteSpeechFailure();
+                } else {
+                    // Pour Safari iOS, suggérer de réessayer après une erreur
+                    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                        setTimeout(() => {
+                            if (feedbackText && feedbackText.textContent === errorMessage) {
+                                feedbackText.textContent = 'Appuyez sur le bouton microphone pour réessayer.';
+                                setFeedbackTextColor('neutral');
+                        }
+                    }, 3000);
+                }
+            }
             }
         };
         
         recognition.onend = () => {
+            // Nettoyer le timeout
+            if (recognitionTimeout) {
+                clearTimeout(recognitionTimeout);
+                recognitionTimeout = null;
+            }
+            
             console.log('Reconnaissance vocale terminée');
             isListening = false;
+            
             if (recordBtn) {
                 recordBtn.classList.remove('recording');
                 recordBtn.innerHTML = '<i class="fas fa-microphone"></i> Enregistrer';
@@ -492,7 +580,7 @@ document.addEventListener('DOMContentLoaded', function() {
             deactivateRecordingWaves();
             normalizeAudioAnimations();
             
-            // Message de fin pour iOS
+            // Message de fin amélioré
             if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
                 setTimeout(() => {
                     if (feedbackText && !feedbackText.textContent.includes('Vous avez dit')) {
@@ -503,7 +591,163 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
         
+        // Marquer comme initialisée
+        isRecognitionInitialized = true;
         console.log('Reconnaissance vocale configurée avec succès');
+    }
+    
+    // Fonction pour réinitialiser la reconnaissance vocale (nouvelle)
+    function resetSpeechRecognition() {
+        console.log('Réinitialisation de la reconnaissance vocale');
+        
+        // Arrêter l'enregistrement en cours
+        if (isListening) {
+            stopListening();
+        }
+        
+        // Nettoyer les timeouts
+        if (recognitionTimeout) {
+            clearTimeout(recognitionTimeout);
+            recognitionTimeout = null;
+        }
+        
+        // Réinitialiser les variables
+        isRecognitionInitialized = false;
+        recognitionRetryCount = 0;
+        isListening = false;
+        
+        // Recréer l'instance de reconnaissance
+        setupSpeechRecognition();
+    }
+    
+    // Fonction pour optimiser selon le navigateur (nouvelle)
+    function getBrowserOptimizations() {
+        const userAgent = navigator.userAgent;
+        const optimizations = {
+            delay: 100,
+            maxRetries: 3,
+            timeout: 10000
+        };
+        
+        if (/iPad|iPhone|iPod/.test(userAgent)) {
+            optimizations.delay = 300;
+            optimizations.maxRetries = 2;
+            optimizations.timeout = 8000;
+        } else if (/Chrome|Edge/.test(userAgent)) {
+            optimizations.delay = 50;
+            optimizations.maxRetries = 3;
+            optimizations.timeout = 12000;
+        } else if (/Firefox/.test(userAgent)) {
+            optimizations.delay = 150;
+            optimizations.maxRetries = 2;
+            optimizations.timeout = 10000;
+        }
+        
+        return optimizations;
+    }
+    
+    // Fonction pour gérer l'échec complet de la reconnaissance vocale (nouvelle)
+    function handleCompleteSpeechFailure() {
+        console.log('Échec complet de la reconnaissance vocale - réinitialisation');
+        
+        if (feedbackText) {
+            feedbackText.textContent = 'Problème avec le microphone. Réinitialisation...';
+            setFeedbackTextColor('warning');
+        }
+        
+        // Réinitialiser complètement la reconnaissance
+        setTimeout(() => {
+            resetSpeechRecognition();
+            
+            if (feedbackText) {
+                feedbackText.textContent = 'Microphone réinitialisé. Essayez à nouveau.';
+                setFeedbackTextColor('info');
+            }
+        }, 2000);
+    }
+    
+    // Fonction pour jouer l'audio du mot (nouvelle)
+    function playWordAudio(word) {
+        console.log('Lecture audio pour le mot:', word.word);
+        
+        // Activer l'effet de parole pendant la lecture audio
+        activateSpeakingEffect();
+        
+        // Essayer d'abord l'audio enregistré si disponible
+        if (word.audio) {
+            try {
+                const audio = new Audio(word.audio);
+                audio.play().catch(error => {
+                    console.log('Erreur avec l\'audio enregistré, utilisation de la synthèse vocale:', error);
+                    useTextToSpeech(word);
+                });
+            } catch (error) {
+                console.log('Erreur avec l\'audio enregistré, utilisation de la synthèse vocale:', error);
+                useTextToSpeech(word);
+            }
+        } else {
+            // Utiliser la synthèse vocale (Text-to-Speech)
+            useTextToSpeech(word);
+        }
+    }
+    
+    // Fonction pour utiliser la synthèse vocale (nouvelle)
+    function useTextToSpeech(word) {
+        if ('speechSynthesis' in window) {
+            // Arrêter toute synthèse vocale en cours
+            speechSynthesis.cancel();
+            
+            // Créer un nouvel énoncé
+            const utterance = new SpeechSynthesisUtterance(word.word);
+            
+            // Configurer la langue selon le code de langue du mot
+            if (word.language_code) {
+                utterance.lang = word.language_code;
+            } else {
+                // Fallback vers l'anglais si pas de langue spécifiée
+                utterance.lang = 'en-US';
+            }
+            
+            // Configurer la vitesse et le pitch
+            utterance.rate = 0.8; // Vitesse légèrement plus lente
+            utterance.pitch = 1.0; // Pitch normal
+            utterance.volume = 1.0; // Volume maximum
+            
+            // Événements pour le feedback
+            utterance.onstart = () => {
+                console.log('Synthèse vocale démarrée');
+                if (feedbackText) {
+                    feedbackText.textContent = 'Lecture en cours...';
+                    setFeedbackTextColor('info');
+                }
+            };
+            
+            utterance.onend = () => {
+                console.log('Synthèse vocale terminée');
+                if (feedbackText) {
+                    feedbackText.textContent = '';
+                    setFeedbackTextColor('neutral');
+                }
+            };
+            
+            utterance.onerror = (event) => {
+                console.error('Erreur de synthèse vocale:', event.error);
+                if (feedbackText) {
+                    feedbackText.textContent = 'Erreur de lecture audio.';
+                    setFeedbackTextColor('error');
+                }
+            };
+            
+            // Démarrer la synthèse vocale
+            speechSynthesis.speak(utterance);
+            
+        } else {
+            console.error('Synthèse vocale non supportée par ce navigateur');
+            if (feedbackText) {
+                feedbackText.textContent = 'Lecture audio non supportée sur ce navigateur.';
+                setFeedbackTextColor('error');
+            }
+        }
     }
     
     // Fonction pour charger un nouveau mot
@@ -539,8 +783,15 @@ document.addEventListener('DOMContentLoaded', function() {
             currentWord = words[currentIndex];
             
             // Afficher le mot et sa prononciation phonétique
+            loader.setAttribute('style', 'display: none;');
             if (currentWordDisplay) currentWordDisplay.textContent = currentWord.word;
             if (phoneticSpellingDisplay) phoneticSpellingDisplay.textContent = currentWord.pronunciation ;
+            
+            // Activer le bouton d'écoute
+            if (playWordBtn) {
+                playWordBtn.disabled = false;
+                playWordBtn.classList.remove('disabled');
+            }
             
             // Réinitialiser l'affichage de feedback
             if (accuracyMeter) {
@@ -561,9 +812,13 @@ document.addEventListener('DOMContentLoaded', function() {
             // Configurer la reconnaissance vocale
             setupSpeechRecognition();
             
-            // Définir la langue après l'initialisation de la reconnaissance vocale
-            if (recognition && currentWord.language_code) {
-                recognition.lang = currentWord.language_code;
+            // Mettre à jour la langue si nécessaire
+            if (currentWord.language_code) {
+                currentLanguage = currentWord.language_code;
+                if (recognition) {
+                    recognition.lang = currentLanguage;
+                    console.log('Langue mise à jour pour le nouveau mot:', currentLanguage);
+                }
             }
         })
         .catch(error => {
@@ -572,7 +827,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Fonction pour démarrer la reconnaissance vocale (améliorée pour Safari iOS)
+    // Fonction pour démarrer la reconnaissance vocale (améliorée avec retry et gestion d'erreur)
     function startListening() {
         if (!recognition || !speechSupported) {
             console.error('Reconnaissance vocale non disponible');
@@ -628,21 +883,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 setFeedbackTextColor('info');
             }
             
-            // Démarrer la reconnaissance avec un petit délai pour iOS
-            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-                setTimeout(() => {
-                    try {
-                        recognition.start();
-                    } catch (iosError) {
-                        console.error('Erreur iOS lors du démarrage:', iosError);
-                        handleRecognitionError(iosError);
-                    }
-                }, 200); // Délai plus long pour iOS
-            } else {
-                recognition.start();
+            // Mettre à jour la langue si nécessaire
+            if (currentWord && currentWord.language_code && recognition.lang !== currentWord.language_code) {
+                currentLanguage = currentWord.language_code;
+                recognition.lang = currentLanguage;
+                console.log('Langue mise à jour:', currentLanguage);
             }
             
-            console.log('Démarrage de la reconnaissance vocale');
+            // Démarrer la reconnaissance avec gestion d'erreur améliorée
+            const startRecognition = () => {
+                try {
+                    recognition.start();
+                    console.log('Démarrage de la reconnaissance vocale');
+                } catch (error) {
+                    console.error('Erreur lors du démarrage de la reconnaissance:', error);
+                    handleRecognitionError(error);
+                }
+            };
+            
+            // Optimisations selon le navigateur
+            const optimizations = getBrowserOptimizations();
+            maxRetries = optimizations.maxRetries;
+            
+            setTimeout(startRecognition, optimizations.delay);
+            
         } catch (error) {
             console.error('Erreur lors du démarrage de la reconnaissance:', error);
             handleRecognitionError(error);
@@ -681,9 +945,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3000);
     }
     
-    // Fonction pour arrêter la reconnaissance vocale (améliorée)
+    // Fonction pour arrêter la reconnaissance vocale (améliorée avec nettoyage)
     function stopListening() {
         if (!recognition || !isListening) return;
+        
+        // Nettoyer le timeout
+        if (recognitionTimeout) {
+            clearTimeout(recognitionTimeout);
+            recognitionTimeout = null;
+        }
         
         try {
             recognition.stop();
@@ -932,6 +1202,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (currentWordDisplay) currentWordDisplay.textContent = currentWord.word;
                 if (phoneticSpellingDisplay) phoneticSpellingDisplay.textContent = currentWord.pronunciation ;
                 
+                // Activer le bouton d'écoute
+                if (playWordBtn) {
+                    playWordBtn.disabled = false;
+                    playWordBtn.classList.remove('disabled');
+                }
+                
                 // Réinitialiser l'affichage de feedback
                 if (accuracyMeter) {
                     const meterFill = accuracyMeter.querySelector('.meter-fill');
@@ -951,9 +1227,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Configurer la reconnaissance vocale
                 setupSpeechRecognition();
                 
-                // Définir la langue après l'initialisation de la reconnaissance vocale
-                if (recognition && currentWord.language_code) {
-                    recognition.lang = currentWord.language_code;
+                // Mettre à jour la langue si nécessaire
+                if (currentWord.language_code) {
+                    currentLanguage = currentWord.language_code;
+                    if (recognition) {
+                        recognition.lang = currentLanguage;
+                        console.log('Langue mise à jour pour le nouveau mot:', currentLanguage);
+                    }
                 }
             }, 2000);
         }
@@ -982,10 +1262,63 @@ document.addEventListener('DOMContentLoaded', function() {
         const isSuccessful = averageAccuracy >= minAccuracy && completedWords >= 5;
         trackLevelProgress(isSuccessful);
         
+
+        // Afficher le message de progression de niveau
+        if (trackLevelMessage) {
+            if (isSuccessful) {
+                trackLevelMessage.textContent = 'Excellent travail ! Progressez les autres jeux de ce niveau 😍';
+                trackLevelMessage.classList.add('level-completed');
+            } else {
+                trackLevelMessage.textContent = 'Bon courage ! Réessayer ce jeu pour améliorer vos compétences 🤧' ;
+                trackLevelMessage.classList.remove('level-completed');
+            }
+        }
+
         // Afficher l'écran de fin de jeu
         console.log('Switching to post game screen...');
-        if (activeGameScreen) activeGameScreen.classList.remove('active');
-        if (postGameScreen) postGameScreen.classList.add('active');
+        setTimeout(() => {
+            if (activeGameScreen) activeGameScreen.classList.remove('active');
+            if (postGameScreen) postGameScreen.classList.add('active');
+            console.log('Post game screen should now be visible');
+            
+            // Lancer l'animation confetti simple
+            launchConfetti();
+        }, 1000);
+    }
+
+     // Fonction pour lancer l'animation confetti avec confetti.js.org
+     function launchConfetti() {
+        const duration = 15* 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        const interval = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+          
+            if (timeLeft <= 0) {
+              return clearInterval(interval);
+            }
+          
+            const particleCount = 50 * (timeLeft / duration);
+          
+            // since particles fall down, start a bit higher than random
+            confetti(
+              Object.assign({}, defaults, {
+                particleCount,
+                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+              })
+            );
+            confetti(
+              Object.assign({}, defaults, {
+                particleCount,
+                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+              })
+            );
+          }, 250);
     }
     
     // Fonction pour enregistrer le score
@@ -1056,16 +1389,33 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (playWordBtn) {
         playWordBtn.addEventListener('click', () => {
-            if (currentWord && currentWord.audio) {
-                const audio = new Audio(currentWord.audio);
-                
-                // Activer l'effet de parole pendant la lecture audio
-                activateSpeakingEffect();
-                
-                audio.play();
+            if (currentWord) {
+                playWordAudio(currentWord);
+            } else {
+                console.log('Aucun mot disponible pour la lecture');
+                if (feedbackText) {
+                    feedbackText.textContent = 'Aucun mot disponible pour la lecture.';
+                    setFeedbackTextColor('warning');
+                }
             }
         });
     }
+
+    // Fonction de test pour forcer l'affichage de l'écran de fin (pour débogage)
+    window.testEndGame = function() {
+        console.log('Testing end game...');
+        totalAccuracy = 600;
+        completedWords = 6;
+        endGame();
+    };
+    
+    // Ajouter un raccourci clavier pour tester (Ctrl+Shift+E)
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+            console.log('Test end game triggered by keyboard shortcut');
+            window.testEndGame();
+        }
+    });
     
     if (recordBtn) {
         recordBtn.addEventListener('click', async () => {
@@ -1110,3 +1460,4 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+

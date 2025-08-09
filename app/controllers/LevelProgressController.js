@@ -32,12 +32,13 @@ class LevelProgressController {
                 'word_scramble': '0',
                 'phrase_completion': '0',
                 'speed_vocab': '1',
-                'word_search': '2'
+                'word_search': '2',
+                'test_pronunciation': 'x'
             };
             
             // Required games for each level
             const levelGames = {
-                'x': ['flash_match', 'vocab_quiz'],
+                'x': ['flash_match', 'vocab_quiz', 'test_pronunciation'],
                 '0': ['word_scramble', 'phrase_completion'],
                 '1': ['speed_vocab'],
                 '2': ['word_search']
