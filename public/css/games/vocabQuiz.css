@@ -5,7 +5,7 @@
    ======================================== */
 
 .game-container {
-    max-width: 1000px;  
+    max-width: 1500px;  
     margin: 0 auto;
     padding: 2rem;
     font-family: 'Poppins', sans-serif;
@@ -1467,7 +1467,7 @@
 /* ========================================
    POST-GAME SCREEN
    ======================================== */
-   .post-game-screen {
+.post-game-screen {
     background: none;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -1680,8 +1680,6 @@
         transform: translateY(0) scale(1);
     }
 }
-
-
 
 .action-buttons {
     display: flex;
@@ -2679,7 +2677,7 @@
         font-size: 0.85rem;
         min-width: 120px;
     }
-
+    
     /* Post Game Screen Mobile */
     .post-game-screen {
         padding: 2rem 1.5rem;
