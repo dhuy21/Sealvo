@@ -6,6 +6,18 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
+    // ========================================
+    // MAGICAL BACKGROUND SYSTEM - VARIABLES
+    // ========================================
+    
+    // Global variables for magical background
+    let magicalBg = null;
+    const maxOrbs = 14;
+    const maxStars = 15;
+    
+    // Initialize magical background
+    initMagicalBackground();
+    
     // Variables du jeu
     let currentWord = null;
     let currentIndex = 0;
@@ -32,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const finalScoreDisplay = document.getElementById('final-score');
     const wordsFoundDisplay = document.getElementById('words-found');
     const accuracyDisplay = document.getElementById('accuracy');
-    const highScoreMessage = document.getElementById('high-score-message');
+    const trackLevelMessage = document.getElementById('track-level-message');
     const packageId = document.getElementById('package-id').getAttribute('data-package');
     
     // Écrans de jeu
@@ -49,17 +61,27 @@ document.addEventListener('DOMContentLoaded', function() {
         wordsPlayed = 0;
         gameActive = true;
         currentWord = null;
+        scrambledWordDisplay.textContent = '';
+        wordMeaningDisplay.textContent = '';
+        skipWordBtn.disabled = true;
+        timer = 0;
+        loader.removeAttribute('style');
         
-        // Mettre à jour l'affichage
-        currentScoreDisplay.textContent = score;
-        timerDisplay.textContent = timer;
+        
         
         // Charger le premier mot
-        loadNextWord();
+        setTimeout(async () => {
+            await loadNextWord();
+            // Démarrer le timer
+            timer = 150+words.length*30;
+            console.log('Timer set to:', timer);
+            timerDisplay.textContent = timer;
+            currentScoreDisplay.textContent = score;
+            timerInterval = setInterval(updateTimer, 1000);
+        }, 5000);
         
-        // Démarrer le timer
-        timerInterval = setInterval(updateTimer, 1000);
         
+
         // Afficher l'écran de jeu actif
         preGameScreen.classList.remove('active');
         activeGameScreen.classList.add('active');
@@ -70,40 +92,48 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Fonction pour charger le prochain mot
-    function loadNextWord() {
-        // Simuler une requête à l'API pour obtenir un mot
-        // Dans une vraie implémentation, vous feriez un appel fetch à votre API
-        fetch(`/games/wordScramble/words?package=${packageId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                console.error(data.error);
+   async function loadNextWord() {
+        try {
+            // Simuler une requête à l'API pour obtenir un mot
+            // Dans une vraie implémentation, vous feriez un appel fetch à votre API
+            const response = await fetch(`/games/wordScramble/words?package=${packageId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            if (!response.ok) {
+                console.error('Erreur lors du chargement du mot:', response.statusText);
                 return;
             }
+
+            const data = await response.json();
+
+            if (data.error) {
+                console.error(data.error);
+                    return;
+            }
+
             words = data.words;
-            timer = 150+words.length*30;
             const randomIndex = Math.floor(Math.random() * words.length);
             currentIndex = randomIndex;
             const selectedWord = words[currentIndex];
 
+            loader.setAttribute('style', 'display: none;');
             scrambledWordDisplay.textContent = selectedWord.scrambled;
             wordMeaningDisplay.textContent = selectedWord.meaning;
             wordInput.value = '';
             resultMessage.textContent = '';
             resultMessage.className = 'result-message';
-            
+                
             // Stocker le mot correct pour vérification ultérieure
             currentWord = selectedWord.word;
-            return currentWord;
-        })
-        .catch(error => {
+            console.log('finished');
+
+        } catch (error) {
             console.error('Erreur lors du chargement du mot:', error);
-        });
+        }
     }
     
     // Fonction pour vérifier la réponse
@@ -113,39 +143,36 @@ document.addEventListener('DOMContentLoaded', function() {
         const answer = wordInput.value.trim();
         if (!answer) return;
         
-        totalAttempts++;
-        
         // Vérifier si la réponse est correcte
         if (answer.toLowerCase() === currentWord.toLowerCase()) {
                 score += 10;
                 correctAnswers++;
+                scrambledWordDisplay.textContent = currentWord;
+
                 resultMessage.textContent = 'Correct !';
                 resultMessage.className = 'result-message correct';
                 currentScoreDisplay.textContent = score;
+                
+                // Trigger magic burst effect
+                document.dispatchEvent(new CustomEvent('correct-answer'));
         } else {
-            resultMessage.textContent = `Incorrect ! La réponse était : ${currentWord}`;
+            scrambledWordDisplay.textContent = currentWord;
+            resultMessage.textContent = `Incorrect !`;
             resultMessage.className = 'result-message incorrect';
         }
-            
-            wordsPlayed++;
-            
-            // Charger le prochain mot après un court délai
-            setTimeout(loadNextWord, 1500);
+        skipWordBtn.disabled = false;
+
     }
-    
+
     // Fonction pour passer un mot
-    function skipWord() {
+    function goToNextWord() {
         if (!gameActive) return;
         
-        // Simuler un saut de mot
-
-        resultMessage.textContent = `Passé ! La réponse était : ${currentWord}`;
-        resultMessage.className = 'result-message skipped';
-            
+        skipWordBtn.disabled = true;
+        totalAttempts++;
         wordsPlayed++;
-            
+
         // Charger le prochain mot après un court délai
-        setTimeout(() => {
             let randomIndex = Math.floor(Math.random() * words.length);
 
             while (randomIndex === currentIndex) {
@@ -159,11 +186,11 @@ document.addEventListener('DOMContentLoaded', function() {
             wordInput.value = '';
             resultMessage.textContent = '';
             resultMessage.className = 'result-message';
-            
+
             // Stocker le mot correct pour vérification ultérieure
             currentWord = selectedWord.word;
-            return currentWord;
-        }, 1500);
+
+            skipWordBtn.disabled = true;
     }
     
     // Fonction pour mettre à jour le timer
@@ -185,6 +212,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function endGame() {
         gameActive = false;
         clearInterval(timerInterval);
+        timerDisplay.textContent = 0;
         
         // Mettre à jour l'écran de fin de jeu
         finalScoreDisplay.textContent = score;
@@ -194,28 +222,73 @@ document.addEventListener('DOMContentLoaded', function() {
         accuracyDisplay.textContent = `${accuracy}%`;
         
         // Check if game was completed successfully
-        const minWordsPlayed = 10; // Must play at least 10 words
         const minAccuracy = 70; // Must have at least 70% accuracy
-        const isSuccessful = wordsPlayed >= minWordsPlayed && accuracy >= minAccuracy;
+        const isSuccessful = accuracy >= minAccuracy;
         
         // Track level progress
         trackLevelProgress(isSuccessful);
         
-        // Vérifier si c'est un nouveau record
-        const currentHighScore = document.getElementById('game-container').dataset.highScore || 0;
-        if (score > currentHighScore) {
-            highScoreMessage.textContent = 'Nouveau record personnel !';
-            highScoreMessage.classList.add('new-record');
+          // Afficher le message de progression de niveau
+        if (trackLevelMessage) {
+            if (isSuccessful) {
+                trackLevelMessage.textContent = 'Excellent travail ! Progressez les autres jeux de ce niveau 😍';
+                trackLevelMessage.classList.add('level-completed');
+            } else {
+                trackLevelMessage.textContent = 'Bon courage ! Réessayer ce jeu pour améliorer vos compétences 🤧' ;
+                trackLevelMessage.classList.remove('level-completed');
+            }
         }
-            
-            // Enregistrer le score
-            saveScore(score);
+
+        // Enregistrer le score
+        saveScore(score);
         
         // Afficher l'écran de fin de jeu
-        activeGameScreen.classList.remove('active');
-        postGameScreen.classList.add('active');
+        console.log('Switching to post game screen...');
+        setTimeout(() => {
+            if (activeGameScreen) activeGameScreen.classList.remove('active');
+            if (postGameScreen) postGameScreen.classList.add('active');
+            console.log('Post game screen should now be visible');
+            
+            // Lancer l'animation confetti simple
+            launchConfetti();
+        }, 1000);
     }
     
+    // Fonction pour lancer l'animation confetti avec confetti.js.org
+    function launchConfetti() {
+        const duration = 15* 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        const interval = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+          
+            if (timeLeft <= 0) {
+              return clearInterval(interval);
+            }
+          
+            const particleCount = 50 * (timeLeft / duration);
+          
+            // since particles fall down, start a bit higher than random
+            confetti(
+              Object.assign({}, defaults, {
+                particleCount,
+                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+              })
+            );
+            confetti(
+              Object.assign({}, defaults, {
+                particleCount,
+                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+              })
+            );
+          }, 250);
+    }
+
     // Fonction pour enregistrer le score
     function saveScore(score) {
         // Simuler l'enregistrement du score
@@ -281,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     if (skipWordBtn) {
-        skipWordBtn.addEventListener('click', skipWord);
+        skipWordBtn.addEventListener('click', goToNextWord);
     }
     
     if (playAgainBtn) {
@@ -294,5 +367,173 @@ document.addEventListener('DOMContentLoaded', function() {
                 checkAnswer();
             }
         });
+    }
+
+    // Fonction de test pour forcer l'affichage de l'écran de fin (pour débogage)
+    window.testEndGame = function() {
+        console.log('Testing end game...');
+        correctAnswers = totalAttempts;
+        endGame();
+    };
+    
+    // Ajouter un raccourci clavier pour tester (Ctrl+Shift+E)
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+            console.log('Test end game triggered by keyboard shortcut');
+            window.testEndGame();
+        }
+    });
+    
+    // ========================================
+    // MAGICAL BACKGROUND SYSTEM - FUNCTIONS
+    // ========================================
+    
+    function initMagicalBackground() {
+
+        // Create magical background container
+        magicalBg = document.createElement('div');
+        magicalBg.className = 'magical-background';
+        document.body.appendChild(magicalBg);
+
+        // Create magical orbs with strategic positioning
+        for (let i = 0; i < maxOrbs; i++) {
+            const orb = createMagicalOrb(i);
+            magicalBg.appendChild(orb);
+        }
+        
+        // Create magical stars
+        for (let i = 0; i < maxStars; i++) {
+            const star = createMagicalStar();
+            magicalBg.appendChild(star);
+        }
+        
+        // Animation loop with performance throttling
+        function animateBackground(currentTime) {
+            // Continuous animation loop for smooth effects
+            requestAnimationFrame(animateBackground);
+        }
+        
+        // Start the animation loop
+        requestAnimationFrame(animateBackground);
+        
+    }
+    
+    function createMagicalOrb(index = 0) {
+        const orb = document.createElement('div');
+        orb.className = 'magic-orb';
+        
+        // Strategic positioning to ensure coverage of entire screen
+        let left, top;
+        
+        if (index < 6) {
+            // First 8 orbs: cover corners and edges systematically
+            switch(index) {
+                case 0: // Top-left corner
+                    left = Math.random() * 25; // 0-25%
+                    top = Math.random() * 25; // 0-25%
+                    break;
+                case 1: // Top-right corner
+                    left = 75 + Math.random() * 25; // 75-100%
+                    top = Math.random() * 25; // 0-25%
+                    break;
+                case 2: // Bottom-left corner
+                    left = Math.random() * 25; // 0-25%
+                    top = 75 + Math.random() * 25; // 75-100%
+                    break;
+                case 3: // Bottom-right corner
+                    left = 75 + Math.random() * 25; // 75-100%
+                    top = 75 + Math.random() * 25; // 75-100%
+                    break;
+                case 4: // Top center
+                    left = 35 + Math.random() * 30; // 35-65%
+                    top = Math.random() * 20; // 0-20%
+                    break;
+                case 5: // Bottom center
+                    left = 35 + Math.random() * 30; // 35-65%
+                    top = 80 + Math.random() * 20; // 80-100%
+                    break;
+            }
+        } else if (index < 12) {
+            // Next 8 orbs: fill center areas
+            switch(index - 8) {
+                case 0: // Center
+                    left = 40 + Math.random() * 20; // 40-60%
+                    top = 40 + Math.random() * 20; // 40-60%
+                    break;
+                case 1: // Center-left
+                    left = 20 + Math.random() * 25; // 20-45%
+                    top = 25 + Math.random() * 50; // 25-75%
+                    break;
+                case 2: // Center-right
+                    left = 55 + Math.random() * 25; // 55-80%
+                    top = 25 + Math.random() * 50; // 25-75%
+                    break;
+                case 3: // Center-top
+                    left = 25 + Math.random() * 50; // 25-75%
+                    top = 20 + Math.random() * 25; // 20-45%
+                    break;
+                case 4: // Center-bottom
+                    left = 25 + Math.random() * 50; // 25-75%
+                    top = 55 + Math.random() * 25; // 55-80%
+                    break;
+                default: // Random placement for remaining orbs
+                    left = Math.random() * 100;
+                    top = Math.random() * 100;
+                    break;
+            }
+        } else {
+            // Remaining orbs: completely random
+            left = Math.random() * 100;
+            top = Math.random() * 100;
+        }
+        
+        orb.style.left = left + '%';
+        orb.style.top = top + '%';
+        
+        // Random size variation for more visual interest
+        const size = 40 + Math.random() * 80; // Between 60px and 140px
+        orb.style.width = size + 'px';
+        orb.style.height = size + 'px';
+        
+        // Random z-index for depth effect
+        orb.style.zIndex = Math.floor(Math.random() * 100); // Between -5 and 4
+        
+        // Random opacity for layered effect
+        orb.style.opacity = 0.3 + Math.random() * 0.5; // Between 0.3 and 0.8
+        
+        // Random animation delay and duration
+        orb.style.animationDelay = Math.random() * 20 + 's';
+        orb.style.animationDuration = (15 + Math.random() * 25) + 's'; // Between 15s and 40s
+        
+        return orb;
+    }
+    
+    function createMagicalStar() {
+        const star = document.createElement('div');
+        star.className = 'magic-star';
+        
+        // Random star symbols for variety
+        const starSymbols = [ '🌟'];
+        star.textContent = starSymbols[Math.floor(Math.random() * starSymbols.length)];
+        
+        // Random positioning across full screen
+        star.style.left = Math.random() * 100 + '%';
+        star.style.top = Math.random() * 100 + '%';
+        
+        // Random size for variety
+        const size = 12 + Math.random() * 12; // Between 12px and 24px
+        star.style.fontSize = size + 'px';
+        
+        // Random z-index for depth
+        star.style.zIndex = Math.floor(Math.random() * 10) - 3; // Between -3 and 6
+        
+        // Random opacity
+        star.style.opacity = 0.3 + Math.random() * 0.7; // Between 0.3 and 1.0
+        
+        // Random animation delay and duration
+        star.style.animationDelay = Math.random() * 8 + 's';
+        star.style.animationDuration = (2 + Math.random() * 6) + 's'; // Between 2s and 8s
+        
+        return star;
     }
 });

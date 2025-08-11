@@ -39,6 +39,7 @@ class GeminiService {
             If the example is not correct, you must correct it.
             If the example is correct, you must return the same example.
             Note Wraps any inflected form of the target word in double asterisks (**like_this**)
+            Note that the target word if is a compound word, you must wrap each of its parts in double asterisks.
             Return strictly in JSON format:
 
             [
@@ -96,6 +97,7 @@ class GeminiService {
             Create example sentences for each of the input words according to the meaning, type of the word and the language of the word. 
             Note that the grammar of these words is important and correct. 
             Wraps any inflected form of the target word in double asterisks (**like_this**)
+            Note that the target word if is a compound word, you must wrap each of its parts in double asterisks.
             Return strictly in JSON format:
 
             [
