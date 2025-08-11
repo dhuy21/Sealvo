@@ -1,9 +1,13 @@
+ //Package id
+const packageId = document.querySelector('.vocabulary-container')?.getAttribute('data-package');
+if (!packageId) {
+    console.error('Package ID not found. Check if data-package attribute exists on .vocabulary-container');
+}
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize search functionality
     initSearch();
 
-    // Add pulsing effect to the learn button
-    
+   
 
     // 3D button hover effect enhancement
     const buttons = document.querySelectorAll('.add-word-btn, .learn-btn, .btn-danger, .home-cta .btn, .no-words .btn');
@@ -155,7 +159,8 @@ function handleDeleteClick(e) {
     // Add visual feedback
     const row = this.closest('tr');
     
-    fetch(`/monVocabs/delete/${detailId}`, {
+    console.log('Deleting word with ID:', detailId, 'Package ID:', packageId);
+    fetch(`/monVocabs/delete/${detailId}?package=${packageId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -163,6 +168,10 @@ function handleDeleteClick(e) {
     })
     .then(response => response.json())
     .then(data => {
+        if (data.error) {
+            showNotification(data.error, 'error');
+            return;
+        }
         if (data.success) {
             // Supprimer la ligne du tableau avec animation améliorée
             if (row) {
@@ -348,7 +357,7 @@ function handleEditClick(e) {
         row.dataset.editing = "true";
         
         // Ajouter l'event listener pour le bouton de sauvegarde
-        row.querySelector('.save-btn').addEventListener('click', saveWord);
+        row.querySelector('.save-btn').addEventListener('click', saveWordPost);
         
         // Ajouter l'event listener pour le bouton d'annulation
         row.querySelector('.cancel-btn').addEventListener('click', cancelEdit);
@@ -374,17 +383,13 @@ function cancelEdit() {
         // Restaurer les boutons d'action
         row.cells[9].innerHTML = `
             <div class="action-buttons">
-                <form action="/monVocabs/edit/${detailId}" method="POST" class="edit-form" onsubmit="return false;">
-                    <button type="submit" class="edit-btn" title="Modifier" data-id="${detailId}">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                </form>
+                <button class="edit-btn" title="Modifier" data-id="${detailId}">
+                    <i class="fas fa-edit"></i>
+                </button>
 
-                <form action="/monVocabs/delete/${detailId}" method="POST" class="delete-form" onsubmit="return false;">
-                    <button type="submit" class="delete-btn" title="Supprimer" data-id="${detailId}">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </form>
+                <button class="delete-btn" title="Supprimer" data-id="${detailId}">
+                    <i class="fas fa-trash"></i>
+                </button>
             </div>
         `;
         
@@ -398,7 +403,7 @@ function cancelEdit() {
     delete row.dataset.originalValues;
 }
 
-function saveWord() {
+function saveWordPost() {
     const row = this.closest('tr');
     const detailId = this.getAttribute('data-id');
     
@@ -440,7 +445,7 @@ function saveWord() {
     this.disabled = true;
     
     // Envoyer les données au serveur
-    fetch(`/monVocabs/edit/${detailId}`, {
+    fetch(`/monVocabs/edit/${detailId}?package=${packageId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -470,17 +475,13 @@ function saveWord() {
             // Restaurer les boutons d'action
             row.cells[9].innerHTML = `
                 <div class="action-buttons">
-                    <form action="/monVocabs/edit/${detailId}" method="POST" class="edit-form" onsubmit="return false;">
-                        <button type="submit" class="edit-btn" title="Modifier" data-id="${detailId}">
+                        <button  class="edit-btn" title="Modifier" data-id="${detailId}">
                             <i class="fas fa-edit"></i>
                         </button>
-                    </form>
 
-                    <form action="/monVocabs/delete/${detailId}" method="POST" class="delete-form" onsubmit="return false;">
-                        <button type="submit" class="delete-btn" title="Supprimer" data-id="${detailId}">
+                        <button  class="delete-btn" title="Supprimer" data-id="${detailId}">
                             <i class="fas fa-trash"></i>
                         </button>
-                    </form>
                 </div>
             `;
             

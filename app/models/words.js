@@ -193,7 +193,6 @@ class Word {
             
             const current = currentDetails[0];
             const wordChanged = current.word !== wordData.word || 
-                               current.subject !== wordData.subject || 
                                current.language_code !== wordData.language_code;
             
             let wordId = current.word_id;
@@ -201,15 +200,15 @@ class Word {
             // 2. Si le mot de base a changé, gérer le nouveau mot
             if (wordChanged) {
                 const [existingWord] = await transaction.execute(
-                    'SELECT word_id FROM words WHERE word = ? AND subject = ? AND language_code = ?',
-                    [wordData.word, wordData.subject, wordData.language_code]
+                    'SELECT word_id FROM words WHERE word = ? AND language_code = ?',
+                    [wordData.word, wordData.language_code]
                 );
                 
                 if (existingWord.length === 0) {
                     // Créer nouveau mot dans words
                     const [wordResult] = await transaction.execute(
                         'INSERT INTO words (word, subject, language_code) VALUES (?, ?, ?)',
-                        [wordData.word, wordData.subject, wordData.language_code]
+                        [wordData.word, 'Daily', wordData.language_code]
                     );
                     wordId = wordResult.insertId;
                 } else {

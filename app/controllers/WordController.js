@@ -285,7 +285,7 @@ class WordController {
                 });
             }
 
-            if (word.package_id !== package_id) {
+            if (word.package_id != package_id) {
                 return res.status(403).json({ 
                     success: false, 
                     message: 'Vous n\'êtes pas autorisé à supprimer ce mot' 
@@ -368,7 +368,7 @@ class WordController {
                 });
             }
             
-            if (wordCheck.package_id !== package_id) {
+            if (wordCheck.package_id != package_id) {
                 return res.status(403).json({ 
                     success: false, 
                     message: 'Vous n\'êtes pas autorisé à modifier ce mot' 
@@ -394,7 +394,6 @@ class WordController {
                 id: 0,
                 word,
                 language_code,
-                subject,
                 type,
                 meaning,
                 pronunciation: pronunciation || '', // Valeur par défaut si vide

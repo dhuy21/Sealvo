@@ -1,6 +1,6 @@
 
 <link rel="stylesheet" href="/css/styleVocabs.css">
-<div class="vocabulary-container">
+<div class="vocabulary-container" data-package="{{package_id}}">
   <h1>{{title}}</h1>
     
   {{#if error}}
@@ -92,18 +92,13 @@
             <td>{{grammar}}</td>
             <td>
               <div class="action-buttons">
-                <form action="/monVocabs/edit/{{detail_id}}?package={{package_id}}" method="POST" class="edit-form" onsubmit="return false;">
-                  <button type="submit" class="edit-btn" title="Modifier" data-id="{{detail_id}}">
+                  <button  class="edit-btn" title="Modifier" data-id="{{detail_id}}">
                     <i class="fas fa-edit"></i>
                   </button>
-                </form>
 
-                <form action="/monVocabs/delete/{{detail_id}}?package={{package_id}}" method="POST" class="delete-form" onsubmit="return false;">
                   <button type="submit" class="delete-btn" title="Supprimer" data-id="{{detail_id}}">
                     <i class="fas fa-trash"></i>
                   </button>
-                </form>
-              </div>
             </td>
           </tr>
           {{/each}}
