@@ -111,11 +111,24 @@
 
 
 .words-table th, .words-table td {
-  padding: 16px 20px;
-  text-align: left;
+  text-align: center;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   transition: background 0.2s ease;
+  font-size: 15px;
 }
+
+.words-table td {
+  width: 100px;
+  height: 150px;
+  padding: 13px;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  word-wrap: break-word;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+
 
 .words-table th {
   background: rgba(106, 17, 203, 0.05);
@@ -126,6 +139,7 @@
   z-index: 1;
   font-size: 15px;
   letter-spacing: 0.3px;
+  padding: 16px 20px;
 }
 
 .words-table tr:last-child td {
