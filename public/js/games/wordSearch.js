@@ -13,20 +13,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const postGameScreen = document.querySelector('.post-game-screen');
     const startGameBtn = document.getElementById('start-game');
     const wordSearchGrid = document.getElementById('word-search-grid');
-    const wordList = document.getElementById('word-list');
+    const wordContainer = document.getElementById('word-items-container');
     const scoreDisplay = document.getElementById('score');
     const timerDisplay = document.getElementById('timer');
     const wordsFoundDisplay = document.getElementById('words-found');
-    const totalWordsDisplay = document.getElementById('total-words');
     const finalScoreDisplay = document.getElementById('final-score');
     const finalWordsFoundDisplay = document.getElementById('final-words-found');
-    const finalTotalWordsDisplay = document.getElementById('final-total-words');
     const accuracyDisplay = document.getElementById('accuracy');
-    const avgTimeDisplay = document.getElementById('avg-time');
-    const highScoreMessage = document.getElementById('high-score-message');
     const playAgainBtn = document.getElementById('play-again');
     const showHintBtn = document.getElementById('show-hint');
     const packageId = document.getElementById('package-id').getAttribute('data-package');
+    const loader = document.getElementById('loader');
+    const trackLevelMessage = document.getElementById('track-level-message');
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const gameBoard = document.querySelector('.game-board');
   
     
     // Letter explosion background variables
@@ -39,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let words = [];
     let foundWords = [];
     let score = 0;
-    let timer = 600;
+    let timer = 0;
     let gameTimer = null;
     let startTime = 0;
     let attempts = 0;
@@ -48,6 +49,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Détection du type d'appareil mobile
     let isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     let isSelecting = false;
+    // Sidebar state
+    let sidebarOpen = false;
+    // Screen rotation notification state
+    let rotationNotification = null;
+    let isLandscapeMode = false;
     // Récupération du high score en sécurisant l'accès à gameContainer
     let highScore = gameContainer && gameContainer.dataset ? (gameContainer.dataset.highScore || 0) : 0;
     
@@ -380,11 +386,176 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    // Screen Rotation Notification Functions
+    function checkScreenOrientation() {
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+        
+        // Check if screen width is <= 950px (mobile/tablet portrait)
+        if (screenWidth <= 950) {
+            // Check if device is in landscape mode
+            isLandscapeMode = screenWidth > screenHeight;
+            
+            if (!isLandscapeMode) {
+                // Show rotation notification
+                showRotationNotification();
+                return false;
+            } else {
+                // Hide rotation notification if it exists
+                hideRotationNotification();
+                return true;
+            }
+        } else {
+            // Large screen, no rotation needed
+            hideRotationNotification();
+            isLandscapeMode = true;
+            return true;
+        }
+    }
+    
+    function showRotationNotification() {
+        // Don't show multiple notifications
+        if (rotationNotification) return;
+        
+        // Create rotation notification
+        rotationNotification = document.createElement('div');
+        rotationNotification.className = 'rotation-notification';
+        rotationNotification.innerHTML = `
+            <div class="rotation-icon">📱</div>
+            <div class="rotation-content">
+                <div class="rotation-title">Rotation de l'écran requise</div>
+                <div class="rotation-message">Veuillez tourner votre appareil en mode paysage pour jouer</div>
+            </div>
+        `;
+        
+        // Add to body
+        document.body.appendChild(rotationNotification);
+        
+        // Force reflow for iOS Safari
+        rotationNotification.offsetHeight;
+        
+        // Show notification with animation
+        setTimeout(() => {
+            rotationNotification.classList.add('show');
+        }, 100);
+        
+        // Disable start button
+        if (startGameBtn) {
+            startGameBtn.disabled = true;
+            startGameBtn.classList.add('disabled');
+        }
+    }
+    
+    function hideRotationNotification() {
+        if (rotationNotification) {
+            rotationNotification.classList.remove('show');
+            
+            setTimeout(() => {
+                if (rotationNotification && rotationNotification.parentNode) {
+                    rotationNotification.parentNode.removeChild(rotationNotification);
+                    rotationNotification = null;
+                }
+            }, 300);
+        }
+        
+        // Re-enable start button
+        if (startGameBtn) {
+            startGameBtn.disabled = false;
+            startGameBtn.classList.remove('disabled');
+        }
+    }
+    
+    function handleOrientationChange() {
+        // Debounce the orientation check
+        clearTimeout(window.orientationChangeTimeout);
+        window.orientationChangeTimeout = setTimeout(() => {
+            checkScreenOrientation();
+        }, 100);
+    }
+    
+    // Sidebar Management Functions
+    function toggleSidebar() {
+        sidebarOpen = !sidebarOpen;
+        const wordListContainer = document.querySelector('.word-list-container');
+        
+        if (sidebarOpen) {
+            openSidebar();
+        } else {
+            closeSidebar();
+        }
+    }
+    
+    function openSidebar() {
+        const wordListContainer = document.querySelector('.word-list-container');
+        
+        if (wordListContainer) {
+            wordListContainer.classList.add('sidebar-open');
+        }
+        
+        
+        
+        // Update button icon
+        if (sidebarToggle) {
+            const icon = sidebarToggle.querySelector('i');
+            if (icon) {
+                icon.className = 'fas fa-times';
+            }
+        }
+        
+        sidebarOpen = true;
+    }
+    
+    function closeSidebar() {
+        const wordListContainer = document.querySelector('.word-list-container');
+        
+        if (wordListContainer) {
+            wordListContainer.classList.remove('sidebar-open');
+        }
+        
+        
+        // Update button icon
+        if (sidebarToggle) {
+            const icon = sidebarToggle.querySelector('i');
+            if (icon) {
+                icon.className = 'fas fa-list';
+            }
+        }
+        
+        sidebarOpen = false;
+    }
+    
+    function checkScreenSize() {
+        const isSmallScreen = window.innerWidth <= 1300;
+        
+        if (!isSmallScreen && sidebarOpen) {
+            // Close sidebar if screen becomes large
+            closeSidebar();
+        }
+        
+        // Also check orientation when screen size changes
+        checkScreenOrientation();
+    }
+    
     // Initialisation
     function init() {
         
         // Initialize letter explosion background
         initializeLetterExplosionBackground();
+        
+        // Check initial screen orientation
+        checkScreenOrientation();
+        
+        // Add orientation change event listeners
+        window.addEventListener('resize', handleOrientationChange);
+        window.addEventListener('orientationchange', handleOrientationChange);
+        
+        // Add iOS Safari specific orientation detection
+        if (isTouchDevice) {
+            // Check orientation on touch events
+            document.addEventListener('touchstart', () => {
+                setTimeout(checkScreenOrientation, 100);
+            }, { passive: true });
+        }
         
         // Ajouter les événements avec support iOS Safari
         if (startGameBtn) {
@@ -477,26 +648,71 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
+        // Sidebar event listeners
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', toggleSidebar);
+            
+            // Add touch support for iOS Safari
+            if (isTouchDevice) {
+                sidebarToggle.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    toggleSidebar();
+                });
+            }
+        }
+        
+        
+        // Window resize listener
+        window.addEventListener('resize', checkScreenSize);
+        
+        // Initial screen size check
+        checkScreenSize();
+        
+        // Keyboard support - Close sidebar with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && sidebarOpen) {
+                closeSidebar();
+            }
+        });
+        
     }
     
     // Démarrer le jeu
     async function startGame() {
         try {
+            // Check screen orientation before starting
+            if (!checkScreenOrientation()) {
+                console.log('Game cannot start: device not in landscape mode');
+                return;
+            }
+            
+            // Close sidebar if it's open
+            if (sidebarOpen) {
+                closeSidebar();
+            }
+            
             // Create game start explosion
             createGameStartExplosion();
             
             // Changer l'interface pour l'écran de jeu
             preGameScreen.classList.remove('active');
             activeGameScreen.classList.add('active');
-            activeGameScreen.style.display = 'block';
+            postGameScreen.classList.remove('active');
             
             // Définir l'état du jeu
+            wordSearchGrid.innerHTML = '';
+            wordContainer.innerHTML = '';
+            timer = 0;
             gameActive = true;
             score = 0;
             foundWords = [];
             selectedCells = [];
             attempts = 0;
             startTime = Date.now();
+            scoreDisplay.textContent = score;
+            wordsFoundDisplay.textContent = `0/0`;
+            timerDisplay.textContent = timer;
+            loader.removeAttribute('style');
             
             // Charger les mots depuis le serveur
             const response = await fetch(`/games/wordSearch/words?package=${packageId}`);
@@ -511,16 +727,17 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Mettre à jour l'affichage
             scoreDisplay.textContent = score;
-            wordsFoundDisplay.textContent =  foundWords.length + ' / ';
-            totalWordsDisplay.textContent = words.length;
-            
-            timerDisplay.textContent = timer;
-            
+            wordsFoundDisplay.textContent = `${foundWords.length}/${words.length}`;
+            timer = 400 + words.length*15;
+        
+            loader.setAttribute('style', 'display: none;');
             // Générer la grille et afficher la liste des mots
             generateGrid();
             displayWordList();
+
             
             // Démarrer le timer
+            timerDisplay.textContent = timer ;
             gameTimer = setInterval(() => {
                 timer--;
                 timerDisplay.textContent = timer;
@@ -533,8 +750,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Erreur lors du démarrage du jeu:', error);
             alert('Une erreur est survenue lors du démarrage du jeu. Veuillez réessayer.');
-            resetGame();
         }
+    }
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
     
     // Générer la grille de lettres
@@ -631,12 +851,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Afficher la grille dans le DOM
     function displayGrid() {
         // Créer un conteneur pour la grille avec défilement
-        const gridContainer = document.createElement('div');
-        gridContainer.className = 'word-search-grid-container';
-        
-        // Créer la grille
-        wordSearchGrid.innerHTML = '';
-        wordSearchGrid.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
         
         for (let i = 0; i < gridSize; i++) {
             for (let j = 0; j < gridSize; j++) {
@@ -660,18 +874,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 wordSearchGrid.appendChild(cell);
             }
-        }
-        
-        // Vider le contenu actuel du game-board
-        const gameBoard = document.querySelector('.game-board');
-        if (gameBoard) {
-            gameBoard.innerHTML = '';
-            
-            // Ajouter la grille au conteneur
-            gridContainer.appendChild(wordSearchGrid);
-            
-            // Ajouter le conteneur au game-board
-            gameBoard.appendChild(gridContainer);
         }
         
         // Ajouter un événement pour annuler la sélection si on sort de la grille
@@ -833,9 +1035,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             // Mettre à jour le score et les compteurs
-            score += selectedWord.length * 10;
+            score += selectedWord.length * 5;
             scoreDisplay.textContent = score;
-            wordsFoundDisplay.textContent = foundWords.length;
+            wordsFoundDisplay.textContent = `${foundWords.length}/${words.length}`;
             
             // Vérifier si tous les mots ont été trouvés
             if (foundWords.length >= words.length) {
@@ -865,10 +1067,65 @@ document.addEventListener('DOMContentLoaded', () => {
     // Afficher un indice
     function showHint() {
         
-        if (!gameActive || foundWords.length >= words.length) {
+        if (!gameActive || foundWords.length >= words.length ) {
             return;
         }
-        
+        if (score < 100) {
+            // Create hint notification for iOS Safari compatibility
+            const hintNotification = document.createElement('div');
+            hintNotification.className = 'hint-notification';
+            hintNotification.innerHTML = `
+                <div class="hint-icon"> 🚨</div>
+                <div class="hint-content">
+                    <div class="hint-title">Note</div>
+                    <div class="hint-message">Votre score est inférieur à 100 points pour avoir un indice</div>
+                </div>
+            `;
+            
+            // iOS Safari specific styles
+            hintNotification.style.position = 'fixed';
+            hintNotification.style.top = '20px';
+            hintNotification.style.left = '50%';
+            hintNotification.style.transform = 'translateX(-50%)';
+            hintNotification.style.zIndex = '9999';
+            hintNotification.style.backgroundColor = 'rgba(219, 86, 8, 0.95)';
+            hintNotification.style.color = 'white';
+            hintNotification.style.padding = '1rem 1.5rem';
+            hintNotification.style.borderRadius = '15px';
+            hintNotification.style.boxShadow = '0 10px 25px rgba(203, 57, 17, 0.3)';
+            hintNotification.style.display = 'flex';
+            hintNotification.style.alignItems = 'center';
+            hintNotification.style.gap = '1rem';
+            hintNotification.style.maxWidth = '90%';
+            hintNotification.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+            hintNotification.style.opacity = '0';
+            hintNotification.style.transition = 'all 0.4s ease';
+            hintNotification.style.pointerEvents = 'none';
+            
+            // Add to body for iOS Safari compatibility
+            document.body.appendChild(hintNotification);
+            
+            // Force reflow for iOS Safari
+            hintNotification.offsetHeight;
+            
+            // Animation d'entrée et de sortie pour la notification
+            setTimeout(() => {
+                    hintNotification.style.opacity = '1';
+                    hintNotification.style.transform = 'translateX(-50%) translateY(0)';
+            }, 100);
+            
+            setTimeout(() => {
+                    hintNotification.style.opacity = '0';
+                    hintNotification.style.transform = 'translateX(-50%) translateY(-20px)';
+                setTimeout(() => {
+                        if (hintNotification.parentNode) {
+                            hintNotification.parentNode.removeChild(hintNotification);
+                        }
+                }, 500);
+            }, 3000);
+            return;
+        }
+
         // Trouver un mot qui n'a pas encore été trouvé
         const remainingWords = words.filter(word => !foundWords.includes(word.word));
         
@@ -951,25 +1208,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                 }, 500);
             }, 3000);
-            
-            // Déterminer le type d'indice à afficher (aléatoire entre 3 types)
-            const hintType = Math.floor(Math.random() * 3);
-            
-            switch (hintType) {
-                case 0: // Type 1: Montrer la première lettre
-                    highlightFirstLetter(hintPosition);
-                    break;
-                case 1: // Type 2: Montrer la direction du mot
-                    showDirectionHint(hintPosition);
-                    break;
-                case 2: // Type 3: Montrer un aperçu rapide du mot complet
-                    flashEntireWord(hintPosition);
-                    break;
-            }
+ 
+            flashEntireWord(hintPosition);
                 
-                // Réduire le score pour avoir utilisé un indice
-                score = Math.max(0, score - 20);
-                scoreDisplay.textContent = score;
+            // Réduire le score pour avoir utilisé un indice
+            score = Math.max(0, score - 100);
+            scoreDisplay.textContent = score;
                 
             } catch (error) {
                 console.error('Error in showHint function:', error);
@@ -980,111 +1224,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn('No hint position found for word:', word);
             }
         }
-    
-    // Mettre en évidence la première lettre comme indice
-    function highlightFirstLetter(hintPosition) {
-        const cell = document.querySelector(`.grid-cell[data-row="${hintPosition.row}"][data-col="${hintPosition.col}"]`);
-        
-        if (cell) {
-            cell.classList.add('hint-pulse');
-            setTimeout(() => {
-                cell.classList.remove('hint-pulse');
-            }, 2000);
-        }
-    }
-    
-    // Montrer la direction du mot comme indice
-    function showDirectionHint(hintPosition) {
-        const { row, col, dx, dy, wordLength } = hintPosition;
-        
-        // Mettre en évidence la première et la dernière lettre pour montrer la direction
-        const firstCell = document.querySelector(`.grid-cell[data-row="${row}"][data-col="${col}"]`);
-        const lastCell = document.querySelector(`.grid-cell[data-row="${row + dx * (wordLength - 1)}"][data-col="${col + dy * (wordLength - 1)}"]`);
-        
-        if (firstCell && lastCell) {
-            // Ajouter une flèche ou un effet visuel entre les deux cellules
-            firstCell.classList.add('hint-start');
-            lastCell.classList.add('hint-end');
-            
-            // Créer une ligne directionnelle entre les deux points
-            const arrow = document.createElement('div');
-            arrow.className = 'direction-arrow';
-            
-            try {
-                // Positionner la flèche avec protection pour iOS Safari
-            const firstRect = firstCell.getBoundingClientRect();
-            const lastRect = lastCell.getBoundingClientRect();
-            const gameBoard = document.querySelector('.game-board');
-                
-                if (!gameBoard) {
-                    console.warn('Game board not found for hint arrow');
-                    return;
-                }
-                
-            const gameBoardRect = gameBoard.getBoundingClientRect();
-            
-                // Calcul pour positionner la flèche relativement au gameBoard avec protection iOS Safari
-                const startX = Math.max(0, firstRect.left + firstRect.width / 2 - gameBoardRect.left);
-                const startY = Math.max(0, firstRect.top + firstRect.height / 2 - gameBoardRect.top);
-                const endX = Math.max(0, lastRect.left + lastRect.width / 2 - gameBoardRect.left);
-                const endY = Math.max(0, lastRect.top + lastRect.height / 2 - gameBoardRect.top);
-            
-            // Calculer l'angle de la flèche
-            const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI;
-            
-            // Calculer la longueur de la flèche
-            const length = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-            
-                // Appliquer les styles à la flèche avec support iOS Safari
-                arrow.style.position = 'absolute';
-                arrow.style.width = `${Math.max(10, length)}px`;
-                arrow.style.height = '3px';
-                arrow.style.backgroundColor = '#ff6b6b';
-            arrow.style.left = `${startX}px`;
-            arrow.style.top = `${startY}px`;
-            arrow.style.transform = `rotate(${angle}deg)`;
-                arrow.style.transformOrigin = '0 50%';
-                arrow.style.zIndex = '1000';
-                arrow.style.borderRadius = '2px';
-                arrow.style.boxShadow = '0 2px 4px rgba(255, 107, 107, 0.3)';
-                arrow.style.opacity = '0';
-                arrow.style.transition = 'opacity 0.3s ease';
-                
-                // iOS Safari specific styles
-                arrow.style.webkitTransform = `rotate(${angle}deg)`;
-                arrow.style.webkitTransformOrigin = '0 50%';
-                arrow.style.webkitTransition = 'opacity 0.3s ease';
-            
-            gameBoard.appendChild(arrow);
-                
-                // Force reflow for iOS Safari
-                arrow.offsetHeight;
-                
-                // Animate in
-                setTimeout(() => {
-                    arrow.style.opacity = '1';
-                }, 50);
-                
-            } catch (error) {
-                console.warn('Error positioning hint arrow on iOS Safari:', error);
-            }
-            
-            // Supprimer les éléments d'indice après un délai
-            setTimeout(() => {
-                firstCell.classList.remove('hint-start');
-                lastCell.classList.remove('hint-end');
-                
-                if (arrow.parentNode) {
-                    arrow.style.opacity = '0';
-                setTimeout(() => {
-                        if (arrow.parentNode) {
-                            arrow.parentNode.removeChild(arrow);
-                        }
-                    }, 300);
-                }
-            }, 2000);
-        }
-    }
     
     // Faire clignoter rapidement tout le mot comme indice
     function flashEntireWord(hintPosition) {
@@ -1141,19 +1280,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Afficher la liste des mots à trouver
     function displayWordList() {
-        wordList.innerHTML = '';
-        wordList.classList.add('pretty-word-list');
-        
-        // Ajouter un titre pour la liste
-        const listTitle = document.createElement('div');
-        listTitle.className = 'word-list-title';
-        listTitle.innerHTML = '<i class="fas fa-search"></i> Mots à trouver';
-        wordList.appendChild(listTitle);
-        
-        // Diviser la liste en colonnes pour une meilleure présentation
-        const wordContainer = document.createElement('div');
-        wordContainer.className = 'word-items-container';
-        wordList.appendChild(wordContainer);
         
         // Trier les mots par ordre alphabétique
         const sortedWords = [...words].sort((a, b) => a.word.localeCompare(b.word));
@@ -1181,20 +1307,7 @@ document.addEventListener('DOMContentLoaded', () => {
             wordItem.style.animationDelay = `${index * 0.1}s`;
             
             wordContainer.appendChild(wordItem);
-        });
-        
-        // Ajouter un compteur visuel de progression
-        const progressCounter = document.createElement('div');
-        progressCounter.className = 'word-progress';
-        progressCounter.innerHTML = `
-            <div class="progress-text">
-                <span id="found-word-count">0</span>/${words.length}
-            </div>
-            <div class="progress-bar-container">
-                <div class="progress-bar" id="word-progress-bar" style="width: 0%"></div>
-            </div>
-        `;
-        wordList.appendChild(progressCounter);
+        });   
     }
     
     // Mise à jour du style des mots trouvés
@@ -1239,11 +1352,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const gameTime = Math.floor((endTime - startTime) / 1000);
         
         // Calculer le score final
-        const finalScore = score + (timer > 0 ? timer : 0) * (foundWords.length / words.length);
+        const finalScore = score;
+        finalScoreDisplay.textContent = finalScore;
         
         // Ajuster le score si tous les mots ont été trouvés
         const bonusScore = foundWords.length === words.length ? 100 : 0;
         const totalScore = Math.floor(finalScore + bonusScore);
+
+            
+        // Calculer la précision (mots trouvés / tentatives)
+        const accuracy = attempts > 0 ? Math.round((foundWords.length / attempts) * 100) : 0;
+        if (accuracyDisplay) accuracyDisplay.textContent = `${accuracy}%`;
+
+        finalWordsFoundDisplay.textContent = foundWords.length;
+        console.log(finalWordsFoundDisplay.textContent);
         
         // Check if game was completed successfully
         const minWordsFound = Math.ceil(words.length * 0.7); // 70% of words found
@@ -1251,61 +1373,66 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Track level progress
         trackLevelProgress(isSuccessful);
+
+         // Afficher le message de progression de niveau
+         if (trackLevelMessage) {
+            if (isSuccessful) {
+                trackLevelMessage.textContent = 'Excellent travail ! Progressez les autres jeux de ce niveau 😍';
+                trackLevelMessage.classList.add('level-completed');
+            } else {
+                trackLevelMessage.textContent = 'Bon courage ! Réessayer ce jeu pour améliorer vos compétences 🤧' ;
+                trackLevelMessage.classList.remove('level-completed');
+            }
+        }
         
         // Sauvegarder le score
         saveScore(totalScore);
         
         // Afficher l'écran de fin
-        activeGameScreen.classList.remove('active');
-        if (postGameScreen) {
-            postGameScreen.classList.add('active');
+        console.log('Switching to post game screen...');
+        setTimeout(() => {
+            if (activeGameScreen) activeGameScreen.classList.remove('active');
+            if (postGameScreen) postGameScreen.classList.add('active');
+            console.log('Post game screen should now be visible');
             
-            // Mettre à jour l'affichage des statistiques
-            if (finalScoreDisplay) finalScoreDisplay.textContent = totalScore;
-            if (finalWordsFoundDisplay) finalWordsFoundDisplay.textContent = foundWords.length;
-            if (finalTotalWordsDisplay) finalTotalWordsDisplay.textContent = words.length;
-            
-            // Calculer la précision (mots trouvés / tentatives)
-            const accuracy = attempts > 0 ? Math.round((foundWords.length / attempts) * 100) : 0;
-            if (accuracyDisplay) accuracyDisplay.textContent = `${accuracy}%`;
-            
-            // Calculer le temps moyen par mot
-            const avgTime = foundWords.length > 0 ? Math.round(gameTime / foundWords.length) : 0;
-            if (avgTimeDisplay) avgTimeDisplay.textContent = `${avgTime}s`;
-            
-            // Afficher un message si c'est un nouveau record
-            if (totalScore > highScore && highScoreMessage) {
-                highScoreMessage.style.display = 'block';
-            }
-        } else {
-            alert(`Jeu terminé ! Votre score est de ${totalScore}`);
-            resetGame();
-        }
+            // Lancer l'animation confetti simple
+            launchConfetti();
+        }, 1000);
     }
-    
-    // Réinitialiser le jeu pour rejouer
-    function resetGame() {
-        // Réinitialiser les variables
-        selectedCells = [];
-        foundWords = [];
-        score = 0;
-        timer = 600;
-        
-        clearInterval(gameTimer);
-        
-        // Clean up letter animations
-        cleanupLetterAnimations();
-        
-        // Reinitialize letter explosion background
-        initializeLetterExplosionBackground();
-        
-        // Réinitialiser l'interface
-        if (postGameScreen) postGameScreen.classList.remove('active');
-        preGameScreen.classList.add('active');
-        activeGameScreen.classList.remove('active');
-        
-        // Vider la grille
-        wordSearchGrid.innerHTML = '';
+
+    // Fonction pour lancer l'animation confetti avec confetti.js.org
+    function launchConfetti() {
+        const duration = 15* 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        const interval = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+          
+            if (timeLeft <= 0) {
+              return clearInterval(interval);
+            }
+          
+            const particleCount = 50 * (timeLeft / duration);
+          
+            // since particles fall down, start a bit higher than random
+            confetti(
+              Object.assign({}, defaults, {
+                particleCount,
+                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+              })
+            );
+            confetti(
+              Object.assign({}, defaults, {
+                particleCount,
+                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+              })
+            );
+          }, 250);
     }
     
     // Fonction pour suivre la progression de niveau
@@ -1367,6 +1494,22 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Événements pour rejouer
     if (playAgainBtn) {
-        playAgainBtn.addEventListener('click', resetGame);
+        playAgainBtn.addEventListener('click', startGame);
     }
+
+    
+    // Fonction de test pour forcer l'affichage de l'écran de fin (pour débogage)
+    window.testEndGame = function() {
+        console.log('Testing end game...');
+        foundWords = words;
+        endGame();
+    };
+    
+    // Ajouter un raccourci clavier pour tester (Ctrl+Shift+E)
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+            console.log('Test end game triggered by keyboard shortcut');
+            window.testEndGame();
+        }
+    });
 });

@@ -331,8 +331,6 @@ document.addEventListener('DOMContentLoaded', function() {
             availableWords = data.count;
             totalQuestions = Math.min(availableWords, maxQuestions) ; // Maximum 100 questions ou le nombre de mots disponibles
             totalQuestions += parseInt(0.5*availableWords);
-            console.log('Nombre de mots disponibles:', availableWords);
-            console.log('Nombre de questions:', totalQuestions);
             
             // Continuer l'initialisation du jeu
             initializeGame();
@@ -363,7 +361,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Starting game, loading first phrase');
         
         // Charger la première phrase
-        setTimeout(loadNewPhrase, 5000);
+        loadNewPhrase();
         
         // Afficher l'écran de jeu actif
         preGameScreen.classList.remove('active');
@@ -450,7 +448,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('checkAnswer');
         if (!gameActive || !currentPhrase) return;
         
-        const userInputs = wordInput.value.trim().split(',');
+        const userInputs = wordInput.value.trim().split(';');
         const cleanedUserInputs = userInputs.map(input => input.trim());
         
         attempts++;
@@ -473,13 +471,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Désactiver l'input et le bouton de validation
         wordInput.disabled = true;
         submitBtn.disabled = true;
-        
-        console.log(currentPhrase);
-        console.log(currentPhrase.meaningWord);
-        console.log(currentPhrase && currentPhrase.meaningWord);
+
         // Afficher la signification du mot
         if (currentPhrase && currentPhrase.meaningWord) {
-            console.log('Displaying meaning');
             wordMeaning.textContent = `Signification: ${currentPhrase.meaningWord}`;
         }
         

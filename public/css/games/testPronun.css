@@ -2237,26 +2237,21 @@
         font-size: 26px;
     }
     
-    /* Rules List Grid - 2x3 layout for better mobile experience */
     .rules-list {
         grid-template-columns: 1fr 1fr;
-        grid-template-rows: repeat(3, auto);
-        gap: 1.5rem;
-        max-width: 100%;
+        grid-template-rows: 1fr 1fr;
+        gap: 0.8rem;
     }
     
     .rules-list li {
-        padding: 2rem 1.5rem;
-        min-height: 140px;
-        width: 100%;
-        font-size: 0.95rem;
-        line-height: 1.5;
-        border-radius: 20px;
+        padding: 1.2rem 0.8rem;
+        min-height: 100px;
+        font-size: 0.9rem;
     }
     
     .rules-list li::before {
-        font-size: 2.5rem;
-        margin-bottom: 1rem;
+        font-size: 1.8rem;
+        margin-bottom: 0.6rem;
     }
     
     /* Start button improvements */
@@ -2545,26 +2540,21 @@
         font-size: 26px;
     }
     
-    /* Rules List Grid - 2x3 layout for better mobile experience */
     .rules-list {
         grid-template-columns: 1fr 1fr;
-        grid-template-rows: repeat(3, auto);
-        gap: 1.5rem;
-        max-width: 100%;
+        grid-template-rows: 1fr 1fr;
+        gap: 0.8rem;
     }
     
     .rules-list li {
-        padding: 2rem 1.5rem;
-        min-height: 140px;
-        width: 100%;
-        font-size: 0.95rem;
-        line-height: 1.5;
-        border-radius: 20px;
+        padding: 1.2rem 0.8rem;
+        min-height: 100px;
+        font-size: 0.9rem;
     }
     
     .rules-list li::before {
-        font-size: 2.5rem;
-        margin-bottom: 1rem;
+        font-size: 1.8rem;
+        margin-bottom: 0.6rem;
     }
     
     /* Start button improvements */
@@ -2853,26 +2843,21 @@
         font-size: 26px;
     }
     
-    /* Rules List Grid - 2x3 layout for better mobile experience */
     .rules-list {
         grid-template-columns: 1fr 1fr;
-        grid-template-rows: repeat(3, auto);
-        gap: 1.5rem;
-        max-width: 100%;
+        grid-template-rows: 1fr 1fr;
+        gap: 0.8rem;
     }
     
     .rules-list li {
-        padding: 2rem 1.5rem;
-        min-height: 140px;
-        width: 100%;
-        font-size: 0.95rem;
-        line-height: 1.5;
-        border-radius: 20px;
+        padding: 1.2rem 0.8rem;
+        min-height: 100px;
+        font-size: 0.9rem;
     }
     
     .rules-list li::before {
-        font-size: 2.5rem;
-        margin-bottom: 1rem;
+        font-size: 1.8rem;
+        margin-bottom: 0.6rem;
     }
     
     /* Start button improvements */
@@ -3161,26 +3146,21 @@
         font-size: 26px;
     }
     
-    /* Rules List Grid - 2x3 layout for better mobile experience */
     .rules-list {
         grid-template-columns: 1fr 1fr;
-        grid-template-rows: repeat(3, auto);
-        gap: 1.5rem;
-        max-width: 100%;
+        grid-template-rows: 1fr 1fr;
+        gap: 0.8rem;
     }
     
     .rules-list li {
-        padding: 2rem 1.5rem;
-        min-height: 140px;
-        width: 100%;
-        font-size: 0.95rem;
-        line-height: 1.5;
-        border-radius: 20px;
+        padding: 1.2rem 0.8rem;
+        min-height: 100px;
+        font-size: 0.9rem;
     }
     
     .rules-list li::before {
-        font-size: 2.5rem;
-        margin-bottom: 1rem;
+        font-size: 1.8rem;
+        margin-bottom: 0.6rem;
     }
     
     /* Start button improvements */
