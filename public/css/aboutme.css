@@ -9,17 +9,21 @@ body {
 .container {
   border-radius: 25px;
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 50px auto;
   padding: 20px;
 }
 
 h1 {
   text-align: center;
-  font-size: 2.5em;
-  margin-bottom: 30px;
-  color: #2575fc;
-  position: relative;
-  padding-bottom: 15px;
+  margin-bottom: 2rem;
+  font-weight: 800;
+  font-size: 3rem;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 
@@ -220,6 +224,242 @@ h1 {
   margin-right: 10px;
   font-size: 20px;
 }
+/**********/
+/* Config */
+/**********/
+
+.social-clock {
+  --count-buttons: 7;
+  --size-button: 4rem;
+  --size-clock: 16rem;
+  --size-padding: 0.5rem;
+}
+
+/*************/
+/* Container */
+/*************/
+
+.social-clock {
+  --size: var(--size-clock);
+
+  border-radius: var(--size);
+  cursor: default;
+  height: var(--size);
+  pointer-events: none;
+  position: relative;
+  width: var(--size);
+  transition: all 0.5s linear;
+  margin: 0 auto;
+}
+.social-clock,
+.social-clock__trigger {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+/***********/
+/* Trigger */
+/***********/
+
+/* Trigger */
+.social-clock__trigger {
+  --size: var(--size-button);
+
+  background: #000;
+  border: none;
+  border-radius: var(--size);
+  height: var(--size);
+  pointer-events: all;
+  width: var(--size);
+  z-index: 3;
+}
+/* Trigger - Icon */
+.social-clock__trigger svg {
+  --size: calc(0.65 * var(--size-button));
+
+  fill: #fff;
+  height: var(--size);
+  width: var(--size);
+  padding-right: calc(0.05 * var(--size-button));
+}
+
+/***********/
+/* Buttons */
+/***********/
+
+/* Wrapper */
+.social-clock__list {
+  --size: calc(var(--size-button) + var(--size-padding));
+
+  border-radius: inherit;
+  height: var(--size);
+  left: calc(50% - var(--size) / 2);
+  pointer-events: all;
+  position: absolute;
+  top: calc(50% - var(--size) / 2);
+  width: var(--size);
+  transition:
+    all 0.3s ease-in-out,
+    transform 0.3s linear;
+}
+/* Wrapper - Interactions */
+.social-clock:hover .social-clock__list {
+  --size: 100%;
+
+  transform: rotate(360deg);
+}
+
+/* Button */
+.social-clock__button {
+  --angle: calc(var(--index, 0) * 360deg / var(--count-buttons));
+  --height: calc(100% - var(--size-padding) * 2);
+  --size: var(--size-button);
+
+  background: none;
+  border: none;
+  border-radius: var(--size);
+  box-sizing: content-box;
+  cursor: pointer;
+  height: var(--height);
+  left: calc(50% - var(--size) / 2);
+  pointer-events: none;
+  position: absolute;
+  top: calc(50% - var(--height) / 2);
+  transform: rotate(var(--angle));
+  width: var(--size);
+}
+/* Button - Background */
+.social-clock__button::after,
+.social-clock__button::before {
+  --size: var(--size-button);
+
+  border-radius: inherit;
+  box-sizing: border-box;
+  content: "";
+  left: calc(50% - var(--size) / 2);
+  position: absolute;
+  width: var(--size);
+}
+/* Button - Background - Icon */
+.social-clock__button::before {
+  --fill-opacity: 0.5;
+
+  background: rgba(var(--color), var(--fill-opacity));
+  height: var(--size);
+  pointer-events: all;
+  top: 0;
+  transition: background 0.3s linear;
+}
+/* Button - Background - Interactions */
+.social-clock:hover .social-clock__button::before {
+  background: rgba(0, 0, 0, var(--fill-opacity));
+}
+.social-clock__button::after {
+  --fill-opacity: 0.7;
+  --fill-size: 0;
+  --height: calc(50% + var(--size) / 2);
+
+  bottom: calc(100% - var(--height));
+  box-shadow: inset 0 var(--fill-size) 0 rgba(var(--color), var(--fill-opacity));
+  height: var(--height);
+  pointer-events: none;
+  transition: box-shadow 0.3s ease-in-out;
+}
+/* Button - Interactions */
+.social-clock__button:hover::after {
+  --fill-size: calc(-0.5 * (var(--size-clock) + var(--size)));
+
+  pointer-events: all;
+}
+.social-clock__button:active::after {
+  --fill-opacity: 1;
+}
+
+/* Button - Icon */
+.social-clock__button svg {
+  --padding: calc((var(--size-button) - var(--size)) / 2);
+  --size: calc(0.65 * var(--size-button));
+
+  fill: #fff;
+  height: var(--size);
+  left: var(--padding);
+  position: absolute;
+  top: var(--padding);
+  transform: rotate(calc(-1 * var(--angle)));
+  width: var(--size);
+  z-index: 2;
+}
+/* Button - Socials */
+.social-clock__button.discord {
+  --color: 88, 101, 242;
+}
+.social-clock__button.facebook {
+  --color: 24, 119, 242;
+}
+.social-clock__button.github {
+  --color: 0, 0, 0;
+}
+.social-clock__button.instagram {
+  --color: 225, 48, 108;
+}
+.social-clock__button.line {
+  --color: 0, 195, 0;
+}
+.social-clock__button.linkedin {
+  --color: 10, 102, 194;
+}
+.social-clock__button.reddit {
+  --color: 255, 87, 0;
+}
+.social-clock__button.tiktok {
+  --color: 0, 0, 0;
+}
+.social-clock__button.twitch {
+  --color: 145, 70, 255;
+}
+.social-clock__button.twitter {
+  --color: 29, 161, 242;
+}
+.social-clock__button.whatsapp {
+  --color: 37, 211, 102;
+}
+.social-clock__button.youtube {
+  --color: 205, 32, 31;
+}
+
+/* Button - Order */
+.social-clock__button:nth-child(1) {
+  --index: 0;
+}
+.social-clock__button:nth-child(2) {
+  --index: 1;
+}
+.social-clock__button:nth-child(3) {
+  --index: 2;
+}
+.social-clock__button:nth-child(4) {
+  --index: 3;
+}
+.social-clock__button:nth-child(5) {
+  --index: 4;
+}
+.social-clock__button:nth-child(6) {
+  --index: 5;
+}
+.social-clock__button:nth-child(7) {
+  --index: 6;
+}
+.social-clock__button:nth-child(8) {
+  --index: 7;
+}
+.social-clock__button:nth-child(9) {
+  --index: 8;
+}
+.social-clock__button:nth-child(10) {
+  --index: 9;
+}
+
 
 /* Bouton de retour */
 .home-cta {
