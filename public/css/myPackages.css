@@ -1279,7 +1279,11 @@
   }
 }
 
-@media (max-width: 361px) {
+@media (max-width: 395px) {
+  .packages-header h1 {
+    font-size: 2.6rem;
+    font-weight: 700;
+  }
   .search-form {
     width: 90%;
   }
