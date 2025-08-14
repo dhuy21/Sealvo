@@ -281,6 +281,7 @@ class Learning {
                     JOIN learning ln ON wd.detail_id = ln.detail_id 
                     WHERE ln.package_id = ? AND ln.level = ? 
                     AND DATE_ADD(DATE(ln.date_memorized), INTERVAL ? DAY) <= CURDATE()
+                    AND LENGTH(w.word) < 14 
                     ORDER BY RAND() LIMIT ${limitInt}`;
             
             const [words] = await global.dbConnection.execute(query, [package_id, levelGame, intervalDate]);

@@ -315,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function() {
         progressDisplay.textContent = `1/${totalQuestions}`;
         
         // Charger la première question with shorter delay
-        setTimeout(loadQuestions, 3000);
+        loadQuestions();
         
         // Afficher l'écran de jeu actif
         preGameScreen.classList.remove('active');

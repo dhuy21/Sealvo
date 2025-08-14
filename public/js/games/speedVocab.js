@@ -42,13 +42,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const timerDisplay = document.getElementById('timer');
     const streakDisplay = document.getElementById('streak');
     const finalScoreDisplay = document.getElementById('final-score');
-    const correctWordsDisplay = document.getElementById('correct-words');
-    const accuracyDisplay = document.getElementById('accuracy');
     const bestStreakDisplay = document.getElementById('best-streak');
     const wpmDisplay = document.getElementById('wpm');
     const playAgainBtn = document.getElementById('play-again');
-    const highScoreMessage = document.getElementById('high-score-message');
+    const trackLevelMessage = document.getElementById('track-level-message');
     const packageId = document.getElementById('speed-vocab').getAttribute('data-package');
+    const loader = document.getElementById('loader');
     
     // Écrans de jeu
     const preGameScreen = document.querySelector('.pre-game-screen');
@@ -249,12 +248,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function startGame() {
         // Réinitialiser les variables
         score = 0;
-        timer = 150;
+        timer = 0;
         wordsTyped = 0;
         correctWords = 0;
         streak = 0;
         bestStreak = 0;
         gameActive = true;
+        loader.removeAttribute('style');
         
         // Mettre à jour l'affichage
         scoreDisplay.textContent = score;
@@ -266,9 +266,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Charger le premier mot
         loadNewWord();
-        
-        // Démarrer le timer
-        timerInterval = setInterval(updateTimer, 1000);
         
         // Afficher l'écran de jeu actif
         preGameScreen.classList.remove('active');
@@ -304,7 +301,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             words = data.words;
+            
             timer = 100+words.length*8;
+            // Démarrer le timer
+            timerInterval = setInterval(updateTimer, 1000);
+            
             // Initialiser le compteur de tentatives
             attemptCount = 0; //
             const randomIndex = Math.floor(Math.random() * words.length);
@@ -314,6 +315,7 @@ document.addEventListener('DOMContentLoaded', function() {
             currentWord = words[currentIndex];
             
             // Afficher le mot et sa signification
+            loader.setAttribute('style', 'display: none;');
             wordDisplay.textContent = currentWord.word;
             meaningDisplay.textContent = currentWord.meaning || '';
             
@@ -497,37 +499,77 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Mettre à jour l'écran de fin de jeu
         finalScoreDisplay.textContent = score;
-        correctWordsDisplay.textContent = correctWords;
-        accuracyDisplay.textContent = `${accuracy}%`;
         bestStreakDisplay.textContent = bestStreak;
         wpmDisplay.textContent = wpm;
         
         // Check if game was completed successfully
-        const minCorrectWords = 15; // At least 15 words typed correctly
         const minAccuracy = 70; // 70% accuracy
-        const isSuccessful = correctWords >= minCorrectWords && accuracy >= minAccuracy;
+        const isSuccessful = accuracy >= minAccuracy;
         
         // Track level progress
         trackLevelProgress(isSuccessful);
         
-        // Vérifier si c'est un nouveau record
-        const currentHighScore = document.getElementById('game-container').dataset.highScore || 0;
-        if (score > currentHighScore) {
-            highScoreMessage.textContent = 'Nouveau record personnel !';
-            highScoreMessage.classList.add('new-record');
-            
-            // Enregistrer le score
-            saveScore(score);
-        } else {
-            // Save score anyway
-            saveScore(score);
+         // Afficher le message de progression de niveau
+         if (trackLevelMessage) {
+            if (isSuccessful) {
+                trackLevelMessage.textContent = 'Excellent travail ! Progressez les autres jeux de ce niveau 😍';
+                trackLevelMessage.classList.add('level-completed');
+            } else {
+                trackLevelMessage.textContent = 'Bon courage ! Réessayer ce jeu pour améliorer vos compétences 🤧' ;
+                trackLevelMessage.classList.remove('level-completed');
+            }
         }
-        
+
+        // Save score anyway
+        saveScore(score);
+
         // Afficher l'écran de fin de jeu
-        activeGameScreen.classList.remove('active');
-        postGameScreen.classList.add('active');
+        console.log('Switching to post game screen...');
+        setTimeout(() => {
+            if (activeGameScreen) activeGameScreen.classList.remove('active');
+            if (postGameScreen) postGameScreen.classList.add('active');
+            console.log('Post game screen should now be visible');
+            
+            // Lancer l'animation confetti simple
+            launchConfetti();
+        }, 1000);
     }
     
+    // Fonction pour lancer l'animation confetti avec confetti.js.org
+    function launchConfetti() {
+        const duration = 15* 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        const interval = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+          
+            if (timeLeft <= 0) {
+              return clearInterval(interval);
+            }
+          
+            const particleCount = 50 * (timeLeft / duration);
+          
+            // since particles fall down, start a bit higher than random
+            confetti(
+              Object.assign({}, defaults, {
+                particleCount,
+                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+              })
+            );
+            confetti(
+              Object.assign({}, defaults, {
+                particleCount,
+                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+              })
+            );
+          }, 250);
+    }
+
     // Fonction pour enregistrer le score
     function saveScore(score) {
         // Envoyer le score au serveur
@@ -714,6 +756,21 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function() {
         if (gameActive) {
             wordInput.focus();
+        }
+    });
+
+    // Fonction de test pour forcer l'affichage de l'écran de fin (pour débogage)
+    window.testEndGame = function() {
+        console.log('Testing end game...');
+        correctWords = wordsTyped;
+        endGame();
+    };
+    
+    // Ajouter un raccourci clavier pour tester (Ctrl+Shift+E)
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+            console.log('Test end game triggered by keyboard shortcut');
+            window.testEndGame();
         }
     });
 });

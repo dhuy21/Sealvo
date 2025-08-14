@@ -641,6 +641,14 @@ body[data-theme="dark"] {
   color: rgb(73, 1, 82) !important;
 }
 
+[data-theme="dark"] .word-list-title {
+  color: #ce04e8 !important;
+}
+
+[data-theme="dark"] .word-list-title i {
+  color: #0454a0 !important;
+}
+
 [data-theme="dark"]  .card {
   background: none !important;
   box-shadow: none !important;

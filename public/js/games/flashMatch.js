@@ -1,10 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Vérifier si nous sommes sur la page du jeu FlashMatch
     
-    // Create animated bubbles for background with performance check
-    if (shouldCreateBubbles()) {
-        createAnimatedBubbles();
-    }
+    // Create animated bubbles for background 
+    createAnimatedBubbles();
+    
     
     // Variables du jeu
     let cards = [];
@@ -122,28 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Optimized animated bubbles created successfully!');
     }
     
-    // Function to check if bubbles should be created based on device performance
-    function shouldCreateBubbles() {
-        // Check for mobile devices (generally less powerful)
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
-        // Check for reduced motion preference
-        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        
-        // Check for low-end devices based on hardware concurrency
-        const hasLowCPU = navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4;
-        
-        // Check for low memory devices
-        const hasLowMemory = navigator.deviceMemory && navigator.deviceMemory < 4;
-        
-        // Disable bubbles on mobile, low-end devices, or when reduced motion is preferred
-        if (isMobile || prefersReducedMotion || hasLowCPU || hasLowMemory) {
-            console.log('Bubbles disabled for performance reasons');
-            return false;
-        }
-        
-        return true;
-    }
+    
     
     // Fonction pour démarrer le jeu
     function startGame() {
@@ -163,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
         timerDisplay.textContent = '00:00';
         
         // Charger les cartes
-        setTimeout(loadCards, 5000);
+        loadCards();
         
         
         // Afficher l'écran de jeu actif
@@ -315,8 +293,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function checkMatch() {
         const card1 = selectedCards[0];
         const card2 = selectedCards[1];
-        
-        console.log('Checking match:', card1, card2);
+
         
         if (card1.pairId === card2.pairId && card1.type !== card2.type) {
             // Les cartes forment une paire
@@ -328,7 +305,6 @@ document.addEventListener('DOMContentLoaded', function() {
             cards[card2.index].element.classList.add('matched');
             
             matchedPairs++;
-            console.log('Match found! Matched pairs:', matchedPairs, 'Total pairs:', totalPairs);
             
             if (pairsCount) pairsCount.textContent = `${matchedPairs}/${totalPairs}`;
             

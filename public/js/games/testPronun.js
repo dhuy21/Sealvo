@@ -330,7 +330,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Charger le premier mot
-        setTimeout(loadNewWord, 7000);
+        loadNewWord();
 
         
         
