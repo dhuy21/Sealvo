@@ -17,8 +17,8 @@ class WordSearchController {
             }
             
             // Déterminer le nombre de mots à récupérer en fonction de la difficulté
-            const wordCount = 15;
-            const gridSize = 18;
+            const wordCount = 30;
+            const gridSize = 15;
             const package_id = req.query.package;
             // Récupérer des mots aléatoires du vocabulaire de l'utilisateur
             const words = await learningModel.getRandomUserWords(package_id, wordCount, levelGame);

@@ -70,15 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         
         // Charger le premier mot
-        setTimeout(async () => {
-            await loadNextWord();
-            // Démarrer le timer
-            timer = 150+words.length*30;
-            console.log('Timer set to:', timer);
-            timerDisplay.textContent = timer;
-            currentScoreDisplay.textContent = score;
-            timerInterval = setInterval(updateTimer, 1000);
-        }, 5000);
+        loadNextWord();
         
         
 
@@ -102,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Content-Type': 'application/json'
                 }
             })
-
+            
             if (!response.ok) {
                 console.error('Erreur lors du chargement du mot:', response.statusText);
                 return;
@@ -116,6 +108,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             words = data.words;
+            // Démarrer le timer
+            timer = 150+words.length*30;
+            console.log('Timer set to:', timer);
+            timerDisplay.textContent = timer;
+            currentScoreDisplay.textContent = score;
+            timerInterval = setInterval(updateTimer, 1000);
+
+
             const randomIndex = Math.floor(Math.random() * words.length);
             currentIndex = randomIndex;
             const selectedWord = words[currentIndex];
@@ -129,6 +129,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
             // Stocker le mot correct pour vérification ultérieure
             currentWord = selectedWord.word;
+            
             console.log('finished');
 
         } catch (error) {
@@ -502,7 +503,6 @@ document.addEventListener('DOMContentLoaded', function() {
         orb.style.opacity = 0.3 + Math.random() * 0.5; // Between 0.3 and 0.8
         
         // Random animation delay and duration
-        orb.style.animationDelay = Math.random() * 20 + 's';
         orb.style.animationDuration = (15 + Math.random() * 25) + 's'; // Between 15s and 40s
         
         return orb;
