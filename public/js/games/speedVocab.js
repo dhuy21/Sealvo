@@ -539,11 +539,15 @@ document.addEventListener('DOMContentLoaded', function() {
     function launchConfetti() {
         const duration = 15* 1000;
         const animationEnd = Date.now() + duration;
-        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-        function randomInRange(min, max) {
-            return Math.random() * (max - min) + min;
-        }
+        const defaults = {
+            spread: 360,
+            ticks: 100,
+            gravity: 0,
+            decay: 0.94,
+            startVelocity: 30,
+            shapes: ["circle"],
+            colors: ["FF0000", "FF7F00", "FFFF00", "FFA500", "FF4500"],
+          };
 
         const interval = setInterval(function() {
             const timeLeft = animationEnd - Date.now();
@@ -551,23 +555,25 @@ document.addEventListener('DOMContentLoaded', function() {
             if (timeLeft <= 0) {
               return clearInterval(interval);
             }
-          
-            const particleCount = 50 * (timeLeft / duration);
-          
-            // since particles fall down, start a bit higher than random
-            confetti(
-              Object.assign({}, defaults, {
-                particleCount,
-                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
-              })
-            );
-            confetti(
-              Object.assign({}, defaults, {
-                particleCount,
-                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
-              })
-            );
-          }, 250);
+              
+              confetti({
+                ...defaults,
+                particleCount: 50,
+                scalar: 2,
+              });
+              
+              confetti({
+                ...defaults,
+                particleCount: 25,
+                scalar: 2,
+              });
+              
+              confetti({
+                ...defaults,
+                particleCount: 10,
+                scalar: 2,
+              });
+          }, 600);
     }
 
     // Fonction pour enregistrer le score
