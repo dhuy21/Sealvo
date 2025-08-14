@@ -41,29 +41,34 @@
 }
 
 .learn-title {
-  text-align: center;
-  font-size: 2.5rem;
-  margin-bottom: 35px;
-  color: var(--primary-color);
-  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  font-weight: 700;
-  background: var(--bg-gradient);
+  margin-bottom: 5rem;
+  font-weight: 800;
+  font-size: 3rem;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
   background-clip: text;
   -webkit-background-clip: text;
-  color: transparent;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
   position: relative;
 }
 
 .learn-title::after {
   content: '';
   position: absolute;
-  width: 80px;
-  height: 4px;
-  bottom: -12px;
+  bottom: -15px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--bg-gradient);
-  border-radius: 10px;
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 2px;
+  animation: lineGrow 1s ease-out 0.5s both;
+}
+
+@keyframes lineGrow {
+  from { width: 0; opacity: 0; }
+  to { width: 60px; opacity: 1; }
 }
 
 .streak-update-notification {
@@ -344,7 +349,7 @@
   align-items: center;
   justify-content: center;
   gap: 50px;
-  width: 200%;
+  width: 100%;
   grid-row: 2;
   overflow: visible;
 }
@@ -1412,7 +1417,14 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    gap: 10px;
+    gap: 5px;
+  }
+
+  .knowledge-btn {
+    border: none;
+    padding: 11px 18px;
+    border-radius: 14px;
+    font-weight: 600;
   }
   
   .flashcard-with-navigation {
@@ -1567,6 +1579,13 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     width: 100%;
     gap: 10px;
   }
+
+  .knowledge-btn {
+    font-size: 0.8rem;
+    padding: 9px 15px;
+    border-radius: 14px;
+    font-weight: 600;
+  }
   
   .flashcard-with-navigation {
     display: flex;
@@ -1668,7 +1687,7 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
   }
 
   .learn-title {
-    font-size: 2rem;
+    font-size: 1.9rem;
   }
 
   .card-details {
@@ -1724,6 +1743,13 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     width: 100%;
     gap: 10px;
   }
+
+  .knowledge-btn {
+    font-size: 1rem;
+    padding: 9px 15px;
+    border-radius: 14px;
+    font-weight: 600;
+  }
   
   .flashcard-with-navigation {
     display: flex;
@@ -1825,7 +1851,7 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
   }
 
   .learn-title {
-    font-size: 2rem;
+    font-size: 1.8rem;
   }
 
   .card-details {
@@ -1856,7 +1882,7 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
 }
 
 /* Écrans 360px (Samsung Galaxy S series, petits Android) */
-@media (max-width: 360px) {
+@media (max-width: 365px) {
   .flashcard-container {
     gap: 20px;
     margin-bottom: 40px;
@@ -1883,10 +1909,12 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
   }
 
   .knowledge-btn {
-    font-weight: 400;
-    width: 90%;
-    padding: 10px 10px;
+    font-size: 0.8rem;
+    padding: 8px 15px;
+    border-radius: 14px;
+    font-weight: 700;
   }
+
   .flashcard-with-navigation {
     display: flex;
     align-items: center;
@@ -1987,7 +2015,7 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
   }
 
   .learn-title {
-    font-size: 2rem;
+    font-size: 1.7rem;
   }
 
   .card-details {

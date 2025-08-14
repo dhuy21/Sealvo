@@ -9,16 +9,14 @@ class GeminiService {
 
     //Replace the example of the words with the new example
     async replaceExample(words, words_need_replace_example) {
-        for (const word of words) {
-            for (const word_need_replace_example of words_need_replace_example) {
-                console.log('word.id:', word.id);
-                console.log('word_need_replace_example.id:', word_need_replace_example.id);
-                console.log(word.id === word_need_replace_example.id);
-                if (word.id === word_need_replace_example.id) {
-                    console.log('Replacing example for word:', word.example);
-                    console.log('New example:', word_need_replace_example.example);
-                    word.example = word_need_replace_example.example;
-                    console.log('Word after replacement:', word.example);
+        if (words_need_replace_example.length === 1) { //check if  words_need_replace_example aren't iterable
+            words.example = words_need_replace_example[0].example;
+        } else {
+            for (const word of words) {
+                for (const word_need_replace_example of words_need_replace_example) {
+                    if (word.id === word_need_replace_example.id) {
+                        word.example = word_need_replace_example.example;
+                    }
                 }
             }
         }

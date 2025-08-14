@@ -1,5 +1,14 @@
  //Package id
 const packageId = document.querySelector('.vocabulary-container')?.getAttribute('data-package');
+
+// Détection du type d'appareil mobile
+let isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+ // Screen rotation notification state
+ let rotationNotification = null;
+ let isLandscapeMode = false;
+
+
 if (!packageId) {
     console.error('Package ID not found. Check if data-package attribute exists on .vocabulary-container');
 }
@@ -7,7 +16,26 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize search functionality
     initSearch();
 
+   // Check initial screen orientation
+   checkScreenOrientation();
+        
+   // Add orientation change event listeners
+   window.addEventListener('resize', handleOrientationChange);
+   window.addEventListener('orientationchange', handleOrientationChange);
    
+   // Add iOS Safari specific orientation detection
+   if (isTouchDevice) {
+       // Check orientation on touch events
+       document.addEventListener('touchstart', () => {
+           setTimeout(checkScreenOrientation, 100);
+       }, { passive: true });
+   }
+
+   // Window resize listener
+   window.addEventListener('resize', checkScreenSize);
+        
+   // Initial screen size check
+   checkScreenSize();
 
     // 3D button hover effect enhancement
     const buttons = document.querySelectorAll('.add-word-btn, .learn-btn, .btn-danger, .home-cta .btn, .no-words .btn');
@@ -151,6 +179,91 @@ document.addEventListener('DOMContentLoaded', function() {
     document.head.appendChild(style);
 });
 
+// Screen Rotation Notification Functions
+function checkScreenOrientation() {
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    
+    // Check if screen width is <= 950px (mobile/tablet portrait)
+    if (screenWidth <= 1280) {
+        // Check if device is in landscape mode
+        isLandscapeMode = screenWidth > screenHeight;
+        console.log('isLandscapeMode', isLandscapeMode);
+        if (!isLandscapeMode) {
+            // Show rotation notification
+            showRotationNotification();
+            console.log('showRotationNotification');
+            return false;
+        } else {
+            // Hide rotation notification if it exists
+            hideRotationNotification();
+            console.log('hideRotationNotification');
+            return true;
+        }
+    } else {
+        // Large screen, no rotation needed
+        hideRotationNotification();
+        isLandscapeMode = true;
+        return true;
+    }
+}
+
+function showRotationNotification() {
+    // Don't show multiple notifications
+    if (rotationNotification) return;
+    
+    // Create rotation notification
+    rotationNotification = document.createElement('div');
+    rotationNotification.className = 'rotation-notification';
+    rotationNotification.innerHTML = `
+        <div class="rotation-icon">📱</div>
+        <div class="rotation-content">
+            <div class="rotation-title">Tourner l'écran</div>
+            <div class="rotation-message">Il faudrait tourner votre appareil en mode paysage</div>
+        </div>
+    `;
+    
+    // Add to body
+    document.body.appendChild(rotationNotification);
+    
+    // Force reflow for iOS Safari
+    rotationNotification.offsetHeight;
+    
+    // Show notification with animation
+    setTimeout(() => {
+        rotationNotification.classList.add('show');
+    }, 100);
+    
+}
+
+function hideRotationNotification() {
+    if (rotationNotification) {
+        rotationNotification.classList.remove('show');
+        
+        setTimeout(() => {
+            if (rotationNotification && rotationNotification.parentNode) {
+                rotationNotification.parentNode.removeChild(rotationNotification);
+                rotationNotification = null;
+            }
+        }, 300);
+    }
+}
+
+function checkScreenSize() {
+    const isSmallScreen = window.innerWidth <= 1300;
+    
+    // Also check orientation when screen size changes
+    checkScreenOrientation();
+}
+
+function handleOrientationChange() {
+    // Debounce the orientation check
+    clearTimeout(window.orientationChangeTimeout);
+    window.orientationChangeTimeout = setTimeout(() => {
+        checkScreenOrientation();
+    }, 100);
+}
+
 function handleDeleteClick(e) {
     e.preventDefault();
     const detailId = this.getAttribute('data-id');
@@ -273,7 +386,8 @@ function handleEditClick(e) {
         // Sauvegarder les valeurs originales pour pouvoir annuler
         const originalValues = [];
         for (let i = 0; i < 9; i++) {
-            originalValues.push(row.cells[i].textContent.trim());
+            const cellContent = row.cells[i].querySelector('.table-cell-content');
+            originalValues.push(cellContent ? cellContent.textContent.trim() : row.cells[i].textContent.trim());
         }
         row.dataset.originalValues = JSON.stringify(originalValues);
         
@@ -287,11 +401,15 @@ function handleEditClick(e) {
         let cellContents = [];
         
         // Mot (cell 0)
-        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[0].textContent.trim()}" required>`);
+        const wordText = row.cells[0].querySelector('.table-cell-content')?.textContent.trim() || row.cells[0].textContent.trim();
+        cellContents.push(`<input type="text" class="edit-input" value="${wordText}" required>`);
+        
         //language_code (cell 1)
-        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[1].textContent.trim()}" required>`);
+        const langText = row.cells[1].querySelector('.table-cell-content')?.textContent.trim() || row.cells[1].textContent.trim();
+        cellContents.push(`<input type="text" class="edit-input" value="${langText}" required>`);
+        
         // Type (cell 2)
-        const typeText = row.cells[2].textContent.trim();
+        const typeText = row.cells[2].querySelector('.table-cell-content')?.textContent.trim() || row.cells[2].textContent.trim();
         cellContents.push(`
             <select class="edit-input" required>
                 <option value="noun" ${typeText === 'noun' ? 'selected' : ''}>Nom</option>
@@ -305,26 +423,40 @@ function handleEditClick(e) {
         `);
         
         // Meaning (cell 3)
-        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[3].textContent.trim()}" required>`);
+        const meaningText = row.cells[3].querySelector('.table-cell-content')?.textContent.trim() || row.cells[3].textContent.trim();
+        cellContents.push(`<input type="text" class="edit-input" value="${meaningText}" required>`);
         
         // Pronunciation (cell 4)
-        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[4].textContent.trim()}">`);
+        const pronText = row.cells[4].querySelector('.table-cell-content')?.textContent.trim() || row.cells[4].textContent.trim();
+        cellContents.push(`<input type="text" class="edit-input" value="${pronText}">`);
         
         // Synonyms (cell 5)
-        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[5].textContent.trim()}">`);
+        const synText = row.cells[5].querySelector('.table-cell-content')?.textContent.trim() || row.cells[5].textContent.trim();
+        cellContents.push(`<input type="text" class="edit-input" value="${synText}">`);
         
         // Antonyms (cell 6)
-        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[6].textContent.trim()}">`);
+        const antText = row.cells[6].querySelector('.table-cell-content')?.textContent.trim() || row.cells[6].textContent.trim();
+        cellContents.push(`<input type="text" class="edit-input" value="${antText}">`);
         
         // Example (cell 7)
-        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[7].textContent.trim()}" required>`);
+        const exText = row.cells[7].querySelector('.table-cell-content')?.textContent.trim() || row.cells[7].textContent.trim();
+        cellContents.push(`<input type="text" class="edit-input" value="${exText}" required>`);
         
         // Grammar (cell 8)
-        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[8].textContent.trim()}">`);
+        const gramText = row.cells[8].querySelector('.table-cell-content')?.textContent.trim() || row.cells[8].textContent.trim();
+        cellContents.push(`<input type="text" class="edit-input" value="${gramText}">`);
         
-        // Appliquer les inputs aux cellules
+        // Appliquer les inputs aux cellules en préservant la structure
         for (let i = 0; i < cellContents.length; i++) {
-            row.cells[i].innerHTML = cellContents[i];
+            // Vérifier si la cellule a déjà un div table-cell-content
+            const existingDiv = row.cells[i].querySelector('.table-cell-content');
+            if (existingDiv) {
+                // Remplacer le contenu du div existant
+                existingDiv.innerHTML = cellContents[i];
+            } else {
+                // Créer un nouveau div si nécessaire
+                row.cells[i].innerHTML = `<div class="table-cell-content">${cellContents[i]}</div>`;
+            }
         }
         
         // Remplacer les boutons d'action
@@ -371,9 +503,17 @@ function cancelEdit() {
     if (row.dataset.originalValues) {
         const originalValues = JSON.parse(row.dataset.originalValues);
         
-        // Restaurer les cellules
+        // Restaurer les cellules avec la structure table-cell-content
         for (let i = 0; i < originalValues.length; i++) {
-            row.cells[i].textContent = originalValues[i];
+            // Vérifier si la cellule a déjà un div table-cell-content
+            let cellContent = row.cells[i].querySelector('.table-cell-content');
+            if (!cellContent) {
+                // Créer le div s'il n'existe pas
+                row.cells[i].innerHTML = `<div class="table-cell-content">${originalValues[i]}</div>`;
+            } else {
+                // Restaurer le contenu dans le div existant
+                cellContent.textContent = originalValues[i];
+            }
         }
         
         // Récupérer l'ID du mot
@@ -461,16 +601,28 @@ function saveWordPost() {
                 return;
             }
             
-            // Mettre à jour les cellules
-            row.cells[0].textContent = word;
-            row.cells[1].textContent = language_code;
-            row.cells[2].textContent = type;
-            row.cells[3].textContent = meaning;
-            row.cells[4].textContent = pronunciation;
-            row.cells[5].textContent = synonyms;
-            row.cells[6].textContent = antonyms;
-            row.cells[7].textContent = example;
-            row.cells[8].textContent = grammar;
+            // Mettre à jour les cellules avec la structure table-cell-content
+            const updateCell = (index, value) => {
+                // Vérifier si la cellule a déjà un div table-cell-content
+                let cellContent = row.cells[index].querySelector('.table-cell-content');
+                if (!cellContent) {
+                    // Créer le div s'il n'existe pas
+                    row.cells[index].innerHTML = `<div class="table-cell-content">${value}</div>`;
+                } else {
+                    // Mettre à jour le contenu dans le div existant
+                    cellContent.textContent = value;
+                }
+            };
+            
+            updateCell(0, word);
+            updateCell(1, language_code);
+            updateCell(2, type);
+            updateCell(3, meaning);
+            updateCell(4, pronunciation);
+            updateCell(5, synonyms);
+            updateCell(6, antonyms);
+            updateCell(7, example);
+            updateCell(8, grammar);
             
             // Restaurer les boutons d'action
             row.cells[9].innerHTML = `
@@ -615,7 +767,9 @@ function initSearch() {
                 const cells = row.querySelectorAll('td:not(:last-child)');
                 let rowText = '';
                 cells.forEach(cell => {
-                    rowText += cell.textContent.toLowerCase() + ' ';
+                    const cellContent = cell.querySelector('.table-cell-content');
+                    const text = cellContent ? cellContent.textContent : cell.textContent;
+                    rowText += text.toLowerCase() + ' ';
                 });
                 
                 // Check if the search term is in any cell text
@@ -827,7 +981,10 @@ function initSearch() {
     function highlightMatches(row, searchTerm) {
         const cells = row.querySelectorAll('td:not(:last-child)');
         cells.forEach(cell => {
-            const text = cell.textContent;
+            const cellContent = cell.querySelector('.table-cell-content');
+            if (!cellContent) return;
+            
+            const text = cellContent.textContent;
             const lowerText = text.toLowerCase();
             const index = lowerText.indexOf(searchTerm.toLowerCase());
             
@@ -847,7 +1004,7 @@ function initSearch() {
                     }
                 }
                 
-                cell.innerHTML = newHtml;
+                cellContent.innerHTML = newHtml;
             }
         });
     }
