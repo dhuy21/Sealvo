@@ -61,6 +61,41 @@
     position: relative;
   }
 
+  #notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    color: white;
+    font-weight: 500;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-width: 300px;
+}
+#notification.info {
+    background: linear-gradient(45deg, #4158D0, #53a9ff);
+}
+#notification.success {
+    background: linear-gradient(45deg, #10b981, #059669);
+}
+#notification.error {
+    background: linear-gradient(45deg, #ef4444, #dc2626);
+}
+#notification i {
+    margin-right: 10px;
+    font-size: 1.2rem;
+}
+#notification.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
   .games-header h1::after {
     content: '';
     position: absolute;

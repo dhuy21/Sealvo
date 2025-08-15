@@ -29,9 +29,30 @@ document.getElementById('changePasswordBtn').addEventListener('click', function(
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showNotification('Un message a été envoyé pour réinitialiser votre mot de passe', 'success');
+            showNotification( data.message, 'success');
         } else {
-            showNotification('Erreur lors du changement de mot de passe: ' + data.message, 'error');
+            showNotification( data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors de la requête:', error);
+    });
+});
+
+document.getElementById('reminderBtn').addEventListener('click', function() {
+    // Send a POST request to change the password
+    fetch('/api/reminder', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification( data.message, 'success');
+        } else {
+            showNotification( data.message, 'error');
         }
     })
     .catch(error => {
@@ -610,14 +631,14 @@ function initAvatarEdit() {
                     closeAvatarModal();
                     
                     // Show success message
-                    showNotification('Avatar mis à jour avec succès!', 'success');
+                    showNotification( data.message, 'success');
                     
                     // Reload the page after a short delay to ensure session data is refreshed
                     setTimeout(() => {
                         window.location.reload();
                     }, 1500);
                 } else {
-                    showNotification('Erreur lors de la modification de l\'avatar: ' + data.message, 'error');
+                    showNotification( data.message, 'error');
                 }
                 
                 // Reset button
@@ -651,46 +672,6 @@ function showNotification(message, type = 'info') {
         notification = document.createElement('div');
         notification.id = 'notification';
         document.body.appendChild(notification);
-        
-        // Add CSS for notification
-        const style = document.createElement('style');
-        style.textContent = `
-            #notification {
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                padding: 12px 20px;
-                border-radius: 10px;
-                color: white;
-                font-weight: 500;
-                z-index: 1000;
-                opacity: 0;
-                transform: translateY(20px);
-                transition: all 0.3s ease;
-                display: flex;
-                align-items: center;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-                max-width: 300px;
-            }
-            #notification.info {
-                background: linear-gradient(45deg, #4158D0, #53a9ff);
-            }
-            #notification.success {
-                background: linear-gradient(45deg, #10b981, #059669);
-            }
-            #notification.error {
-                background: linear-gradient(45deg, #ef4444, #dc2626);
-            }
-            #notification i {
-                margin-right: 10px;
-                font-size: 1.2rem;
-            }
-            #notification.show {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        `;
-        document.head.appendChild(style);
     }
     
     // Set icon based on type

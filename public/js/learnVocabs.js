@@ -12,19 +12,13 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Erreur lors du parsing des mots:', e);
         }
     } 
-  
-    let currentWords = [...allWords]; // Copie pour permettre le filtrage
+
+    let wordsFilteredByLevel = allWords;
+    let wordsFilteredByVocab = allWords.filter(word => word.dueToday);
+    let currentWords = [...wordsFilteredByVocab]; // Copie pour permettre le filtrage
     let currentIndex = 0;
     let progress = []; // Pour suivre les progrès (0: ne sait pas, 1: incertain, 2: sait)
     let sessionStartTime = new Date();
-    
-    
-    // Streak update variables
-    let streakUpdateTimeout = null;
-    let streakUpdated = false;
-    const STREAK_UPDATE_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
-    
-   
     
     // Éléments DOM
     let flashcard = document.getElementById('flashcard');
@@ -417,14 +411,16 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       console.log(selectedLevels);
       // Mode normal
-      currentWords = allWords.filter(word => selectedLevels.includes(word.level));
-      
+      wordsFilteredByLevel = allWords.filter(word => selectedLevels.includes(word.level));
+
+      //Intersect of 2 filters
+      const setWords = new Set(wordsFilteredByVocab);
+      currentWords = wordsFilteredByLevel.filter(word => setWords.has(word)) ;
+
       console.log(`Filtered words: ${currentWords.length} words match selected levels`);
       
       // Réinitialiser l'index si nécessaire
-      if (currentIndex >= currentWords.length) {
-        currentIndex = Math.max(0, currentWords.length - 1);
-      }
+      currentIndex = 0;
       
       // Réinitialiser les progrès
       initProgress();
@@ -435,12 +431,22 @@ document.addEventListener('DOMContentLoaded', function() {
     
     //Filtrer le vocabulaire en fonction du mode ( aujourd'hui ou tous les mots)
     function filterVocab() {
+
       const vocabMode = document.querySelector('input[name="vocab-mode"]:checked').value;
+
+
       if (vocabMode === 'today-words') {
-        currentWords = allWords.filter(word => word.dueToday);
+        wordsFilteredByVocab = allWords.filter(word => word.dueToday);
       } else {
-        currentWords = [...allWords];
+        wordsFilteredByVocab = [...allWords];
       }
+
+      //Intersect of 2 filters
+      const setWords = new Set(wordsFilteredByLevel);
+      currentWords = wordsFilteredByVocab.filter(word => setWords.has(word)) ;
+
+      console.log(`Filtered words: ${currentWords.length} words match selected levels`);
+      currentIndex = 0;
       
       initProgress();
       updateCardDisplay();  
@@ -528,51 +534,6 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
     
-    // Function to update streak after 5 minutes
-    function setupStreakUpdate() {
-        // Clear any existing timeout
-        if (streakUpdateTimeout) {
-            clearTimeout(streakUpdateTimeout);
-        }
-        
-        // Set a new timeout for 5 minutes
-        streakUpdateTimeout = setTimeout(() => {
-            // Only update once per session
-            if (!streakUpdated) {
-                updateUserStreak();
-            }
-        }, STREAK_UPDATE_TIME);
-    }
-    
-    // Function to call the API to update streak
-    function updateUserStreak() {
-        fetch('/update-streak', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Streak update response:', data);
-            
-            if (data.updated) {
-                streakUpdated = true;
-                //Notify in the page that the streak has been updated
-                const streakUpdateNotification = document.getElementById('streak-update-notification');
-                streakUpdateNotification.textContent = `🔥 Série de ${data.newStreak} jours! Continuez comme ça!`;
-                streakUpdateNotification.classList.add('show');
-                setTimeout(() => {
-                    streakUpdateNotification.classList.remove('show');
-                }, 5000);
-            }
-        })
-        .catch(error => {
-            console.error('Error updating streak:', error);
-        });
-    }
-    
-    
     // Navigation entre les cartes
     prevBtn.addEventListener('click', function() {
       if (currentIndex > 0) {
@@ -638,7 +599,7 @@ document.addEventListener('DOMContentLoaded', function() {
       checkbox.addEventListener('change', filterWords);
     });
     
-    //filtrer les mots en fonction du mode
+    //filtrer les mots en fonction du vocabulaire
     vocabModeRadios.forEach(radio => {
       radio.addEventListener('change', filterVocab);
     }); 
@@ -839,15 +800,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateCardDisplay();
     loadProgress(); // Essayer de charger les progrès sauvegardés
     setupCardListeners();
-    setupStreakUpdate(); // Start the streak update timer
     
-    // Ajouter des écouteurs d'événements pour réinitialiser le minuteur de streak
-    // quand l'utilisateur interagit avec la page
-    document.querySelectorAll('.knowledge-btn, #next-card, #prev-card, #shuffle-cards').forEach(btn => {
-        btn.addEventListener('click', function() {
-            setupStreakUpdate();
-        });
-    });
     
     // Animation d'entrée initiale
     document.querySelectorAll('.stat-card, .flashcard-filters, .mode-selector, .flashcard-container, .progress-container, .flashcard-actions').forEach((element, index) => {

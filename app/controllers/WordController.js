@@ -258,15 +258,27 @@ class WordController {
             const count = await wordModel.deleteAllWords(package_id);
             
             // Rediriger avec un message de succès
-            if (count > 0) {
-                res.redirect(`/monVocabs?package=${package_id}&success=${count} mot(s) supprimé(s) avec succès`);
+            if (count) {
+                console.log('Le(s) mot(s) supprimé(s) avec succès');
+                res.status(200).json({
+                    success: true,
+                    message: `Le(s) mot(s) supprimé(s) avec succès`
+                });
             } else {
-                res.redirect(`/monVocabs?package=${package_id}&success=Aucun mot à supprimer`);
+                console.log('Aucun mot à supprimer');
+                res.status(200).json({
+                    success: true,
+                    message: 'Aucun mot à supprimer'
+                });
             }
+            
         } catch (error) {
             const package_id = req.query.package;
             console.error('Erreur lors de la suppression de tous les mots:', error);
-            res.redirect(`/monVocabs?package=${package_id}&error=Une erreur est survenue lors de la suppression des mots`);
+            res.status(500).json({
+                success: false,
+                message: 'Une erreur est survenue lors de la suppression des mots'
+            });
         }
     }
 
@@ -490,6 +502,8 @@ class WordController {
                 word.dueToday = wordIdsToReview.some(item => item.detail_id === word.detail_id);
                 word.example = word.example.replace(/\*\*([^\*]+)\*\*/g, '$1');
             });
+
+            console.log(words);
 
             res.render('learnVocabs', {
                 title: 'Apprendre des mots',
