@@ -39,11 +39,17 @@ class ReminderController {
             }
             
             // Send confirmation response after processing is complete
-            res.status(200).send('Cron job executed successfully');
+            res.status(200).json({
+                success: true,
+                message: 'Un email a été envoyé pour réviser vos mots'
+            });
             
         } catch (error) {
             console.error('Erreur lors de l\'envoi des rappels :', error);
-            res.status(500).send('Error executing cron job');
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de l\'envoi des rappels'
+            });
         }
     }
 

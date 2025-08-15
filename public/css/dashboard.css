@@ -621,9 +621,9 @@
     }
     
     .notification-badge {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
+      position: fixed;
+      top: 20px;
+      right: 20px;
       background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
       color: white;
       width: 1.5rem;
@@ -635,6 +635,7 @@
       font-size: 0.75rem;
       font-weight: 700;
       animation: pulse 2s infinite;
+      z-index: 1000;
     }
     
     @keyframes pulse {
@@ -1386,9 +1387,7 @@
 
     /* Position the notification badge correctly on the profile card */
     .user-profile-card .notification-badge {
-      position: absolute;
-      top: 0;
-      right: 0;
+      position: sticky;
     }
 
     /* iPhone XS/11 Pro/12 Pro specific fixes for clipping */

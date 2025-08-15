@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Vérifier la taille du fichier (max 5MB)
                 const maxSize = 5 * 1024 * 1024; // 5MB
                 if (file.size > maxSize) {
-                    showAlert('Erreur: Le fichier est trop volumineux (max 5MB)', 'error');
+                    showNotification('Le fichier est trop volumineux (max 5MB)', 'error');
                     this.value = '';
                     fileNameDisplay.textContent = 'Aucun fichier sélectionné';
                     return;
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 ];
                 
                 if (!allowedTypes.includes(file.type)) {
-                    showAlert('Erreur: Format de fichier non supporté. Utilisez Excel, CSV ou PDF.', 'error');
+                    showNotification('Format de fichier non supporté. Utilisez Excel, CSV ou PDF.', 'error');
                     this.value = '';
                     fileNameDisplay.textContent = 'Aucun fichier sélectionné';
                     return;
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault(); // Empêcher la soumission classique
             
             if (!fileInput.files.length) {
-                showAlert('Veuillez sélectionner un fichier à importer', 'error');
+                showNotification('Veuillez sélectionner un fichier à importer', 'error');
                 return;
             }
             
@@ -86,30 +86,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 body: formData
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
                 hideLoader();
                 
                 if (data.success) {
-                    showAlert(data.message, 'success');
+                    showNotification(data.message, 'success');
                     // Réinitialiser le formulaire
                     importForm.reset();
                     fileNameDisplay.textContent = 'Aucun fichier sélectionné';
                     fileNameDisplay.style.color = '#6b7280';
                     fileNameDisplay.style.fontWeight = 'normal';
                 } else {
-                    showAlert(data.message || 'Erreur lors de l\'importation', 'error');
+                    throw new Error(data.message);
                 }
             })
             .catch(error => {
                 hideLoader();
-                console.error('Erreur lors de l\'importation:', error);
-                showAlert('Erreur lors de l\'importation. Veuillez réessayer.', 'error');
+                showNotification(error, 'error');
             })
             .finally(() => {
                 // Réactiver le bouton
@@ -249,7 +243,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 reindexRows();
             }, 300);
             } else {
-            showAlert('Vous devez avoir au moins une ligne', 'error');
+            showNotification('Vous devez avoir au moins une ligne', 'error');
             // Animation de secousse
             row.style.animation = 'shake 0.5s ease-in-out';
             setTimeout(() => {
@@ -325,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         if (!isValid) {
-            showAlert(`Veuillez corriger les ${errorCount} erreur(s) dans le formulaire`, 'error');
+            showNotification(`Veuillez corriger les ${errorCount} erreur(s) dans le formulaire`, 'error');
             
             // Faire défiler vers le premier champ d'erreur
             const firstError = document.querySelector('input[style*="border-color: rgb(229, 62, 62)"], select[style*="border-color: rgb(229, 62, 62)"]');
@@ -383,77 +377,37 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function showAlert(message, type = 'info') {
-        // Supprimer les anciennes alertes
-        const existingAlerts = document.querySelectorAll('.alert');
-        existingAlerts.forEach(alert => alert.remove());
-        
-        // Créer une nouvelle alerte
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type}`;
-        alertDiv.innerHTML = `
-            <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i>
-            ${message}
-            <button type="button" class="alert-close" onclick="this.parentElement.remove()">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-        
-        // Ajouter des styles pour le bouton de fermeture
-        const closeBtn = alertDiv.querySelector('.alert-close');
-        if (closeBtn) {
-            closeBtn.style.cssText = `
-                background: none !important;
-                border: none !important;
-                color: inherit !important;
-                cursor: pointer !important;
-                margin-left: auto !important;
-                padding: 0 5px !important;
-                opacity: 0.7 !important;
-                transition: opacity 0.3s ease !important;
-            `;
-            
-            closeBtn.addEventListener('mouseenter', function() {
-                this.style.opacity = '1';
-            });
-            
-            closeBtn.addEventListener('mouseleave', function() {
-                this.style.opacity = '0.7';
-            });
+    function showNotification(message, type = 'info') {
+       // Create notification element if it doesn't exist
+        let notification = document.getElementById('notification');
+        if (!notification) {
+            notification = document.createElement('div');
+            notification.id = 'notification';
+            document.body.appendChild(notification);
         }
         
-        // Insérer l'alerte au début du conteneur
-        const container = document.querySelector('.vocabulary-container');
-        if (container) {
-            const title = container.querySelector('h1');
-            if (title) {
-                title.insertAdjacentElement('afterend', alertDiv);
-            } else {
-                container.insertBefore(alertDiv, container.firstChild);
-            }
+        // Set icon based on type
+        let icon = '';
+        if (type === 'success') {
+            icon = '<i class="fas fa-check-circle"></i>';
+        } else if (type === 'error') {
+            icon = '<i class="fas fa-exclamation-circle"></i>';
+        } else {
+            icon = '<i class="fas fa-info-circle"></i>';
         }
         
-        // Animation d'apparition
-        alertDiv.style.opacity = '0';
-        alertDiv.style.transform = 'translateY(-20px)';
+        // Set content and type
+        notification.innerHTML = icon + message;
+        notification.className = type;
+        
+        // Show and hide notification
         setTimeout(() => {
-            alertDiv.style.transition = 'all 0.3s ease';
-            alertDiv.style.opacity = '1';
-            alertDiv.style.transform = 'translateY(0)';
-        }, 100);
+            notification.classList.add('show');
+        }, 10);
         
-        // Auto-suppression après 5 secondes (sauf pour les erreurs)
-        if (type !== 'error') {
-            setTimeout(() => {
-                if (alertDiv.parentElement) {
-                    alertDiv.style.opacity = '0';
-                    alertDiv.style.transform = 'translateY(-20px)';
-                    setTimeout(() => {
-                        alertDiv.remove();
-                    }, 300);
-                }
-            }, 5000);
-        }
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 3000);
     }
     
     // === GESTION DES RACCOURCIS CLAVIER ===
@@ -476,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // === GESTION DES ERREURS GLOBALES ===
     window.addEventListener('error', function(e) {
         console.error('Erreur JavaScript:', e.error);
-        showAlert('Une erreur inattendue s\'est produite. Veuillez rafraîchir la page.', 'error');
+        showNotification('Une erreur inattendue s\'est produite. Veuillez rafraîchir la page.', 'error');
     });
     
     // === NETTOYAGE AU DÉCHARGEMENT DE LA PAGE ===

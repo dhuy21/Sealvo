@@ -773,56 +773,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Afficher une notification
     function showNotification(message, type = 'info') {
-        // Supprimer les notifications existantes
-        const existingNotifications = document.querySelectorAll('.notification');
-        existingNotifications.forEach(notif => notif.remove());
+        // Create notification element if it doesn't exist
+        let notification = document.getElementById('notification');
+        if (!notification) {
+            notification = document.createElement('div');
+            notification.id = 'notification';
+            document.body.appendChild(notification);
+        }
         
-        // Créer la nouvelle notification
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        let icon = 'fa-exclamation-triangle'; // error par défaut
-        if (type === 'success') icon = 'fa-check-circle';
-        if (type === 'info') icon = 'fa-info-circle';
+        // Set icon based on type
+        let icon = '';
+        if (type === 'success') {
+            icon = '<i class="fas fa-check-circle"></i>';
+        } else if (type === 'error') {
+            icon = '<i class="fas fa-exclamation-circle"></i>';
+        } else {
+            icon = '<i class="fas fa-info-circle"></i>';
+        }
         
-        notification.innerHTML = `
-            <div class="notification-content">
-                <i class="fas ${icon}"></i>
-                <span>${message}</span>
-            </div>
-        `;
+        // Set content and type
+        notification.innerHTML = icon + message;
+        notification.className = type;
         
-        // Ajouter les styles
-        let bgColor = '#EF4444'; // error par défaut
-        if (type === 'success') bgColor = '#10B981';
-        if (type === 'info') bgColor = '#3B82F6';
-        
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: ${bgColor};
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-            z-index: 10000;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-        `;
-        
-        document.body.appendChild(notification);
-        
-        // Animation d'entrée
+        // Show and hide notification
         setTimeout(() => {
-            notification.style.transform = 'translateX(0)';
+            notification.classList.add('show');
         }, 10);
         
-        // Animation de sortie
         setTimeout(() => {
-            notification.style.transform = 'translateX(100%)';
-            setTimeout(() => {
-                notification.remove();
-            }, 300);
+            notification.classList.remove('show');
         }, 3000);
     }
 

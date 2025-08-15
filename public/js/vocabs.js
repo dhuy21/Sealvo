@@ -81,7 +81,9 @@ document.addEventListener('DOMContentLoaded', function() {
         button.addEventListener('click', handleEditClick);
         
     });
-    
+
+    document.getElementById('deleteAllBtn').addEventListener('click', handleDeleteAllClick);
+
     // Ajouter des styles pour les inputs d'édition et animations
     const style = document.createElement('style');
     style.textContent = `
@@ -666,45 +668,245 @@ function saveWordPost() {
     });
 }
 
-function showNotification(message, type) {
-    // Supprimer les notifications existantes
-    const existingNotifications = document.querySelectorAll('.alert');
-    existingNotifications.forEach(notif => notif.remove());
+function handleDeleteAllClick() {
+    // Create confirmation modal
+    const modal = createConfirmationModal();
+    document.body.appendChild(modal);
     
-    // Créer la nouvelle notification
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type}`;
-    notification.textContent = message;
+    // Force reflow for iOS Safari
+    modal.offsetHeight;
     
-    // Ajouter la notification au début du conteneur
+    // Show modal with animation
+    setTimeout(() => {
+        modal.classList.add('show');
+    }, 100);
+    
+    // Add event listeners to modal buttons
+    const confirmBtn = modal.querySelector('.confirm-delete-btn');
+    const cancelBtn = modal.querySelector('.cancel-delete-btn');
+    const closeBtn = modal.querySelector('.close-modal-btn');
+    
+    confirmBtn.addEventListener('click', () => {
+        executeDeleteAll(modal);
+    });
+    
+    cancelBtn.addEventListener('click', () => {
+        closeModal(modal);
+    });
+    
+    closeBtn.addEventListener('click', () => {
+        closeModal(modal);
+    });
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeModal(modal);
+        }
+    });
+    
+    // Close modal with escape key
+    const handleKeyPress = (e) => {
+        if (e.key === 'Escape') {
+            closeModal(modal);
+            document.removeEventListener('keydown', handleKeyPress);
+        }
+    };
+    document.addEventListener('keydown', handleKeyPress);
+}
+
+function createConfirmationModal() {
+    const modal = document.createElement('div');
+    modal.className = 'delete-confirmation-modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <button class="close-modal-btn" aria-label="Fermer">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="modal-header">
+                <div class="warning-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h2>Supprimer tous les mots</h2>
+            </div>
+            
+            <div class="modal-body">
+                <p>Êtes-vous absolument sûr de vouloir supprimer <strong>tous les mots</strong> de votre vocabulaire ?</p>
+                <div class="warning-message">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Cette action est <strong>irréversible</strong> et supprimera définitivement tous vos mots.</span>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="cancel-delete-btn">
+                    <i class="fas fa-times"></i>
+                    Annuler
+                </button>
+                <button class="confirm-delete-btn">
+                    <i class="fas fa-trash"></i>
+                    Oui
+                </button>
+            </div>
+        </div>
+    `;
+    
+    return modal;
+}
+
+function executeDeleteAll(modal) {
+    const confirmBtn = modal.querySelector('.confirm-delete-btn');
+    const originalContent = confirmBtn.innerHTML;
+    
+    // Show loading state
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Suppression...';
+    confirmBtn.disabled = true;
+    confirmBtn.classList.add('loading');
+    
+    // Disable cancel button during deletion
+    const cancelBtn = modal.querySelector('.cancel-delete-btn');
+    cancelBtn.disabled = true;
+    
+    console.log('Deleting all words for package:', packageId);
+    
+    fetch(`/monVocabs/deleteAll?package=${packageId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Success animation
+            confirmBtn.innerHTML = '<i class="fas fa-check"></i> Supprimé !';
+            confirmBtn.classList.remove('loading');
+            confirmBtn.classList.add('success');
+            
+            // Close modal after a delay
+            setTimeout(() => {
+                closeModal(modal);
+                
+                // Remove all level containers with staggered animation
+                const levelContainers = document.querySelectorAll('.level-container');
+                levelContainers.forEach((container, index) => {
+                    setTimeout(() => {
+                        container.style.transition = 'all 0.6s ease';
+                        container.style.opacity = '0';
+                        container.style.transform = 'translateY(-30px) scale(0.95)';
+                        
+                        setTimeout(() => {
+                            container.remove();
+                        }, 600);
+                    }, index * 100);
+                });
+                
+                // Show no words message after animations complete
+                setTimeout(() => {
+                    showNoWordsMessage();
+                    showNotification(data.message, 'success');
+                }, levelContainers.length * 100 + 600);
+                
+            }, 1500);
+            
+        } else {
+            // Error state
+            confirmBtn.innerHTML = originalContent;
+            confirmBtn.disabled = false;
+            confirmBtn.classList.remove('loading');
+            cancelBtn.disabled = false;
+            
+            showNotification(data.message || 'Erreur lors de la suppression des mots', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        
+        // Error state
+        confirmBtn.innerHTML = originalContent;
+        confirmBtn.disabled = false;
+        confirmBtn.classList.remove('loading');
+        cancelBtn.disabled = false;
+        
+        showNotification('Une erreur est survenue lors de la suppression des mots', 'error');
+    });
+}
+
+function closeModal(modal) {
+    modal.classList.remove('show');
+    
+    setTimeout(() => {
+        if (modal.parentNode) {
+            modal.parentNode.removeChild(modal);
+        }
+    }, 300);
+}
+
+function showNoWordsMessage() {
+    // Check if no words message already exists
+    if (document.querySelector('.no-words')) {
+        return;
+    }
+    
+    const noWordsDiv = document.createElement('div');
+    noWordsDiv.className = 'no-words';
+    noWordsDiv.innerHTML = `
+        <i class="fas fa-book"></i>
+        <h3>Aucun mot dans votre vocabulaire</h3>
+        <p>Commencez à ajouter des mots pour enrichir votre vocabulaire.</p>
+        <a href="/monVocabs/add?package=${packageId}" class="btn">Ajouter votre premier mot</a>
+    `;
+    
+    noWordsDiv.style.opacity = '0';
+    noWordsDiv.style.transform = 'translateY(30px) scale(0.95)';
+    noWordsDiv.style.transition = 'all 0.6s ease';
+    
     const container = document.querySelector('.vocabulary-container');
-    const title = container.querySelector('h1');
-    
-    if (title) {
-        container.insertBefore(notification, title.nextSibling);
+    const homeCta = container.querySelector('.home-cta');
+    if (homeCta) {
+        container.insertBefore(noWordsDiv, homeCta);
     } else {
-        container.insertBefore(notification, container.firstChild);
+        container.appendChild(noWordsDiv);
     }
     
     // Animation d'entrée
-    notification.style.opacity = '0';
-    notification.style.transform = 'translateY(-10px)';
-    
     setTimeout(() => {
-        notification.style.opacity = '1';
-        notification.style.transform = 'translateY(0)';
-        notification.style.transition = 'all 0.4s ease';
+        noWordsDiv.style.opacity = '1';
+        noWordsDiv.style.transform = 'translateY(0) scale(1)';
+    }, 50);
+}
+
+function showNotification(message, type) {
+    // Create notification element if it doesn't exist
+    let notification = document.getElementById('notification');
+    if (!notification) {
+        notification = document.createElement('div');
+        notification.id = 'notification';
+        document.body.appendChild(notification);
+    }
+    
+    // Set icon based on type
+    let icon = '';
+    if (type === 'success') {
+        icon = '<i class="fas fa-check-circle"></i>';
+    } else if (type === 'error') {
+        icon = '<i class="fas fa-exclamation-circle"></i>';
+    } else {
+        icon = '<i class="fas fa-info-circle"></i>';
+    }
+    
+    // Set content and type
+    notification.innerHTML = icon + message;
+    notification.className = type;
+    
+    // Show and hide notification
+    setTimeout(() => {
+        notification.classList.add('show');
     }, 10);
     
-    // Faire disparaître après 3 secondes
     setTimeout(() => {
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateY(-10px)';
-        
-        // Supprimer complètement après la transition
-        setTimeout(() => {
-            notification.remove();
-        }, 400);
+        notification.classList.remove('show');
     }, 3000);
 }
 
