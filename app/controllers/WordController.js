@@ -175,7 +175,6 @@ class WordController {
                     const words_with_examples = await geminiService.generateExemple(words_no_example);
                     if (Array.isArray(words_with_examples) && words_with_examples.length > 0) {
                         console.log('✅ Examples generated successfully');
-                        console.log('Words with examples:', words_with_examples);
                         wordsData = await geminiService.replaceExample(wordsData, words_with_examples);
                     } else {
                         console.log('⚠️ No examples were generated');
@@ -192,7 +191,6 @@ class WordController {
                     const words_with_correct_examples = await geminiService.modifyExample(words_with_error_example);
                     if (Array.isArray(words_with_correct_examples) && words_with_correct_examples.length > 0) {
                         console.log('✅ Examples corrected successfully');
-                        console.log('Words with correct examples:', words_with_correct_examples);
                         wordsData = await geminiService.replaceExample(wordsData, words_with_correct_examples);
                     } else {
                         console.log('⚠️ No examples were corrected');
@@ -432,7 +430,6 @@ class WordController {
                     const words_with_examples = await geminiService.generateExemple(words_no_example);
                     if (Array.isArray(words_with_examples) && words_with_examples.length > 0) {
                         console.log('✅ Examples generated successfully');
-                        console.log('Words with examples:', words_with_examples);
                         wordData = await geminiService.replaceExample(wordData, words_with_examples);
                     } else {
                         console.log('⚠️ No examples were generated');
@@ -449,7 +446,6 @@ class WordController {
                     const words_with_correct_examples = await geminiService.modifyExample(words_with_error_example);
                     if (Array.isArray(words_with_correct_examples) && words_with_correct_examples.length > 0) {
                         console.log('✅ Examples corrected successfully');
-                        console.log('Words with correct examples:', words_with_correct_examples);
                         wordData = await geminiService.replaceExample(wordData, words_with_correct_examples);
                     } else {
                         console.log('⚠️ No examples were corrected');

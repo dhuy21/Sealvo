@@ -32,9 +32,11 @@ class LearningController {
                 // Ajouter des propriétés pour faciliter l'affichage des indicateurs de difficulté
                 return {
                     ...word,
-                    isLevel0: word.level === '0' || word.level === 0,
-                    isLevel1: word.level === '1' || word.level === 1,
-                    isLevel2: word.level === '2' || word.level === 2,
+                    isLevel0: word.level === 'x' ,
+                    isLevel1: word.level === '0' ,
+                    isLevel2: word.level === '1' ,
+                    isLevel3: word.level === '2' ,
+                    isLevel4: word.level === 'v' ,
                 };
             });
             
