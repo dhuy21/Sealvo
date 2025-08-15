@@ -24,12 +24,12 @@ const storage = multer.diskStorage({
 const upload = multer({ 
     storage,
     fileFilter: (req, file, cb) => {
-        const validFileTypes = ['.xlsx', '.xls', '.csv', '.pdf'];
+        const validFileTypes = ['.xlsx', '.xls'];
         const ext = path.extname(file.originalname).toLowerCase();
         if (validFileTypes.includes(ext)) {
             cb(null, true);
         } else {
-            cb(new Error('Type de fichier non supporté. Utilisez des fichiers Excel (xlsx, xls, csv) ou PDF.'));
+            cb(new Error('Type de fichier non supporté. Utilisez des fichiers Excel (xlsx, xls)'));
         }
     }
 }).single('file');
@@ -49,7 +49,7 @@ const processExcelFile = async (filePath) => {
         const words = [];
         for (let i = startRow; i < data.length; i++) {
             const row = data[i];
-            if (row.length >= 6) { // Au moins les champs obligatoires
+            if (row[0] !== '' && row[1] !== '' &&  row[3] !== ''  && row[5] !== '' && row[10] !== '') { // Au moins les champs obligatoires
                 words.push({
                     id: i,
                     word: row[0] || '',
@@ -64,13 +64,14 @@ const processExcelFile = async (filePath) => {
                     grammar: row[9] || '',
                     level: row[10] 
                 });
+            } else {
+                throw new Error('Les champs obligatoires sont manquants');
             }
         }
         
         return words;
     } catch (error) {
-        console.error('Erreur lors du traitement du fichier Excel:', error);
-        throw new Error('Impossible de traiter le fichier Excel');
+        throw error;
     }
 };
 
@@ -87,171 +88,158 @@ const processPdfFile = async (filePath) => {
         
         return words;
     } catch (error) {
-        console.error('Erreur lors du traitement du fichier PDF:', error);
+        console.error( error);
         throw new Error('Impossible de traiter le fichier PDF');
     }
 };
 
 class ImportFile {
     async importWords(req, res) {
-        try {
             // Vérifier si l'utilisateur est connecté
             if (!req.session.user) {
                 return res.redirect('/login?error=Vous devez être connecté pour importer des mots');
             }
             
             upload(req, res, async (err) => {
-                if (err) {
-                    return res.render('addWord', {
-                        title: 'Ajouter un mot',
-                        package_id: req.query.package,
-                        user: req.session.user,
-                        error: errMessage
-                    });
-                }
-                
-                if (!req.file) {
-                    return res.render('addWord', {
-                        title: 'Ajouter un mot',
-                        package_id: req.query.package,
-                        user: req.session.user,
-                        error: 'Aucun fichier n\'a été téléchargé'
-                    });
-                }
-                
-                const filePath = req.file.path;
-                const fileExt = path.extname(req.file.originalname).toLowerCase();
-                
-                let words = [];
-                let words_no_example = [];
-                let words_with_error_example = [];
-                const package_id = req.query.package;
-                
-                let errExample = 0;
-                // Traiter le fichier selon son type
-                if (['.xlsx', '.xls', '.csv'].includes(fileExt)) {
-                    // Traiter les fichiers Excel
-                    words = await processExcelFile(filePath);
-                } else if (fileExt === '.pdf') {
-                    // Traiter les fichiers PDF
-                    words = await processPdfFile(filePath);
-                }
-                
-                if (words.length === 0) {
-                    return res.render('addWord', {
-                        title: 'Ajouter un mot',
-                        package_id: req.query.package,
-                        user: req.session.user,
-                        error: 'Aucun mot n\'a été trouvé dans le fichier importé'
-                    });
-                }
-
-                for (const word of words) {
-                    try {
-                        if (!word.meaning || !word.type || !word.word) {
-                            errExample ++ ;
-                            continue;
-                        } else if (word.example === '') {
-                            words_no_example.push({
-                                id: word.id,
-                                word: word.word,
-                                language_code: word.language_code,
-                                meaning: word.meaning,
-                                type: word.type
-                            });
-                        } else if (word.example !== '') {
-                            words_with_error_example.push({
-                                id: word.id,
-                                word: word.word,
-                                language_code: word.language_code,
-                                meaning: word.meaning,
-                                type: word.type,
-                                example: word.example
-                            });
-                        }
-                    } catch (error) {
-                        console.error(`Erreur lors de l'ajout du mot ${word.word}:`, error);
+                try {
+                    if (err) {
+                        throw err;
                     }
-                }
-                
-                if (words_no_example.length > 0) {
-                    console.log('Generating examples for words without examples...');
                     
-                    try {
-                        const words_with_examples = await geminiService.generateExemple(words_no_example);
-                        if (Array.isArray(words_with_examples) && words_with_examples.length > 0) {
-                            console.log('✅ Examples generated successfully');
-                            console.log('Words with examples:', words_with_examples);
-                            words = await geminiService.replaceExample(words, words_with_examples);
-                        } else {
-                            console.log('⚠️ No examples were generated');
-                        }
-                    } catch (error) {
-                        console.error('❌ Error generating examples:', error);
+                    if (!req.file) {
+                        throw new Error('Aucun fichier n\'a été téléchargé');
                     }
-                }
-
-                if (words_with_error_example.length > 0) {
-                    console.log('Correcting examples for words with error examples...');
-                    try {
-                        const words_with_correct_examples = await geminiService.modifyExample(words_with_error_example);
-                        if (Array.isArray(words_with_correct_examples) && words_with_correct_examples.length > 0) {
-                            console.log('✅ Examples corrected successfully');
-                            console.log('Words with correct examples:', words_with_correct_examples);
-                            words = await geminiService.replaceExample(words, words_with_correct_examples);
-                        } else {
-                            console.log('⚠️ No examples were corrected');
-                        }
-                    } catch (error) {
-                        console.error('❌ Error correcting examples:', error);
-                    }
-                }
                 
+                    const filePath = req.file.path;
+                    const fileExt = path.extname(req.file.originalname).toLowerCase();
+                    
+                    let words = [];
+                    let words_no_example = [];
+                    let words_with_error_example = [];
+                    const package_id = req.query.package;
+                    
+                    let errExample = 0;
+                    // Traiter le fichier selon son type
+                    if (['.xlsx', '.xls'].includes(fileExt)) {
+                        // Traiter les fichiers Excel
+                        words = await processExcelFile(filePath);
+                    } 
+                    
 
-                // Ajouter chaque mot à la base de données
-                let successCount = 0;
-                let errChamps = 0;
-            
-                for (const wordData of words) {
-                    try {
-                        // Vérifier que les champs obligatoires sont présents
-                        if (!wordData.word || !wordData.language_code || !wordData.subject || !wordData.type || 
-                            !wordData.meaning ) {
-                                errChamps ++ ;
-                            continue;
+                    for (const word of words) {
+                        try {
+                            if (!word.meaning || !word.type || !word.word) {
+                                errExample ++ ;
+                                continue;
+                            } else if (word.example === '') {
+                                words_no_example.push({
+                                    id: word.id,
+                                    word: word.word,
+                                    language_code: word.language_code,
+                                    meaning: word.meaning,
+                                    type: word.type
+                                });
+                            } else if (word.example !== '') {
+                                words_with_error_example.push({
+                                    id: word.id,
+                                    word: word.word,
+                                    language_code: word.language_code,
+                                    meaning: word.meaning,
+                                    type: word.type,
+                                    example: word.example
+                                });
+                            }
+                        } catch (error) {
+                            console.error(`Erreur lors de l'ajout du mot ${word.word}:`, error);
+                            throw new Error('Erreur lors de la vérification des mots');
                         }
-                        
-                        // Assurer que level est défini
-                        if (wordData.level === undefined || wordData.level === null) {
-                            wordData.level = 'x'; // Niveau par défaut
-                        }
-
-
-                        await wordModel.create(wordData, package_id);
-                        successCount++;
-
-                    } catch (error) {
-                        console.error(`Erreur lors de l'ajout du mot ${wordData.word}:`, error);
-                        errChamps ++ ;
                     }
+                    
+                    if (words_no_example.length > 0) {
+                        console.log('Generating examples for words without examples...');
+                        
+                        try {
+                            const words_with_examples = await geminiService.generateExemple(words_no_example);
+                            if (Array.isArray(words_with_examples) && words_with_examples.length > 0) {
+                                console.log('✅ Examples generated successfully');
+                                console.log('Words with examples:', words_with_examples);
+                                words = await geminiService.replaceExample(words, words_with_examples);
+                            } else {
+                                console.log('⚠️ No examples were generated');
+                            }
+                        } catch (error) {
+                           throw new Error('Erreur lors de la génération des exemples');
+                        }
+                    }
+
+                    if (words_with_error_example.length > 0) {
+                        console.log('Correcting examples for words with error examples...');
+                        try {
+                            const words_with_correct_examples = await geminiService.modifyExample(words_with_error_example);
+                            if (Array.isArray(words_with_correct_examples) && words_with_correct_examples.length > 0) {
+                                console.log('✅ Examples corrected successfully');
+                                console.log('Words with correct examples:', words_with_correct_examples);
+                                words = await geminiService.replaceExample(words, words_with_correct_examples);
+                            } else {
+                                console.log('⚠️ No examples were corrected');
+                            }
+                        } catch (error) {
+                            throw new Error('Erreur lors de la correction des exemples');
+                        }
+                    }
+                    
+
+                    // Ajouter chaque mot à la base de données
+                    let successCount = 0;
+                    let errChamps = 0;
+                
+                    for (const wordData of words) {
+                        try {
+                            // Vérifier que les champs obligatoires sont présents
+                            if (!wordData.word || !wordData.language_code || !wordData.subject || !wordData.type || 
+                                !wordData.meaning ) {
+                                    errChamps ++ ;
+                                continue;
+                            }
+                            
+                            // Assurer que level est défini
+                            if (wordData.level === undefined || wordData.level === null) {
+                                wordData.level = 'x'; // Niveau par défaut
+                            }
+
+
+                            await wordModel.create(wordData, package_id);
+                            successCount++;
+
+                        } catch (error) {
+                            console.error(`Erreur lors de l'ajout du mot ${wordData.word}:`, error);
+                            throw error;
+                        }
+                    }
+                    // Supprimer le fichier temporaire
+                    fs.unlinkSync(filePath);
+                    // Rediriger avec un message de succès
+                    res.status(200).json({
+                        success: true,
+                        message: `${successCount} mot(s) importé(s) avec succès. ${errChamps} erreur(s) de champs obligatoires. ${errExample} erreur(s) de generation d'exemples`
+                    });
+                
+                } catch (error) {
+                    // Supprimer le fichier temporaire si il existe
+                    if (req.file && req.file.path) {
+                        try {
+                            fs.unlinkSync(req.file.path);
+                        } catch (unlinkError) {
+                            console.error('Erreur lors de la suppression du fichier temporaire:', unlinkError);
+                        }
+                    }
+                    
+                    res.status(500).json({
+                        success: false,
+                        message: error.message
+                    });
                 }
-                // Supprimer le fichier temporaire
-                fs.unlinkSync(filePath);
-                // Rediriger avec un message de succès
-                res.status(200).json({
-                    success: true,
-                    message: `${successCount} mot(s) importé(s) avec succès. ${errChamps} erreur(s) de champs obligatoires. ${errExample} erreur(s) de generation d'exemples`
-                });
             });
-        } catch (error) {
-            console.error('Erreur lors de l\'importation des mots:', error);
-            res.render('addWord', {
-                title: 'Ajouter un mot',
-                package_id: req.query.package,
-                user: req.session.user,
-                error: 'Une erreur est survenue lors de l\'importation des mots'
-            });
-        }
     }
 }
 

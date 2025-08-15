@@ -4,14 +4,25 @@
  * Enhanced for maximum fluidity and smoothness
  */
 
+    // Streak update variables
+    let streakUpdateTimeout = null;
+    let streakUpdated = false;
+    const STREAK_UPDATE_TIME = 30 * 60 * 1000; // 30 minutes in milliseconds
+
 document.addEventListener('DOMContentLoaded', function() {
+
+
+
     // Initialize animations and interactions
     initWordCards();
     animateCounters();
     setupScrollEffects();
     initStaggeredAnimations();
     addMouseFollowEffect();
+    setupStreakUpdate(); // Start the streak update timer
 });
+
+
 
 /**
  * Animates number counters when they come into view
@@ -351,3 +362,81 @@ function applyWithDelay(elements, className, baseDelay = 100, increment = 100) {
         }, baseDelay + (index * increment));
     });
 } 
+
+
+
+// Function to update streak after 5 minutes
+function setupStreakUpdate() {
+    // Clear any existing timeout
+    if (streakUpdateTimeout) {
+        clearTimeout(streakUpdateTimeout);
+    }
+    
+    // Set a new timeout for 5 minutes
+    streakUpdateTimeout = setTimeout(() => {
+        // Only update once per session
+        if (!streakUpdated) {
+            updateUserStreak();
+        }
+    }, STREAK_UPDATE_TIME);
+}
+
+// Function to call the API to update streak
+function updateUserStreak() {
+    fetch('/update-streak', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+    
+        if (data.updated) {
+            streakUpdated = true;
+            //Notify in the page that the streak has been updated
+            showNotification(`🔥 Série de ${data.newStreak} jours! Continuez comme ça!`, 'success');
+            
+        }
+    })
+    .catch(error => {
+        console.error('Error updating streak:', error);
+    });
+}
+
+
+/**
+* Show a notification message
+*/
+function showNotification(message, type = 'info') {
+    // Create notification element if it doesn't exist
+    let notification = document.getElementById('notification');
+    if (!notification) {
+        notification = document.createElement('div');
+        notification.id = 'notification';
+        document.body.appendChild(notification);
+    }
+
+    // Set icon based on type
+    let icon = '';
+    if (type === 'success') {
+        icon = '<i class="fas fa-check-circle"></i>';
+    } else if (type === 'error') {
+        icon = '<i class="fas fa-exclamation-circle"></i>';
+    } else {
+        icon = '<i class="fas fa-info-circle"></i>';
+    }
+
+    // Set content and type
+    notification.innerHTML = icon + message;
+    notification.className = type;
+
+    // Show and hide notification
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 10);
+
+    setTimeout(() => {
+        notification.classList.remove('show');
+    }, 3000);
+}

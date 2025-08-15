@@ -34,15 +34,7 @@ function route(app) {
     app.use('/level-progress', levelProgressRouter);
     
     // Streak update route
-    app.post('/update-streak', ensureAuthenticated, async (req, res) => {
-        try {
-            const result = await LearningController.checkAndUpdateStreak(req.session.user.id);
-            res.json({ success: true, ...result });
-        } catch (error) {
-            console.error('Erreur lors de la mise à jour du streak:', error);
-            res.status(500).json({ success: false, message: 'Erreur lors de la mise à jour du streak' });
-        }
-    });
+    app.post('/update-streak', ensureAuthenticated, LearningController.checkAndUpdateStreak);
     
     // All site routes including /feedback are handled here
     app.use('/', siteRouter);

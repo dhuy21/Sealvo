@@ -153,6 +153,19 @@ class User {
         }
     }
 
+    async updateStreakUpdatedAt(id) {
+        try {
+            const [result] = await global.dbConnection.execute(
+                'UPDATE users SET streak_updated_at = NOW() WHERE id = ?', 
+                [id]
+            );
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour de la date de mise à jour de la série :', error);
+            throw error;
+        }
+    }
+
     async updateStreak(id, streak) {
         try {
             const [result] = await global.dbConnection.execute(
@@ -217,6 +230,15 @@ class User {
             return rows[0] || null;
         } catch (error) {
             console.error('Erreur lors de la récupération de la série :', error);
+            throw error;
+        }
+    }
+    async getDateUpdatedStreak(id) {
+        try {
+            const [rows] = await global.dbConnection.execute('SELECT streak_updated_at FROM users WHERE id = ?', [id]);
+            return rows[0] || null;
+        } catch (error) {
+            console.error('Erreur lors de la récupération de la date de mise à jour de la série :', error);
             throw error;
         }
     }
