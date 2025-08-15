@@ -132,8 +132,15 @@ class Word {
     //Supprimer tous les mots d'un package d'un utilisateur
     async deleteAllWords(packageId) {
         try {
-            await global.dbConnection.execute('DELETE FROM learning WHERE package_id = ?', [packageId]);
-            return true;
+            // Supprimer directement les word_details liés à ce package
+            // (CASCADE supprimera automatiquement les relations dans learning)
+            const [result] = await global.dbConnection.execute(`
+                DELETE wd FROM word_details wd
+                INNER JOIN learning l ON wd.detail_id = l.detail_id
+                WHERE l.package_id = ?
+            `, [packageId]);
+            
+            return result.affectedRows;
         } catch (error) {
             console.error('Erreur lors de la suppression de tous les mots:', error);
             throw error;
