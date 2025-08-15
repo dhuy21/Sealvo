@@ -9,13 +9,13 @@ class Learning {
                 intervalDate = 0;
                 break;
             case '0':
-                intervalDate = 0;
+                intervalDate = 2;
                 break;
             case '1':
-                intervalDate = 0;
+                intervalDate = 4;
                 break;
             case '2':
-                intervalDate = 0;
+                intervalDate = 10;
                 break;
             case 'v':
                 intervalDate = 20;
