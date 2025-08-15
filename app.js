@@ -19,6 +19,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Initialize all security middleware (CSP, session, sanitization)
 initializeMiddleware(app);
 
+
 // Initialize database connection
 (async () => {
   try {
