@@ -550,23 +550,28 @@
                             {{#if this.isLevel0}}
                             <span class="difficulty-indicator difficulty-active"></span>
                             {{else}}
+                            <span class="difficulty-indicator difficulty-inactive"></span>
+                            {{/if}}
+                            
                             {{#if this.isLevel1}}
-                            <span class="difficulty-indicator difficulty-active"></span>
-                            {{else}}
-                            {{#if this.isLevel2}}
-                            <span class="difficulty-indicator difficulty-active"></span>
-                            {{else}}
-                            {{#if this.isLevel3}}
-                            <span class="difficulty-indicator difficulty-active"></span>
-                            {{else}}
-                            {{#if this.isLevel4}}
                             <span class="difficulty-indicator difficulty-active"></span>
                             {{else}}
                             <span class="difficulty-indicator difficulty-inactive"></span>
                             {{/if}}
-                            {{/if}}
                             
                             {{#if this.isLevel2}}
+                            <span class="difficulty-indicator difficulty-active"></span>
+                            {{else}}
+                            <span class="difficulty-indicator difficulty-inactive"></span>
+                            {{/if}}
+                            
+                            {{#if this.isLevel3}}
+                            <span class="difficulty-indicator difficulty-active"></span>
+                            {{else}}
+                            <span class="difficulty-indicator difficulty-inactive"></span>
+                            {{/if}}
+                            
+                            {{#if this.isLevel4}}
                             <span class="difficulty-indicator difficulty-active"></span>
                             {{else}}
                             <span class="difficulty-indicator difficulty-inactive"></span>
