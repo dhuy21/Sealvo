@@ -54,14 +54,14 @@ CREATE TABLE IF NOT EXISTS words (
     word_id INT NOT NULL AUTO_INCREMENT,
     word VARCHAR(255) NOT NULL,
     subject VARCHAR(255) NOT NULL,
-    language_code VARCHAR(2) NOT NULL,
+    language_code VARCHAR(10) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (word_id),
     UNIQUE KEY uq_words_word_subject_lang (word, subject, language_code),
-    CHECK (language_code IN ('en', 'fr', 'es', 'de', 'it', 
-    'ja', 'zh', 'ar', 'pt', 'ru', 'tr', 'vi', 'ko', 'th', 
-    'id', 'ms', 'hi', 'bn', 'pl', 'nl', 'sv', 'fi', 'uk', 
-    'el', 'he', 'ro', 'hu', 'cs', 'da', 'no', 'sk', 'sr', 'hr', 'bg', 'fa', 'ur'))
+
+    CHECK (language_code IN ('en-US', 'en-GB', 'fr', 'es-US', 'es-ES', 'de', 'it', 
+    'ja', 'zh-CN', 'zh-HK', 'zh-TW', 'pt', 'ru', 'vi', 'ko', 'id', 'hi', 'pl', 'nl'))
+
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*INSERT INTO words (word, subject) VALUES ('Present', 'Daily words');*/
 

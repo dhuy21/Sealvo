@@ -475,6 +475,21 @@
   margin-bottom: 15px;
 }
 
+.card-language {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 5px 15px;
+  border-radius: 50px;
+  background: rgba(0, 0, 0, 0.1);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  margin-bottom: 15px;
+}
 .card-content {
   font-size: 2rem;
   margin: 10px 0 15px;
@@ -1501,6 +1516,9 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     width: 40%;
     height: 40%;
   }
+  .card-language {
+    font-size: 0.8rem;
+  }
   .card-type {
     font-size: 0.8rem;
   }
@@ -1669,6 +1687,9 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
   .card-type {
     font-size: 0.8rem;
   }
+  .card-language {
+    font-size: 0.8rem;
+  }
   .card-prompt {
     font-size: 0.8rem;
   }
@@ -1831,6 +1852,9 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     height: 40%;
   }
   .card-type {
+    font-size: 0.8rem;
+  }
+  .card-language {
     font-size: 0.8rem;
   }
   .card-prompt {
@@ -1997,6 +2021,10 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
   .card-type {
     font-size: 0.8rem;
   }
+  .card-language {
+    font-size: 0.8rem;
+  }
+  
   .card-prompt {
     font-size: 0.8rem;
   }
