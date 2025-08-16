@@ -399,53 +399,13 @@ document.addEventListener('DOMContentLoaded', function() {
           // Select best voice based on language and device
           let selectedVoice = null;
           
-          if (isIOS) {
-            // iOS specific voice selection
-            if (targetLang.startsWith('en')) {
-              selectedVoice = targetVoices.find(v => v.name.includes('Samantha')) ||
-                            targetVoices.find(v => v.name.includes('Alex'));
-            } else if (targetLang.startsWith('fr')) {
-              selectedVoice = targetVoices.find(v => v.name.includes('Amélie')) ||
-                            targetVoices.find(v => v.name.includes('Thomas'));
-            } else if (targetLang.startsWith('es')) {
-              selectedVoice = targetVoices.find(v => v.name.includes('Monica')) ||
-                            targetVoices.find(v => v.name.includes('Juan'));
-            } else if (targetLang.startsWith('de')) {
-              selectedVoice = targetVoices.find(v => v.name.includes('Anna')) ||
-                            targetVoices.find(v => v.name.includes('Stefan'));
-            } else if (targetLang.startsWith('it')) {
-              selectedVoice = targetVoices.find(v => v.name.includes('Alice')) ||
-                            targetVoices.find(v => v.name.includes('Luca'));
-            } else if (targetLang.startsWith('pt')) {
-              selectedVoice = targetVoices.find(v => v.name.includes('Joana')) ||
-                            targetVoices.find(v => v.name.includes('Luciana'));
-            }
-
-            if (selectedVoice) {
-              alert(`${selectedVoice.lang}, ${selectedVoice.name}`);
-            } else {
-              alert('No voice selected');
-            }
-          } else {
-            // Non-iOS devices - prefer Google or Microsoft voices
-            selectedVoice = targetVoices.find(v => v.name.includes('Google')) ||
-                          targetVoices.find(v => v.name.includes('Microsoft'));
-            
-            if (selectedVoice) {
-              alert(`${selectedVoice.lang}, ${selectedVoice.name}`);
-            } else {
-              alert('No voice selected');
-            }
-          }
+          //Random voice
+          selectedVoice = targetVoices[Math.floor(Math.random() * targetVoices.length)];
           
-          // If no specific voice found, use the first available voice for the language
-          if (!selectedVoice && targetVoices.length > 0) {
-            // Prefer female voices if available
-            selectedVoice = targetVoices.find(v => 
-              v.name.toLowerCase().includes('female') || 
-              v.name.toLowerCase().includes('femme') ||
-              !v.name.toLowerCase().includes('male')
-            ) || targetVoices[0];
+          if (selectedVoice) {
+            alert(`${selectedVoice.lang}, ${selectedVoice.name}`);
+          } else {
+            alert('No voice selected');
           }
           
           // Set the selected voice
