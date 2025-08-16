@@ -41,23 +41,26 @@ const processExcelFile = async (filePath) => {
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const data = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+
+        //On juste prendre les rows qui ont un mot
+        const rowsWithWord = data.filter(row => row[0] !== undefined && row[1] !== undefined &&  row[3] !== undefined  && row[5] !== undefined && row[10] !== undefined);
         
         // Ignorer l'en-tête si présent
         const startRow = data[0][0] === 'Mot' || data[0][0] === 'Word' ? 1 : 0;
         
         // Convertir les données en objets de mots
         const words = [];
-        for (let i = startRow; i < data.length; i++) {
-            const row = data[i];
+        for (let i = startRow; i < rowsWithWord.length; i++) {
+            const row = rowsWithWord[i];
             if (row[0] !== '' && row[1] !== '' &&  row[3] !== ''  && row[5] !== '' && row[10] !== '') { // Au moins les champs obligatoires
                 words.push({
                     id: i,
-                    word: row[0] || '',
-                    language_code: row[1] || '',
+                    word: row[0],
+                    language_code: row[1],
                     subject: row[2] || '',
-                    type: row[3] || '',
+                    type: row[3],
                     pronunciation: row[4] || '',
-                    meaning: row[5] || '',
+                    meaning: row[5],
                     example: row[6] || '',
                     synonyms: row[7] || '',
                     antonyms: row[8] || '',
