@@ -9,7 +9,7 @@ const sessionConfig = {
   resave: false,
   saveUninitialized: false,
   cookie: { 
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    maxAge: 3 * 60 * 60 * 1000, // 4 hours
     secure: process.env.NODE_ENV === 'production', // HTTPS only in production
     httpOnly: true, // Prevent XSS attacks on cookies
     sameSite: 'lax' // CSRF protection

@@ -69,7 +69,6 @@ const sanitizationUtils = {
                 '<': '&lt;',
                 '>': '&gt;',
                 '"': '&quot;',
-                "'": '&#39;',
                 '&': '&amp;'
             };
             return entities[match];
