@@ -381,6 +381,7 @@ document.addEventListener('DOMContentLoaded', function() {
           // Get the language from the word's language_code
           const targetLang = word.language_code;
           alert(voices.length);
+          alert(voices.map(v => v.lang));
           console.log(voices.filter(voice => voice.lang.includes('fr')));
           
           // Filter voices by the target language
