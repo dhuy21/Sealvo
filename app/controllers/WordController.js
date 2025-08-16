@@ -88,7 +88,7 @@ class WordController {
                     const wordData = {
                         id: i,
                         word: words[i],
-                        language_code: language_codes[i],
+                        language_code: language_codes[i].replace(/\([^)]*\)/g, '').trim(),
                         subject: subjects[i],
                         type: types[i],
                         meaning: meanings[i],
@@ -132,7 +132,7 @@ class WordController {
                 const wordData = {
                     id: 0,
                     word,
-                    language_code,
+                    language_code: language_code.replace(/\([^)]*\)/g, '').trim(),
                     subject,
                     type,
                     meaning,
@@ -403,7 +403,7 @@ class WordController {
             let wordData = {
                 id: 0,
                 word,
-                language_code,
+                language_code: language_code.replace(/\([^)]*\)/g, '').trim(),
                 type,
                 meaning,
                 pronunciation: pronunciation || '', // Valeur par défaut si vide
