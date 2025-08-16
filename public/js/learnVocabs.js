@@ -381,7 +381,7 @@ document.addEventListener('DOMContentLoaded', function() {
           // Get the language from the word's language_code
           const targetLang = word.language_code;
           alert(voices.length);
-          alert(voices.map(v => v.lang));
+          alert(voices.map(v => `${v.lang}, ${v.name}`).join('\n'));
           console.log(voices.filter(voice => voice.lang.includes('fr')));
           
           // Filter voices by the target language
@@ -420,11 +420,22 @@ document.addEventListener('DOMContentLoaded', function() {
               selectedVoice = targetVoices.find(v => v.name.includes('Joana')) ||
                             targetVoices.find(v => v.name.includes('Luciana'));
             }
+
+            if (selectedVoice) {
+              alert(`${selectedVoice.lang}, ${selectedVoice.name}`);
+            } else {
+              alert('No voice selected');
+            }
           } else {
             // Non-iOS devices - prefer Google or Microsoft voices
             selectedVoice = targetVoices.find(v => v.name.includes('Google')) ||
                           targetVoices.find(v => v.name.includes('Microsoft'));
-            console.log(selectedVoice);
+            
+            if (selectedVoice) {
+              alert(`${selectedVoice.lang}, ${selectedVoice.name}`);
+            } else {
+              alert('No voice selected');
+            }
           }
           
           // If no specific voice found, use the first available voice for the language
