@@ -56,7 +56,7 @@ const processExcelFile = async (filePath) => {
                 words.push({
                     id: i,
                     word: row[0],
-                    language_code: row[1],
+                    language_code: row[1].replace(/\([^)]*\)/g, '').trim(),
                     subject: row[2] || '',
                     type: row[3],
                     pronunciation: row[4] || '',
@@ -131,6 +131,7 @@ class ImportFile {
 
                     for (const word of words) {
                         try {
+                            console.log(word.language_code);
                             if (!word.meaning || !word.type || !word.word) {
                                 errExample ++ ;
                                 continue;

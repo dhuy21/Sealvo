@@ -181,6 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="flashcard-inner">
               <div class="flashcard-front">
                 <span class="card-type">${word.type}</span>
+                <span class="card-language">${word.language_code}</span>
                 <h2 class="card-content">${frontContent}</h2>
                 <div class="hint-container">
                   <button id="hint-button" class="hint-btn"><i class="fas fa-lightbulb"></i> Indice</button>
@@ -190,6 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
               </div>
               <div class="flashcard-back">
                 <span class="card-type">${word.type}</span>
+                <span class="card-language">${word.language_code}</span>
                 <h2 class="card-content">${backContent}</h2>
                 <div class="card-details">
                   <p><strong>Exemple:</strong> <span class="example-text">${word.example}</span></p>
@@ -199,6 +201,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p><strong>Prononciation:</strong> <span class="pronunciation-text">${word.pronunciation}</span></p>
                     <button class="pronunciation-btn" data-text="${word.word}">
                       <i class="fas fa-volume-up"></i> Écouter
+                    </button>
+
+                    <button class="pronunciation-btn" data-text="${word.example}">
+                      <i class="fas fa-volume-up"></i> Écouter l'exemple
                     </button>
                   ` : ''}
                   
@@ -317,9 +323,10 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       // Bouton de prononciation
-      const pronunciationBtn = document.querySelector('.pronunciation-btn');
+      const pronunciationBtn = document.querySelectorAll('.pronunciation-btn');
       if (pronunciationBtn) {
-        pronunciationBtn.addEventListener('click', function(e) {
+        pronunciationBtn.forEach(btn => {
+          btn.addEventListener('click', function(e) {
           e.stopPropagation(); // Empêcher la propagation au flashcard
           
           // Animation du bouton
@@ -331,19 +338,22 @@ document.addEventListener('DOMContentLoaded', function() {
           const text = this.getAttribute('data-text');
           speakText(text);
         });
+        });
       }
     }
     
-    // Fonction pour prononcer un texte avec l'API Speech Synthesis
+    // Fonction pour prononcer un texte avec l'API Speech Synthesis (support multi-langues)
     function speakText(text) {
       if ('speechSynthesis' in window) {
+        const word = currentWords[currentIndex];
+        
         // Cancel any ongoing speech
         speechSynthesis.cancel();
         
         const utterance = new SpeechSynthesisUtterance(text);
         
-        // Set language to English
-        utterance.lang = 'en-US';
+        // Set language based on word's language_code
+        utterance.lang = word.language_code;
         
         // Adjust rate (slightly slower)
         utterance.rate = 0.9;
@@ -368,24 +378,77 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         function selectAndSpeakWithBestVoice() {
-          // Filter English voices
-          let englishVoices = voices.filter(voice => voice.lang.includes('en-'));
+          // Get the language from the word's language_code
+          const targetLang = word.language_code;
+          alert(voices.length);
+          console.log(voices.filter(voice => voice.lang.includes('fr')));
           
-          // Look for specific voices based on device
-          if (isIOS) {
-            // Try to use Samantha voice on iOS (high quality)
-            const samanthaVoice = englishVoices.find(v => v.name.includes('Samantha'));
-            if (samanthaVoice) utterance.voice = samanthaVoice;
-          } else {
-            // On other devices, prefer Google voices if available
-            const googleVoice = englishVoices.find(v => v.name.includes('Google'));
-            if (googleVoice) utterance.voice = googleVoice;
+          // Filter voices by the target language
+          let targetVoices = voices.filter(voice => {
+            // Try exact match first, then prefix match
+            return voice.lang === targetLang || voice.lang.startsWith(targetLang.split('-')[0]);
+          });
+          
+          // If no voices found for target language, fall back to any available voices
+          if (targetVoices.length === 0) {
+            console.warn(`No voices found for language ${targetLang}, using default voice`);
+            targetVoices = voices;
           }
           
-          // If no specific voice was found, try any English female voice
-          if (!utterance.voice) {
-            const femaleVoice = englishVoices.find(v => v.name.includes('female') || v.name.includes('Female'));
-            if (femaleVoice) utterance.voice = femaleVoice;
+          // Select best voice based on language and device
+          let selectedVoice = null;
+          
+          if (isIOS) {
+            // iOS specific voice selection
+            if (targetLang.startsWith('en')) {
+              selectedVoice = targetVoices.find(v => v.name.includes('Samantha')) ||
+                            targetVoices.find(v => v.name.includes('Alex'));
+            } else if (targetLang.startsWith('fr')) {
+              selectedVoice = targetVoices.find(v => v.name.includes('Amélie')) ||
+                            targetVoices.find(v => v.name.includes('Thomas'));
+            } else if (targetLang.startsWith('es')) {
+              selectedVoice = targetVoices.find(v => v.name.includes('Monica')) ||
+                            targetVoices.find(v => v.name.includes('Juan'));
+            } else if (targetLang.startsWith('de')) {
+              selectedVoice = targetVoices.find(v => v.name.includes('Anna')) ||
+                            targetVoices.find(v => v.name.includes('Stefan'));
+            } else if (targetLang.startsWith('it')) {
+              selectedVoice = targetVoices.find(v => v.name.includes('Alice')) ||
+                            targetVoices.find(v => v.name.includes('Luca'));
+            } else if (targetLang.startsWith('pt')) {
+              selectedVoice = targetVoices.find(v => v.name.includes('Joana')) ||
+                            targetVoices.find(v => v.name.includes('Luciana'));
+            }
+          } else {
+            // Non-iOS devices - prefer Google or Microsoft voices
+            selectedVoice = targetVoices.find(v => v.name.includes('Google')) ||
+                          targetVoices.find(v => v.name.includes('Microsoft'));
+            console.log(selectedVoice);
+          }
+          
+          // If no specific voice found, use the first available voice for the language
+          if (!selectedVoice && targetVoices.length > 0) {
+            // Prefer female voices if available
+            selectedVoice = targetVoices.find(v => 
+              v.name.toLowerCase().includes('female') || 
+              v.name.toLowerCase().includes('femme') ||
+              !v.name.toLowerCase().includes('male')
+            ) || targetVoices[0];
+          }
+          
+          // Set the selected voice
+          if (selectedVoice) {
+            utterance.voice = selectedVoice;
+            console.log(`Selected voice: ${selectedVoice.name} for language: ${targetLang}`);
+          }
+          
+          // Adjust speech rate based on language complexity
+          if (targetLang.startsWith('zh') || targetLang.startsWith('ja')) {
+            utterance.rate = 0.8; // Slower for tonal/complex languages
+          } else if (targetLang.startsWith('es') || targetLang.startsWith('it')) {
+            utterance.rate = 0.8; // Slightly slower for Romance languages
+          } else {
+            utterance.rate = 0.9; // Default rate
           }
           
           // Start speaking
