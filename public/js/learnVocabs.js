@@ -204,13 +204,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p><strong>Prononciation:</strong> <span class="pronunciation-text">${word.pronunciation}</span></p>
                     <button class="pronunciation-btn" data-text="${word.word}">
                       <i class="fas fa-volume-up"></i> Écouter
-                    </button>
-
+                    </button> 
+                  ` : ''}
                     <button class="pronunciation-btn" data-text="${word.example}">
                       <i class="fas fa-volume-up"></i> Écouter l'exemple
                     </button>
-                  ` : ''}
-                  
                 </div>
               </div>
             </div>
