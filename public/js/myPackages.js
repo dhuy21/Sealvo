@@ -48,7 +48,6 @@ document.addEventListener('DOMContentLoaded', function() {
         setupEventListeners();
         updateStats();
         addAnimations();
-        console.log('✅ My Packages initialized successfully');
     }
 
     // Charger les données des packages depuis le DOM
@@ -83,8 +82,6 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             allPublicPackages.push(packageData);
         });
-
-        console.log(`Loaded ${allPackages.length} user packages and ${allPublicPackages.length} public packages`);
     }
 
     // Configuration des event listeners
@@ -290,8 +287,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Afficher/masquer le message "aucun résultat"
         toggleNoResults(!hasResults && (searchTerm !== '' || filter !== 'my-packages'));
-        
-        console.log(`Filtered packages: ${visibleCount} visible`);
     }
 
     // Filtrer les packages publics
@@ -318,8 +313,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Afficher/masquer le message "aucun résultat"
         toggleNoResults(!hasResults && searchTerm !== '');
-        
-        console.log(`Filtered public packages: ${visibleCount} visible`);
     }
 
     // Afficher une carte de package avec animation
@@ -500,7 +493,6 @@ document.addEventListener('DOMContentLoaded', function() {
             package_description: formData.get('package_description'),
             mode: formData.get('mode')
         };
-        console.log(packageData.mode);
         try {
             let response;
             if (currentEditId) {
@@ -846,6 +838,4 @@ document.addEventListener('DOMContentLoaded', function() {
         reloadData: loadPackagesData,
         updateStats
     };
-
-    console.log('🎉 My Packages JavaScript loaded successfully!');
 });

@@ -111,8 +111,6 @@ class GeminiService {
             Words: 
             ${JSON.stringify(words, null, 2)}`;
 
-            console.log('📤 Sending prompt to Gemini...');
-
             const result = await model.generateContent(batchPrompt);
             const response = await result.response;
             const text = response.text();
