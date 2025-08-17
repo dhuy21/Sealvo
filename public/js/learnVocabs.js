@@ -1,6 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Récupérer les mots depuis un attribut data de l'élément HTML
-    // ou depuis une variable globale définie dans le template
+          // Vérifier le navigateur
+      checkBrowser();
+      
+      // Récupérer les mots depuis un attribut data de l'élément HTML
+      // ou depuis une variable globale définie dans le template
     let allWords = [];
     
     // Essayer de récupérer les mots depuis un élément avec un attribut data
@@ -559,8 +562,113 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('Erreur lors du chargement des progrès', e);
       }
     }
-    
-    // Navigation entre les cartes
+
+         function checkBrowser() {
+         const userAgent = navigator.userAgent.toLowerCase();
+         console.log(userAgent);
+         const isChrome = userAgent.includes('chrome') && !userAgent.includes('edg');
+         const isSafari = userAgent.includes('safari') && !userAgent.includes('chrome');
+         const isEdge = userAgent.includes('edg');
+         
+         if (!isChrome && !isSafari && !isEdge) {
+             showInstructions();
+             return false;
+         }
+         return true;
+     }
+     
+          function showInstructions() {
+         const modal = document.createElement('div');
+         modal.className = 'browser-modal';
+         modal.innerHTML = `
+             <div class="browser-content">
+                 <div class="modal-header">
+                     <div class="warning-icon">
+                         <i class="fas fa-exclamation-triangle"></i>
+                     </div>
+                     <h2>Oops ! Navigateur non optimal</h2>
+                     <p class="subtitle">Passons à quelque chose de mieux ✨</p>
+                 </div>
+                 
+                 <div class="modal-body">
+                     <div class="recommended-browsers">
+                         <div class="browser-option chrome">
+                             <div class="browser-icon">
+                                 <i class="fab fa-chrome"></i>
+                             </div>
+                             <span>Chrome</span>
+                         </div>
+                         <div class="browser-option edge">
+                             <div class="browser-icon">
+                                 <i class="fab fa-edge"></i>
+                             </div>
+                             <span>Edge</span>
+                         </div>
+                         <div class="browser-option safari">
+                             <div class="browser-icon">
+                                 <i class="fab fa-safari"></i>
+                             </div>
+                             <span>Safari</span>
+                         </div>
+                     </div>
+                     
+                     <div class="site-info">
+                         <div class="site-badge">
+                             <i class="fas fa-globe"></i>
+                             <span>sealvo.it.com</span>
+                             <button class="copy-btn" title="Copier l'URL">
+                                 <i class="fas fa-copy"></i>
+                             </button>
+                         </div>
+                     </div>
+                 </div>
+                 
+                 <div class="modal-actions">
+                     <button class="change-browser-btn primary-btn">
+                         <i class="fas fa-external-link-alt"></i>
+                         <span>Ouvrir dans Edge</span>
+                         <div class="btn-glow"></div>
+                     </button>
+                     <button class="continue-anyway-btn secondary-btn">
+                         <i class="fas fa-play"></i>
+                         Continuer quand même
+                     </button>
+                 </div>
+             </div>
+         `;
+         document.body.appendChild(modal);
+         
+                  // Event listeners pour éviter CSP inline
+         const changeBrowserBtn = modal.querySelector('.change-browser-btn');
+         const continueBtn = modal.querySelector('.continue-anyway-btn');
+         const copyBtn = modal.querySelector('.copy-btn');
+         
+         // Copier l'URL
+         copyBtn.addEventListener('click', () => {
+             navigator.clipboard.writeText('https://sealvo.it.com').then(() => {
+                 copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+                 copyBtn.style.background = '#10b981';
+                 setTimeout(() => {
+                     copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+                     copyBtn.style.background = '';
+                 }, 2000);
+             });
+         });
+         
+         // Ouvrir dans Edge
+         changeBrowserBtn.addEventListener('click', () => {
+             const link = document.createElement('a');
+             link.href = 'microsoft-edge:https://sealvo.it.com';
+             link.click();
+         });
+ 
+         continueBtn.addEventListener('click', () => {
+             modal.classList.add('modal-exit');
+             setTimeout(() => modal.remove(), 300);
+         });
+     }
+     
+     // Navigation entre les cartes
     prevBtn.addEventListener('click', function() {
       if (currentIndex > 0) {
         // Animation de glissement
