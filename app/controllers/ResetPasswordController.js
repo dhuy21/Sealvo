@@ -45,7 +45,6 @@ class ResetPasswordController {
             }
             
             const templateSource = fs.readFileSync(templatePath, 'utf8');
-            console.log('Template chargé, longueur:', templateSource.length);
             
             // Tenter de compiler le template avec try/catch spécifique
             let template;
@@ -65,7 +64,6 @@ class ResetPasswordController {
                 resetPasswordLink
             };
             
-            console.log('Génération du contenu HTML de l\'email de réinitialisation de mot de passe...');
             const htmlContent = template(emailContext);
             
             return htmlContent; 
@@ -85,7 +83,6 @@ class ResetPasswordController {
                 html: content
             });
 
-            console.log(`Message sent to ${email}: ${info.messageId}`);
             return true;
         } catch (error) {
             console.error(`Erreur lors de l'envoi de l'e-mail à ${email}:`, error); 
