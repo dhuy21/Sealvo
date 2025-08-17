@@ -134,7 +134,6 @@ function initProgressBars() {
         if (streakDays >= maxStreakDays) {
             streakDaysForfire = Math.floor( ( streakDays/maxStreakDays ) ) * maxStreakDays ;
             streakDays = streakDays % maxStreakDays;
-            console.log(streakDaysForfire,streakDays);
         }
         
         // Update fire text
@@ -168,7 +167,6 @@ function initProgressBars() {
         if (streakDays >= maxStreakDays) {
             streakDaysForfire = ( streakDays/maxStreakDays ) * maxStreakDays;
             streakDays = streakDays % maxStreakDays;
-            console.log(streakDaysForfire,streakDays);
         }
         const targetPercentage = Math.min((streakDays / maxStreakDays) * 100, 100);
         let currentPercentage = 0;

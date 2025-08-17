@@ -519,7 +519,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     `;
     document.head.appendChild(style);
-    
-    // === INITIALISATION TERMINÉE ===
-    console.log('AddWord.js initialisé avec succès');
   });
