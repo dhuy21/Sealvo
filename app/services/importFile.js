@@ -131,7 +131,6 @@ class ImportFile {
 
                     for (const word of words) {
                         try {
-                            console.log(word.language_code);
                             if (!word.meaning || !word.type || !word.word) {
                                 errExample ++ ;
                                 continue;
@@ -166,7 +165,6 @@ class ImportFile {
                             const words_with_examples = await geminiService.generateExemple(words_no_example);
                             if (Array.isArray(words_with_examples) && words_with_examples.length > 0) {
                                 console.log('✅ Examples generated successfully');
-                                console.log('Words with examples:', words_with_examples);
                                 words = await geminiService.replaceExample(words, words_with_examples);
                             } else {
                                 console.log('⚠️ No examples were generated');
@@ -182,7 +180,6 @@ class ImportFile {
                             const words_with_correct_examples = await geminiService.modifyExample(words_with_error_example);
                             if (Array.isArray(words_with_correct_examples) && words_with_correct_examples.length > 0) {
                                 console.log('✅ Examples corrected successfully');
-                                console.log('Words with correct examples:', words_with_correct_examples);
                                 words = await geminiService.replaceExample(words, words_with_correct_examples);
                             } else {
                                 console.log('⚠️ No examples were corrected');

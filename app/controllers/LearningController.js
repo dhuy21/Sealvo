@@ -19,7 +19,6 @@ class LearningController {
             if (detailWordsIds && detailWordsIds.length > 0) {
                 // Récupérer les détails de chaque mot
                 for (const item of detailWordsIds) {
-                    console.log(item.package_id);
                     const wordDetails = await wordModel.findById(item.detail_id);
                     if (wordDetails) {
                         allWords.push(wordDetails);
@@ -85,8 +84,6 @@ class LearningController {
                 streak,
                 baseUrl: process.env.BASE_URL 
             };
-            
-            console.log('Génération du contenu HTML de l\'email...');
             const htmlContent = template(emailContext);
             
             return htmlContent;
@@ -112,7 +109,6 @@ class LearningController {
                         
                         // Mettre à jour la date de mise à jour de la série
                         await userModel.updateStreakUpdatedAt(user_id);
-                        console.log('Streak updated');
                         res.status(200).json({
                             updated: true,
                             newStreak: currentStreak,
@@ -147,7 +143,6 @@ class LearningController {
                     } else {
                         // La date est la même, on ne met pas à jour le streak
                         const streakData = await userModel.getStreakById(user_id);
-                        console.log(streakData);
                         let currentStreak = streakData && streakData.streak ? parseInt(streakData.streak) : 0;
                         
                         res.status(200).json({

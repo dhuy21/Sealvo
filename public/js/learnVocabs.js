@@ -380,9 +380,6 @@ document.addEventListener('DOMContentLoaded', function() {
         function selectAndSpeakWithBestVoice() {
           // Get the language from the word's language_code
           const targetLang = word.language_code;
-          alert(voices.length);
-          alert(voices.map(v => `${v.lang}, ${v.name}`).join('\n'));
-          console.log(voices.filter(voice => voice.lang.includes('fr')));
           
           // Filter voices by the target language
           let targetVoices = voices.filter(voice => {
@@ -401,12 +398,6 @@ document.addEventListener('DOMContentLoaded', function() {
           
           //Random voice
           selectedVoice = targetVoices[Math.floor(Math.random() * targetVoices.length)];
-          
-          if (selectedVoice) {
-            alert(`${selectedVoice.lang}, ${selectedVoice.name}`);
-          } else {
-            alert('No voice selected');
-          }
           
           // Set the selected voice
           if (selectedVoice) {

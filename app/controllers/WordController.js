@@ -259,13 +259,11 @@ class WordController {
             
             // Rediriger avec un message de succès
             if (count) {
-                console.log('Le(s) mot(s) supprimé(s) avec succès');
                 res.status(200).json({
                     success: true,
                     message: `Le(s) mot(s) supprimé(s) avec succès`
                 });
             } else {
-                console.log('Aucun mot à supprimer');
                 res.status(200).json({
                     success: true,
                     message: 'Aucun mot à supprimer'
@@ -502,8 +500,6 @@ class WordController {
                 word.dueToday = wordIdsToReview.some(item => item.detail_id === word.detail_id);
                 word.example = word.example.replace(/\*\*([^\*]+)\*\*/g, '$1');
             });
-
-            console.log(words);
 
             res.render('learnVocabs', {
                 title: 'Apprendre des mots',
