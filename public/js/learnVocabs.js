@@ -401,7 +401,33 @@ document.addEventListener('DOMContentLoaded', function() {
           let selectedVoice = null;
           
           if (isIOS) {
-            targetVoices = targetVoices.filter(voice => voice.name.includes('Siri'));
+             targetVoices = targetVoices.filter(voice => !voice.name.includes('Grandpa') 
+                && !voice.name.includes('Grandma') 
+                && !voice.name.includes('Rocko') 
+                && !voice.name.includes('Eddy') 
+                && !voice.name.includes('Flo') 
+                && !voice.name.includes('Sandy') 
+                && !voice.name.includes('Shelley') 
+                && !voice.name.includes('Fred')
+                && !voice.name.includes('Junior')
+                && !voice.name.includes('Kathy')
+                && !voice.name.includes('Ralph')
+                && !voice.name.includes('Albert')
+                && !voice.name.includes('Bahh')
+                && !voice.name.includes('Boing')
+                && !voice.name.includes('Bonnes nouvelles')
+                && !voice.name.includes('Bouffon')
+                && !voice.name.includes('Bulles')
+                && !voice.name.includes('Cloches')
+                && !voice.name.includes('Mauvaises nouvelles')
+                && !voice.name.includes('Murmure')
+                && !voice.name.includes('Orgue')
+                && !voice.name.includes('Superstar')
+                && !voice.name.includes('Trinoides')
+                && !voice.name.includes('Zarvox')
+                && !voice.name.includes('Violoncelles')
+                && !voice.name.includes('Wobble')
+                );
           }
 
           alert( targetVoices.map(voice => `${voice.lang} (${voice.name})\n`).join(''));
