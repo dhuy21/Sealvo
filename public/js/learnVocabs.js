@@ -427,6 +427,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 && !voice.name.includes('Zarvox')
                 && !voice.name.includes('Violoncelles')
                 && !voice.name.includes('Wobble')
+                && !voice.name.includes('Agnes')
                 );
           }
 
