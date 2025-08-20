@@ -384,12 +384,10 @@ document.addEventListener('DOMContentLoaded', function() {
           // Log available voices for debugging
           //afficher tous les champs de chaque voice
           alert( voices.map(voice => `${voice.lang} (${voice.name})\n`).join(''));
+          alert(voices.map(voice => voice.lang === 'ru-RU'));
           
           // Filter voices by the target language
-          let targetVoices = voices.filter(voice => {
-            // Try exact match first, then prefix match
-            return voice.lang === targetLang || voice.lang.startsWith(targetLang.split('-')[0]);
-          });
+          let targetVoices = voices.filter(voice => voice.lang === targetLang);
           
           // If no voices found for target language, fall back to any available voices
           if (targetVoices.length === 0) {
