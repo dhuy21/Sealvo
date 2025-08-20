@@ -59,8 +59,8 @@ CREATE TABLE IF NOT EXISTS words (
     PRIMARY KEY (word_id),
     UNIQUE KEY uq_words_word_subject_lang (word, subject, language_code),
 
-    CHECK (language_code IN ('en-US', 'en-GB', 'fr', 'es-US', 'es-ES', 'de', 'it', 
-    'ja', 'zh-CN', 'zh-HK', 'zh-TW', 'pt', 'ru', 'vi', 'ko', 'id', 'hi', 'pl', 'nl'))
+    CHECK (language_code IN ('en-US', 'en-GB', 'fr-FR', 'es-ES', 'de-DE', 'it-IT', 
+    'ja-JP', 'zh-CN', 'zh-HK', 'zh-TW', 'pt-PT', 'ru-RU', 'vi-VN', 'ko-KR', 'id-ID', 'hi-IN', 'pl-PL', 'nl-NL'))
 
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*INSERT INTO words (word, subject) VALUES ('Present', 'Daily words');*/
