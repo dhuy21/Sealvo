@@ -401,7 +401,7 @@ document.addEventListener('DOMContentLoaded', function() {
           let selectedVoice = null;
           
           if (isIOS) {
-            targetVoices = targetVoices.filter(voice => voice.name === 'Siri');
+            targetVoices = targetVoices.filter(voice => voice.name.includes('Siri'));
           }
 
           alert( targetVoices.map(voice => `${voice.lang} (${voice.name})\n`).join(''));
@@ -424,7 +424,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
           
           // Start speaking
-           
+          speechSynthesis.speak(utterance);
         }
       }
     }
