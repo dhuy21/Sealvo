@@ -5,6 +5,7 @@
     "dev": "nodemon --inspect app.js"
   },
   "dependencies": {
+    "@google-cloud/text-to-speech": "^6.2.0",
     "@google/generative-ai": "^0.24.1",
     "axios": "^1.9.0",
     "bcryptjs": "^3.0.2",
