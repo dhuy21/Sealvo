@@ -397,9 +397,9 @@ document.addEventListener('DOMContentLoaded', function() {
           // Select best voice based on language and device
           let selectedVoice = null;
           
-          //Random voice
-          selectedVoice = targetVoices[Math.floor(Math.random() * targetVoices.length)];
-          
+          //Random voice exclude the voice of grandpa, grandma, and robot of Safari
+          const selectedVoices = targetVoices.filter(voice => !voice.name.includes('Grandpa') && !voice.name.includes('Grandma') && !voice.name.includes('Robot'));
+          selectedVoice = selectedVoices[Math.floor(Math.random() * selectedVoices.length)];
           // Set the selected voice
           if (selectedVoice) {
             utterance.voice = selectedVoice;
