@@ -401,7 +401,9 @@ document.addEventListener('DOMContentLoaded', function() {
           let selectedVoice = null;
           
           //Random voice exclude the voice of grandpa, grandma, and robot of Safari
-          const selectedVoices = targetVoices.filter(voice => !voice.name.includes('Grandpa') && !voice.name.includes('Grandma') && !voice.name.includes('Robot'));
+          alert(targetVoices.map(voice => `${voice.lang} (${voice.name})\n`).join(''));
+          const selectedVoices = targetVoices.filter(voice => !voice.name.includes('Grandpa') && !voice.name.includes('Grandma') && !voice.name.includes('Rocko'));
+          alert(selectedVoices.map(voice => `${voice.lang} (${voice.name})\n`).join(''));
           selectedVoice = selectedVoices[Math.floor(Math.random() * selectedVoices.length)];
           // Set the selected voice
           if (selectedVoice) {
