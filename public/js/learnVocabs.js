@@ -384,7 +384,9 @@ document.addEventListener('DOMContentLoaded', function() {
           // Log available voices for debugging
           //afficher tous les champs de chaque voice
           alert( voices.map(voice => `${voice.lang} (${voice.name})\n`).join(''));
-          alert(voices.map(voice => voice.lang === 'ru-RU'));
+          alert(voices.filter(voice => voice.lang === 'ru-RU').map(voice => `${voice.lang} (${voice.name})\n`).join(''));
+          alert(voices.filter(voice => voice.lang.includes('zh')).map(voice => `${voice.lang} (${voice.name})\n`).join(''));
+          alert(voices.filter(voice => voice.lang.includes('vi')).map(voice => `${voice.lang} (${voice.name})\n`).join(''));
           
           // Filter voices by the target language
           let targetVoices = voices.filter(voice => voice.lang === targetLang);
