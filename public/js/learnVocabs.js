@@ -362,9 +362,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Set pitch (slightly lower for better clarity)
         utterance.pitch = 1.0;
         
-        // Detect iOS device
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        
         // Select the best voice available (prioritize female voices which are usually clearer)
         let voices = speechSynthesis.getVoices();
         
@@ -381,6 +378,8 @@ document.addEventListener('DOMContentLoaded', function() {
         function selectAndSpeakWithBestVoice() {
           // Get the language from the word's language_code
           const targetLang = word.language_code;
+
+          const isIOS = /iPad|iPhone|iPod|Mac/.test(navigator.userAgent) && !window.MSStream;
 
           // Log available voices for debugging
           //afficher tous les champs de chaque voice
@@ -401,38 +400,14 @@ document.addEventListener('DOMContentLoaded', function() {
           // Select best voice based on language and device
           let selectedVoice = null;
           
-          //Random voice exclude the voice of grandpa, grandma, and robot of Safari
-          alert(targetVoices.map(voice => `${voice.lang} (${voice.name})\n`).join(''));
-          const selectedVoices = targetVoices.filter(voice => !voice.name.includes('Grandpa') 
-          && !voice.name.includes('Grandma') 
-          && !voice.name.includes('Rocko') 
-          && !voice.name.includes('Eddy') 
-          && !voice.name.includes('Flo') 
-          && !voice.name.includes('Sandy') 
-          && !voice.name.includes('Shelley') 
-          && !voice.name.includes('Fred')
-          && !voice.name.includes('Junior')
-          && !voice.name.includes('Kathy')
-          && !voice.name.includes('Ralph')
-          && !voice.name.includes('Albert')
-          && !voice.name.includes('Bahh')
-          && !voice.name.includes('Boing')
-          && !voice.name.includes('Bonnes nouvelles')
-          && !voice.name.includes('Bouffon')
-          && !voice.name.includes('Bulles')
-          && !voice.name.includes('Cloches')
-          && !voice.name.includes('Mauvaises nouvelles')
-          && !voice.name.includes('Murmure')
-          && !voice.name.includes('Orgue')
-          && !voice.name.includes('Superstar')
-          && !voice.name.includes('Trinoides')
-          && !voice.name.includes('Zarvox')
-          && !voice.name.includes('Violoncelles')
-          && !voice.name.includes('Wobble')
-          );
+          if (isIOS) {
+            targetVoices = targetVoices.filter(voice => voice.name === 'Siri');
+          }
 
-          alert(selectedVoices.map(voice => `${voice.lang} (${voice.name})\n`).join(''));
-          selectedVoice = selectedVoices[Math.floor(Math.random() * selectedVoices.length)];
+          alert( targetVoices.map(voice => `${voice.lang} (${voice.name})\n`).join(''));
+          
+          //Random voice exclude the voice of grandpa, grandma, and robot of Safari
+          selectedVoice = targetVoices[Math.floor(Math.random() * targetVoices.length)];
           // Set the selected voice
           if (selectedVoice) {
             utterance.voice = selectedVoice;
@@ -449,7 +424,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
           
           // Start speaking
-          speechSynthesis.speak(utterance);
+           
         }
       }
     }
