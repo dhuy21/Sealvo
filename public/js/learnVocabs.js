@@ -381,6 +381,9 @@ document.addEventListener('DOMContentLoaded', function() {
         function selectAndSpeakWithBestVoice() {
           // Get the language from the word's language_code
           const targetLang = word.language_code;
+
+          // Log available voices for debugging
+          alert( voices.map(voice => `${voice.lang} (${voice.name})\n`).join(''));
           
           // Filter voices by the target language
           let targetVoices = voices.filter(voice => {
