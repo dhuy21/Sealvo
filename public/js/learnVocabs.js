@@ -337,124 +337,78 @@ document.addEventListener('DOMContentLoaded', function() {
           }, 500);
           
           const text = this.getAttribute('data-text');
-          speakText(text);
+          speakText(this,text);
         });
         });
       }
     }
     
-    // Fonction pour prononcer un texte avec l'API Speech Synthesis (support multi-langues)
-    function speakText(text) {
-      if ('speechSynthesis' in window) {
+    // Fonction pour prononcer un texte avec Google Cloud TTS (support multi-langues)
+    async function speakText(btn,text) {
+      try {
+
         const word = currentWords[currentIndex];
+        const language = word.language_code;
+
+        // Afficher un indicateur de chargement
+        btn.disabled = true;
+        const oldHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> En cours';
         
-        // Cancel any ongoing speech
-        speechSynthesis.cancel();
+        // Faire l'appel à l'API TTS
+        const response = await fetch('/api/tts/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text: text, language: language })
+        });
         
-        const utterance = new SpeechSynthesisUtterance(text);
-        
-        // Set language based on word's language_code
-        utterance.lang = word.language_code;
-        
-        // Adjust rate (slightly slower)
-        utterance.rate = 0.9;
-        
-        // Set pitch (slightly lower for better clarity)
-        utterance.pitch = 1.0;
-        
-        // Select the best voice available (prioritize female voices which are usually clearer)
-        let voices = speechSynthesis.getVoices();
-        
-        // If voices array is empty, wait for them to load
-        if (voices.length === 0) {
-          speechSynthesis.addEventListener('voiceschanged', function() {
-            voices = speechSynthesis.getVoices();
-            selectAndSpeakWithBestVoice();
-          }, { once: true });
-        } else {
-          selectAndSpeakWithBestVoice();
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP: ${response.status}`);
         }
         
-        function selectAndSpeakWithBestVoice() {
-          // Get the language from the word's language_code
-          const targetLang = word.language_code;
-
-          const isIOS = /iPad|iPhone|iPod|Mac/.test(navigator.userAgent) && !window.MSStream;
-
-          // Log available voices for debugging
-          //afficher tous les champs de chaque voice
-          alert( voices.map(voice => `${voice.lang} (${voice.name})\n`).join(''));
-          alert(voices.filter(voice => voice.lang === 'ru-RU').map(voice => `${voice.lang} (${voice.name})\n`).join(''));
-          alert(voices.filter(voice => voice.lang.includes('zh')).map(voice => `${voice.lang} (${voice.name})\n`).join(''));
-          alert(voices.filter(voice => voice.lang.includes('vi')).map(voice => `${voice.lang} (${voice.name})\n`).join(''));
+        // Traiter la réponse comme blob audio (plus efficace)
+        const audioBlob = await response.blob();
+        
+        // Créer une URL blob pour l'audio (streaming efficace)
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        // Créer et jouer l'élément audio
+        const audio = new Audio(audioUrl);
+        audio.volume = 0.8;
+        
+        // Gérer les événements audio
+        audio.onended = () => {
+          // Nettoyer l'URL blob pour éviter les fuites mémoire
+          URL.revokeObjectURL(audioUrl);
           
-          // Filter voices by the target language
-          let targetVoices = voices.filter(voice => voice.lang === targetLang);
+          // Restaurer les boutons
+          btn.disabled = false;
+          btn.innerHTML = oldHtml;
+        };
+        
+        audio.onerror = () => {
+          console.error('Erreur lors de la lecture audio');
+          // Nettoyer l'URL blob
+          URL.revokeObjectURL(audioUrl);
           
-          // If no voices found for target language, fall back to any available voices
-          if (targetVoices.length === 0) {
-            console.warn(`No voices found for language ${targetLang}, using default voice`);
-            targetVoices = voices;
-          }
-          
-          // Select best voice based on language and device
-          let selectedVoice = null;
-          
-          if (isIOS) {
-             targetVoices = targetVoices.filter(voice => !voice.name.includes('Grandpa') 
-                && !voice.name.includes('Grandma') 
-                && !voice.name.includes('Rocko') 
-                && !voice.name.includes('Eddy') 
-                && !voice.name.includes('Flo') 
-                && !voice.name.includes('Sandy') 
-                && !voice.name.includes('Shelley') 
-                && !voice.name.includes('Fred')
-                && !voice.name.includes('Junior')
-                && !voice.name.includes('Kathy')
-                && !voice.name.includes('Ralph')
-                && !voice.name.includes('Albert')
-                && !voice.name.includes('Bahh')
-                && !voice.name.includes('Boing')
-                && !voice.name.includes('Bonnes nouvelles')
-                && !voice.name.includes('Bouffon')
-                && !voice.name.includes('Bulles')
-                && !voice.name.includes('Cloches')
-                && !voice.name.includes('Mauvaises nouvelles')
-                && !voice.name.includes('Murmure')
-                && !voice.name.includes('Orgue')
-                && !voice.name.includes('Superstar')
-                && !voice.name.includes('Trinoides')
-                && !voice.name.includes('Zarvox')
-                && !voice.name.includes('Violoncelles')
-                && !voice.name.includes('Wobble')
-                && !voice.name.includes('Agnes')
-                );
-          }
-
-          alert( targetVoices.map(voice => `${voice.lang} (${voice.name})\n`).join(''));
-          
-          //Random voice exclude the voice of grandpa, grandma, and robot of Safari
-          selectedVoice = targetVoices[Math.floor(Math.random() * targetVoices.length)];
-          // Set the selected voice
-          if (selectedVoice) {
-            utterance.voice = selectedVoice;
-            console.log(`Selected voice: ${selectedVoice.name} for language: ${targetLang}`);
-          }
-          
-          // Adjust speech rate based on language complexity
-          if (targetLang.startsWith('zh') || targetLang.startsWith('ja')) {
-            utterance.rate = 0.8; // Slower for tonal/complex languages
-          } else if (targetLang.startsWith('es') || targetLang.startsWith('it')) {
-            utterance.rate = 0.8; // Slightly slower for Romance languages
-          } else {
-            utterance.rate = 0.9; // Default rate
-          }
-          
-          // Start speaking
-          speechSynthesis.speak(utterance);
-        }
+          // Restaurer les boutons en cas d'erreur
+          btn.disabled = false;
+          btn.innerHTML = oldHtml;
+        };
+        
+        // Jouer l'audio
+        await audio.play();
+        
+      } catch (error) {
+        console.error('Erreur lors de la génération de l\'audio:', error);
+        
+        // Restaurer les boutons en cas d'erreur
+        btn.disabled = false;
+        btn.innerHTML = oldHtml;
       }
-    }
+     }
     
     // Filtrer les mots en fonction des niveaux sélectionnés
     function filterWords() {
