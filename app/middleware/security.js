@@ -51,7 +51,7 @@ const cspConfig = {
         "https://accounts.google.com"
       ],
       objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
+      mediaSrc: ["'self'", "blob:"],
       childSrc: ["'self'"],
       formAction: ["'self'"],
       frameAncestors: ["'none'"],
