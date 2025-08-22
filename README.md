@@ -224,6 +224,8 @@ npm run dev
 PORT=3000
 NODE_ENV=development
 
+#If you want to use the production environment, you can change the NODE_ENV to production and set the #SESSION_SECRET = your_secret_for_session_here
+
 # 🗄️ Database Configuration 
 DB_HOST= name_of_your_host
 DB_DATABASE= name_of_your_database
