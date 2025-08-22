@@ -236,8 +236,12 @@ DB_DIALECT= mysql
 GOOGLE_CLIENT_ID= id_of_your_google_client
 GOOGLE_CLIENT_SECRET= secret_of_your_google_client
 
+# 🔊 Google Cloud text-to-speech
+GOOGLE_SERVICE_ACCOUNT_CREDENTIALS = the content of the json file of your google cloud service account
+
 # 🤖 Gemini API Key 
-GEMINI_API_KEY = key_of_your_gemini_api
+GEMINI_API_KEY_1 = key_of_your_gemini_api
+GEMINI_API_KEY_2 = key_of_your_gemini_api
 
 # 📧 Email Configuration 
 USER_GMAIL = name_of_your_gmail
