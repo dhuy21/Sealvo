@@ -57,7 +57,7 @@ const cspConfig = {
       frameAncestors: ["'none'"],
       baseUri: ["'self'"],
       manifestSrc: ["'self'"],
-      workerSrc: ["'self'"],
+      workerSrc: ["'self'", "blob:"],
       scriptSrcElem: [
         "'self'",
         (req, res) => `'nonce-${res.locals.nonce}'`,
