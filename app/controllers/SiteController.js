@@ -71,7 +71,6 @@ class SiteController {
                     userName: req.session.user ? req.session.user.username : 'Anonyme',
                     date: new Date()
                 });
-                console.log(`Message sent to ${email}: ${info.messageId}`);
                 // Rediriger avec un message de succès
                 return res.redirect('/feedback?success=Merci pour votre feedback! Nous l\'avons bien reçu.');
                 
