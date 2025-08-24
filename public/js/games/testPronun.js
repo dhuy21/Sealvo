@@ -1360,7 +1360,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                game_type: 'test_pronun',
+                game_type: 'test_pronunciation',
                 completed: isSuccessful
             })
         })

@@ -134,9 +134,25 @@
   padding: 0;
   margin: 0;
   line-height: 1.4;
-  /* Scrollbar personnalisé */
+  /* Scrollbar personnalisé pour Firefox */
   scrollbar-width: thin;
   scrollbar-color: rgba(188, 253, 224, 0.919) transparent;
+  /* Scrollbar personnalisé pour WebKit (Chrome, Safari, etc.) */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollbar personnalisé pour WebKit (Chrome, Safari, iOS) */
+.table-cell-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.table-cell-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-cell-content::-webkit-scrollbar-thumb {
+  background-color: rgba(188, 253, 224, 0.919);
+  border-radius: 20px;
 }
 
 
