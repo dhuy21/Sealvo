@@ -138,7 +138,7 @@
   scrollbar-width: thin;
   scrollbar-color: rgba(188, 253, 224, 0.919) transparent;
   /* Scrollbar personnalisé pour WebKit (Chrome, Safari, etc.) */
-  -webkit-overflow-scrolling: touch;
+  -webkit-overflow-scrolling:auto;
 }
 
 /* Scrollbar personnalisé pour WebKit (Chrome, Safari, iOS) */
