@@ -71,9 +71,8 @@ app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'app/views'));
 
 // Start server
-const server = app.listen(port, () => {
-  console.log(`App listening at http://localhost:${port}`);
-});
+const server = app.listen(port, '0.0.0.0');
+console.log(`App listening at http://0.0.0.0:${port}`);
 
 // Graceful shutdown handling
 const gracefulShutdown = (signal) => {
