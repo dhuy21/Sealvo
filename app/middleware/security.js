@@ -56,7 +56,6 @@ const cspConfig = {
       formAction: ["'self'"],
       frameAncestors: ["'none'"],
       baseUri: ["'self'"],
-      upgradeInsecureRequests: [],
       manifestSrc: ["'self'"],
       workerSrc: ["'self'"],
       scriptSrcElem: [
@@ -64,7 +63,8 @@ const cspConfig = {
         (req, res) => `'nonce-${res.locals.nonce}'`,
         "https://accounts.google.com",
         "https://apis.google.com"
-      ]
+      ],
+      upgradeInsecureRequests: []
     },
   },
   crossOriginEmbedderPolicy: false,

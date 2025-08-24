@@ -206,7 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Créer les éléments de carte
         shuffledCards.forEach((card, index) => {
             const cardElement = document.createElement('div');
-            cardElement.className = 'card';
+            cardElement.className = 'card-container';
             cardElement.dataset.index = index;
             
             const cardInner = document.createElement('div');
@@ -217,11 +217,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const cardBack = document.createElement('div');
             cardBack.className = 'card-back';
-            cardBack.textContent = card.content;
             if (card.type === 'meaning') {
-                cardBack.classList.add('meaning-card');
+                const meaningCard = document.createElement('div');
+                meaningCard.className = 'meaning-card';
+                meaningCard.textContent = card.content;
+                cardBack.appendChild(meaningCard);
             } else {
-                cardBack.classList.add('word-card');
+                const wordCard = document.createElement('div');
+                wordCard.className = 'card-word';
+                wordCard.textContent = card.content;
+                cardBack.appendChild(wordCard);
             }
             
             cardInner.appendChild(cardFront);

@@ -1071,7 +1071,7 @@
   }
 }
 /* Modern Cards */
-.card {
+.card-container {
     height: 120px;
     perspective: 1500px;
     cursor: pointer;
@@ -1082,8 +1082,6 @@
 
 .card-inner {
     position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
     height: 100%;
     transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -1093,58 +1091,40 @@
     will-change: transform;
 }
 
-.card:not(.flipped):not(.matched):hover .card-inner {
+.card-container:not(.flipped):not(.matched):hover .card-inner {
     transform: translateY(-5px) scale(1.02);
     box-shadow: 0 8px 20px rgba(106, 17, 203, 0.15);
 }
 
-.card.flipped .card-inner {
+.card-container.flipped .card-inner {
     transform: rotateY(180deg);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .card-front,
 .card-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
     position: absolute;
     width: 100%;
     height: 100%;
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
     border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-    text-align: center;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     transition: all 0.4s ease;
-    overflow: hidden;
 }
 
 .card-front {
     background: linear-gradient(135deg, #6a11cb, #2575fc);
     box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.3);
     position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     z-index: 1; /* Ensure proper stacking */
-}
-
-.card-front::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 50%);
-    opacity: 0.5;
-    transform: rotate(30deg);
-    pointer-events: none;
-    animation: shimmer 4s ease-in-out infinite;
-}
-
-@keyframes shimmer {
-    0%, 100% { transform: rotate(30deg) scale(1); }
-    50% { transform: rotate(35deg) scale(1.05); }
 }
 
 .card-front::after {
@@ -1169,39 +1149,78 @@
     z-index: 0; /* Behind the front by default */
 }
 
-.card.flipped .card-back {
+
+.card-container.flipped .card-back {
     z-index: 2; /* Bring to front when flipped */
 }
 
-.card-back.word-card {
+.card-word {
+    width: 100%;
+    max-height: 115px;
+    display: block;
+    align-items: center;
+    justify-content: center;
     font-weight: 700;
-    background: linear-gradient(135deg, #f0f5ff, #fff);
+    background: none;
     color: #2563eb;
     font-size: 1.3rem;
-    position: relative;
-    text-shadow: 0 1px 3px rgba(55, 48, 163, 0.1);
+    overflow-wrap: break-word;
+    word-break: break-word;
+    word-wrap: break-word;
+    overflow-y: auto;
+    overflow-x: hidden;
+    
+    /* Scrollbar personnalisé - Standard */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(188, 253, 224, 0.919) transparent;
+    /* Scrollbar personnalisé - Pour WebKit (Chrome, Safari, iOS, macOS) */
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+        background-color: rgba(188, 253, 224, 0.919);
+        border-radius: 10px;
+    }
 }
 
-.card-back.word-card::before {
-    content: '';
-    position: absolute;
-    top: -10px;
-    left: -10px;
-    width: 40px;
-    height: 40px;
-    background: rgba(59, 130, 246, 0.1);
-    border-radius: 50%;
-    opacity: 0.4;
-}
-
-.card-back.meaning-card {
+.meaning-card {
+    width: 100%;
+    max-height: 115px;
     color: #4b5563;
+    padding: 0.8rem;
     font-size: 1rem;
-    line-height: 1.4;
-    background: linear-gradient(135deg, #fff, #f8fafc);
+    line-height: 1.2;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    word-wrap: break-word;
+    overflow-y: auto;
+    overflow-x: hidden;
+    
+    /* Scrollbar personnalisé - Standard */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(188, 253, 224, 0.919) transparent;
+    /* Scrollbar personnalisé pour WebKit (Chrome, Safari, etc.) */
+    -webkit-overflow-scrolling: touch;
 }
 
-.card.matched .card-inner {
+/* Scrollbar personnalisé pour WebKit (Chrome, Safari, iOS) */
+.meaning-card::-webkit-scrollbar {
+  width: 6px;
+}
+
+.meaning-card::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.meaning-card::-webkit-scrollbar-thumb {
+  background-color: rgba(188, 253, 224, 0.919);
+  border-radius: 20px;
+}
+
+.card-container.matched .card-inner {
     box-shadow: 0 0 25px rgba(16, 185, 129, 0.6);
     animation: matchSuccess 0.7s ease-in-out;
 }
@@ -1223,7 +1242,7 @@
 }
 
 /* Add a special animation for when cards don't match */
-.card.no-match .card-inner {
+.card-container.no-match .card-inner {
     animation: noMatchShake 0.5s cubic-bezier(.36,.07,.19,.97);
 }
 
@@ -1732,16 +1751,16 @@
         border-radius: 20px;
     }
     
-    .card {
+    .card-container {
         height: 95px;
     }
     
-    .card-back.word-card {
+    .card-word {
         font-size: 1.1rem;
         padding: 0.7rem;
     }
     
-    .card-back.meaning-card {
+    .meaning-card {
         font-size: 0.85rem;
         line-height: 1.25;
         padding: 0.7rem;
@@ -1961,16 +1980,16 @@
         border-radius: 18px;
     }
     
-    .card {
+    .card-container {
         height: 90px;
     }
     
-    .card-back.word-card {
+    .card-word {
         font-size: 1.05rem;
         padding: 0.65rem;
     }
     
-    .card-back.meaning-card {
+    .meaning-card {
         font-size: 0.8rem;
         line-height: 1.2;
         padding: 0.65rem;
@@ -2128,16 +2147,16 @@
         border-radius: 16px;
     }
     
-    .card {
+    .card-container {
         height: 85px;
     }
     
-    .card-back.word-card {
+    .card-word {
         font-size: 1rem;
         padding: 0.6rem;
     }
     
-    .card-back.meaning-card {
+    .meaning-card {
         font-size: 0.75rem;
         line-height: 1.15;
         padding: 0.6rem;
@@ -2297,16 +2316,16 @@
         border-radius: 14px;
     }
     
-    .card {
+    .card-container {
         height: 80px;
     }
     
-    .card-back.word-card {
+    .card-word {
         font-size: 0.95rem;
         padding: 0.5rem;
     }
     
-    .card-back.meaning-card {
+    .meaning-card {
         font-size: 0.7rem;
         line-height: 1.1;
         padding: 0.5rem;
@@ -2490,4 +2509,5 @@
         font-size: 0.7rem;
     }
 }
+
 
