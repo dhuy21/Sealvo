@@ -60,6 +60,13 @@ document.getElementById('reminderBtn').addEventListener('click', function() {
     });
 });
 
+document.querySelectorAll('.task-card').forEach(card => {
+    card.addEventListener('click', function() {
+        const packageIdOfCard = card.getAttribute('data-package');
+        window.location.href = `/monVocabs?package=${packageIdOfCard}`;
+    });
+});
+
 /**
  * Initialize the dashboard components
  */
