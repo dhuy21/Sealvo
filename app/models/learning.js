@@ -208,6 +208,30 @@ class Learning {
             throw error;
         }
     }
+
+    async countWordsToReviewTodayByPackage(user_id) {
+        try {
+            const [rows] = await global.dbConnection.execute(
+                `SELECT COUNT(*) AS num_words, p.package_id, p.package_name
+                 FROM learning l
+                 JOIN packages p ON l.package_id = p.package_id
+                 WHERE p.user_id = ? AND p.is_active = true
+                   AND (
+                       (l.level = 'x' AND DATE_ADD(DATE(l.date_memorized), INTERVAL 0 DAY) <= CURDATE()) OR
+                       (l.level = '0' AND DATE_ADD(DATE(l.date_memorized), INTERVAL 2 DAY) <= CURDATE()) OR
+                       (l.level = '1' AND DATE_ADD(DATE(l.date_memorized), INTERVAL 4 DAY) <= CURDATE()) OR
+                       (l.level = '2' AND DATE_ADD(DATE(l.date_memorized), INTERVAL 10 DAY) <= CURDATE()) OR
+                       (l.level = 'v' AND DATE_ADD(DATE(l.date_memorized), INTERVAL 20 DAY) <= CURDATE())
+                   )
+                 GROUP BY p.package_id, p.package_name;`,
+                [user_id]
+            );
+            return rows;
+        } catch (error) {
+            console.error("Erreur lors de la récupération des packages à réviser :", error);
+            throw error;
+        }
+    }
     // function to get the number of words in a package by level
     async countUserWordsByLevel(package_id, level) {
         try {

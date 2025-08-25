@@ -40,72 +40,6 @@
             </div>
           </div>
         </div>
-        <div class="dashboard-card fade-in">
-          <div class="text-center" style="margin-top: 1.5rem;">
-            <div class="streak-display">
-              <div class="progress-container fade-in">
-                <h3><i class="fas fa-fire" style="color: #F59E0B; margin-right: 0.5rem;"></i>Séries d'Apprentissage</h3>
-                <div class="fire-section">
-                  <div class="fire">
-                      <div class="fire-left">
-                        <div class="main-fire"></div>
-                        <div class="particle-fire"></div>
-                      </div>
-                      <div class="fire-center">
-                        <div class="main-fire"></div>
-                        <div class="particle-fire"></div>
-                      </div>
-                      <div class="fire-right">
-                        <div class="main-fire"></div>
-                        <div class="particle-fire"></div>
-                      </div>
-                      <div class="fire-bottom">
-                        <div class="main-fire"></div>
-                      </div>
-                      <div class="fire-streak-text" id="fireStreakText">{{user.streak}}</div>
-                  </div>
-                </div>
-                <div class="progress-bar-container">
-                  <div class="progress-bar-fill" data-width="{{user.streak}}"></div>
-                </div>
-                <div class="progress-bar-labels">
-                  <span><i class="fas fa-tachometer-alt" style="color: #4158D0; margin-right: 0.25rem;"></i>Progression</span>
-                  <span id="progress-percentage"><i class="fas fa-trophy" style="color: #FFCC70; margin-right: 0.25rem;"></i>{{user.streak}}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        
-      </div>
-      
-      <!-- Main Content -->
-      <div class="main-content">
-        <!-- Action Cards -->
-        <div class="dashboard-actions">
-          
-          <div class="action-card fade-in" style="border-left: 4px solid #C850C0;">
-            <div class="action-card-icon" style="background: linear-gradient(135deg, rgba(200, 80, 192, 0.2), rgba(200, 80, 192, 0.1));">
-              <i class="fas fa-plus-circle"></i>
-            </div>
-            <div class="action-card-content">
-              <h3><i class="fas fa-magic" style="margin-right: 0.5rem;"></i>Mes Packages</h3>
-              <p><i class="fas fa-feather-alt" style="color: #C850C0; margin-right: 0.25rem;"></i>Créez vos propres packages de mots.</p>
-              <a href="/myPackages" class="dashboard-btn dashboard-btn-primary sparkle-btn">
-                <i class="fas fa-bookmark"> </i>      Mes Packages
-                <div class="star-1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
-                <div class="star-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
-                <div class="star-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
-                <div class="star-4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
-                <div class="star-5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
-                <div class="star-6"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
-              </a>
-            </div>
-          </div>
-          
-        </div>
-        
         
         <!-- User Info Card -->
         <div class="dashboard-card fade-in user-profile-card">
@@ -116,7 +50,7 @@
                 <i class="fas fa-edit"></i>
               </button>
             </div>
-            <h2>Informations Utilisateur</h2>
+
             {{#if notifications}}
               <span class="notification-badge">{{notifications.length}}</span>
             {{/if}}
@@ -165,7 +99,7 @@
               </div>
             </div> 
           </div>
-          <div class="text-center" style="margin-top: 1.5rem;">
+          <div class="text-center" style="margin-top: 4rem;">
               <button class="dashboard-btn dashboard-btn-primary sparkle-btn" id="changePasswordBtn">
                     <i class="fas fa-key"></i> Changer le mot de passe
                     <div class="star-1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
@@ -177,7 +111,109 @@
               </button>
           </div>
         </div>
+        
+      </div>
+      
+      <!-- Main Content -->
+      <div class="main-content">
+        <!-- Action Cards -->
+        <div class="dashboard-actions">
+          
+          <div class="action-card fade-in" style="border-left: 4px solid #C850C0;">
+            <div class="action-card-icon" style="background: linear-gradient(135deg, rgba(200, 80, 192, 0.2), rgba(200, 80, 192, 0.1));">
+              <i class="fas fa-plus-circle"></i>
+            </div>
+            <div class="action-card-content">
+              <h3><i class="fas fa-magic" style="margin-right: 0.5rem;"></i>Mes Packages</h3>
+              <p><i class="fas fa-feather-alt" style="color: #C850C0; margin-right: 0.25rem;"></i>Créez vos propres packages de mots.</p>
+              <a href="/myPackages" class="dashboard-btn dashboard-btn-primary sparkle-btn">
+                <i class="fas fa-bookmark"> </i>      Mes Packages
+                <div class="star-1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                <div class="star-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                <div class="star-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                <div class="star-4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                <div class="star-5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                <div class="star-6"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+              </a>
+            </div>
+          </div>
+          
+        </div>
+        
+        <div class="dashboard-card fade-in">
+          <div class="text-center">
+            <div class="streak-display">
+              <div class="progress-container fade-in">
+                <h3><i class="fas fa-fire" style="color: #F59E0B; margin-right: 0.5rem;"></i>Séries d'Apprentissage</h3>
+                <div class="fire-section">
+                  <div class="fire">
+                      <div class="fire-left">
+                        <div class="main-fire"></div>
+                        <div class="particle-fire"></div>
+                      </div>
+                      <div class="fire-center">
+                        <div class="main-fire"></div>
+                        <div class="particle-fire"></div>
+                      </div>
+                      <div class="fire-right">
+                        <div class="main-fire"></div>
+                        <div class="particle-fire"></div>
+                      </div>
+                      <div class="fire-bottom">
+                        <div class="main-fire"></div>
+                      </div>
+                      <div class="fire-streak-text" id="fireStreakText">{{user.streak}}</div>
+                  </div>
+                </div>
+                <div class="progress-bar-container">
+                  <div class="progress-bar-fill" data-width="{{user.streak}}"></div>
+                </div>
+                <div class="progress-bar-labels">
+                  <span><i class="fas fa-tachometer-alt" style="color: #4158D0; margin-right: 0.25rem;"></i>Progression</span>
+                  <span id="progress-percentage"><i class="fas fa-trophy" style="color: #FFCC70; margin-right: 0.25rem;"></i>{{user.streak}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
+        <!-- Tasks -->
+        <div class="tasks-activity fade-in">
+          <div class="tasks-header">
+            <h5>🔖 Packages à Réviser</h5>
+            <span class="tasks-count">{{user.packagesToReview.length}}</span>
+          </div>
+          {{#if user.packagesToReview.length}}
+            <ul class="activity-list">
+              {{#each user.packagesToReview}}
+                <li class="activity-item task-card" data-package="{{this.package_id}}">
+                  <div class="task-icon"> 📜 </div>
+                  <div class="activity-title">{{this.package_name}}</div>
+
+                  <div class="activity-time">
+                    🧠
+                    <span class="word-count">{{this.num_words}}</span>
+                    <span class="word-label">mots à réviser</span>
+                  </div>
+                  
+                  <div class="task-actions">
+                    <div class="task-priority">
+                      <div class="priority-dot"></div>
+                    </div>
+                  </div>
+                </li>
+              {{/each}}
+            </ul>
+          {{else}}
+            <div class="no-activity">
+              <div class="no-activity-icon">
+                <i class="fas fa-check-circle"></i>
+              </div>
+              <h4>Excellent travail !</h4>
+              <p>Toutes vos tâches sont terminées. Vous êtes à jour dans vos révisions !</p>
+            </div>
+          {{/if}}
+        </div>
       </div>
       
       <!-- Footer -->
