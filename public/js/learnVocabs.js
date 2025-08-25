@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (wordsContainer && wordsContainer.dataset.words) {
         try {
             allWords = JSON.parse(wordsContainer.dataset.words);
+            console.log(allWords);
         } catch (e) {
             console.error('Erreur lors du parsing des mots:', e);
         }
@@ -18,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let wordsFilteredByLevel = allWords;
     let wordsFilteredByVocab = allWords.filter(word => word.dueToday);
+    console.log(wordsFilteredByVocab);
     let currentWords = [...wordsFilteredByVocab]; // Copie pour permettre le filtrage
     let currentIndex = 0;
     let progress = []; // Pour suivre les progrès (0: ne sait pas, 1: incertain, 2: sait)
@@ -935,13 +937,4 @@ document.addEventListener('DOMContentLoaded', function() {
         element.style.transform = 'translateY(0)';
       }, 100);
     });
-    
-    // Fix to prevent meaning-to-word mode issues
-    setTimeout(() => {
-      if (currentWords.length === 0 && allWords.length > 0) {
-        console.log('No current words but allWords exists, restoring from allWords');
-        currentWords = [...allWords];
-        updateCardDisplay();
-      }
-    }, 1000);
   });
