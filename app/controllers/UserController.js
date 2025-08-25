@@ -44,6 +44,7 @@ class UserController {
             const learnedWords = await learningModel.getNumWordsByLevelAllPackages(user.id, 'v');
             const newWords = await learningModel.getNumWordsByLevelAllPackages(user.id, 'x');
             const islearningWords = await learningModel.getNumWordsByLevelAllPackages(user.id, '0') + await learningModel.getNumWordsByLevelAllPackages(user.id, '1') + await learningModel.getNumWordsByLevelAllPackages(user.id, '2');
+            const packagesToReview = await learningModel.countWordsToReviewTodayByPackage(user.id);
             // Créer une session utilisateur (sans stocker le mot de passe)
             try {
                 req.session.user = {
@@ -57,7 +58,8 @@ class UserController {
                 totalWords,
                 learnedWords,
                 newWords,
-                islearningWords
+                islearningWords,
+                packagesToReview
                 };
             } catch (error) {
                 console.error('Erreur lors de la connexion:', error);
@@ -170,12 +172,35 @@ class UserController {
     }
 
     // Tableau de bord (protégé)
-    dashboard(req, res) {
+    async dashboard(req, res) {
         // Vérifier si l'utilisateur est connecté
         if (!req.session.user) {
             console.error('session do not exist', req.session);
             return res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
         }
+
+            const user = req.session.user;
+            const streak = await userModel.getStreakById(user.id);
+
+            const totalWords = await wordModel.countUserWords(user.id);
+            const learnedWords = await learningModel.getNumWordsByLevelAllPackages(user.id, 'v');
+            const newWords = await learningModel.getNumWordsByLevelAllPackages(user.id, 'x');
+            const islearningWords = await learningModel.getNumWordsByLevelAllPackages(user.id, '0') + await learningModel.getNumWordsByLevelAllPackages(user.id, '1') + await learningModel.getNumWordsByLevelAllPackages(user.id, '2');
+            const packagesToReview = await learningModel.countWordsToReviewTodayByPackage(user.id);
+            // Update session utilisateur (sans stocker le mot de passe)
+            try {
+                user.streak = streak;
+                user.totalWords = totalWords;
+                user.learnedWords = learnedWords;
+                user.newWords = newWords;
+                user.islearningWords = islearningWords;
+                user.packagesToReview = packagesToReview;
+                
+            } catch (error) {
+                console.error('Erreur lors de la connexion:', error);
+                res.redirect('/login?error=Une erreur est survenue. Veuillez réessayer plus tard.');
+            }
+
         res.render('dashboard', {
             title: 'Tableau de bord',
             user: req.session.user
