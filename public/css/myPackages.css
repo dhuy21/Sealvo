@@ -547,16 +547,55 @@
   margin: 0 auto 1.5rem;
 }
 .package-name {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
+  max-height: 80px;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 0.75rem;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-y: auto;
+}
+
+/* Scrollbar moderne pour activity-title */
+.package-name::-webkit-scrollbar,
+.package-description::-webkit-scrollbar {
+  height: 6px;
+  background: transparent;
+}
+
+.package-name::-webkit-scrollbar-track,
+.package-description::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  margin: 0 5px;
+}
+
+.package-name::-webkit-scrollbar-thumb,
+.package-description::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  opacity: 0.7;
+}
+
+.package-name::-webkit-scrollbar-thumb:hover,
+.package-description::-webkit-scrollbar-thumb:hover {
+  opacity: 1;
+  transform: scaleY(1.2);
+  background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
 }
 
 .package-description {
-  color: var(--text-secondary);
-  line-height: 1.6;
-  margin-bottom: 1.5rem;
+  font-size: 1rem;
+  max-height: 80px;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-y: auto;
 }
 
 .package-stats {
@@ -1253,6 +1292,16 @@
   }
   .continue-application > div {
     border-radius: 8px;
+  }
+
+  .package-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    max-height: 60px;
+  }
+  .package-description {
+    font-size: 0.9rem;
+    max-height: 60px;
   }
 }
 

@@ -183,7 +183,6 @@ function initProgressBars() {
                 progressPercentage.innerHTML = `<i class="fas fa-trophy" style="color: #FFCC70; margin-right: 0.25rem;"></i>${streakDays}`;
             } else {
                 currentPercentage++;
-                progressPercentage.innerHTML = `<i class="fas fa-trophy" style="color: #FFCC70; margin-right: 0.25rem;"></i>${Math.round((currentPercentage / 100) * streakDays)}/${maxStreakDays} jours`;
             }
         }, 20);
     }
