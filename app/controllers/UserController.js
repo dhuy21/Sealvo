@@ -59,7 +59,8 @@ class UserController {
                 learnedWords,
                 newWords,
                 islearningWords,
-                packagesToReview
+                packagesToReview,
+                notifications: '🏅 Beginner'
                 };
             } catch (error) {
                 console.error('Erreur lors de la connexion:', error);
@@ -189,7 +190,7 @@ class UserController {
             const packagesToReview = await learningModel.countWordsToReviewTodayByPackage(user.id);
             // Update session utilisateur (sans stocker le mot de passe)
             try {
-                user.streak = streak;
+                user.streak = streak.streak;
                 user.totalWords = totalWords;
                 user.learnedWords = learnedWords;
                 user.newWords = newWords;
@@ -203,7 +204,8 @@ class UserController {
 
         res.render('dashboard', {
             title: 'Tableau de bord',
-            user: req.session.user
+            user: req.session.user,
+
         });
     }
     async editPost(req, res) {

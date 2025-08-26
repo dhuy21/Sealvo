@@ -84,11 +84,6 @@ body[data-theme="dark"] {
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-[data-theme="dark"] .dashboard-header h1 {
-  background: linear-gradient(45deg, #6a11cb, #2575fc) ;
-  background-clip: text;
-    -webkit-background-clip: text;
-}
 
 /* Form control styles */
 [data-theme="light"] input, 
@@ -348,7 +343,12 @@ body[data-theme="dark"] {
   background: linear-gradient(135deg, #6a11cb, #2575fc) !important;
   color: #ffffff !important;
 }
-
+[data-theme="dark"] .package-name {
+  color: #ffffff !important;
+}
+[data-theme="dark"] .package-description {
+  color: #ffffff !important;
+}
 [data-theme="dark"] .flashcard-front .card-content,
 [data-theme="dark"] .flashcard-front .card-type,
 [data-theme="dark"] .flashcard-front .card-prompt,
