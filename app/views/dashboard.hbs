@@ -5,11 +5,13 @@
     <i class="fas fa-language floating-icons float-icon-1"></i>
     <i class="fas fa-brain floating-icons float-icon-2"></i>
     <i class="fas fa-graduation-cap floating-icons float-icon-3"></i>
+
+    <!-- Header -->
+    <div class="dashboard-header fade-in">
+      <h1>Tableau de Bord</h1>
+    </div>
+
     <div class="dashboard-container">
-      <!-- Header -->
-      <div class="dashboard-header fade-in">
-        <h1>Tableau de Bord</h1>
-      </div>
       
       <!-- Welcome Message -->
       <div class="dashboard-welcome fade-in" data-user="{{user.username}}">
@@ -40,7 +42,10 @@
             </div>
           </div>
         </div>
-        
+      </div>
+
+      <!-- User Info -->
+      <div class="user-dashboard">
         <!-- User Info Card -->
         <div class="dashboard-card fade-in user-profile-card">
           <div class="user-profile-header">
@@ -51,15 +56,15 @@
               </button>
             </div>
 
-            {{#if notifications}}
-              <span class="notification-badge">{{notifications.length}}</span>
+            {{#if user.notifications}}
+              <span class="notification-badge">{{user.notifications}}</span>
             {{/if}}
           </div>
           <div class="user-info">
             <div class="info-row row-name">
               <div class="info-label"><i class="fas fa-user-tag" style="color: #2b44bf; width: 30px; margin-right: 8px;"></i>Nom d'utilisateur: </div>
               <div class="info-value"> 
-                <span class="username-display">{{user.username}}</span>
+                <div class="username-display">{{user.username}}</div>
                 <button type="button" class="edit-btn" title="Modifier">
                   <i class="fas fa-edit"></i>
                 </button>
@@ -68,7 +73,7 @@
             <div class="info-row row-email">
               <div class="info-label"><i class="fas fa-envelope" style="color: #b720ad; width: 30px; margin-right: 8px;"></i>Email: </div>
               <div class="info-value"> 
-                <span class="email-display">{{user.email}}</span>
+                <div class="email-display">{{user.email}}</div>
                 <button type="button" class="edit-btn" title="Modifier">
                   <i class="fas fa-edit"></i>
                 </button>
@@ -188,14 +193,15 @@
               {{#each user.packagesToReview}}
                 <li class="activity-item task-card" data-package="{{this.package_id}}">
                   <div class="task-icon"> 📜 </div>
-                  <div class="activity-title">{{this.package_name}}</div>
+                  <div class="task-content">
+                    <div class="activity-title">{{this.package_name}}</div>
 
-                  <div class="activity-time">
-                    🧠
-                    <span class="word-count">{{this.num_words}}</span>
-                    <span class="word-label">mots à réviser</span>
+                    <div class="activity-time">
+                      🧠
+                      <div class="word-count">{{this.num_words}}</div>
+                      <div class="word-label">mots à réviser</div>
+                    </div>
                   </div>
-                  
                   <div class="task-actions">
                     <div class="task-priority">
                       <div class="priority-dot"></div>
