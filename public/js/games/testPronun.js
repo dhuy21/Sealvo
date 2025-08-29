@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const highScoreMessage = document.getElementById('high-score-message');
     const packageId = document.getElementById('package-id').getAttribute('data-package');
     const trackLevelMessage = document.getElementById('track-level-message');
+    const playAgainContainer = document.getElementById('play-again-container');
     
     // Écrans de jeu
     const preGameScreen = document.querySelector('.pre-game-screen');
@@ -310,16 +311,15 @@ document.addEventListener('DOMContentLoaded', function() {
         currentWordDisplay.textContent = '';
         phoneticSpellingDisplay.textContent = '';
         loader.removeAttribute('style');
+
         // Désactiver le bouton d'écoute au début
         if (playWordBtn) {
             playWordBtn.disabled = true;
             playWordBtn.classList.add('disabled');
         }
 
-        
         // Démarrer le timer
         timerInterval = setInterval(updateTimer, 1000);
-        
         
         // Message spécifique pour Safari iOS
         if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
@@ -332,8 +332,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Charger le premier mot
         loadNewWord();
 
-        
-        
         // Afficher l'écran de jeu actif
         console.log('Switching to active game screen...');
         if (preGameScreen) {
@@ -1267,10 +1265,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (trackLevelMessage) {
             if (isSuccessful) {
                 trackLevelMessage.textContent = 'Excellent travail ! Progressez les autres jeux de ce niveau 😍';
+                trackLevelMessage.classList.remove('level-failed');
                 trackLevelMessage.classList.add('level-completed');
             } else {
-                trackLevelMessage.textContent = 'Bon courage ! Réessayer ce jeu pour améliorer vos compétences 🤧' ;
+                trackLevelMessage.textContent = 'Bon courage ! Réessayer ce jeu pour améliorer vos compétences 🤧';
                 trackLevelMessage.classList.remove('level-completed');
+                trackLevelMessage.classList.add('level-failed');
             }
         }
 
@@ -1369,7 +1369,22 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Progression de niveau mise à jour:', data);
             
             if (data.level_completed && data.words_updated > 0) {
-                console.log(`Niveau terminé! ${data.words_updated} mots sont passés au niveau ${data.to_level}`);
+                showNotification(`Niveau terminé! ${data.words_updated} mots sont passés au niveau ${data.to_level}`, 'success');
+
+                playAgainContainer.innerHTML = `
+                    <button id="finish-level" class="play-again-btn">
+                        <i class="fa-solid fa-heart" style="color: #FFD43B;" width="40" height="40"></i> Terminé
+                    </button>
+                `;
+                
+                // Ajouter l'event listener APRÈS la création du bouton
+                const finishLevelBtn = document.getElementById('finish-level');
+                if (finishLevelBtn) {
+                    finishLevelBtn.addEventListener('click', function() {
+                        window.location.href = `/games?package=${packageId}`;
+                        console.log('Finish level button clicked');
+                    });
+                }
             }
         })
         .catch(error => {
@@ -1408,12 +1423,26 @@ document.addEventListener('DOMContentLoaded', function() {
         completedWords = 6;
         endGame();
     };
+
+    window.testFailedGame = function() {
+        console.log('Testing failed game...');
+        totalAccuracy = 0;
+        completedWords = 0;
+        endGame();
+    };
     
     // Ajouter un raccourci clavier pour tester (Ctrl+Shift+E)
     document.addEventListener('keydown', function(e) {
         if (e.ctrlKey && e.shiftKey && e.key === 'E') {
             console.log('Test end game triggered by keyboard shortcut');
             window.testEndGame();
+        }
+    });
+    
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && e.key === 'F') {
+            console.log('Test failed game triggered by keyboard shortcut');
+            window.testFailedGame();
         }
     });
     
