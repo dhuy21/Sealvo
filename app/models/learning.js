@@ -60,7 +60,8 @@ class Learning {
                 'UPDATE learning SET level = ?, date_memorized = ? WHERE package_id = ? AND detail_id = ?', 
                 [newLevel, dateMemorized, package_id, detail_id]
             );
-                    return rows[0] || null;
+
+                return rows[0] || null;
         } catch (error) {
             console.error('Erreur lors de la mise à jour du niveau d\'apprentissage :', error);
             throw error;
@@ -170,18 +171,14 @@ class Learning {
     // function to get the words of user to learn today by level in a package
     async findWordsTodayByLevel(package_id, level) {
         try {
+            const intervalDate = this.getInterval(level);
+
             const [rows] = await global.dbConnection.execute(
                 `SELECT detail_id
                  FROM learning
                  WHERE package_id = ? AND level = ? 
-                 AND (
-                    (level = 'x' AND DATE_ADD(DATE(date_memorized), INTERVAL 0 DAY) <= CURDATE()) OR
-                    (level = '0' AND DATE_ADD(DATE(date_memorized), INTERVAL 2 DAY) <= CURDATE()) OR
-                    (level = '1' AND DATE_ADD(DATE(date_memorized), INTERVAL 4 DAY) <= CURDATE()) OR
-                    (level = '2' AND DATE_ADD(DATE(date_memorized), INTERVAL 10 DAY) <= CURDATE()) OR
-                    (level = 'v' AND DATE_ADD(DATE(date_memorized), INTERVAL 20 DAY) <= CURDATE())
-                 );`,
-                [package_id, level]
+                 AND DATE_ADD(DATE(date_memorized), INTERVAL ? DAY) <= CURDATE()`,
+                [package_id, level, intervalDate]
             );
             return rows;
         } catch (error) {

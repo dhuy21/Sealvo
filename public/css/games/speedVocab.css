@@ -1228,7 +1228,7 @@ box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
 
-.track-level-message::before {
+.track-level-message.level-completed::before {
   content: '';
   position: absolute;
   top: 0;
@@ -1236,6 +1236,17 @@ box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
   width: 120%;
   height: 3px;
   background: linear-gradient(90deg, #10b981, #34d399, #6ee7b7);
+  animation: progressLine 2s ease-out;
+}
+
+.track-level-message.level-failed::before {
+content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 120%;
+  height: 3px;
+  background: linear-gradient(90deg, #ea7b14, #f7cf04, #f62828);
   animation: progressLine 2s ease-out;
 }
 
@@ -1252,12 +1263,38 @@ box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
 
+.track-level-message.level-failed {
+background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+  color: #ea4306;
+  font-weight: 700;
+  box-shadow: 
+      0 12px 40px rgba(5, 150, 105, 0.15),
+      0 1px 0 rgba(255, 255, 255, 0.7) inset;
+  border: 2px solid rgba(5, 150, 105, 0.2);
+  animation: levelFailed 3s infinite, messageAppear 1.2s ease-out 1s both;
+  position: relative;
+  overflow: hidden;
+}
+
 .track-level-message.level-completed::before {
   background: linear-gradient(90deg, #10b981, #34d399, #6ee7b7);
 }
 
+.track-level-message.level-failed::before {
+  background: linear-gradient(90deg, #ea7b14, #f74d04, #f62828);
+}
+
 .track-level-message.level-completed::after {
   content: '🏅';
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  font-size: 2.5rem;
+  animation: targetBounce 2s ease-in-out infinite;
+}
+
+.track-level-message.level-failed::after {
+  content: '💔';
   position: absolute;
   top: 1rem;
   right: 1rem;
@@ -1291,6 +1328,24 @@ box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
       box-shadow: 
           0 0 0 0 rgba(5, 150, 105, 0),
           0 12px 40px rgba(5, 150, 105, 0.15);
+  }
+}
+
+@keyframes levelFailed {
+  0% { 
+      box-shadow: 
+          0 0 0 0 rgba(5, 150, 105, 0),
+          0 12px 40px rgba(150, 56, 5, 0.66);
+  }
+  70% { 
+      box-shadow: 
+          0 0 0 20px rgba(5, 150, 105, 0),
+          0 12px 40px rgba(206, 54, 8, 0.61);
+  }
+  100% { 
+      box-shadow: 
+          0 0 0 0 rgba(5, 150, 105, 0),
+          0 12px 40px rgba(252, 0, 0, 0.626);
   }
 }
 

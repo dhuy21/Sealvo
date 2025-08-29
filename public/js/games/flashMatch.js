@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const trackLevelMessage = document.getElementById('track-level-message');
     const packageId = document.getElementById('package-id').getAttribute('data-package');
     const loader = document.getElementById('loader');
+    const playAgainContainer = document.getElementById('play-again-container');
     
     // Écrans de jeu
     const preGameScreen = document.querySelector('.pre-game-screen');
@@ -376,10 +377,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (trackLevelMessage) {
             if (isSuccessful) {
                 trackLevelMessage.textContent = 'Excellent travail ! Progressez les autres jeux de ce niveau 😍';
+                trackLevelMessage.classList.remove('level-failed');
                 trackLevelMessage.classList.add('level-completed');
             } else {
                 trackLevelMessage.textContent = 'Bon courage ! Réessayer ce jeu pour améliorer vos compétences 🤧';
                 trackLevelMessage.classList.remove('level-completed');
+                trackLevelMessage.classList.add('level-failed');
             }
         }
         
@@ -450,7 +453,22 @@ document.addEventListener('DOMContentLoaded', function() {
             // If all games for this level are completed and words were updated
             if (data.level_completed && data.words_updated > 0) {
                 // You could show a notification or modal here
-                console.log(`Niveau terminé! ${data.words_updated} mots sont passés au niveau ${data.to_level}`);
+                showNotification(`Niveau terminé! ${data.words_updated} mots sont passés au niveau ${data.to_level}`, 'success');
+
+                playAgainContainer.innerHTML = `
+                    <button id="finish-level" class="play-again-btn">
+                        <i class="fa-solid fa-heart" style="color: #FFD43B;" width="40" height="40"></i> Terminé
+                    </button>
+                `;
+                
+                // Ajouter l'event listener APRÈS la création du bouton
+                const finishLevelBtn = document.getElementById('finish-level');
+                if (finishLevelBtn) {
+                    finishLevelBtn.addEventListener('click', function() {
+                        window.location.href = `/games?package=${packageId}`;
+                        console.log('Finish level button clicked');
+                    });
+                }
             }
         })
         .catch(error => {
