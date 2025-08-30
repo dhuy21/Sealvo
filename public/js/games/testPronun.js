@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Fonction pour démarrer le jeu
-    function startGame() {
+    async function startGame() {
         
         // Réinitialiser les variables
         currentWord = null;
@@ -318,8 +318,6 @@ document.addEventListener('DOMContentLoaded', function() {
             playWordBtn.classList.add('disabled');
         }
 
-        // Démarrer le timer
-        timerInterval = setInterval(updateTimer, 1000);
         
         // Message spécifique pour Safari iOS
         if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
@@ -328,9 +326,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 setFeedbackTextColor('info');
             }
         }
-        
-        // Charger le premier mot
-        loadNewWord();
 
         // Afficher l'écran de jeu actif
         console.log('Switching to active game screen...');
@@ -343,6 +338,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (postGameScreen) {
             postGameScreen.classList.remove('active');
         }
+
+        // Charger le premier mot
+        await loadNewWord();
+        
+        // Démarrer le timer
+        timerInterval = setInterval(updateTimer, 1000);
+
     }
     
     // Fonction pour configurer la reconnaissance vocale (Web Speech API) - Améliorée
@@ -749,81 +751,82 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Fonction pour charger un nouveau mot
-    function loadNewWord() {
-        if (attemptCount > 5) {
-            console.log("Vocabulaire limité, acceptation du même mot après 5 tentatives");
-            attemptCount = 0;
-        }
-        
-        fetch(`/games/testPronun/words?package=${packageId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                console.error(data.error);
-                alert('Une erreur est survenue lors du chargement du mot.');
-                return;
-            }
+    async function loadNewWord() {
 
-            words = data.words;
-
-            
-            // Réinitialiser le compteur de tentatives
-            attemptCount = 0;
-            const randomIndex = Math.floor(Math.random() * words.length);
-            currentIndex = randomIndex;
-            
-            // Mettre à jour le mot courant
-            currentWord = words[currentIndex];
-            
-            // Afficher le mot et sa prononciation phonétique
-            loader.setAttribute('style', 'display: none;');
-            if (currentWordDisplay) currentWordDisplay.textContent = currentWord.word;
-            if (phoneticSpellingDisplay) phoneticSpellingDisplay.textContent = currentWord.pronunciation ;
-            
-            // Activer le bouton d'écoute
-            if (playWordBtn) {
-                playWordBtn.disabled = false;
-                playWordBtn.classList.remove('disabled');
+        try {
+            if (attemptCount > 5) {
+                console.log("Vocabulaire limité, acceptation du même mot après 5 tentatives");
+                attemptCount = 0;
             }
             
-            // Réinitialiser l'affichage de feedback
-            if (accuracyMeter) {
-                const meterFill = accuracyMeter.querySelector('.meter-fill');
-                if (meterFill) meterFill.style.width = '0%';
-            }
-            if (recognizedText) recognizedText.textContent = '';
-            if (feedbackText) feedbackText.textContent = '';
-            
-            // Animation d'apparition du mot
-            if (currentWordDisplay) {
-                currentWordDisplay.classList.add('fadeIn');
-                setTimeout(() => {
-                    currentWordDisplay.classList.remove('fadeIn');
-                }, 500);
-            }
-            
-            // Configurer la reconnaissance vocale
-            setupSpeechRecognition();
-            
-            // Mettre à jour la langue si nécessaire
-            if (currentWord.language_code) {
-                currentLanguage = currentWord.language_code;
-                if (recognition) {
-                    recognition.lang = currentLanguage;
-                    console.log('Langue mise à jour pour le nouveau mot:', currentLanguage);
+            const response = await fetch(`/games/testPronun/words?package=${packageId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
                 }
-            }
-        })
-        .catch(error => {
+            })
+            const data = await response.json();
+
+                if (data.error) {
+                    console.error(data.error);
+                    alert('Une erreur est survenue lors du chargement du mot.');
+                    return;
+                }
+
+                words = data.words;
+
+                
+                // Réinitialiser le compteur de tentatives
+                attemptCount = 0;
+                const randomIndex = Math.floor(Math.random() * words.length);
+                currentIndex = randomIndex;
+                
+                // Mettre à jour le mot courant
+                currentWord = words[currentIndex];
+                
+                // Afficher le mot et sa prononciation phonétique
+                loader.setAttribute('style', 'display: none;');
+                if (currentWordDisplay) currentWordDisplay.textContent = currentWord.word;
+                if (phoneticSpellingDisplay) phoneticSpellingDisplay.textContent = currentWord.pronunciation ;
+                
+                // Activer le bouton d'écoute
+                if (playWordBtn) {
+                    playWordBtn.disabled = false;
+                    playWordBtn.classList.remove('disabled');
+                }
+                
+                // Réinitialiser l'affichage de feedback
+                if (accuracyMeter) {
+                    const meterFill = accuracyMeter.querySelector('.meter-fill');
+                    if (meterFill) meterFill.style.width = '0%';
+                }
+                if (recognizedText) recognizedText.textContent = '';
+                if (feedbackText) feedbackText.textContent = '';
+                
+                // Animation d'apparition du mot
+                if (currentWordDisplay) {
+                    currentWordDisplay.classList.add('fadeIn');
+                    setTimeout(() => {
+                        currentWordDisplay.classList.remove('fadeIn');
+                    }, 500);
+                }
+                
+                // Configurer la reconnaissance vocale
+                setupSpeechRecognition();
+                
+                // Mettre à jour la langue si nécessaire
+                if (currentWord.language_code) {
+                    currentLanguage = currentWord.language_code;
+                    if (recognition) {
+                        recognition.lang = currentLanguage;
+                        console.log('Langue mise à jour pour le nouveau mot:', currentLanguage);
+                    }
+                }
+        } catch(error) {
             console.error('Erreur lors du chargement du mot:', error);
             alert('Une erreur est survenue lors du chargement du mot.');
-        });
-    }
+        }
+    } 
     
     // Fonction pour démarrer la reconnaissance vocale (améliorée avec retry et gestion d'erreur)
     function startListening() {
