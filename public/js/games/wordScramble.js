@@ -69,18 +69,6 @@ document.addEventListener('DOMContentLoaded', function() {
         timerDisplay.textContent = timer;
         loader.removeAttribute('style');
         
-        
-        
-        // Charger le premier mot
-        await loadNextWord();
-        
-        
-        // Démarrer le timer
-        timer = 100+words.length*9;
-        console.log('Timer set to:', timer);
-        timerDisplay.textContent = timer;
-        currentScoreDisplay.textContent = score;
-        timerInterval = setInterval(updateTimer, 1000);
 
         // Afficher l'écran de jeu actif
         preGameScreen.classList.remove('active');
@@ -89,6 +77,17 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Focus sur l'input
         wordInput.focus();
+
+        // Charger le premier mot
+        await loadNextWord();
+        
+        
+        // Démarrer le timer
+        timer = 110+words.length*9;
+        console.log('Timer set to:', timer);
+        timerDisplay.textContent = timer;
+        currentScoreDisplay.textContent = score;
+        timerInterval = setInterval(updateTimer, 1000);
     }
     
     // Fonction pour charger le prochain mot

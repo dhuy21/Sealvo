@@ -362,9 +362,6 @@ document.addEventListener('DOMContentLoaded', function() {
         nextPhraseBtn.children[1].innerHTML = '<i class="fas fa-play"></i>';
         
         console.log('Starting game, loading first phrase');
-        
-        // Charger la première phrase
-        await loadNewPhrase();
 
         // Démarrer le timer
         console.log('Starting timer');
@@ -378,6 +375,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Focus sur l'input
         wordInput.focus();
+
+        // Charger la première phrase
+        await loadNewPhrase();
     }
     
     // Fonction pour charger une nouvelle phrase
