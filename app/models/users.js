@@ -6,8 +6,16 @@ class User {
         // Générer une chaîne aléatoire hexadécimale et prendre les 7 premiers caractères
         return crypto.randomBytes(4).toString('hex').substring(0, 7);
     }
+    
+    // Vérifier que la connexion à la base de données existe
+    checkDbConnection() {
+        if (!global.dbConnection) {
+            throw new Error('La connexion à la base de données n\'est pas disponible. Veuillez vérifier la configuration et redémarrer l\'application.');
+        }
+    }
     async getAllUsers() {
         try {
+            this.checkDbConnection();
             const [rows] = await global.dbConnection.execute('SELECT * FROM users');
             return rows;        
         } catch (error) {
@@ -17,6 +25,7 @@ class User {
     }
     async findById(user_id) {
         try {
+            this.checkDbConnection();
             const [rows] = await global.dbConnection.execute('SELECT * FROM users WHERE id = ?', [user_id]);
             return rows[0] || null;
         } catch (error) {
@@ -53,6 +62,7 @@ class User {
     }
     async findByUsername(username) {
         try {
+            this.checkDbConnection();
             const [rows] = await global.dbConnection.execute('SELECT * FROM users WHERE username = ?', [username]);
             return rows[0] || null;
         } catch (error) {
@@ -73,6 +83,7 @@ class User {
     
     async create(userData) {
         try {
+            this.checkDbConnection();
             // Générer un ID unique pour le nouvel utilisateur
             let userId = this.generateUserId();
             
