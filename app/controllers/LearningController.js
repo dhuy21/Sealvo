@@ -7,24 +7,9 @@ const path = require('path');
 
 class LearningController {
     //generateEmailContent with handlebars
-    async generateEmail(user_id) {
+    async generateEmail(allWords, streakData, user) {
         try {
-            // Récupération des données pour le template
-            const detailWordsIds = await learningModel.findWordsTodayToLearnAllPackages(user_id);
-            const user = await userModel.findById(user_id);
-            const streakData = await userModel.findStreakById(user_id);
-            
-            // Récupérer les détails complets des mots
-            let allWords = [];
-            if (detailWordsIds && detailWordsIds.length > 0) {
-                // Récupérer les détails de chaque mot
-                for (const item of detailWordsIds) {
-                    const wordDetails = await wordModel.findById(item.detail_id);
-                    if (wordDetails) {
-                        allWords.push(wordDetails);
-                    }
-                }
-            }
+        
             // Limiter à 5 mots maximum pour l'email
             const totalWords = allWords.length;
             const words = allWords.slice(0, 5).map(word => {

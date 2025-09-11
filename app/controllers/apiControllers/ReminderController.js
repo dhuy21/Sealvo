@@ -1,4 +1,5 @@
 const UserModel = require('../../models/users');
+const WordModel = require('../../models/words');
 const LearningModel = require('../../models/learning');
 const LearningController = require('../LearningController');
 const nodemailer = require('nodemailer');
@@ -43,9 +44,26 @@ class ReminderController {
                 
                 // N'envoie un email que si l'utilisateur a des mots à réviser
                 if (wordsToday && wordsToday.length > 0) {
-                    const emailContent = await LearningController.generateEmail(user.id);
+
+                     // Récupération des données pour le template
+                        const streakData = await UserModel.findStreakById(user.id);
+                        
+                        // Récupérer les détails complets des mots
+                        let allWords = [];
+                        if (wordsToday && wordsToday.length > 0) {
+                            // Récupérer les détails de chaque mot
+                            for (const item of wordsToday) {
+                                const wordDetails = await WordModel.findById(item.detail_id);
+                                if (wordDetails) {
+                                    allWords.push(wordDetails);
+                                }
+                            }
+                        }
+
+                    const emailContent = await LearningController.generateEmail(allWords, streakData, user);
                     await this.sendEmail(user.email, emailContent);
                     console.log(`Email envoyé à ${user.email} avec ${wordsToday.length} mots à apprendre aujourd'hui.`);
+
                 } else {
                     console.log(`Aucun mot à réviser aujourd'hui pour ${user.email}.`);
                 }
