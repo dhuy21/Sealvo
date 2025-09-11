@@ -12,9 +12,9 @@ const transporter = nodemailer.createTransport({
       user: process.env.USER_GMAIL,
       pass: process.env.USER_PASS,
     },
-    connectionTimeout: 60000, // 60 secondes
+    connectionTimeout: 120000, // 60 secondes
     greetingTimeout: 30000, // 30 secondes  
-    socketTimeout: 60000, // 60 secondes
+    socketTimeout: 120000, // 60 secondes
 });
 
 class ReminderController {
