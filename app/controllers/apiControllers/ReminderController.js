@@ -5,7 +5,7 @@ const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 // Configuration sécurisée pour Railway et développement local
-const isProduction = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'production';
+const isProduction = process.env.NODE_ENV === 'production';
 
 const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
