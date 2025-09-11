@@ -44,7 +44,8 @@ const cspConfig = {
         "'self'",
         "https://accounts.google.com",
         "https://oauth2.googleapis.com",
-        "https://www.googleapis.com"
+        "https://www.googleapis.com",
+        "https://cdn.jsdelivr.net" // Pour les source maps et ressources CDN
       ],
       frameSrc: [
         "'self'",

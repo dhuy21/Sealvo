@@ -5,27 +5,15 @@ const LearningController = require('../LearningController');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// Configuration sécurisée pour Railway et développement local
-const isProduction = process.env.NODE_ENV === 'production';
-
 const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
-    port: isProduction ? 465 : 587,
-    secure: isProduction, // SSL pour production, STARTTLS pour local
+    port: 587,
+    secure: false,
     auth: {
       user: process.env.USER_GMAIL,
       pass: process.env.USER_PASS,
     },
-    connectionTimeout: 120000,
-    greetingTimeout: 30000,  
-    socketTimeout: 120000,
-    // Configuration TLS sécurisée
-    tls: {
-        // Vérification des certificats activée pour la sécurité
-        rejectUnauthorized: true,
-        // Version TLS minimale pour la sécurité
-        minVersion: 'TLSv1.2'
-    }
+    
 });
 
 class ReminderController {
