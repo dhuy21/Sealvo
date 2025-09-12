@@ -53,12 +53,10 @@
           <textarea id="feedback-content" name="content" rows="5" placeholder="Partagez les détails de votre feedback..." required class="form-control"></textarea>
         </div>
 
-        {{#unless user}}
         <div class="form-group">
           <label for="feedback-email">Email (optionnel)</label>
-          <input type="email" id="feedback-email" name="email" placeholder="Votre email pour recevoir une réponse" class="form-control">
+          <input type="email" id="feedback-email" name="email" placeholder="Votre email(optionnel) pour recevoir une réponse" class="form-control">
         </div>
-        {{/unless}}
         
         <div class="feedback-actions">
           <button type="submit" class="btn btn-primary">
