@@ -10,7 +10,7 @@
 
 **🚀 Une plateforme d'apprentissage moderne qui transforme l'étude du vocabulaire en une expérience interactive et motivante !**
 
-[🎮 Démo Live](https://sealvo.it.com) • [📖 About me ](https://sealvo.it.com/aboutme) • [🐛 Signaler un Bug](https://sealvo.it.com/feedback) 
+[🎮 Démo Live](https://www.sealvo.it.com) • [📖 About me ](https://www.sealvo.it.com/aboutme) • [🐛 Signaler un Bug](https://www.sealvo.it.com/feedback) 
 
 ---
 
@@ -248,6 +248,7 @@ GEMINI_API_KEY_2 = key_of_your_gemini_api
 # 📧 Email Configuration 
 USER_GMAIL = name_of_your_gmail
 USER_PASS = password_of_your_gmai_given_by_password_app
+RESEND_API_KEY = key_of_your_resend_api
 
 # 🌐 URL Configuration 
 BASE_URL=https://your_domain.com/
