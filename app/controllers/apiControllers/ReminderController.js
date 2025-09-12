@@ -41,7 +41,7 @@ class ReminderController {
             // Send confirmation response after processing is complete
             res.status(200).json({
                 success: true,
-                message: `${users.length} emails envoyés`,
+                message: `L'email a été envoyé pour tester`,
             });
             
         } catch (error) {
