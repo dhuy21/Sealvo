@@ -1,22 +1,10 @@
 const userModel = require('../models/users');
 const resetPasswordModel = require('../models/resetPass');
+const ResendService = require('../services/resend');
 const handlebars = require('handlebars');
 const fs = require('fs');
 const bcrypt = require('bcryptjs')
 const path = require('path');
-const nodemailer = require('nodemailer');
-require('dotenv').config();
-//Variables d'environnement\
-
-const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false, // true for port 465, false for other ports
-    auth: {
-      user: process.env.USER_GMAIL,
-      pass: process.env.USER_PASS,
-    },
-});
 
 class ResetPasswordController {
     constructor() {
@@ -26,8 +14,6 @@ class ResetPasswordController {
         this.changePasswordPost = this.changePasswordPost.bind(this);
         this.resetPassword = this.resetPassword.bind(this);
         this.resetPasswordPost = this.resetPasswordPost.bind(this);
-        this.generateResetPasswordEmail = this.generateResetPasswordEmail.bind(this);
-        this.sendEmail = this.sendEmail.bind(this);
     }
 
     async generateResetPasswordEmail(email, token) {
@@ -72,23 +58,6 @@ class ResetPasswordController {
             throw error;
         }
     }
-            
-            
-    async sendEmail(email, content) {
-        try {
-            const info = await transporter.sendMail({
-                from: '"SealVo" <huynguyen2182004@gmail.com>', // sender address
-                to: email, // list of receivers
-                subject: "Réinitialisation de mot de passe", // Subject line
-                html: content
-            });
-
-            return true;
-        } catch (error) {
-            console.error(`Erreur lors de l'envoi de l'e-mail à ${email}:`, error); 
-            return false;
-        }
-    }
     
     // Afficher la page pour oublier le mot de passe
     forgotPassword(req, res) {
@@ -119,8 +88,9 @@ class ResetPasswordController {
 
             // Envoyer le jeton par email
             const emailContent = await this.generateResetPasswordEmail(email, token);
+            const subject = "Réinitialisation de mot de passe";
 
-            const emailSent = await this.sendEmail(email, emailContent);
+            const emailSent = await ResendService.sendEmail(email, emailContent, subject);
 
             if (!emailSent) {
                 return res.redirect('/login/forgotPassword?error=Une erreur est survenue. Veuillez réessayer plus tard.');
@@ -155,8 +125,8 @@ class ResetPasswordController {
 
             // Envoyer le jeton par email
             const emailContent = await this.generateResetPasswordEmail(email, token);
-
-            const emailSent = await this.sendEmail(email, emailContent);
+            const subject = "Réinitialisation de mot de passe";
+            const emailSent = await ResendService.sendEmail(email, emailContent, subject);
 
             if (!emailSent) {
                 return res.json({

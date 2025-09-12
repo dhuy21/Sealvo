@@ -2,28 +2,15 @@ const UserModel = require('../../models/users');
 const WordModel = require('../../models/words');
 const LearningModel = require('../../models/learning');
 const LearningController = require('../LearningController');
-const { Resend } = require('resend');
-require('dotenv').config();
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
+const ResendService = require('../../services/resend');
 class ReminderController {
 
-    constructor() {
-        // Bind methods to preserve 'this' context
-        this.reminder = this.reminder.bind(this);
-        this.sendEmail = this.sendEmail.bind(this);
-    }
-    
     async reminder(req, res) {
         try {
             const users = await UserModel.getAllUsers();
-            let emailsSent = 0;
-            let emailsSkipped = 0;
-            const maxEmailsPerBatch = 10; // Limitation pour éviter le spam
-            
+         
             // Préparer tous les emails avec limitation
-            for (const user of users.slice(0, maxEmailsPerBatch)) {
+            for (const user of users) {
                 // Vérifie si l'utilisateur a des mots à réviser aujourd'hui
                 const wordsToday = await LearningModel.findWordsTodayToLearnAllPackages(user.id);
                 
@@ -43,36 +30,18 @@ class ReminderController {
 
                     const emailContent = await LearningController.generateEmail(allWords, streakData, user);
 
-                    const emailResult = await this.sendEmail(user.email, emailContent);
+                    const emailResult = await ResendService.sendEmail(user.email, emailContent);
 
-                    if (emailResult && !emailResult.error) {
-                        emailsSent++;
-                        console.log(`Email envoyé pour ${user.email} avec ${wordsToday.length} mots à réviser.`);
-                    } else {
-                        emailsSkipped++;
-                        console.log(`Email non envoyé pour ${user.email}: ${emailResult?.error || 'Erreur inconnue'}`);
-                    }
                     
-                    // Délai entre les emails pour éviter le flagging spam
-                    await new Promise(resolve => setTimeout(resolve, 1000));
                 } else {
                     console.log(`Aucun mot à réviser aujourd'hui pour ${user.email}.`);
                 }
-            }
-            
-            if (users.length > maxEmailsPerBatch) {
-                console.log(`Limitation appliquée: ${maxEmailsPerBatch} emails traités sur ${users.length} utilisateurs`);
             }
 
             // Send confirmation response after processing is complete
             res.status(200).json({
                 success: true,
-                message: `${emailsSent} emails envoyés, ${emailsSkipped} ignorés`,
-                details: {
-                    sent: emailsSent,
-                    skipped: emailsSkipped,
-                    total: users.length
-                }
+                message: `${users.length} emails envoyés`,
             });
             
         } catch (error) {
@@ -81,25 +50,6 @@ class ReminderController {
                 success: false,
                 message: 'Erreur lors de l\'envoi des rappels'
             });
-        }
-    }
-
-    async sendEmail(user_email, content) {
-        try {
-    
-            const result = await resend.emails.send({
-                from: 'SealVo <onboarding@resend.dev>',
-                to: [user_email],
-                replyTo: 'support@notifications.sealvo.it.com',
-                subject: 'Révision quotidienne - SealVo',
-                html: content,
-            });
-
-            console.log(result);
-            return result;
-        } catch (error) {
-            console.error('Erreur lors de l\'envoi de l\'email:', error);
-            throw error;
         }
     }
 }
