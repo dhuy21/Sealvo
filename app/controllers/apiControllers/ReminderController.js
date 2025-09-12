@@ -5,6 +5,52 @@ const LearningController = require('../LearningController');
 const ResendService = require('../../services/resend');
 class ReminderController {
 
+    async testEmail(req, res) {
+        try {
+            const user = req.session.user;
+            let message = '';
+        
+                // Vérifie si l'utilisateur a des mots à réviser aujourd'hui
+                const wordsToday = await LearningModel.findWordsTodayToLearnAllPackages(user.id);
+                
+                // N'envoie un email que si l'utilisateur a des mots à réviser
+                if (wordsToday && wordsToday.length > 0) {
+                    // Récupération des données pour le template
+                    const streakData = await UserModel.findStreakById(user.id);
+                    const wordsEmail = wordsToday.slice(0, 5);
+                    // Récupérer les détails complets des mots
+                    let allWords = [];
+                    for (const item of wordsEmail) {
+                        const wordDetails = await WordModel.findById(item.detail_id);
+                        if (wordDetails) {
+                            allWords.push(wordDetails);
+                        }
+                    }
+
+                    const emailContent = await LearningController.generateEmail(allWords, wordsToday.length, streakData, user);
+
+                    const emailResult = await ResendService.sendEmail(user.email, emailContent);
+
+                    message = `L'email a été envoyé pour tester`;
+                } else {
+                    message = `Aucun mot à réviser aujourd'hui`;
+                }
+
+            // Send confirmation response after processing is complete
+            res.status(200).json({
+                success: true,
+                message: message,
+            });
+            
+        } catch (error) {
+            console.error('Erreur lors de l\'envoi des rappels :', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de l\'envoi des rappels'
+            });
+        }
+    }
+
     async reminder(req, res) {
         try {
             const users = await UserModel.getAllUsers();

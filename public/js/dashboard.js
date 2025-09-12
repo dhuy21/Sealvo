@@ -41,7 +41,7 @@ document.getElementById('changePasswordBtn').addEventListener('click', function(
 
 document.getElementById('reminderBtn').addEventListener('click', function() {
     // Send a POST request to change the password
-    fetch('/api/reminder', {
+    fetch('/api/testEmail', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
