@@ -88,10 +88,10 @@ class ReminderController {
         try {
     
             const result = await resend.emails.send({
-                from: 'SealVo <no-reply@notifications.sealvo.it.com>',
+                from: 'SealVo <onboarding@resend.dev>',
                 to: [user_email],
                 replyTo: 'support@notifications.sealvo.it.com',
-                subject: 'Vos mots à réviser - SealVo',
+                subject: 'Révision quotidienne - SealVo',
                 html: content,
             });
 
