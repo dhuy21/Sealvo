@@ -18,17 +18,17 @@ class ReminderController {
                 if (wordsToday && wordsToday.length > 0) {
                     // Récupération des données pour le template
                     const streakData = await UserModel.findStreakById(user.id);
-                    
+                    const wordsEmail = wordsToday.slice(0, 5);
                     // Récupérer les détails complets des mots
                     let allWords = [];
-                    for (const item of wordsToday) {
+                    for (const item of wordsEmail) {
                         const wordDetails = await WordModel.findById(item.detail_id);
                         if (wordDetails) {
                             allWords.push(wordDetails);
                         }
                     }
 
-                    const emailContent = await LearningController.generateEmail(allWords, streakData, user);
+                    const emailContent = await LearningController.generateEmail(allWords, wordsToday.length, streakData, user);
 
                     const emailResult = await ResendService.sendEmail(user.email, emailContent);
 
