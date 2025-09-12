@@ -7,12 +7,11 @@ const path = require('path');
 
 class LearningController {
     //generateEmailContent with handlebars
-    async generateEmail(allWords, streakData, user) {
+    async generateEmail(allWords, totalWords, streakData, user) {
         try {
         
             // Limiter à 5 mots maximum pour l'email
-            const totalWords = allWords.length;
-            const words = allWords.slice(0, 5).map(word => {
+            const words = allWords.map(word => {
                 // Ajouter des propriétés pour faciliter l'affichage des indicateurs de difficulté
                 return {
                     ...word,
