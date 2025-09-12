@@ -468,7 +468,7 @@
                     <p class="streak-number">
                         <span class="streak-emoji">🔥</span> {{streak.currentStreak}} jour(s)
                     </p>
-                    <p class="streak-label">Série d'apprentissage actuelle</p>
+                    <p class="streak-label">Série d'apprentissage</p>
                     
                     {{#if streak.isAtRisk}}
                     <p class="streak-message">⚠️ Ne perdez pas votre série ! Révisez aujourd'hui pour continuer.</p>
@@ -482,10 +482,6 @@
                         💪 Chaque jour compte. Continuez à apprendre !
                         {{/if}}
                     </p>
-                    {{/if}}
-                    
-                    {{#if streak.longestStreak}}
-                    <p class="streak-label">Record personnel: {{streak.longestStreak}} jours</p>
                     {{/if}}
                 </div>
                 {{/if}}
@@ -502,23 +498,11 @@
                             <span class="stat-label">Mots au total</span>
                         </div>
                         
-                        {{#if streak}}
-                        <div class="stat-item">
-                            <span class="stat-number">{{streak.currentStreak}}</span>
-                            <span class="stat-label">Jours consécutifs</span>
-                        </div>
-                        {{/if}}
-                        
                         <div class="stat-item">
                             <span class="stat-number">{{wordsShown}}</span>
                             <span class="stat-label">Mots affichés</span>
                         </div>
                     </div>
-                    
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 0%;"></div>
-                    </div>
-                    <span style="font-size: 12px; color: #666;">0% complété</span>
                 </div>
                 {{/if}}
 
@@ -545,7 +529,7 @@
                         {{/if}}
                         
                         <div class="word-difficulty">
-                            Difficulté: 
+                            Niveau: 
                             <span class="difficulty-indicator difficulty-active"></span>
                             {{#if this.isLevel0}}
                             <span class="difficulty-indicator difficulty-active"></span>
@@ -596,16 +580,6 @@
                 </div>
 
                 <p style="margin-top: 30px;">Bon apprentissage,<br>L'équipe SealVo</p>
-            </div>
-            
-            <div class="footer">
-                <p>Cet e-mail vous a été envoyé car vous êtes inscrit sur SealVo.</p>
-                
-                <div class="social-links">
-                    <div style="text-decoration: none;">📱</div>
-                    <div style="text-decoration: none;">📘</div>
-                    <div style="text-decoration: none;">📸</div>
-                </div>
             </div>
         </div>
         
