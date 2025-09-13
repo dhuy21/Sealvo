@@ -9,7 +9,7 @@ class ResendService {
         try {
     
             const result = await resend.emails.send({
-                from: 'SealVo <no-reply@sealvo.it.com>',
+                from: 'SealVo <info@sealvo.it.com>',
                 to: [user_email],
                 subject: subject,
                 html: content,
