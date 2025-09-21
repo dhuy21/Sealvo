@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../../controllers/UserController');
-const resetPasswordController = require('../../controllers/ResetPasswordController');
+const resetPasswordController = require('../../controllers/authControllers/ResetPasswordController');
 
 // Route pour modifier le profil
 router.post('/edit', userController.editPost);

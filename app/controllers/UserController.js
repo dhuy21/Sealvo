@@ -2,6 +2,8 @@ const bcrypt = require('bcryptjs');
 const userModel = require('../models/users');
 const wordModel = require('../models/words');
 const learningModel = require('../models/learning');
+const EmailVerificationModel = require('../models/email_verification');
+const MailersendService = require('../services/mailersend');
 
 
 class UserController {
@@ -35,9 +37,14 @@ class UserController {
             
             // Vérifier le mot de passe
             const isMatch = await bcrypt.compare(password, user.password);
+            const isVerified = user.is_verified;
             
             if (!isMatch) {
                 return res.redirect('/login?error=Nom d\'utilisateur ou mot de passe incorrect');
+            }
+            
+            if (!isVerified) {
+                return res.redirect('/login?error=Votre compte n\'est pas vérifié');
             }
             
             const totalWords = await wordModel.countUserWords(user.id);
@@ -45,6 +52,7 @@ class UserController {
             const newWords = await learningModel.getNumWordsByLevelAllPackages(user.id, 'x');
             const islearningWords = await learningModel.getNumWordsByLevelAllPackages(user.id, '0') + await learningModel.getNumWordsByLevelAllPackages(user.id, '1') + await learningModel.getNumWordsByLevelAllPackages(user.id, '2');
             const packagesToReview = await learningModel.countWordsToReviewTodayByPackage(user.id);
+
             // Créer une session utilisateur (sans stocker le mot de passe)
             try {
                 req.session.user = {
@@ -129,15 +137,27 @@ class UserController {
             }
             
             // Créer le nouvel utilisateur
-            await userModel.create({
+            const userId = await userModel.create({
                 username,
                 email,
                 password: hashedPassword,
                 ava: avatarInt
             });
             
+            // Générer un token de vérification d'email
+            const { expires_at, token_hash } = await EmailVerificationModel.generateToken();
+            
+            // Sauvegarder le token dans la base
+            await EmailVerificationModel.saveToken(userId, expires_at, token_hash);
+            
+            // Générer l'email de vérification via le service
+            const emailContent = await MailersendService.generateEmailVerification(username, token_hash);
+            const subject = "Vérification de votre email";
+            // Envoyer l'email de vérification via le service
+            await MailersendService.sendEmail(email, emailContent, subject);
+            
             // Rediriger vers la page de connexion
-            res.redirect('/login?success=Votre compte a été créé avec succès');
+            res.redirect('/login?success=Un email de vérification a été envoyé à votre adresse email');
             
         } catch (error) {
             console.error('Erreur lors de l\'inscription:', error);
