@@ -5,6 +5,7 @@ const wordModel = require('../../models/words');
 const learningModel = require('../../models/learning');
 
 class GoogleAuthController {
+    
     constructor() {
         this.clientID = process.env.GOOGLE_CLIENT_ID;
         this.clientSecret = process.env.GOOGLE_CLIENT_SECRET;

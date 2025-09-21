@@ -1,64 +1,10 @@
-const userModel = require('../models/users');
-const resetPasswordModel = require('../models/resetPass');
-const ResendService = require('../services/resend');
-const handlebars = require('handlebars');
-const fs = require('fs');
+const userModel = require('../../models/users');
+const resetPasswordModel = require('../../models/resetPass');
+const MailersendService = require('../../services/mailersend');
 const bcrypt = require('bcryptjs')
-const path = require('path');
 
 class ResetPasswordController {
-    constructor() {
-        // Bind methods to preserve 'this' context in express route handlers
-        this.forgotPassword = this.forgotPassword.bind(this);
-        this.forgotPasswordPost = this.forgotPasswordPost.bind(this);
-        this.changePasswordPost = this.changePasswordPost.bind(this);
-        this.resetPassword = this.resetPassword.bind(this);
-        this.resetPasswordPost = this.resetPasswordPost.bind(this);
-    }
 
-    async generateResetPasswordEmail(email, token) {
-        try {
-            const resetPasswordLink = `http://${process.env.DOMAIN}/login/resetPassword?token=${token}`;
-            const userId = await userModel.findByEmail(email);
-            const username = await userModel.findUsernameById(userId);
-
-
-            // Lire le modèle HTML avec vérification d'existence du fichier
-            const templatePath = path.join(__dirname, '../views/mails/mailResetPassword.hbs');
-            
-            if (!fs.existsSync(templatePath)) {
-                throw new Error(`Le fichier template n'existe pas: ${templatePath}`);
-            }
-            
-            const templateSource = fs.readFileSync(templatePath, 'utf8');
-            
-            // Tenter de compiler le template avec try/catch spécifique
-            let template;
-            try {
-                template = handlebars.compile(templateSource);
-                if (typeof template !== 'function') {
-                    throw new Error('Le template compilé n\'est pas une fonction');
-                }
-            } catch (compileError) {
-                console.error('Erreur lors de la compilation du template:', compileError);
-                throw compileError;
-            }
-            
-            // Créer le contenu de l'e-mail avec les données contextuelles
-            const emailContext = {
-                username,
-                resetPasswordLink
-            };
-            
-            const htmlContent = template(emailContext);
-            
-            return htmlContent; 
-        } catch (error) {
-            console.error('Erreur lors de la génération du contenu de l\'email:', error);
-            throw error;
-        }
-    }
-    
     // Afficher la page pour oublier le mot de passe
     forgotPassword(req, res) {
         res.render('forgotPassword', {
@@ -87,10 +33,10 @@ class ResetPasswordController {
             await resetPasswordModel.saveResetPasswordToken(email, token, expiresAt);
 
             // Envoyer le jeton par email
-            const emailContent = await this.generateResetPasswordEmail(email, token);
+            const emailContent = await MailersendService.generateResetPasswordEmail(user.username, token);
             const subject = "Réinitialisation de mot de passe";
 
-            const emailSent = await ResendService.sendEmail(email, emailContent, subject);
+            const emailSent = await MailersendService.sendEmail(email, emailContent, subject);
 
             if (!emailSent) {
                 return res.redirect('/login/forgotPassword?error=Une erreur est survenue. Veuillez réessayer plus tard.');
@@ -124,9 +70,9 @@ class ResetPasswordController {
             await resetPasswordModel.saveResetPasswordToken(email, token, expiresAt);
 
             // Envoyer le jeton par email
-            const emailContent = await this.generateResetPasswordEmail(email, token);
+            const emailContent = await MailersendService.generateResetPasswordEmail(user.username, token);
             const subject = "Réinitialisation de mot de passe";
-            const emailSent = await ResendService.sendEmail(email, emailContent, subject);
+            const emailSent = await MailersendService.sendEmail(email, emailContent, subject);
 
             if (!emailSent) {
                 return res.json({
