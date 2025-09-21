@@ -1,6 +1,7 @@
 const googleCloudTTS = require('../../services/google_cloud_tts');
 
 class TTSController {
+    
     async generateAudio(req, res) {
         try {
             const { text, language } = req.body;

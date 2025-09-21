@@ -1,4 +1,4 @@
-const ResendService = require('../services/resend');
+const MailersendService = require('../services/mailersend');
 require('dotenv').config();
 class SiteController {
 
@@ -49,7 +49,7 @@ class SiteController {
 
                 const toEmail = process.env.USER_GMAIL;
                 const subjectMail = "Nouveau feedback pour votre site";
-                const emailSent = await ResendService.sendEmail(toEmail, feedbackContent, subjectMail);
+                const emailSent = await MailersendService.sendEmail(toEmail, feedbackContent, subjectMail);
 
                 if (!emailSent) {
                     return res.redirect('/feedback?error=Une erreur est survenue lors de l\'envoi de votre feedback. Veuillez réessayer plus tard.');

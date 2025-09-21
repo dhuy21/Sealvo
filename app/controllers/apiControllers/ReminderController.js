@@ -1,8 +1,7 @@
 const UserModel = require('../../models/users');
 const WordModel = require('../../models/words');
 const LearningModel = require('../../models/learning');
-const LearningController = require('../LearningController');
-const ResendService = require('../../services/resend');
+const MailersendService = require('../../services/mailersend');
 class ReminderController {
 
     async testEmail(req, res) {
@@ -27,9 +26,8 @@ class ReminderController {
                         }
                     }
 
-                    const emailContent = await LearningController.generateEmail(allWords, wordsToday.length, streakData, user);
-
-                    const emailResult = await ResendService.sendEmail(user.email, emailContent);
+                    const emailContent = await MailersendService.generateEmail(allWords, wordsToday.length, streakData, user);
+                    const emailResult = await MailersendService.sendEmail(user.email, emailContent);
 
                     message = `L'email a été envoyé pour tester`;
                 } else {
@@ -74,9 +72,8 @@ class ReminderController {
                         }
                     }
 
-                    const emailContent = await LearningController.generateEmail(allWords, wordsToday.length, streakData, user);
-
-                    const emailResult = await ResendService.sendEmail(user.email, emailContent);
+                    const emailContent = await MailersendService.generateEmail(allWords, wordsToday.length, streakData, user);
+                    const emailResult = await MailersendService.sendEmail(user.email, emailContent);
 
                     
                 } else {

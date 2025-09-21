@@ -63,7 +63,7 @@ class User {
     async findByUsername(username) {
         try {
             this.checkDbConnection();
-            const [rows] = await global.dbConnection.execute('SELECT * FROM users WHERE username = ?', [username]);
+            const [rows] = await global.dbConnection.execute('SELECT id, username, email, is_verified FROM users WHERE username = ?', [username]);
             return rows[0] || null;
         } catch (error) {
             console.error('Erreur lors de la recherche de l\'utilisateur par username :', error);
@@ -268,6 +268,26 @@ class User {
             return result.affectedRows > 0;
         } catch (error) {
             console.error('Erreur lors de la suppression de l\'utilisateur :', error);
+            throw error;
+        }
+    }
+
+    async deleteUserNotVerified() {
+        try {
+            const [result] = await global.dbConnection.execute('DELETE FROM users WHERE is_verified = FALSE AND DATE_ADD(DATE(created_at), INTERVAL 3 DAY) <= CURDATE()', []);
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('Erreur lors de la suppression des utilisateurs non vérifiés :', error);
+            throw error;
+        }
+    }
+
+    async updateUserVerified(id) {
+        try {
+            const [result] = await global.dbConnection.execute('UPDATE users SET is_verified = TRUE WHERE id = ?', [id]);
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour de la vérification de l\'utilisateur :', error);
             throw error;
         }
     }

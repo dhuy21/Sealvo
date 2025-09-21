@@ -17,9 +17,26 @@ CREATE TABLE IF NOT EXISTS users (
   last_login TIMESTAMP NULL DEFAULT NULL,
   created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  is_verified BOOLEAN NOT NULL DEFAULT FALSE,
   ava INT CHECK (ava BETWEEN 1 AND 11) NOT NULL DEFAULT 1,
   PRIMARY KEY (id),
   CHECK (email REGEXP '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$')
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+CREATE TABLE IF NOT EXISTS email_verification (
+    id CHAR(64) NOT NULL PRIMARY KEY,
+    user_id CHAR(7) NOT NULL,
+    token_hash CHAR(64) NOT NULL, -- SHA-256 hex
+    expires_at DATETIME NOT NULL,
+    status ENUM('pending','used','revoked') NOT NULL DEFAULT 'pending',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    used_at DATETIME NULL,
+    INDEX ux_token_hash (token_hash),
+    INDEX idx_user_id (user_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) 
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 /* INSERT INTO users (id, username, email, password, streak, last_login, created_at, updated_at, ava) VALUES ('95a916c', 'John Doe', 'john.doe@example.com', 'password123', 0, NULL, CURRENT_TIMESTAMP, NULL, 1); */
