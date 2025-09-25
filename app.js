@@ -67,8 +67,7 @@ app.set('views', path.join(__dirname, 'app/views'));
     // Logging middleware
     app.use(morgan('combined'));
     
-    // Start server only after database connection is established
-    const server = app.listen(port, 'localhost');
+    const server = app.listen(port, '0.0.0.0');
     console.log(`App listening at http://localhost:${port}`);
     
     // Keep the graceful shutdown handling
