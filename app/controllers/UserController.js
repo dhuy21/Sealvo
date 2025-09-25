@@ -145,13 +145,13 @@ class UserController {
             });
             
             // Générer un token de vérification d'email
-            const { expires_at, token_hash } = await EmailVerificationModel.generateToken();
+            const { expires_at, token, token_hash } = await EmailVerificationModel.generateToken();
             
             // Sauvegarder le token dans la base
             await EmailVerificationModel.saveToken(userId, expires_at, token_hash);
             
             // Générer l'email de vérification via le service
-            const emailContent = await MailersendService.generateEmailVerification(username, token_hash);
+            const emailContent = await MailersendService.generateEmailVerification(username, token);
             const subject = "Vérification de votre email";
             // Envoyer l'email de vérification via le service
             await MailersendService.sendEmail(email, emailContent, subject);
