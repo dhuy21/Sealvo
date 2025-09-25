@@ -19,7 +19,7 @@ class Email_verification {
             if (result.length > 0) {
                 return this.generateToken();
             }
-            return { expires_at, token_hash };
+            return { expires_at, token, token_hash };
         } catch (error) {
             console.error('Erreur lors de la génération du token :', error);
             throw error;
@@ -48,17 +48,17 @@ class Email_verification {
         }
     }
 
-    async verifyToken(token, user_id) {
+    async verifyToken(token) {
         const token_hash = crypto.createHash('sha256').update(token).digest('hex');
         try {
             const [result] = await global.dbConnection.execute(
-                'SELECT id FROM email_verification WHERE token_hash = ?, user_id = ?, expires_at > NOW(), status = "pending", used_at IS NULL',
-                [token_hash, user_id]
+                'SELECT id, user_id FROM email_verification WHERE token_hash = ? AND expires_at > NOW() AND status = "pending" AND used_at IS NULL',
+                [token_hash]
             );
             if (result.length > 0) {
-                return true;
+                return result[0];
             }
-            return false;
+            return null;
         } catch (error) {
             console.error('Erreur lors de la vérification du token :', error);
             throw error;
@@ -78,12 +78,12 @@ class Email_verification {
         }
     }
 
-    async markTokenAsUsed(token, user_id) {
+    async markTokenAsUsed(token) {
         const token_hash = crypto.createHash('sha256').update(token).digest('hex');
         try {
             const [result] = await global.dbConnection.execute(
-            'UPDATE email_verification SET status = "used", used_at = NOW() WHERE token_hash = ?, user_id = ?',
-            [token_hash, user_id]
+            'UPDATE email_verification SET status = "used", used_at = NOW() WHERE token_hash = ?',
+            [token_hash]
             );
             return result.affectedRows > 0;
         } catch (error) {

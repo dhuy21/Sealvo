@@ -3,6 +3,6 @@ const router = express.Router();
 const emailVerificationController = require('../../controllers/authControllers/EmailVerificationController');
 
 
-router.get('/', emailVerificationController.verifyEmail);
+router.get('/:token', emailVerificationController.verifyEmail);
 
 module.exports = router;

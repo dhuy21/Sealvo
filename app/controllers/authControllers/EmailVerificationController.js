@@ -1,12 +1,17 @@
-const EmailVerificationModel = require('../../models/email_verification');
+const emailVerificationModel = require('../../models/email_verification');
+const userModel = require('../../models/users');
 
 class EmailVerificationController {
     
     async verifyEmail(req, res) {
         try {
-            const { token } = req.params;
-            const emailVerification = await EmailVerificationModel.verifyToken(token);
+            const token = req.params.token;
+
+            const emailVerification = await emailVerificationModel.verifyToken(token);
+
             if (emailVerification) {
+                await emailVerificationModel.markTokenAsUsed(token);
+                await userModel.updateUserVerified(emailVerification.user_id);
                 return res.redirect('/login?success=Votre email a été vérifié avec succès');
             } else {
                 return res.redirect('/login?error=Le jeton de vérification de l\'email n\'est pas valide');

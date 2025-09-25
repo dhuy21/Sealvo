@@ -38,7 +38,7 @@ class MailersendService {
     //generateEmailVerification with handlebars
     async generateEmailVerification(username, token) {
         try {
-            const verificationLink = `http://${process.env.DOMAIN}/auth/verify/?token=${token}`;
+            const verificationLink = `http://${process.env.DOMAIN}/auth/verify/${token}`;
 
             // Lire le modèle HTML avec vérification d'existence du fichier
             const templatePath = path.join(__dirname, '../views/mails/mailVerification.hbs');
