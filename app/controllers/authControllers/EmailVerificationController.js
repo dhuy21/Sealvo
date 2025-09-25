@@ -11,6 +11,7 @@ class EmailVerificationController {
 
             if (emailVerification) {
                 await emailVerificationModel.markTokenAsUsed(token);
+                
                 await userModel.updateUserVerified(emailVerification.user_id);
                 return res.redirect('/login?success=Votre email a été vérifié avec succès');
             } else {
