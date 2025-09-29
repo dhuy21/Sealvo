@@ -4,13 +4,23 @@ const fs = require('fs');
 const path = require('path');
 const userModel = require('../models/users');
 
-const { MailerSend, EmailParams, Sender, Recipient } = require("mailersend");
+const nodemailer = require('nodemailer');
+const { SESClient, SendRawEmailCommand } = require("@aws-sdk/client-ses");
 
-const mailerSend = new MailerSend({
-  apiKey: process.env.MAILERSEND_API_KEY,
+const ses = new SESClient({
+    region: process.env.AWS_REGION,
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    },
 });
 
-const sentFrom = new Sender("Support@sealvo.it.com", "SealVo");
+const transporter = nodemailer.createTransport({
+    SES: { 
+        ses, 
+        aws: { SendRawEmailCommand } 
+    },
+});
 
 
 class MailersendService {
@@ -18,15 +28,13 @@ class MailersendService {
     //sendEmail with mailersend
     async sendEmail(user_email, content, subject = 'Révision quotidienne - SealVo') {
         try {
-            const recipients = [new Recipient(user_email)];
-            const emailParams = new EmailParams()
-                .setFrom(sentFrom)
-                .setTo(recipients)
-                .setSubject(subject)
-                .setHtml(content)
-            const result = await mailerSend.email.send(emailParams);
+            const result = await transporter.sendMail({
+                from: process.env.AWS_SES_FROM,
+                to: user_email,
+                subject: subject,
+                html: content
+              });
 
-            console.log(result);
             return result;
 
         } catch (error) {

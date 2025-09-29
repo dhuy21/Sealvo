@@ -10,9 +10,7 @@ class UserController {
     // Afficher la page de connexion
     login(req, res) {
         res.render('login', {
-            title: 'Connexion',
-            error: req.query.error,
-            success: req.query.success
+            title: 'Connexion'
         });
     }
 
@@ -23,7 +21,10 @@ class UserController {
             
             // Validation de base
             if (!username || !password) {
-                return res.redirect('/login?error=Veuillez remplir tous les champs');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Veuillez remplir tous les champs'
+                });
             }
 
             
@@ -32,7 +33,10 @@ class UserController {
             
             // Si l'utilisateur n'existe pas
             if (!user) {
-                return res.redirect('/login?error=Nom d\'utilisateur ou mot de passe incorrect');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Nom d\'utilisateur ou mot de passe incorrect'
+                });
             }
             
             // Vérifier le mot de passe
@@ -40,11 +44,17 @@ class UserController {
             const isVerified = user.is_verified;
             
             if (!isMatch) {
-                return res.redirect('/login?error=Nom d\'utilisateur ou mot de passe incorrect');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Nom d\'utilisateur ou mot de passe incorrect'
+                });
             }
             
             if (!isVerified) {
-                return res.redirect('/login?error=Votre compte n\'est pas vérifié');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Votre compte n\'est pas vérifié'
+                });
             }
             
             const totalWords = await wordModel.countUserWords(user.id);
@@ -72,15 +82,23 @@ class UserController {
                 };
             } catch (error) {
                 console.error('Erreur lors de la connexion:', error);
-                res.redirect('/login?error=Une erreur est survenue. Veuillez réessayer plus tard.');
+                res.status(500).json({
+                    success: false,
+                    message: 'Une erreur est survenue. Veuillez réessayer plus tard.'
+                });
             }
             
-            // Rediriger vers le tableau de bord
-            res.redirect('/dashboard');
+            // Retourner le succès en JSON
+            res.status(200).json({
+                redirect: '/dashboard'
+            });
             
         } catch (error) {
             console.error('Erreur lors de la connexion:', error);
-            res.redirect('/login?error=Une erreur est survenue. Veuillez réessayer plus tard.');
+            res.status(500).json({
+                success: false,
+                message: 'Une erreur est survenue. Veuillez réessayer plus tard.'
+            });
         }
     }
 
@@ -91,7 +109,6 @@ class UserController {
         
         res.render('registre', {
             title: 'Inscription',
-            error: req.query.error,
             avatars: avatars
         });
     }
@@ -103,22 +120,34 @@ class UserController {
             
             // Validation de base
             if (!username || !email || !password || !password2) {
-                return res.redirect('/registre?error=Veuillez remplir tous les champs');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Veuillez remplir tous les champs'
+                });
             }
             
             if (password !== password2) {
-                return res.redirect('/registre?error=Les mots de passe ne correspondent pas');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Les mots de passe ne correspondent pas'
+                });
             }
             
             if (password.length < 6) {
-                return res.redirect('/registre?error=Le mot de passe doit contenir au moins 6 caractères');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Le mot de passe doit contenir au moins 6 caractères'
+                });
             }
             
             // Vérifier si l'username existe déjà
             const existingUser = await userModel.findByUsername(username);
             
             if (existingUser) {
-                return res.redirect('/registre?error=Ce nom d\'utilisateur est déjà utilisé');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Ce nom d\'utilisateur est déjà utilisé'
+                });
             }
             
             // Hacher le mot de passe
@@ -156,12 +185,18 @@ class UserController {
             // Envoyer l'email de vérification via le service
             await MailersendService.sendEmail(email, emailContent, subject);
             
-            // Rediriger vers la page de connexion
-            res.redirect('/login?success=Un email de vérification a été envoyé à votre adresse email');
+            
+            res.status(200).json({
+                success: true,
+                message: 'Un email de vérification a été envoyé à votre adresse email'
+            });
             
         } catch (error) {
             console.error('Erreur lors de l\'inscription:', error);
-            res.redirect('/registre?error=Une erreur est survenue. Veuillez réessayer plus tard.');
+            res.status(500).json({
+                success: false,
+                message: 'Une erreur est survenue. Veuillez réessayer plus tard.'
+            });
         }
     }
 
@@ -197,7 +232,7 @@ class UserController {
         // Vérifier si l'utilisateur est connecté
         if (!req.session.user) {
             console.error('session do not exist', req.session);
-            return res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
+            return res.redirect('/login');
         }
 
             const user = req.session.user;
@@ -232,7 +267,7 @@ class UserController {
         try {
             const userId = req.session.user.id;
             if (!userId) {
-                return res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
+                return res.redirect('/login');
             }
             const data = req.body;
             await userModel.updateUserInfo(userId, data);
@@ -262,4 +297,4 @@ class UserController {
     }
 }
 
-module.exports = new UserController();
+module.exports = new UserController();  

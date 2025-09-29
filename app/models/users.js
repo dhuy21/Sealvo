@@ -63,7 +63,7 @@ class User {
     async findByUsername(username) {
         try {
             this.checkDbConnection();
-            const [rows] = await global.dbConnection.execute('SELECT id, username, password, email, is_verified FROM users WHERE username = ?', [username]);
+            const [rows] = await global.dbConnection.execute('SELECT id, username, password, email, ava, is_verified FROM users WHERE username = ?', [username]);
             return rows[0] || null;
         } catch (error) {
             console.error('Erreur lors de la recherche de l\'utilisateur par username :', error);
