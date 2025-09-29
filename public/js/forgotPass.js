@@ -8,62 +8,10 @@ document.addEventListener('DOMContentLoaded', function() {
  * Initialize all authentication functionality
  */
 function initAuthentication() {
-    initPasswordToggle();
-    initPasswordValidation();
     initFormAnimations();
-    initAvatarSelection();
     initFormSubmission();
 }
 
-/**
- * Initialize password visibility toggle functionality
- */
-function initPasswordToggle() {
-    const togglePassword = document.getElementById('togglePassword');
-    const passwordField = document.getElementById('password');
-    const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
-    const confirmPasswordField = document.getElementById('password2');
-
-    // Password visibility toggle
-    if (togglePassword && passwordField) {
-        togglePassword.addEventListener('click', function() {
-            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordField.setAttribute('type', type);
-            this.querySelector('i').classList.toggle('fa-eye');
-            this.querySelector('i').classList.toggle('fa-eye-slash');
-        });
-    }
-
-    if (toggleConfirmPassword && confirmPasswordField) {
-        toggleConfirmPassword.addEventListener('click', function() {
-            const type = confirmPasswordField.getAttribute('type') === 'password' ? 'text' : 'password';
-            confirmPasswordField.setAttribute('type', type);
-            this.querySelector('i').classList.toggle('fa-eye');
-            this.querySelector('i').classList.toggle('fa-eye-slash');
-        });
-    }
-}
-
-/**
- * Initialize password match validation for registration
- */
-function initPasswordValidation() {
-    const passwordField = document.getElementById('password');
-    const confirmPasswordField = document.getElementById('password2');
-
-    if (passwordField && confirmPasswordField) {
-        function validatePassword() {
-            if (passwordField.value !== confirmPasswordField.value) {
-                confirmPasswordField.setCustomValidity("Les mots de passe ne correspondent pas");
-            } else {
-                confirmPasswordField.setCustomValidity('');
-            }
-        }
-        
-        passwordField.addEventListener('change', validatePassword);
-        confirmPasswordField.addEventListener('keyup', validatePassword);
-    }
-}
 
 /**
  * Initialize form element animations
@@ -79,22 +27,6 @@ function initFormAnimations() {
     });
 }
 
-/**
- * Initialize avatar selection functionality
- */
-function initAvatarSelection() {
-    const avatarOptions = document.querySelectorAll('.avatar-option input[type="radio"]');
-    avatarOptions.forEach(function(option) {
-        option.addEventListener('change', function() {
-            // Remove selected class from all options
-            document.querySelectorAll('.avatar-option').forEach(function(opt) {
-                opt.classList.remove('selected');
-            });
-            // Add selected class to current option
-            this.closest('.avatar-option').classList.add('selected');
-        });
-    });
-}
 
 /**
  * Validate form fields
@@ -130,15 +62,15 @@ function validateForm(form) {
  * Initialize form submission handling
  */
 function initFormSubmission() {
-    const loginForm = document.querySelector('form[action="/login"]');
-    const registerForm = document.querySelector('form[action="/registre"]');
+    const forgotPasswordForm = document.querySelector('form[action="/login/forgotPassword"]');
+    const resetPasswordForm = document.querySelector('form[action="/login/resetPassword"]');
     
-    if (loginForm) {
-        handleFormSubmit(loginForm);
+    if (forgotPasswordForm) {
+        handleFormSubmit(forgotPasswordForm);
     }
     
-    if (registerForm) {
-        handleFormSubmit(registerForm);
+    if (resetPasswordForm) {
+        handleFormSubmit(resetPasswordForm);
     }
 }
 
