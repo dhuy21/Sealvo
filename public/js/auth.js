@@ -1,6 +1,24 @@
 // Authentication JavaScript
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Get form elements
+    initAuthentication();
+});
+
+/**
+ * Initialize all authentication functionality
+ */
+function initAuthentication() {
+    initPasswordToggle();
+    initPasswordValidation();
+    initFormAnimations();
+    initAvatarSelection();
+    initFormSubmission();
+}
+
+/**
+ * Initialize password visibility toggle functionality
+ */
+function initPasswordToggle() {
     const togglePassword = document.getElementById('togglePassword');
     const passwordField = document.getElementById('password');
     const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
@@ -24,8 +42,15 @@ document.addEventListener('DOMContentLoaded', function() {
             this.querySelector('i').classList.toggle('fa-eye-slash');
         });
     }
+}
 
-    // Password match validation for registration
+/**
+ * Initialize password match validation for registration
+ */
+function initPasswordValidation() {
+    const passwordField = document.getElementById('password');
+    const confirmPasswordField = document.getElementById('password2');
+
     if (passwordField && confirmPasswordField) {
         function validatePassword() {
             if (passwordField.value !== confirmPasswordField.value) {
@@ -38,8 +63,12 @@ document.addEventListener('DOMContentLoaded', function() {
         passwordField.addEventListener('change', validatePassword);
         confirmPasswordField.addEventListener('keyup', validatePassword);
     }
+}
 
-    // Animate form elements sequentially for login page
+/**
+ * Initialize form element animations
+ */
+function initFormAnimations() {
     const animatedElements = document.querySelectorAll('.form-group, .form-options, .btn-submit, .auth-separator, .social-login, .auth-footer');
     
     animatedElements.forEach(function(element) {
@@ -48,8 +77,12 @@ document.addEventListener('DOMContentLoaded', function() {
             element.classList.add('animate-in');
         }, delay);
     });
+}
 
-    // Avatar selection for registration page
+/**
+ * Initialize avatar selection functionality
+ */
+function initAvatarSelection() {
     const avatarOptions = document.querySelectorAll('.avatar-option input[type="radio"]');
     avatarOptions.forEach(function(option) {
         option.addEventListener('change', function() {
@@ -61,34 +94,135 @@ document.addEventListener('DOMContentLoaded', function() {
             this.closest('.avatar-option').classList.add('selected');
         });
     });
+}
 
-    // Form validation
-    const authForm = document.getElementById('authForm') || document.getElementById('loginForm') || document.getElementById('registerForm');
-    if (authForm) {
-        authForm.addEventListener('submit', function(e) {
-            // Basic form validation
-            const requiredFields = this.querySelectorAll('input[required]');
-            let isValid = true;
+/**
+ * Validate form fields
+ */
+function validateForm(form) {
+    const passwordField = form.querySelector('#password');
+    const confirmPasswordField = form.querySelector('#password2');
+    const requiredFields = form.querySelectorAll('input[required]');
+    let isValid = true;
 
-            requiredFields.forEach(function(field) {
-                if (!field.value.trim()) {
-                    isValid = false;
-                    field.classList.add('error');
-                } else {
-                    field.classList.remove('error');
-                }
-            });
+    // Basic required fields validation
+    requiredFields.forEach(function(field) {
+        if (!field.value.trim()) {
+            isValid = false;
+            field.classList.add('error');
+        } else {
+            field.classList.remove('error');
+        }
+    });
 
-            // Password confirmation check for registration
-            if (passwordField && confirmPasswordField && passwordField.value !== confirmPasswordField.value) {
-                isValid = false;
-                confirmPasswordField.classList.add('error');
-                alert('Les mots de passe ne correspondent pas');
-            }
-
-            if (!isValid) {
-                e.preventDefault();
-            }
-        });
+    // Password confirmation check for registration
+    if (passwordField && confirmPasswordField && passwordField.value !== confirmPasswordField.value) {
+        isValid = false;
+        confirmPasswordField.classList.add('error');
+        showMessage('Les mots de passe ne correspondent pas', 'error');
+        return false;
     }
-}); 
+
+    return isValid;
+}
+
+/**
+ * Initialize form submission handling
+ */
+function initFormSubmission() {
+    const loginForm = document.querySelector('form[action="/login"]');
+    const registerForm = document.querySelector('form[action="/registre"]');
+    
+    if (loginForm) {
+        handleFormSubmit(loginForm);
+    }
+    
+    if (registerForm) {
+        handleFormSubmit(registerForm);
+    }
+}
+
+/**
+ * Handle form submission with loading state
+ */
+function handleFormSubmit(form) {
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault(); // Prevent normal form submission
+        
+        // Validate form first
+        if (!validateForm(this)) {
+            return; // Stop if validation fails
+        }
+        
+        const submitButton = this.querySelector('.btn-submit');
+        
+        // Convert form data to JSON
+        const formData = new FormData(this);
+        const data = {};
+        for (let [key, value] of formData.entries()) {
+            data[key] = value;
+        }
+        
+        if (submitButton) {
+            // Show loading state
+            submitButton.disabled = true;
+            const originalContent = submitButton.innerHTML;
+            submitButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
+            
+            try {
+                const response = await fetch(this.action, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                // Redirect if specified in response
+                if (result.redirect) {
+
+                    window.location.href = result.redirect;
+
+                } else {
+
+                    if (result.success) {
+                        // Handle success
+                        showMessage(result.message, 'success');
+                        
+                    } else {
+                        // Handle error
+                        showMessage(result.message, 'error');
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Erreur:', error);
+                showMessage('Une erreur est survenue. Veuillez réessayer plus tard.', 'error');
+            }
+            
+            // Reset button
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalContent;
+        }
+    });
+}
+
+/**
+ * Show message to user
+ */
+function showMessage(message, type) {
+    // Remove existing messages
+    const alert = document.getElementById('alert');
+    alert.classList.remove('alert-success');
+    alert.classList.remove('alert-error');
+    alert.innerHTML = '';
+    
+
+    alert.classList.add(`alert-${type}`);
+    alert.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        ${message}
+    `;
+}
