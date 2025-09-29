@@ -24,8 +24,6 @@ class SiteController {
         res.render('feedback', {
             title: 'Feedback',
             user: req.session.user,
-            error: req.query.error,
-            success: req.query.success
         });
     }
 
@@ -36,7 +34,10 @@ class SiteController {
             
             // Validation de base
             if (!type || !subject || !content) {
-                return res.redirect('/feedback?error=Veuillez remplir tous les champs obligatoires');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Veuillez remplir tous les champs obligatoires'
+                });
             }
             
             // Enregistrer le feedback (pour l'instant, juste un log)
@@ -52,11 +53,17 @@ class SiteController {
                 const emailSent = await MailersendService.sendEmail(toEmail, feedbackContent, subjectMail);
 
                 if (!emailSent) {
-                    return res.redirect('/feedback?error=Une erreur est survenue lors de l\'envoi de votre feedback. Veuillez réessayer plus tard.');
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Une erreur est survenue lors de l\'envoi de votre feedback. Veuillez réessayer plus tard.'
+                    });
                 }
                 
                 // Rediriger avec un message de succès
-                return res.redirect('/feedback?success=Merci pour votre feedback! Nous l\'avons bien reçu.');
+                return res.status(200).json({
+                    success: true,
+                    message: 'Merci pour votre feedback! Nous l\'avons bien reçu.'
+                });
 
             } catch (error) {
                 console.error(`Erreur lors de l'envoi de l'e-mail à ${email}:`, error);
@@ -65,7 +72,10 @@ class SiteController {
             
         } catch (error) {
             console.error('Erreur lors de la soumission du feedback:', error);
-            return res.redirect('/feedback?error=Une erreur est survenue lors de l\'envoi de votre feedback. Veuillez réessayer plus tard.');
+            return res.status(400).json({
+                success: false,
+                message: 'Une erreur est survenue lors de l\'envoi de votre feedback. Veuillez réessayer plus tard.'
+            });
         }
     }
 }
