@@ -38,7 +38,11 @@
         <p class="auth-subtitle">Connectez-vous pour continuer votre apprentissage</p>
       </div>
 
-      <div id="alert" class="alert">
+      <div id="alert" class="alert{{#if flashMessage}} alert-{{flashMessage.type}}{{/if}}">
+        {{#if flashMessage}}
+          <i class="fas fa-{{#if (eq flashMessage.type 'success')}}check-circle{{else}}exclamation-circle{{/if}}"></i>
+          {{flashMessage.message}}
+        {{/if}}
       </div>
 
 

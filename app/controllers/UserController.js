@@ -9,8 +9,17 @@ const MailersendService = require('../services/mailersend');
 class UserController {
     // Afficher la page de connexion
     login(req, res) {
+        // Check for flash messages in session
+        const flashMessage = req.session.flashMessage;
+        
+        // Clear the flash message from session after retrieving it
+        if (flashMessage) {
+            delete req.session.flashMessage;
+        }
+        
         res.render('login', {
-            title: 'Connexion'
+            title: 'Connexion',
+            flashMessage: flashMessage
         });
     }
 
@@ -141,12 +150,22 @@ class UserController {
             }
             
             // Vérifier si l'username existe déjà
-            const existingUser = await userModel.findByUsername(username);
+            const existingUserName = await userModel.findByUsername(username);
             
-            if (existingUser) {
+            if (existingUserName) {
                 return res.status(400).json({
                     success: false,
                     message: 'Ce nom d\'utilisateur est déjà utilisé'
+                });
+            }
+            
+            // Vérifier si l'email existe déjà
+            const existingEmail = await userModel.findByEmail(email);
+            
+            if (existingEmail) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cette adresse email est déjà utilisée'
                 });
             }
             
