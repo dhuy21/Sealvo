@@ -247,8 +247,6 @@ GEMINI_API_KEY_2 = key_of_your_gemini_api
 
 # 📧 Email Configuration 
 USER_GMAIL = name_of_your_gmail
-USER_PASS = password_of_your_gmai_given_by_password_app
-RESEND_API_KEY = key_of_your_resend_api
 
 # 🌐 URL Configuration 
 BASE_URL=https://your_domain.com/
@@ -423,13 +421,7 @@ git push origin feature/nouvelle-fonctionnalite
 
 ### **📜 Licence MIT**
 ```
-Copyright (c) 2024 SealVo Team
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software...
+This is a personal project in order to learn
 ```
 
 ### **🙏 Remerciements**

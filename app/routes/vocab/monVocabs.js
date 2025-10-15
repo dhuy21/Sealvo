@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const wordController = require('../../controllers/WordController');
 const importFile = require('../../services/importFile');
-
+const multer = require('multer');
+const upload = multer();
 // Middleware d'authentification
 const isAuthenticated = (req, res, next) => {
     if (req.session.user) {
@@ -12,7 +13,7 @@ const isAuthenticated = (req, res, next) => {
 };
 // Routes pour l'ajout de mots
 router.get('/add', isAuthenticated, wordController.addWord);
-router.post('/add', isAuthenticated, wordController.addWordPost);
+router.post('/add', isAuthenticated,upload.none(), wordController.addWordPost);
 
 // Route pour l'importation de mots depuis un fichier
 router.post('/add/import', isAuthenticated, importFile.importWords);
