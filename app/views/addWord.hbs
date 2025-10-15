@@ -114,88 +114,162 @@
   <div class="separator">
     <span>OU</span>
   </div>
-
-
-  {{#if error}}
-  <div class="alert alert-error">
-    {{error}}
-  </div>
-  {{/if}}
-  
-  {{#if success}}
-  <div class="alert alert-success">
-    {{success}}
-  </div>
-  {{/if}}
   
     <!-- Formulaire pour ajouter plusieurs mots -->
-    <form action="/monVocabs/add?package={{package_id}}" method="POST" class="word-form multiple-words-form">
-      <input type="hidden" name="isMultipleWords" value="true">
+    <form action="/monVocabs/add?package={{package_id}}" method="POST" enctype="multipart/form-data" class="word-form multiple-words-form">
 
-      <div class="table-responsive">
-        <table class="multi-word-table">
-          <thead>
-            <tr>
-              <th>Mot</th>
-              <th>Langue</th>
-              <th>Sujet</th>
-              <th>Type</th>
-              <th>Prononciation</th>
-              <th>Signification*</th>
-              <th>Exemple*</th>
-              <th>Synonymes</th>
-              <th>Antonymes</th>
-              <th>Grammaire</th>
-              <th>Niveau*</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="word-rows">
-            <tr class="word-row">
-              <td><input type="text" name="words[]" required placeholder="Mot" class="form-control"></td>
-              <td><input type="text" name="language_codes[]" required placeholder="Langue" class="form-control"></td>
-              <td><input type="text" name="subjects[]" required placeholder="Sujet" class="form-control"></td>
-              <td>
-                <select name="types[]" required class="form-control">
-                  <option value="" disabled selected>Type</option>
-                  <option value="noun">Nom</option>
-                  <option value="verb">Verbe</option>
-                  <option value="adjective">Adjectif</option>
-                  <option value="adverb">Adverbe</option>
-                  <option value="ph.v">Ph.V</option>
-                  <option value="idiom">Idiom</option>
-                  <option value="collocation">Colloc</option>
-                </select>
-              </td>
-              <td><input type="text" name="pronunciations[]" placeholder="Prononciation" class="form-control"></td>
-              <td><input type="text" name="meanings[]" required placeholder="Signification" class="form-control"></td>
-              <td><input type="text" name="examples[]" required placeholder="Exemple" class="form-control"></td>
-              <td><input type="text" name="synonyms[]" placeholder="Synonymes" class="form-control"></td>
-              <td><input type="text" name="antonyms[]" placeholder="Antonymes" class="form-control"></td>
-              <td><input type="text" name="grammars[]" placeholder="Grammaire" class="form-control"></td>
-              <td>
-                <select name="levels[]" required class="form-control">
-                  <option value="x">Niveau x</option>
-                  <option value="0">Niveau 0</option>
-                  <option value="1">Niveau 1</option>
-                  <option value="2">Niveau 2</option>
-                  <option value="v">Niveau v</option>
-                </select>
-              </td>
-              <td>
-                <button type="button" class="btn btn-danger remove-row"><i class="fas fa-trash"></i></button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="words-cards-container" id="word-rows">
+        <!-- Card Template -->
+        <div class="word-card-form" data-index="0">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="card-number">1</span>
+              <h3>Nouveau mot</h3>
+            </div>
+            <div class="card-actions">
+              <button type="button" class="btn-icon btn-duplicate" title="Dupliquer">
+                <i class="fas fa-copy"></i>
+              </button>
+              <button type="button" class="btn-icon btn-collapse" title="Réduire/Agrandir">
+                <i class="fas fa-chevron-up"></i>
+              </button>
+              <button type="button" class="btn-icon btn-remove" title="Supprimer">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <!-- Section: Informations de base -->
+            <div class="form-section">
+              <div class="section-title">
+                <i class="fas fa-info-circle"></i>
+                <span>Informations de base</span>
+              </div>
+              <div class="form-grid">
+                <div class="form-group full-width">
+                  <label for="word-0">Mot *</label>
+                  <input type="text" name="words[]" id="word-0" required placeholder="Entrez le mot" class="form-control">
+                </div>
+  
+                <div class="form-group">
+                  <label for="language-0">Langue *</label>
+                  
+                  <select name="language_codes[]" id="language-0" required placeholder="ex: en, fr" class="form-control" >
+                    <option value="en-US">en-US (English United States)</option>
+                    <option value="en-GB">en-GB (English United Kingdom)</option>
+                    <option value="fr-FR">fr-FR (French)</option>
+                    <option value="es-ES">es-ES (Spanish Spain)</option>
+                    <option value="de-DE">de-DE (German)</option>
+                    <option value="it-IT">it-IT (Italian)</option>
+                    <option value="ja-JP">ja-JP (Japanese)</option>
+                    <option value="zh-CN">zh-CN (Chinese Simplified)</option>
+                    <option value="zh-HK">zh-HK (Chinese Hong Kong)</option>
+                    <option value="zh-TW">zh-TW (Chinese Traditional)</option>
+                    <option value="pt-PT">pt-PT (Portuguese)</option>
+                    <option value="ru-RU">ru-RU (Russian)</option>
+                    <option value="vi-VN">vi-VN (Vietnamese)</option>
+                    <option value="ko-KR">ko-KR (Korean)</option>
+                    <option value="id-ID">id-ID (Indonesian)</option>
+                    <option value="hi-IN">hi-IN (Hindi)</option>
+                    <option value="pl-PL">pl-PL (Polish)</option>
+                    <option value="nl-NL">nl-NL (Dutch)</option>
+                  </select>
+                </div>
+                
+                <div class="form-group">
+                  <label for="subject-0">Sujet *</label>
+                  <input type="text" name="subjects[]" id="subject-0" required placeholder="ex: Technology" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                  <label for="type-0">Type *</label>
+                  <select name="types[]" id="type-0" required class="form-control">
+                    <option value="" disabled selected>Choisir un type</option>
+                    <option value="noun">Nom</option>
+                    <option value="verb">Verbe</option>
+                    <option value="adjective">Adjectif</option>
+                    <option value="adverb">Adverbe</option>
+                    <option value="ph.v">Phrasal Verb</option>
+                    <option value="idiom">Idiom</option>
+                    <option value="collocation">Collocation</option>
+                  </select>
+                </div>
+                
+                <div class="form-group">
+                  <label for="pronunciation-0">Prononciation</label>
+                  <input type="text" name="pronunciations[]" id="pronunciation-0" placeholder="ex: /həˈloʊ/" class="form-control">
+                </div>
+
+                <div class="form-group">
+                  <label for="level-0">Niveau d'apprentissage *</label>
+                  <select name="levels[]" id="level-0" required class="form-control">
+                    <option value="x">x - À réviser</option>
+                    <option value="0">0 - Débutant</option>
+                    <option value="1">1 - Intermédiaire</option>
+                    <option value="2">2 - Avancé</option>
+                    <option value="v">v - Maîtrisé</option>
+                  </select>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Section: Définition et exemples -->
+            <div class="form-section">
+              <div class="section-title">
+                <i class="fas fa-book"></i>
+                <span>Définition et exemples</span>
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="meaning-0">Signification *</label>
+                  <textarea name="meanings[]" id="meaning-0" required placeholder="Entrez la signification du mot" class="form-control" rows="2"></textarea>
+                </div>
+                
+                <div class="form-group">
+                  <label for="example-0">Exemple</label>
+                  <textarea name="examples[]" id="example-0"  placeholder="Entrez un exemple d'utilisation" class="form-control" rows="2"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section: Détails grammaticaux -->
+            <details class="form-section">
+              <summary class="section-title">
+                <i class="fas fa-graduation-cap"></i>
+                <span>Plus de détails supplémentaires</span>
+              </summary>
+              <div class="form-grid">
+                
+                <div class="form-group">
+                  <label for="synonyms-0">Synonymes</label>
+                  <input type="text" name="synonyms[]" id="synonyms-0" placeholder="ex: happy, joyful" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                  <label for="antonyms-0">Antonymes</label>
+                  <input type="text" name="antonyms[]" id="antonyms-0" placeholder="ex: sad, unhappy" class="form-control">
+                </div>
+
+                <div class="form-group">
+                  <label for="grammar-0">Grammaire</label>
+                  <input type="text" name="grammars[]" id="grammar-0" placeholder="ex: irregular verb" class="form-control">
+                </div>
+                
+            
+              </div>
+            </details>
+          </div>
+        </div>
       </div>
 
       <div class="multiple-form-actions">
         <button type="button" id="add-row" class="btn btn-secondary">
-          <i class="fas fa-plus"></i> Ajouter une ligne
+          <i class="fas fa-plus"></i> Ajouter un nouveau mot
         </button>
-        <button type="submit" class="btn btn-primary">
-          <span><i class="fas fa-save"></i>         Enregistrer tous les mots</span>
+        <button type="submit" id="save-words" class="btn btn-primary">
+          <i class="fas fa-save"></i> Enregistrer tous les mots
         </button>
       </div>
     </form>

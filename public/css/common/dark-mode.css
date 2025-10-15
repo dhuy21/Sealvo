@@ -299,6 +299,7 @@ body[data-theme="dark"] {
 [data-theme="dark"] .login-container label,
 [data-theme="dark"] .auth-container label,
 [data-theme="dark"] .register-container label,
+[data-theme="dark"] .form-group label,
 [data-theme="dark"] .login-container p,
 [data-theme="dark"] .auth-container p,
 [data-theme="dark"] .register-container p {
