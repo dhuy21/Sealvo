@@ -78,24 +78,6 @@ const processExcelFile = async (filePath) => {
     }
 };
 
-// Fonction pour traiter les fichiers PDF
-const processPdfFile = async (filePath) => {
-    try {
-        // Lire le fichier PDF
-        const data = await fs.promises.readFile(filePath);
-        const pdfDoc = await PDFDocument.load(data);
-        
-        // Extraction de texte basique - cette partie peut nécessiter un module plus avancé
-        // comme pdf.js ou pdfjs-extract pour une extraction complète du texte
-        const words = [];
-        
-        return words;
-    } catch (error) {
-        console.error( error);
-        throw new Error('Impossible de traiter le fichier PDF');
-    }
-};
-
 class ImportFile {
     async importWords(req, res) {
             // Vérifier si l'utilisateur est connecté

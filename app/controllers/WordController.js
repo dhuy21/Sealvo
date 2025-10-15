@@ -68,19 +68,19 @@ class WordController {
             return res.redirect('/login?error=Vous devez être connecté pour ajouter un mot');
         }
 
+        const package_id = req.query.package;
+
         try {
-            // Déterminer si c'est un envoi de plusieurs mots
-            const isMultipleWords = req.body.isMultipleWords === 'true';
-            const package_id = req.query.package;
+            
             let wordsData = [];
             let words_no_example = [];
             let words_with_error_example = [];
             
-            if (isMultipleWords) {
+            if (package_id) {
                 // Traitement de plusieurs mots
                 const { words, language_codes, subjects, types, meanings, pronunciations, synonyms, antonyms, examples, grammars, levels } = req.body;
                 const wordCount = words.length;
-                
+                console.log(words);
                 // Traiter chaque mot
                 for (let i = 0; i < wordCount; i++) {
                     
@@ -122,66 +122,23 @@ class WordController {
                     wordsData.push(wordData);
                 }
                 
-            } else {
-
-                // Traitement d'un seul mot (fonctionnalité existante)
-                // Récupérer les données du formulaire
-                const { word, language_code, subject, type, meaning, pronunciation, synonyms, antonyms, example, grammar, level } = req.body;
-                
-                // Créer le mot dans la base de données
-                const wordData = {
-                    id: 0,
-                    word,
-                    language_code: language_code.replace(/\([^)]*\)/g, '').trim(),
-                    subject,
-                    type,
-                    meaning,
-                    pronunciation: pronunciation || '',
-                    synonyms: synonyms || '',
-                    antonyms: antonyms || '',
-                    example,
-                    grammar: grammar || '',
-                    level
-                };
-
-                if (wordData.example === '') {
-                    words_no_example.push({
-                        id: wordData.id,
-                        word: wordData.word,
-                        language_code: wordData.language_code,
-                        meaning: wordData.meaning,
-                        type: wordData.type
-                    });
-                } else if (wordData.example !== '') {
-                    words_with_error_example.push({
-                        id: wordData.id,
-                        word: wordData.word,
-                        language_code: wordData.language_code,
-                        meaning: wordData.meaning,
-                        type: wordData.type,
-                        example: wordData.example
-                    });
-                }
-
-                wordsData.push(wordData);
             }
 
             let errExample = 0;
             // Générer des exemples pour les mots sans exemples
             if (words_no_example.length > 0) {
-                console.log('Generating examples for words without examples...');
                 
                 try {
                     const words_with_examples = await geminiService.generateExemple(words_no_example);
                     if (Array.isArray(words_with_examples) && words_with_examples.length > 0) {
-                        console.log('✅ Examples generated successfully');
+                        console.log('Examples generated successfully');
                         wordsData = await geminiService.replaceExample(wordsData, words_with_examples);
                     } else {
-                        console.log('⚠️ No examples were generated');
+                        console.log('No examples were generated');
                         errExample ++ ;
                     }
                 } catch (error) {
-                    console.error('❌ Error generating examples:', error);
+                    console.error('Error generating examples:', error);
                 }
             }
             // Corriger les exemples des mots avec des exemples en erreur
@@ -190,10 +147,10 @@ class WordController {
                 try {
                     const words_with_correct_examples = await geminiService.modifyExample(words_with_error_example);
                     if (Array.isArray(words_with_correct_examples) && words_with_correct_examples.length > 0) {
-                        console.log('✅ Examples corrected successfully');
+                        console.log('Examples corrected successfully');
                         wordsData = await geminiService.replaceExample(wordsData, words_with_correct_examples);
                     } else {
-                        console.log('⚠️ No examples were corrected');
+                        console.log('No examples were corrected');
                         errExample ++ ;
                     }
                 } catch (error) {
@@ -241,7 +198,6 @@ class WordController {
                 title: 'Ajouter un mot',
                 package_id: package_id,
                 user: req.session.user,
-                multipleWords: req.body.isMultipleWords === 'true',
                 error: 'Une erreur est survenue lors de l\'ajout du mot',
                 formData: req.body
             });
@@ -434,7 +390,6 @@ class WordController {
             let errExample = 0;
             // Générer des exemples pour les mots sans exemples
             if (words_no_example.length > 0) {
-                console.log('Generating examples for words without examples...');
                 
                 try {
                     const words_with_examples = await geminiService.generateExemple(words_no_example);
