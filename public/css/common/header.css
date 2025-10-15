@@ -24,43 +24,19 @@
 /* Header Container */
 .site-header {
   position: sticky;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  
   background: var(--header-bg);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
-}
-
-.site-header:before {
-  content: '';
-  position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--primary), var(--secondary), var(--primary));
-  background-size: 200% 100%;
-  animation: gradientBorder 6s linear infinite;
-}
-
-@keyframes gradientBorder {
-  0% { background-position: 0% 0%; }
-  100% { background-position: 200% 0%; }
+  z-index: 100000;
 }
 
 .header-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 24px;
-  height: var(--header-height);
   display: flex;
   color: white;
-  align-items: center;
+  padding: 12px 20px;
   justify-content: space-between;
 }
 

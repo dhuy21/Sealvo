@@ -11,10 +11,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.body.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
     
-    // Force repaint to ensure styles are applied
-    document.body.style.display = 'none';
-    document.body.offsetHeight; // Trigger a reflow
-    document.body.style.display = '';
     
     // Log to confirm theme change (for debugging)
     console.log('Theme set to:', theme);
