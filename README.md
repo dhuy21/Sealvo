@@ -6,7 +6,6 @@
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge)
 ![Version](https://img.shields.io/badge/Version-0.1.0-blue?style=for-the-badge)
 ![Node.js](https://img.shields.io/badge/Node.js-v18+-339933?style=for-the-badge&logo=nodedotjs)
-![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
 
 **🚀 Une plateforme d'apprentissage moderne qui transforme l'étude du vocabulaire en une expérience interactive et motivante !**
 
@@ -243,7 +242,6 @@ GOOGLE_SERVICE_ACCOUNT_CREDENTIALS = the content of the json file of your google
 
 # 🤖 Gemini API Key 
 GEMINI_API_KEY_1 = key_of_your_gemini_api
-GEMINI_API_KEY_2 = key_of_your_gemini_api
 
 # 📧 Email Configuration 
 USER_GMAIL = name_of_your_gmail
@@ -419,7 +417,7 @@ git push origin feature/nouvelle-fonctionnalite
 
 ## 📄 Licence & Crédits
 
-### **📜 Licence MIT**
+### **📜 Licence**
 ```
 This is a personal project in order to learn
 ```
