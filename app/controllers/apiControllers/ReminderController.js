@@ -28,7 +28,7 @@ class ReminderController {
 
                     const emailContent = await MailersendService.generateEmail(allWords, wordsToday.length, streakData, user);
                     const emailResult = await MailersendService.sendEmail(user.email, emailContent);
-
+                    console.log(emailResult);
                     message = `L'email a été envoyé pour tester`;
                 } else {
                     message = `Aucun mot à réviser aujourd'hui`;
