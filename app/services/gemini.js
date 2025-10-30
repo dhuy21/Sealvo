@@ -3,7 +3,6 @@ require('dotenv').config();
 
 // API key - idéalement depuis .env file
 const GEMINI_API_KEY_1 = process.env.GEMINI_API_KEY_1;
-const GEMINI_API_KEY_2 = process.env.GEMINI_API_KEY_2;
 
 class GeminiService {
 
@@ -27,7 +26,7 @@ class GeminiService {
         try {
             console.log('Modify examples for words with examples in error format...');
             
-            const genAI = new GoogleGenerativeAI(GEMINI_API_KEY_2);
+            const genAI = new GoogleGenerativeAI(GEMINI_API_KEY_1);
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
             const batchPrompt = `
