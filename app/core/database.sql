@@ -13,15 +13,46 @@ CREATE TABLE IF NOT EXISTS users (
   role ENUM('Admin', 'User') NOT NULL DEFAULT 'User',
   password VARCHAR(255) NOT NULL,
   streak INT NOT NULL DEFAULT 0,
+  streak_updated_at TIMESTAMP NULL DEFAULT NULL,
   last_login TIMESTAMP NULL DEFAULT NULL,
   created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  is_verified BOOLEAN NOT NULL DEFAULT FALSE,
   ava INT CHECK (ava BETWEEN 1 AND 11) NOT NULL DEFAULT 1,
   PRIMARY KEY (id),
   CHECK (email REGEXP '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$')
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+
+CREATE TABLE IF NOT EXISTS email_verification (
+    id CHAR(64) NOT NULL PRIMARY KEY,
+    user_id CHAR(7) NOT NULL,
+    token_hash CHAR(64) NOT NULL, -- SHA-256 hex
+    expires_at DATETIME NOT NULL,
+    status ENUM('pending','used','revoked') NOT NULL DEFAULT 'pending',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    used_at DATETIME NULL,
+    INDEX ux_token_hash (token_hash),
+    INDEX idx_user_id (user_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) 
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 /* INSERT INTO users (id, username, email, password, streak, last_login, created_at, updated_at, ava) VALUES ('95a916c', 'John Doe', 'john.doe@example.com', 'password123', 0, NULL, CURRENT_TIMESTAMP, NULL, 1); */
+CREATE TABLE IF NOT EXISTS packages (
+    package_id INT NOT NULL AUTO_INCREMENT,
+    user_id CHAR(7) NOT NULL, 
+    package_name VARCHAR(255) NOT NULL,
+    package_description TEXT NOT NULL,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    mode ENUM('protected', 'private', 'public') NOT NULL DEFAULT 'private',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    PRIMARY KEY (package_id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS reset_password (
     email VARCHAR(255) NOT NULL,
@@ -35,105 +66,52 @@ CREATE TABLE IF NOT EXISTS reset_password (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-/*CREATE TABLE languages (
-    code VARCHAR(2) PRIMARY KEY, 
-    name VARCHAR(100) NOT NULL   
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-INSERT INTO languages (code, name) VALUES
-('en', 'English'),
-('fr', 'Français'),
-('es', 'Español'),
-('de', 'Deutsch'),
-('it', 'Italiano'),
-('ja', '日本語'),
-('zh', '中文'),
-('ar', 'العربية'),
-('pt', 'Português'),
-('ru', 'Русский'),
-('tr', 'Türkçe'),
-('vi', 'Tiếng Việt'),
-('ko', '한국어'),
-('th', 'ภาษาไทย'),
-('id', 'Bahasa Indonesia'),
-('ms', 'Bahasa Melayu'),
-('hi', 'हिन्दी'),
-('bn', 'বাংলা'),
-('pl', 'Polski'),
-('nl', 'Nederlands'),
-('sv', 'Svenska'),
-('fi', 'Suomi'),
-('uk', 'Українська'),
-('el', 'Ελληνικά'),
-('he', 'עברית'),
-('ro', 'Română'),
-('hu', 'Magyar'),
-('cs', 'Čeština'),
-('da', 'Dansk'),
-('no', 'Norsk'),
-('sk', 'Slovenčina'),
-('sr', 'Српски'),
-('hr', 'Hrvatski'),
-('bg', 'Български'),
-('fa', 'فارسی'),
-('ur', 'اردو');*/
 
 CREATE TABLE IF NOT EXISTS words (
     word_id INT NOT NULL AUTO_INCREMENT,
     word VARCHAR(255) NOT NULL,
     subject VARCHAR(255) NOT NULL,
-    /*language_code VARCHAR(2) NOT NULL,*/
+    language_code VARCHAR(10) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (word_id)
-    /*FOREIGN KEY (language_code) REFERENCES languages(code)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE*/
+    PRIMARY KEY (word_id),
+    UNIQUE KEY uq_words_word_subject_lang (word, subject, language_code),
+
+    CHECK (language_code IN ('en-US', 'en-GB', 'fr-FR', 'es-ES', 'de-DE', 'it-IT', 
+    'ja-JP', 'zh-CN', 'zh-HK', 'zh-TW', 'pt-PT', 'ru-RU', 'vi-VN', 'ko-KR', 'id-ID', 'hi-IN', 'pl-PL', 'nl-NL'))
 
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*INSERT INTO words (word, subject) VALUES ('Present', 'Daily words');*/
-
-CREATE TABLE IF NOT EXISTS learning (
-    user_id CHAR(7) NOT NULL,
-    word_id INT NOT NULL,
-    level ENUM('x', '0', '1', '2', 'v') NOT NULL,
-    date_memorized TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,
-    PRIMARY KEY (user_id, word_id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-    FOREIGN KEY (word_id) REFERENCES words(word_id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-/*INSERT INTO learning (user_id, word_id, level) VALUES ('95a916c', '1', '0');*/
 
 CREATE TABLE IF NOT EXISTS word_details (
     detail_id INT NOT NULL AUTO_INCREMENT,
     word_id INT NOT NULL,
     type ENUM('noun', 'verb', 'adjective', 'adverb', 'ph.v','idiom', 'collocation') NOT NULL,
     meaning TEXT NOT NULL,
+    pronunciation VARCHAR(255) NOT NULL,
     synonyms TEXT,
     antonyms TEXT,
     example TEXT NOT NULL,
     grammar TEXT,
     PRIMARY KEY (detail_id),
-    
     FOREIGN KEY (word_id) REFERENCES words(word_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*INSERT INTO word_details (word_id, type, meaning, synonyms, antonyms, example, grammar) VALUES ('1', 'noun', 'Present', 'Present', 'Present', 'Present', 'Present');*/
-CREATE TABLE IF NOT EXISTS word_pronunciations (
-    pronun_id INT NOT NULL AUTO_INCREMENT,
+
+CREATE TABLE IF NOT EXISTS learning (
     detail_id INT NOT NULL,
-    pronunciation VARCHAR(255) NOT NULL,
-    PRIMARY KEY (pronun_id),
+    package_id INT NOT NULL,
+    level ENUM('x', '0', '1', '2', 'v') NOT NULL,
+    date_memorized TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    date_stocked TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (detail_id, package_id),
     FOREIGN KEY (detail_id) REFERENCES word_details(detail_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (package_id) REFERENCES packages(package_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*INSERT INTO word_pronunciations (detail_id, pronunciation) VALUES ('1', 'Present');*/
 
 CREATE TABLE IF NOT EXISTS game_scores (
   id int(11) NOT NULL AUTO_INCREMENT,

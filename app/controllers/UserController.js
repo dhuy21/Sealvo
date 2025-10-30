@@ -2,15 +2,24 @@ const bcrypt = require('bcryptjs');
 const userModel = require('../models/users');
 const wordModel = require('../models/words');
 const learningModel = require('../models/learning');
+const EmailVerificationModel = require('../models/email_verification');
+const MailersendService = require('../services/mailersend');
 
 
 class UserController {
     // Afficher la page de connexion
     login(req, res) {
+        // Check for flash messages in session
+        const flashMessage = req.session.flashMessage;
+        
+        // Clear the flash message from session after retrieving it
+        if (flashMessage) {
+            delete req.session.flashMessage;
+        }
+        
         res.render('login', {
             title: 'Connexion',
-            error: req.query.error,
-            success: req.query.success
+            flashMessage: flashMessage
         });
     }
 
@@ -21,7 +30,10 @@ class UserController {
             
             // Validation de base
             if (!username || !password) {
-                return res.redirect('/login?error=Veuillez remplir tous les champs');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Veuillez remplir tous les champs'
+                });
             }
 
             
@@ -30,42 +42,72 @@ class UserController {
             
             // Si l'utilisateur n'existe pas
             if (!user) {
-                return res.redirect('/login?error=Nom d\'utilisateur ou mot de passe incorrect');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Nom d\'utilisateur ou mot de passe incorrect'
+                });
             }
             
             // Vérifier le mot de passe
             const isMatch = await bcrypt.compare(password, user.password);
+            const isVerified = user.is_verified;
             
             if (!isMatch) {
-                return res.redirect('/login?error=Nom d\'utilisateur ou mot de passe incorrect');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Nom d\'utilisateur ou mot de passe incorrect'
+                });
+            }
+            
+            if (!isVerified) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Votre compte n\'est pas vérifié'
+                });
             }
             
             const totalWords = await wordModel.countUserWords(user.id);
-            const learnedWords = await learningModel.getNumWordsByLevel(user.id, 'v');
-            const newWords = await learningModel.getNumWordsByLevel(user.id, 'x');
-            const islearningWords = await learningModel.getNumWordsByLevel(user.id, '0') + await learningModel.getNumWordsByLevel(user.id, '1') + await learningModel.getNumWordsByLevel(user.id, '2');
-            console.log('islearningWords', islearningWords);
+            const learnedWords = await learningModel.getNumWordsByLevelAllPackages(user.id, 'v');
+            const newWords = await learningModel.getNumWordsByLevelAllPackages(user.id, 'x');
+            const islearningWords = await learningModel.getNumWordsByLevelAllPackages(user.id, '0') + await learningModel.getNumWordsByLevelAllPackages(user.id, '1') + await learningModel.getNumWordsByLevelAllPackages(user.id, '2');
+            const packagesToReview = await learningModel.countWordsToReviewTodayByPackage(user.id);
+
             // Créer une session utilisateur (sans stocker le mot de passe)
-            req.session.user = {
+            try {
+                req.session.user = {
                 id: user.id,
                 username: user.username, 
                 streak: user.streak,
-                last_login: user.last_login, //convertir en date dd/mm/yyyy
-                created_at: user.created_at,
+                last_login: new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(user.last_login), //convertir en date dd/mm/yyyy
+                created_at: new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(user.created_at),
                 email: user.email,
                 avatar: user.ava,
                 totalWords,
                 learnedWords,
                 newWords,
-                islearningWords
-            };
+                islearningWords,
+                packagesToReview,
+                notifications: '🏅 Beginner'
+                };
+            } catch (error) {
+                console.error('Erreur lors de la connexion:', error);
+                res.status(500).json({
+                    success: false,
+                    message: 'Une erreur est survenue. Veuillez réessayer plus tard.'
+                });
+            }
             
-            // Rediriger vers le tableau de bord
-            res.redirect('/dashboard');
+            // Retourner le succès en JSON
+            res.status(200).json({
+                redirect: '/dashboard'
+            });
             
         } catch (error) {
             console.error('Erreur lors de la connexion:', error);
-            res.redirect('/login?error=Une erreur est survenue. Veuillez réessayer plus tard.');
+            res.status(500).json({
+                success: false,
+                message: 'Une erreur est survenue. Veuillez réessayer plus tard.'
+            });
         }
     }
 
@@ -76,7 +118,6 @@ class UserController {
         
         res.render('registre', {
             title: 'Inscription',
-            error: req.query.error,
             avatars: avatars
         });
     }
@@ -88,22 +129,44 @@ class UserController {
             
             // Validation de base
             if (!username || !email || !password || !password2) {
-                return res.redirect('/registre?error=Veuillez remplir tous les champs');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Veuillez remplir tous les champs'
+                });
             }
             
             if (password !== password2) {
-                return res.redirect('/registre?error=Les mots de passe ne correspondent pas');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Les mots de passe ne correspondent pas'
+                });
             }
             
             if (password.length < 6) {
-                return res.redirect('/registre?error=Le mot de passe doit contenir au moins 6 caractères');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Le mot de passe doit contenir au moins 6 caractères'
+                });
             }
             
             // Vérifier si l'username existe déjà
-            const existingUser = await userModel.findByUsername(username);
+            const existingUserName = await userModel.findByUsername(username);
             
-            if (existingUser) {
-                return res.redirect('/registre?error=Ce nom d\'utilisateur est déjà utilisé');
+            if (existingUserName) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Ce nom d\'utilisateur est déjà utilisé'
+                });
+            }
+            
+            // Vérifier si l'email existe déjà
+            const existingEmail = await userModel.findByEmail(email);
+            
+            if (existingEmail) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cette adresse email est déjà utilisée'
+                });
             }
             
             // Hacher le mot de passe
@@ -122,19 +185,37 @@ class UserController {
             }
             
             // Créer le nouvel utilisateur
-            await userModel.create({
+            const userId = await userModel.create({
                 username,
                 email,
                 password: hashedPassword,
                 ava: avatarInt
             });
             
-            // Rediriger vers la page de connexion
-            res.redirect('/login?success=Votre compte a été créé avec succès');
+            // Générer un token de vérification d'email
+            const { expires_at, token, token_hash } = await EmailVerificationModel.generateToken();
+            
+            // Sauvegarder le token dans la base
+            await EmailVerificationModel.saveToken(userId, expires_at, token_hash);
+            
+            // Générer l'email de vérification via le service
+            const emailContent = await MailersendService.generateEmailVerification(username, token);
+            const subject = "Vérification de votre email";
+            // Envoyer l'email de vérification via le service
+            await MailersendService.sendEmail(email, emailContent, subject);
+            
+            
+            res.status(200).json({
+                success: true,
+                message: 'Un email de vérification a été envoyé à votre adresse email'
+            });
             
         } catch (error) {
             console.error('Erreur lors de l\'inscription:', error);
-            res.redirect('/registre?error=Une erreur est survenue. Veuillez réessayer plus tard.');
+            res.status(500).json({
+                success: false,
+                message: 'Une erreur est survenue. Veuillez réessayer plus tard.'
+            });
         }
     }
 
@@ -166,22 +247,46 @@ class UserController {
     }
 
     // Tableau de bord (protégé)
-    dashboard(req, res) {
+    async dashboard(req, res) {
         // Vérifier si l'utilisateur est connecté
         if (!req.session.user) {
-            return res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
+            console.error('session do not exist', req.session);
+            return res.redirect('/login');
         }
-        
+
+            const user = req.session.user;
+            const streak = await userModel.getStreakById(user.id);
+
+            const totalWords = await wordModel.countUserWords(user.id);
+            const learnedWords = await learningModel.getNumWordsByLevelAllPackages(user.id, 'v');
+            const newWords = await learningModel.getNumWordsByLevelAllPackages(user.id, 'x');
+            const islearningWords = await learningModel.getNumWordsByLevelAllPackages(user.id, '0') + await learningModel.getNumWordsByLevelAllPackages(user.id, '1') + await learningModel.getNumWordsByLevelAllPackages(user.id, '2');
+            const packagesToReview = await learningModel.countWordsToReviewTodayByPackage(user.id);
+            // Update session utilisateur (sans stocker le mot de passe)
+            try {
+                user.streak = streak.streak;
+                user.totalWords = totalWords;
+                user.learnedWords = learnedWords;
+                user.newWords = newWords;
+                user.islearningWords = islearningWords;
+                user.packagesToReview = packagesToReview;
+                
+            } catch (error) {
+                console.error('Erreur lors de la connexion:', error);
+                res.redirect('/login?error=Une erreur est survenue. Veuillez réessayer plus tard.');
+            }
+
         res.render('dashboard', {
             title: 'Tableau de bord',
-            user: req.session.user
+            user: req.session.user,
+
         });
     }
     async editPost(req, res) {
         try {
             const userId = req.session.user.id;
             if (!userId) {
-                return res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
+                return res.redirect('/login');
             }
             const data = req.body;
             await userModel.updateUserInfo(userId, data);
@@ -211,4 +316,4 @@ class UserController {
     }
 }
 
-module.exports = new UserController();
+module.exports = new UserController();  

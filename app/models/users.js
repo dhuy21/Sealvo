@@ -6,8 +6,16 @@ class User {
         // Générer une chaîne aléatoire hexadécimale et prendre les 7 premiers caractères
         return crypto.randomBytes(4).toString('hex').substring(0, 7);
     }
+    
+    // Vérifier que la connexion à la base de données existe
+    checkDbConnection() {
+        if (!global.dbConnection) {
+            throw new Error('La connexion à la base de données n\'est pas disponible. Veuillez vérifier la configuration et redémarrer l\'application.');
+        }
+    }
     async getAllUsers() {
         try {
+            this.checkDbConnection();
             const [rows] = await global.dbConnection.execute('SELECT * FROM users');
             return rows;        
         } catch (error) {
@@ -17,6 +25,7 @@ class User {
     }
     async findById(user_id) {
         try {
+            this.checkDbConnection();
             const [rows] = await global.dbConnection.execute('SELECT * FROM users WHERE id = ?', [user_id]);
             return rows[0] || null;
         } catch (error) {
@@ -53,7 +62,8 @@ class User {
     }
     async findByUsername(username) {
         try {
-            const [rows] = await global.dbConnection.execute('SELECT * FROM users WHERE username = ?', [username]);
+            this.checkDbConnection();
+            const [rows] = await global.dbConnection.execute('SELECT id, username, password, email, ava, is_verified FROM users WHERE username = ?', [username]);
             return rows[0] || null;
         } catch (error) {
             console.error('Erreur lors de la recherche de l\'utilisateur par username :', error);
@@ -73,6 +83,7 @@ class User {
     
     async create(userData) {
         try {
+            this.checkDbConnection();
             // Générer un ID unique pour le nouvel utilisateur
             let userId = this.generateUserId();
             
@@ -90,15 +101,6 @@ class User {
             const email = userData.email;
             const password = userData.password;
             const ava = userData.ava || 1; // Default avatar is 1
-            
-            // Log the values being inserted (without sensitive info)
-            console.log('Creating user with values:', {
-                id: userId,
-                username: username,
-                email: email, 
-                hasPassword: !!password,
-                ava: ava
-            });
             
             // Insérer l'utilisateur avec l'ID généré
             const [result] = await global.dbConnection.execute(
@@ -158,6 +160,19 @@ class User {
             return result.affectedRows > 0;
         } catch (error) {
             console.error('Erreur lors de la mise à jour de la date de dernière connexion :', error);
+            throw error;
+        }
+    }
+
+    async updateStreakUpdatedAt(id) {
+        try {
+            const [result] = await global.dbConnection.execute(
+                'UPDATE users SET streak_updated_at = NOW() WHERE id = ?', 
+                [id]
+            );
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour de la date de mise à jour de la série :', error);
             throw error;
         }
     }
@@ -229,6 +244,15 @@ class User {
             throw error;
         }
     }
+    async getDateUpdatedStreak(id) {
+        try {
+            const [rows] = await global.dbConnection.execute('SELECT streak_updated_at FROM users WHERE id = ?', [id]);
+            return rows[0] || null;
+        } catch (error) {
+            console.error('Erreur lors de la récupération de la date de mise à jour de la série :', error);
+            throw error;
+        }
+    }
     async getLastLogin(id) {
         try {
             const [rows] = await global.dbConnection.execute('SELECT last_login FROM users WHERE id = ?', [id]);
@@ -244,6 +268,26 @@ class User {
             return result.affectedRows > 0;
         } catch (error) {
             console.error('Erreur lors de la suppression de l\'utilisateur :', error);
+            throw error;
+        }
+    }
+
+    async deleteUserNotVerified() {
+        try {
+            const [result] = await global.dbConnection.execute('DELETE FROM users WHERE is_verified = FALSE AND DATE_ADD(DATE(created_at), INTERVAL 3 DAY) <= CURDATE()', []);
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('Erreur lors de la suppression des utilisateurs non vérifiés :', error);
+            throw error;
+        }
+    }
+
+    async updateUserVerified(id) {
+        try {
+            const [result] = await global.dbConnection.execute('UPDATE users SET is_verified = TRUE WHERE id = ?', [id]);
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour de la vérification de l\'utilisateur :', error);
             throw error;
         }
     }

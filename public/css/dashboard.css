@@ -1,8 +1,12 @@
 /**
  * Dashboard.css
  * Styles pour le tableau de bord personnel
+ * Organisé selon la structure HTML
  */
 
+/* ============================ */
+/* CSS VARIABLES               */
+/* ============================ */
     :root {
       --primary-color: #4158D0;
       --secondary-color: #C850C0;
@@ -31,414 +35,108 @@
       --icon-red: #EF4444;
     }
     
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    
-    
+/* ============================ */
+/* HOME CONTAINER               */
+/* ============================ */
     .home-container {
       position: relative;
-      padding: 2rem;
-      max-width: 1400px;
+      max-width: 1800px;
       margin: 0 auto;
-      overflow-x: hidden;
+      padding: 0.5rem;
+      overflow: visible;
     }
     
+/* ============================ */
+/* FLOATING ICONS               */
+/* ============================ */
+.floating-icons {
+  position: absolute;
+  z-index: 0;
+  opacity: 0.15;
+  font-size: 3rem;
+  pointer-events: none;
+}
+
+.float-icon-1 {
+  top: 10%;
+  left: 5%;
+  color: var(--primary-color);
+  animation: float 8s infinite ease-in-out;
+}
+
+.float-icon-2 {
+  top: 40%;
+  right: 5%;
+  color: var(--secondary-color);
+  animation: float 10s infinite ease-in-out 1s;
+}
+
+.float-icon-3 {
+  bottom: 15%;
+  left: 10%;
+  color: var(--accent-color);
+  animation: float 7s infinite ease-in-out 0.5s;
+}
+
+/* ============================ */
+/* DASHBOARD CONTAINER          */
+/* ============================ */
     .dashboard-container {
       display: grid;
-      grid-template-columns: 1fr 3fr;
+      grid-template-columns: 2fr 2fr;
       grid-template-rows: auto auto 1fr auto;
       grid-template-areas: 
-        "header header"
         "welcome welcome"
         "sidebar main"
+        "user-dashboard main"
         "footer footer";
       gap: 1.5rem;
     }
-    
-    @media (max-width: 1024px) {
-      .home-container {
-        padding: 1.5rem;
-    
-      }
-      
-      .dashboard-container {
-        grid-template-columns: 1fr;
-        grid-template-areas: 
-          "header"
-          "welcome"
-          "sidebar"
-          "main"
-          "footer";
-        gap: 1rem;
-        padding: 0 5px;
-      }
-      
-      .dashboard-card h2, .dashboard-card h3 {
-        font-size: 1.5rem;
-      }
-    }
-    
-    @media (max-width: 768px) {
-      .home-container {
-        padding: 1rem;
-      }
-      
-      .dashboard-container {
-        padding: 0;
-      }
-      
-      .dashboard-header h1 {
-        font-size: 2rem;
-        margin-bottom: 25px;
-      }
-      
-      .stats {
-        grid-template-columns: repeat(2, 1fr);
-      }
-      
-      .stat-number {
-        font-size: 1.5rem;
-      }
-      
-      .stat-label {
-        font-size: 0.75rem;
-      }
-      
-      .dashboard-card {
-        padding: 1.25rem;
-      }
-      
-      .action-card {
-        padding: 1rem;
-      }
-      
-      .action-card-icon {
-        width: 2.5rem;
-        height: 2.5rem;
-      }
-      
-      .dashboard-btn {
-        padding: 0.6rem 1.2rem;
-        font-size: 0.8rem;
-      }
-      
-      .user-avatar-dashboard {
-        width: 70px;
-        height: 70px;
-      }
-    }
-    
-    @media (max-width: 576px) {
-      .home-container {
-        padding: 1rem;
-        overflow-x: visible;
-      }
-      
-      .stats {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.75rem;
-      }
-      
-      .stat-item {
-        padding: 0.75rem;
-      }
-      
-      .dashboard-header h1 {
-        font-size: 1.75rem;
-      }
-      
-      .action-card {
-        flex-direction: column;
-        text-align: center;
-      }
-      
-      .action-card-icon {
-        margin-bottom: 0.75rem;
-      }
-      
-      .action-card-content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      }
-      
-      .action-card h3 {
-        font-size: 1.1rem;
-        margin-bottom: 0.5rem;
-      }
-      
-      .action-card p {
-        margin-bottom: 1rem;
-      }
+/* ============================ */
+/* DASHBOARD HEADER             */
+/* ============================ */
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  position: relative;
+  padding-bottom: 2rem;
+  animation: fadeInDown 0.8s ease-out;
+}
 
-      .dashboard-footer {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-      }
-      
-      .dashboard-footer .dashboard-btn {
-        width: 100%;
-        text-align: center;
-      }
-      
-      .dashboard-footer span {
-        display: none !important;
-      }
-      
-      .activity-time {
-        font-size: 0.8rem;
-      }
-      
-      .dashboard-card {
-        padding: 1rem;
-        margin-left: 0;
-        margin-right: 0;
-        width: 100%;
-        border-radius: 14px;
-        box-sizing: border-box;
-        max-width: 100%;
-      }
-      
-      .sidebar, .main-content {
-        width: 100%;
-        margin: 0;
-        padding: 0 2px;
-      }
-      
-      .action-card {
-        width: 100%;
-        box-sizing: border-box;
-        margin-left: 0;
-        margin-right: 0;
-      }
-      
-      .activity-item {
-        padding: 0.75rem;
-      }
-      
-      .dashboard-card h2, .dashboard-card h3 {
-        font-size: 1.2rem;
-        text-align: center;
-        display: block;
-        margin-bottom: 15px;
-      }
-    }
-    
-    @media (max-width: 414px) {
-      .home-container {
-        width: auto;
-        max-width: 100%;
-        padding: 8px;
-      }
-      
-      .dashboard-container {
-        width: 100%;
-      }
-      
-      .dashboard-header h1 {
-        font-size: 1.5rem;
-      }
-      
-      .dashboard-header h1::after {
-        width: 60px;
-        bottom: -8px;
-      }
-      
-      .dashboard-card h2, .dashboard-card h3 {
-        font-size: 1.25rem;
-        margin-bottom: 1rem;
-      }
-      
-      .dashboard-card {
-        padding: 12px;
-        border-radius: 12px;
-        margin: 0 auto 1rem;
-        width: calc(100% - 10px);
-      }
-      
-      .sidebar, .main-content {
-        padding: 0;
-        width: 100%;
-      }
-      
-      .dashboard-container {
-        width: 100%;
-        padding: 0;
-      }
-      
-      .action-card, .recent-activity {
-        margin-left: auto;
-        margin-right: auto;
-        width: 100%;
-        border-radius: 10px;
-      }
-      
-      .stats {
-        padding: 0;
-        margin: 0;
-      }
-      
-      .stat-item {
-        padding: 8px 5px;
-      }
-      
-      .stat-number {
-        font-size: 1.25rem;
-      }
-      
-      .stat-label {
-        font-size: 0.7rem;
-      }
-      
-      .action-card {
-        padding: 0.75rem;
-      }
-      
-      .action-card h3 {
-        font-size: 1rem;
-      }
-      
-      .action-card p {
-        font-size: 0.8rem;
-      }
-      
-      .activity-icon {
-        width: 2rem;
-        height: 2rem;
-        margin-right: 0.75rem;
-      }
-      
-      .activity-title {
-        font-size: 0.9rem;
-      }
-      
-      .activity-time {
-        font-size: 0.75rem;
-      }
+.dashboard-header h1 {
+  margin-bottom: 1rem;
+  font-weight: 800;
+  font-size: 4rem;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  position: relative;
+}
 
-      .user-profile-header h2 {
-        font-size: 1.2rem;
-      }
-      
-      .user-info .info-row {
-        padding: 0.5rem 0.25rem;
-      }
-      
-      .info-label {
-        min-width: 100px;
-        font-size: 0.8rem;
-      }
-      
-      .info-value {
-        font-size: 0.8rem;
-      }
-    }
-    
-    @media (max-width: 375px) {
-      .home-container {
-        padding: 0.75rem;
-      }
-      
-      .dashboard-header h1 {
-        font-size: 1.35rem;
-      }
-      
-      .dashboard-card, .action-card, .recent-activity {
-        width: 100%;
-        padding: 10px;
-        border-radius: 10px;
-      }
-      
-      .stat-number {
-        font-size: 1.1rem;
-      }
-      
-      .stat-label {
-        font-size: 0.65rem;
-        letter-spacing: 0;
-      }
-      
-      .action-card-icon {
-        width: 2.25rem;
-        height: 2.25rem;
-      }
-      
-      .fa-book-open, .fa-plus-circle, .fa-gamepad,
-      .fa-graduation-cap, .fa-magic, .fa-dice {
-        font-size: 1.2rem;
-      }
-      
-      .user-avatar-dashboard {
-        width: 60px;
-        height: 60px;
-      }
-    }
-    
-    @media (max-height: 600px) and (orientation: landscape) {
-      .home-container {
-        padding: 0.5rem 1rem;
-      }
-      
-      .dashboard-header h1 {
-        font-size: 1.5rem;
-        margin-bottom: 15px;
-      }
-      
-      .dashboard-card {
-        padding: 0.75rem;
-      }
-      
-      .stat-item {
-        padding: 0.5rem;
-      }
-      
-      .action-card {
-        padding: 0.75rem;
-      }
-      
-      .dashboard-welcome {
-        padding: 0.75rem;
-      }
-    }
-    
-    .dashboard-header {
-      grid-area: header;
-      text-align: center;
-      position: relative;
-      margin-bottom: 0.5rem;
-    }
-    
-    .dashboard-header h1 {
-      text-align: center;
-      font-size: 2.5rem;
-      margin-bottom: 35px;
-      color: var(--primary-color);
-      text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      font-weight: 700;
-      background: var(--bg-gradient);
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-      position: relative;
-    }
+.dashboard-header h1::after {
+  content: '';
+  position: absolute;
+  bottom: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 150px;
+  height: 4px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 2px;
+  animation: lineGrow 1s ease-out 0.5s both;
+}
 
-    .dashboard-header h1::after {
-      content: '';
-      position: absolute;
-      width: 80px;
-      height: 4px;
-      bottom: -12px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--bg-gradient);
-      border-radius: 10px;
-    }
+@keyframes lineGrow {
+  from { width: 0; opacity: 0; }
+  to { width: 150px; opacity: 1; }
+}
     
+/* ============================ */
+/* DASHBOARD WELCOME            */
+/* ============================ */
     .dashboard-welcome {
       grid-area: welcome;
       text-align: center;
@@ -450,39 +148,32 @@
       margin-bottom: 0.5rem;
       border: 1px solid rgba(255,255,255,0.2);
     }
-    
+/* ============================ */
+/* SIDEBAR                      */
+/* ============================ */
     .sidebar {
       grid-area: sidebar;
       display: flex;
       flex-direction: column;
       gap: 1.5rem;
     }
-    
-    .main-content {
-      grid-area: main;
+/* ============================ */
+/* USER INFO                    */
+/* ============================ */
+    .user-dashboard {
+      grid-area: user-dashboard;
       display: flex;
       flex-direction: column;
       gap: 1.5rem;
     }
     
-    .dashboard-footer {
-      grid-area: footer;
-      text-align: center;
-      margin-top: 1rem;
-    }
-    
-    .dashboard-card,
-    .action-card,
-    .recent-activity {
-      box-sizing: border-box;
-      overflow: hidden;
-      max-width: 100%;
-    }
-    
+  
+
+/* Dashboard Cards (General) */
     .dashboard-card {
       background: var(--card-bg);
       border-radius: var(--border-radius);
-      padding: 1.5rem;
+      padding: 1rem;
       box-shadow: var(--box-shadow);
       transition: var(--transition);
       position: relative;
@@ -490,6 +181,8 @@
       height: auto;
       width: auto;
       border: 1px solid rgba(255,255,255,0.2);
+      border-top: 4px solid var(--secondary-color);
+      box-sizing: border-box;
     }
     
     .dashboard-card:hover {
@@ -497,19 +190,8 @@
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
     
-    .dashboard-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
-    }
-    
     .dashboard-card h2, .dashboard-card h3 {
       color: var(--primary-color);
-      margin-bottom: 1.25rem;
       font-weight: 500;
       font-size: 30px;
       position: relative;
@@ -517,12 +199,40 @@
       align-items: center;
       justify-content: center;
     }
+
+    .dashboard-card h2 {
+      margin-bottom: 1rem;
+    }
     
+/* Add styles for the avatar in dashboard card header */
+.dashboard-card h2 img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 10px;
+  vertical-align: middle;
+  object-fit: cover;
+  border: 2px solid var(--primary-color);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  transition: var(--transition);
+}
+
+.dashboard-card h2 img:hover {
+  transform: scale(1.1);
+  border-color: var(--secondary-color);
+}
+
+/* Ensure the header is properly aligned with the avatar */
+.dashboard-card h2 {
+  display: flex;
+  align-items: center;
+  font-size: 1.5rem;
+}
+/* Statistics Card */
     .stats {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 1rem;
-      
     }
     
     .stat-item {
@@ -561,100 +271,241 @@
       letter-spacing: 0.5px;
     }
     
-    .streak-display {
+.stat-item-content {
       display: flex;
-      justify-content: center;
-      gap: 0.5rem;
-      margin-top: 1rem;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  transform: translateY(0);
+  transition: transform 0.3s ease;
+}
+
+.stat-item:hover .stat-icon {
+  transform: translateY(-3px) scale(1.1);
+}
+    
+/* User Profile Card */
+.user-profile-card {
+  position: relative;
+      width: 100%;
+  overflow: visible;
     }
     
-    .streak-day {
-      width: 2rem;
-      height: 2rem;
-      border-radius: 8px;
+.user-profile-header {
       display: flex;
+  flex-direction: column;
       align-items: center;
-      justify-content: center;
-      background: #f3f4f6;
-      color: var(--text-secondary);
-      font-weight: 600;
-      font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.avatar-container-dashboard {
+  position: relative;
+  margin: 0 auto 15px;
+}
+
+.user-avatar-dashboard {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgb(175, 14, 190);
+  transition: all 0.3s ease;
+  margin-bottom: 0.5rem;
+}
+
+.user-avatar-dashboard:hover {
+  transform: scale(1.05);
+  border-color: var(--secondary-color);
+}
+
+.edit-btn-avatar {
+  background-color: transparent;
+  border: none;
+  color: var(--tertiary-color);
+  cursor: pointer;
+  font-size: 1rem;
       transition: var(--transition);
-      border: 1px solid rgba(0,0,0,0.05);
-    }
-    
-    .streak-day.active {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  padding: 5px;
+  border-radius: 50%;
+}
+
+.edit-btn-avatar:hover {
+  color: var(--secondary-color);
+}
+
+.user-profile-header h2 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  text-align: center;
+  font-size: 1.4rem;
       background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-      color: white;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      transform: scale(1.1);
-      border: none;
-    }
-    
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* User Info Section */
     .user-info {
       margin-top: 1rem;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-top: 0.5rem;
     }
     
     .info-row {
       display: flex;
+      justify-content: space-between;
       margin-bottom: 1rem;
-      gap: 40px;
+      gap: 20px;
       align-items: center;
-      padding: 0.5rem;
-      border-radius: 8px;
-      transition: var(--transition);
+      padding: 0.75rem 0.5rem;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    position: relative;
     }
     
     .info-row:hover {
-      background: rgba(65, 88, 208, 0.05);
+  background-color: transparent;
+  transform: translateX(5px);
     }
     
     .info-label {
       min-width: 130px;
-      font-weight: 600;
-      color: var(--text-secondary);
+      font-weight: 700;
+      color: #728984 !important;
+  display: flex;
+  align-items: center;
+}
+
+.info-label .info-icon {
+  margin-right: 0.5rem;
+  width: 1rem;
+  text-align: center;
     }
     
     .info-value {
-      color: var(--text-primary);
-      font-weight: 500;
+      color: #660180;
+      font-weight: 900;
+  position: relative;
+  display: flex;
+  align-items: center;
     }
-    
+
+/* Notification Badge */
     .notification-badge {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+      position: fixed;
+      background: linear-gradient(45deg, #0fb07d8e, #44adbdcd);
       color: white;
-      width: 1.5rem;
-      height: 1.5rem;
-      border-radius: 50%;
+      width: 30%;
+      height: 30px;
+      border-radius: 15px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.75rem;
+      font-size: 1.2rem;
       font-weight: 700;
+      line-height: 1.2;
       animation: pulse 2s infinite;
+      z-index: 1000;
     }
     
-    @keyframes pulse {
-      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7); }
-      70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(255, 107, 107, 0); }
-      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
-    }
-    
+.user-profile-card .notification-badge {
+  position: sticky;
+}
+
+/* ============================ */
+/* MAIN CONTENT                 */
+/* ============================ */
+.main-content {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+/* Action Cards */
+.dashboard-actions {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1.5rem;
+}
+
+.action-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 1.25rem;
+  box-shadow: var(--box-shadow);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.2);
+  cursor: pointer;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.action-card:hover {
+  transform: translateX(5px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.action-card-icon {
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(65, 88, 208, 0.1), rgba(200, 80, 192, 0.1));
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.action-card-content {
+  flex-grow: 1;
+  text-align: center;
+}
+
+.action-card h3 {
+  font-size: 1.125rem;
+  margin-bottom: 0.25rem;
+  font-weight: 700;
+  background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.action-card p {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Progress/Streak Section */
     .progress-container {
-      background: var(--card-bg);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      background: none;
       border-radius: var(--border-radius);
-      padding: 1.5rem;
-      box-shadow: var(--box-shadow);
       transition: var(--transition);
-      border: 1px solid rgba(255,255,255,0.2);
-    }
-    
-    .progress-container:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      position: relative;
+      overflow: visible;
     }
     
     .progress-container h3 {
@@ -670,8 +521,9 @@
       overflow: hidden;
       position: relative;
       box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
-      width: 100%; /* Ensure full width */
-      min-width: 100px; /* Set minimum width */
+      width: 100%;
+      min-width: 100px;
+      margin: 0.5rem 0;
     }
     
     .progress-bar-fill {
@@ -680,72 +532,222 @@
       border-radius: 1rem;
       width: 0;
       transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);
-      display: block; /* Ensure it's displayed as a block */
-      min-height: 0.75rem; /* Match container height */
-      min-width: 5px; /* Ensure a minimum visible width */
-    }
-    
-    .progress-bar-labels {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 0.5rem;
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-    }
-    
-    #progress-percentage {
-      font-weight: 700;
-      background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-    
-    .dashboard-actions {
-      display: grid;
-      grid-template-columns: repeat(1, 1fr);
-      gap: 1.5rem;
-    }
-    
-    .action-card {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      background: var(--card-bg);
-      border-radius: var(--border-radius);
-      padding: 1.25rem;
-      box-shadow: var(--box-shadow);
-      transition: var(--transition);
+  display: block;
+  min-height: 0.75rem;
+  min-width: 5px;
+}
+
+.progress-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+#progress-percentage {
+  font-weight: 700;
+  background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.streak-display {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.streak-day {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: var(--transition);
+  border: 1px solid rgba(0,0,0,0.05);
+  position: relative;
+}
+
+.streak-day.active {
+  background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transform: scale(1.1);
+  border: none;
+}
+
+.day-label {
+  position: absolute;
+  bottom: -1.25rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Fire Effect for Streak */
+    .fire-section {
       position: relative;
-      overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.2);
-      cursor: pointer;
-    }
-    
-    .action-card:hover {
-      transform: translateX(5px);
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    }
-    
-    .action-card-icon {
-      width: 3rem;
-      height: 3rem;
+      height: 120px;
+      width: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, rgba(65, 88, 208, 0.1), rgba(200, 80, 192, 0.1));
-      border-radius: 12px;
-      flex-shrink: 0;
+      margin: 0.5rem 0;
     }
     
-    .fa-book-open, .fa-plus-circle, .fa-gamepad {
-      font-size: 1.5rem;
-      background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+    .fire {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      background-color: transparent;
     }
-
+    
+    .fire-streak-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #ffffff;
+      font-weight: 1000;
+      font-size: 3rem;
+      text-shadow: 
+        0 0 10px rgba(0, 0, 0, 0.8),
+        0 0 20px rgba(0, 0, 0, 0.6),
+        0 0 30px rgba(0, 0, 0, 0.4);
+      z-index: 100;
+      pointer-events: none;
+      animation: fireTextGlow 2s ease-in-out infinite alternate;
+    }
+    
+    .fire-center {
+      position: absolute;
+      height: 100%;
+      width: 100%;
+      animation: scaleUpDown 3s ease-out;
+      animation-iteration-count: infinite;
+      animation-fill-mode: both;
+    }
+    
+    .fire-center .main-fire {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-image: radial-gradient(farthest-corner at 10px 0, #d43300 0%, #ef5a00 50%, #ffd900 50%);
+      transform: scaleX(0.8) rotate(45deg);
+      border-radius: 0 40% 60% 40%;
+      filter: drop-shadow(0 0 10px #ff5a01);
+    }
+    
+    .fire-center .particle-fire {
+      position: absolute;
+      top: 60%;
+      left: 45%;
+      width: 10px;
+      height: 10px;
+      background-color: #ef5a00;
+      border-radius: 50%;
+      filter: drop-shadow(0 0 10px #d43322);
+      animation: particleUp 2s ease-out 0;
+      animation-iteration-count: infinite;
+      animation-fill-mode: both;
+    }
+    
+    .fire-right {
+      height: 100%;
+      width: 100%;
+      position: absolute;
+      animation: shake 2s ease-out 0;
+      animation-iteration-count: infinite;
+      animation-fill-mode: both;
+    }
+    
+    .fire-right .main-fire {
+      position: absolute;
+      top: 15%;
+      right: -25%;
+      width: 80%;
+      height: 80%;
+      background-color: #ef5a00;
+      transform: scaleX(0.8) rotate(45deg);
+      border-radius: 0 40% 60% 40%;
+      filter: drop-shadow(0 0 10px #d43322);
+    }
+    
+    .fire-right .particle-fire {
+      position: absolute;
+      top: 45%;
+      left: 50%;
+      width: 15px;
+      height: 15px;
+      background-color: #ef5a00;
+      transform: scaleX(0.8) rotate(45deg);
+      border-radius: 50%;
+      filter: drop-shadow(0 0 10px #d43322);
+      animation: particleUp 2s ease-out 0;
+      animation-iteration-count: infinite;
+      animation-fill-mode: both;
+    }
+    
+    .fire-left {
+      position: absolute;
+      height: 100%;
+      width: 100%;
+      animation: shake 3s ease-out 0;
+      animation-iteration-count: infinite;
+      animation-fill-mode: both;
+    }
+    
+    .fire-left .main-fire {
+      position: absolute;
+      top: 15%;
+      left: -20%;
+      width: 80%;
+      height: 80%;
+      background-color: #ef5a00;
+      transform: scaleX(0.8) rotate(45deg);
+      border-radius: 0 40% 60% 40%;
+      filter: drop-shadow(0 0 10px #d43322);
+    }
+    
+    .fire-left .particle-fire {
+      position: absolute;
+      top: 10%;
+      left: 20%;
+      width: 10%;
+      height: 10%;
+      background-color: #ef5a00;
+      border-radius: 50%;
+      filter: drop-shadow(0 0 10px #d43322);
+      animation: particleUp 3s infinite ease-out 0;
+      animation-fill-mode: both;
+    }
+    
+    .fire-bottom .main-fire {
+      position: absolute;
+      top: 30%;
+      left: 20%;
+      width: 75%;
+      height: 75%;
+      background-color: #ff7800;
+      transform: scaleX(0.8) rotate(45deg);
+      border-radius: 0 40% 100% 40%;
+      filter: blur(10px);
+      animation: glow 2s ease-out 0;
+      animation-iteration-count: infinite;
+      animation-fill-mode: both;
+    }
+    
+/* Icon Styles */
+.fa-book-open, .fa-plus-circle, .fa-gamepad,
     .fa-graduation-cap, .fa-magic, .fa-dice {
       font-size: 1.5rem;
       background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
@@ -754,27 +756,7 @@
       color: transparent;
     }
     
-    .action-card-content {
-      flex-grow: 1;
-      text-align: center;
-    }
-    
-    .action-card h3 {
-      font-size: 1.125rem;
-      margin-bottom: 0.25rem;
-      font-weight: 700;
-      background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-    
-    .action-card p {
-      color: var(--text-secondary);
-      font-size: 0.875rem;
-      margin-bottom: 0.75rem;
-    }
-    
+/* Dashboard Buttons */
     .dashboard-btn {
       display: inline-block;
       padding: 0.75rem 1.5rem;
@@ -799,112 +781,454 @@
       box-shadow: 0 10px 15px -3px rgba(65, 88, 208, 0.3), 0 4px 6px -2px rgba(65, 88, 208, 0.05);
       text-decoration: none;
     }
-    
-    .recent-activity {
+/* ============================ */
+/* TASKS ACTIVITY SECTION       */
+/* ============================ */
+    .tasks-activity {
       background: var(--card-bg);
       border-radius: var(--border-radius);
-      padding: 1.5rem;
+      padding: 0;
       box-shadow: var(--box-shadow);
+      width: 100%;
       height: 100%;
-      border: 1px solid rgba(255,255,255,0.2);
+      border-top: 4px solid rgba(115, 29, 206, 0.996);
+      overflow-y: auto;
+      position: relative;
+    }
+/* Tasks Header */
+    .tasks-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 1.5rem 1rem;
+      background: linear-gradient(135deg, rgba(65, 88, 208, 0.05), rgba(200, 80, 192, 0.03));
+      border-bottom: 1px solid rgba(0,0,0,0.05);
     }
     
-    .recent-activity h3 {
-      margin-bottom: 1.25rem;
-      color: var(--primary-color);
-      font-weight: 700;
-    }
-    
-    .activity-list {
-      list-style: none;
-    }
-    
-    .activity-item {
+    .tasks-header h5 {
+      margin: 0 auto;
+      color: #a855f7;
+      font-weight: 800;
+      font-size: 1.75rem;
       display: flex;
       align-items: center;
-      padding: 1rem;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    
+    .tasks-header h3 i {
+      color: var(--secondary-color);
+      font-size: 1.1rem;
+    }
+    
+    .tasks-count {
+      background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 700;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      min-width: 2rem;
+      text-align: center;
+    }
+    
+/* Activity List */
+    .activity-list {
+      list-style: none;
+      padding: 0.5rem;
+      max-height: 320px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    
+    .activity-list::-webkit-scrollbar {
+      width: 4px;
+    }
+    
+    .activity-list::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.05);
+      border-radius: 2px;
+    }
+    
+    .activity-list::-webkit-scrollbar-thumb {
+      background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+      border-radius: 2px;
+    }
+    
+/* Task Cards */
+    .task-card {
+      display: flex;
+      justify-content:space-between;
+      padding: 0.5rem;
       margin-bottom: 0.75rem;
-      background: rgba(65, 88, 208, 0.03);
-      border-radius: var(--border-radius);
-      transition: var(--transition);
-      border-left: 3px solid transparent;
+      background: rgb(228, 254, 246);
+      border-radius: 12px;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      border-left: 5px solid rgb(246, 137, 3);
+      position: relative;
+      cursor: pointer;
+      overflow: visible;
     }
     
-    .activity-item:hover {
-      background: rgba(65, 88, 208, 0.06);
-      transform: translateX(5px);
-      border-left-color: var(--primary-color);
+    .task-card:hover {
+      box-shadow: 0 12px 25px rgba(0,0,0,0.1), 0 4px 10px rgba(65, 88, 208, 0.1);
+      background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.7));
     }
     
-    .activity-icon {
-      width: 2.5rem;
-      height: 2.5rem;
-      border-radius: 8px;
+    .task-icon {
+      width: 2.3rem;
+      height: 2.3rem;
+      font-size: 1.7rem;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
       margin-right: 1rem;
       flex-shrink: 0;
+      background: linear-gradient(135deg, rgba(65, 88, 208, 0.1), rgba(200, 80, 192, 0.1));
+      transition: all 0.3s ease;
+      position: relative;
     }
     
-    .activity-icon.blue {
-      background: rgba(65, 88, 208, 0.1);
-      color: var(--primary-color);
-    }
-    
-    .activity-icon.green {
-      background: rgba(16, 185, 129, 0.1);
-      color: #10b981;
-    }
-    
-    .activity-icon.orange {
-      background: rgba(245, 158, 11, 0.1);
-      color: #f59e0b;
-    }
-    
-    .activity-content {
-      flex-grow: 1;
+
+
+    .task-content {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      width: 100%;
     }
     
     .activity-title {
-      font-weight: 600;
-      margin-bottom: 0.25rem;
-      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      font-weight: 700;
+      max-height: 60px;
+      max-width: 300px;
+      width: 100%;
+      color: black;
+      font-size: 1rem;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-behavior: smooth;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
     }
+
+    /* Scrollbar moderne pour activity-title */
+    .activity-title::-webkit-scrollbar {
+      height: 6px;
+      background: transparent;
+    }
+
+    .activity-title::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      margin: 0 5px;
+    }
+
+    .activity-title::-webkit-scrollbar-thumb {
+      background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+      border-radius: 10px;
+      transition: all 0.3s ease;
+      opacity: 0.7;
+    }
+
+    .activity-title::-webkit-scrollbar-thumb:hover {
+      opacity: 1;
+      transform: scaleY(1.2);
+      background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
+    }
+
     
     .activity-time {
-      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      gap: 0.5rem;
+      font-size: 0.875rem;
       color: var(--text-secondary);
+      font-weight: 500;
     }
     
+    .activity-time i {
+      color: var(--tertiary-color);
+      font-size: 0.875rem;
+    }
+    
+    .word-count {
+      font-weight: 700;
+      color: rgb(50, 2, 162);
+    }
+    
+    .word-label {
+      font-size: 0.9rem;
+    }
+    
+    .task-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+    
+    .task-priority {
+      display: flex;
+      align-items: center;
+    }
+    
+    .priority-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #03d063, #02d241);
+      box-shadow: 0 0 0 3px rgba(18, 212, 147, 0.341);
+      animation: pulse-priority 2s infinite;
+    }
+    
+/* No Activity State */
     .no-activity {
       text-align: center;
-      padding: 1.5rem;
-      color: var(--text-secondary);
-      background: rgba(65, 88, 208, 0.03);
+      padding: 3rem 1.5rem;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(14, 165, 233, 0.03));
       border-radius: var(--border-radius);
+      margin: 1.5rem;
     }
     
+    .no-activity-icon {
+      width: 4rem;
+      height: 4rem;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #10b981, #059669);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+    }
+    
+    .no-activity-icon i {
+      font-size: 1.75rem;
+    }
+    
+    .no-activity h4 {
+      color: var(--text-primary);
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+    
+    .no-activity p {
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    
+    .add-task-btn {
+      padding: 0.875rem 1.5rem;
+      border: 2px solid var(--primary-color);
+      border-radius: 12px;
+      background: transparent;
+      color: var(--primary-color);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .add-task-btn:hover {
+      background: var(--primary-color);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(65, 88, 208, 0.3);
+    }
+/* ============================ */
+/* DASHBOARD FOOTER             */
+/* ============================ */
+.dashboard-footer {
+  grid-area: footer;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+/* ============================ */
+/* UTILITIES & ANIMATIONS       */
+/* ============================ */
     .mouse-tracker {
       display: none;
     }
     
-    .text-center {
-      text-align: center;
-    }
-    
-    /* Animations */
     .fade-in {
       animation: fadeIn 0.5s ease forwards;
       animation-delay: 0.55s;
     }
     
+.pulse-animation {
+  animation: pulse-btn 0.3s ease-in-out;
+}
+
+/* ============================ */
+/* ANIMATIONS & KEYFRAMES       */
+/* ============================ */
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
     
-    /* Special glass morphism effect */
+@keyframes float {
+  0% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-15px) rotate(5deg); }
+  100% { transform: translateY(0) rotate(0); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(164, 90, 234, 0.948); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(233, 107, 255, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(113, 13, 162, 0.551); }
+}
+
+@keyframes pulse-btn {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes pulse-priority {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.488); }
+  50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.1); }
+}
+
+@keyframes scaleUpDown {
+  0%, 100% { transform: scaleY(1) scaleX(1); }
+  50%, 90% { transform: scaleY(1.1); }
+  75% { transform: scaleY(0.95); }
+  80% { transform: scaleX(0.95); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: skewX(0) scale(1); }
+  50% { transform: skewX(5deg) scale(0.9); }
+}
+
+@keyframes particleUp {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; top: -100%; transform: scale(0.5); }
+}
+
+@keyframes glow {
+  0%, 100% { background-color: #ef5a00; }
+  50% { background-color: #ff7800; }
+}
+
+@keyframes fireTextGlow {
+  0% {
+    text-shadow: 
+      0 0 10px rgba(0, 0, 0, 0.8),
+      0 0 20px rgba(0, 0, 0, 0.6),
+      0 0 30px rgba(0, 0, 0, 0.4),
+      0 0 5px rgba(255, 255, 255, 0.8);
+  }
+  100% {
+    text-shadow: 
+      0 0 15px rgba(0, 0, 0, 0.9),
+      0 0 25px rgba(0, 0, 0, 0.7),
+      0 0 35px rgba(0, 0, 0, 0.5),
+      0 0 10px rgba(255, 255, 255, 1);
+  }
+}
+    
+/* ============================ */
+/* AVATAR MODAL                 */
+/* ============================ */
+/* (Avatar modal styles will be organized here) */
+
+/* ============================ */
+/* SPARKLE BUTTON EFFECTS       */
+/* ============================ */
+/* (Sparkle button styles will be organized here) */
+
+/* ============================ */
+/* EDIT FUNCTIONALITY           */
+/* ============================ */
+/* Edit Input Styles */
+.edit-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 2px solid var(--primary-color);
+  border-radius: 8px;
+  font-size: 14px;
+  transition: var(--transition);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  color: var(--text-primary);
+}
+
+.edit-input:focus {
+  outline: none;
+  border-color: var(--secondary-color);
+  box-shadow: 0 3px 8px rgba(200, 80, 192, 0.2);
+}
+
+.save-btn, 
+.cancel-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  margin-left: 8px;
+  transition: all 0.2s ease;
+}
+
+.save-btn {
+  color: #10b981;
+}
+
+.save-btn:hover {
+  transform: scale(1.1);
+}
+
+.cancel-btn {
+  color: #ef4444;
+}
+
+.cancel-btn:hover {
+  transform: scale(1.1);
+}
+
+.edit-btn {
+  background: transparent;
+  border: #6c757d;
+  cursor: pointer;
+  color: #191136;
+  opacity: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+
+.edit-username, 
+.edit-email {
+  margin-left: 10px !important;
+}
+
+/* ============================ */
+/* SPECIAL EFFECTS & UTILITIES  */
+/* ============================ */
     .glass-card {
       background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.3));
       backdrop-filter: blur(10px);
@@ -963,99 +1287,6 @@
     .dashboard-section-header h2, 
     .dashboard-section-header h3 {
       margin-bottom: 0;
-    }
-    
-    .stat-item-content {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    
-    .stat-icon {
-      font-size: 1.5rem;
-      margin-bottom: 0.5rem;
-      background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      transform: translateY(0);
-      transition: transform 0.3s ease;
-    }
-    
-    .stat-item:hover .stat-icon {
-      transform: translateY(-3px) scale(1.1);
-    }
-    
-    .streak-day {
-      position: relative;
-    }
-    
-    .day-label {
-      position: absolute;
-      bottom: -1.25rem;
-      font-size: 0.65rem;
-      font-weight: 600;
-      color: var(--text-secondary);
-    }
-    
-    .floating-icons {
-      position: absolute;
-      z-index: 0;
-      opacity: 0.15;
-      font-size: 3rem;
-      pointer-events: none;
-    }
-    
-    .float-icon-1 {
-      top: 10%;
-      left: 5%;
-      color: var(--primary-color);
-      animation: float 8s infinite ease-in-out;
-    }
-    
-    .float-icon-2 {
-      top: 40%;
-      right: 5%;
-      color: var(--secondary-color);
-      animation: float 10s infinite ease-in-out 1s;
-    }
-    
-    .float-icon-3 {
-      bottom: 15%;
-      left: 10%;
-      color: var(--accent-color);
-      animation: float 7s infinite ease-in-out 0.5s;
-    }
-    
-    @keyframes float {
-      0% { transform: translateY(0) rotate(0); }
-      50% { transform: translateY(-15px) rotate(5deg); }
-      100% { transform: translateY(0) rotate(0); }
-    }
-    
-    .info-row {
-      position: relative;
-    }
-    
-    .info-icon {
-      margin-right: 0.5rem;
-      width: 1rem;
-      text-align: center;
-    }
-    
-    .info-label {
-      display: flex;
-      align-items: center;
-    }
-    
-    .pulse-animation {
-      animation: pulse-btn 0.3s ease-in-out;
-    }
-    
-    @keyframes pulse-btn {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
     }
 
     /* Add styles for the avatar in dashboard card header */
@@ -1155,227 +1386,164 @@
 
     /* Position the notification badge correctly on the profile card */
     .user-profile-card .notification-badge {
+      position: sticky;
+    }
+
+    /* Sparkle Button Effects */
+    .sparkle-btn {
+      position: relative;
+      overflow: visible;
+    }
+
+    .sparkle-btn .star-1 {
       position: absolute;
-      top: 0;
-      right: 0;
+      top: 20%;
+      left: 20%;
+      width: 25px;
+      height: auto;
+      filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0.8));
+      z-index: -5;
+      transition: all 1s cubic-bezier(0.05, 0.83, 0.43, 0.96);
+      opacity: 0;
     }
 
-    /* iPhone XS/11 Pro/12 Pro specific fixes for clipping */
-    @media screen and (min-width: 375px) and (max-width: 415px) {
-      .home-container {
-        padding: 0.75rem 1rem;
-      }
-      
-      .dashboard-card, 
-      .action-card, 
-      .recent-activity {
-        padding-left: 0.75rem;
-        padding-right: 0.75rem;
-        width: 100%;
-        box-sizing: border-box;
-      }
-      
-      .activity-icon {
-        margin-right: 0.6rem;
-      }
+    .sparkle-btn .star-2 {
+      position: absolute;
+      top: 45%;
+      left: 45%;
+      width: 15px;
+      height: auto;
+      filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0.8));
+      z-index: -5;
+      transition: all 1s cubic-bezier(0, 0.4, 0, 1.01);
+      opacity: 0;
     }
 
-    /* Fix dashboard card on small iPhone and other small devices */
-    @media screen and (max-width: 320px) {
-      .home-container {
-        padding: 5px;
-      }
-      
-      .dashboard-container {
-        padding: 0;
-      }
-      
-      .dashboard-card, 
-      .action-card, 
-      .recent-activity {
-        padding: 8px;
-        border-radius: 8px;
-        margin-bottom: 10px;
-      }
-      
-      .stat-label {
-        font-size: 0.6rem;
-      }
-      
-      .dashboard-card h2, 
-      .action-card h3 {
-        font-size: 1rem;
-        margin-bottom: 10px;
-      }
-      
-      .action-card p {
-        font-size: 0.75rem;
-      }
-      
-      .activity-item {
-        padding: 8px;
-      }
+    .sparkle-btn .star-3 {
+      position: absolute;
+      top: 40%;
+      left: 40%;
+      width: 5px;
+      height: auto;
+      filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0.8));
+      z-index: -5;
+      transition: all 1s cubic-bezier(0, 0.4, 0, 1.01);
+      opacity: 0;
     }
 
-    /* Fix transform hover effects that could cause overflow on mobile */
-    @media screen and (max-width: 576px) {
-      .dashboard-card:hover,
-      .action-card:hover,
-      .progress-container:hover {
-        transform: none;
-      }
+    .sparkle-btn .star-4 {
+      position: absolute;
+      top: 20%;
+      left: 40%;
+      width: 8px;
+      height: auto;
+      filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0.8));
+      z-index: -5;
+      transition: all 0.8s cubic-bezier(0, 0.4, 0, 1.01);
+      opacity: 0;
     }
 
-    /* Complete iPhone 12 Pro specific fix */
-    @media screen and (min-width: 385px) and (max-width: 400px) {
-      .home-container {
-        padding: 5px !important;
-        width: 100% !important;
-      }
-      
-      .dashboard-container {
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 100% !important;
-        gap: 10px !important;
-      }
-      
-      .sidebar, .main-content {
-        padding: 0 !important;
-        margin: 0 !important;
-        width: 100% !important;
-      }
-      
-      .dashboard-card, 
-      .action-card, 
-      .recent-activity {
-        margin: 0 0 10px 0 !important;
-        width: 100% !important;
-        padding: 10px !important;
-        border-radius: 10px !important;
-      }
+    .sparkle-btn .star-5 {
+      position: absolute;
+      top: 25%;
+      left: 45%;
+      width: 15px;
+      height: auto;
+      filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0.8));
+      z-index: -5;
+      transition: all 0.6s cubic-bezier(0, 0.4, 0, 1.01);
+      opacity: 0;
     }
 
-    /* General override for iPhone and small screens */
-    @media screen and (max-width: 414px) {  
-      html, body {
-        overflow-x: hidden;
-        width: 100%;
-      }
-      
-      * {
-        max-width: 100%;
-      }
-      
-      /* Reset hover effects that could cause issues */
-      .dashboard-card:hover,
-      .action-card:hover,
-      .progress-container:hover,
-      .stat-item:hover,
-      .activity-item:hover {
-        transform: none !important;
-      }
-      
-      /* Ensure cards don't overflow */
-      .dashboard-card, 
-      .action-card, 
-      .recent-activity {
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-        box-sizing: border-box !important;
-        width: 100% !important;
-      }
+    .sparkle-btn .star-6 {
+      position: absolute;
+      top: 5%;
+      left: 50%;
+      width: 5px;
+      height: auto;
+      filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0.8));
+      z-index: -5;
+      transition: all 0.8s ease;
+      opacity: 0;
     }
 
-    /* Additional iPhone 12 Pro and iOS fixes */
-    @supports (-webkit-touch-callout: none) {
-      /* iOS specific CSS */
-      @media screen and (max-width: 414px) {
-        .home-container {
-          padding: 5px !important;
-          width: 100vw !important;
-          max-width: 100vw !important;
-          overflow-x: hidden !important;
-        }
-        
-        .dashboard-container {
-          width: calc(100vw - 10px) !important;
-          margin: 0 auto !important;
-          padding: 0 !important;
-        }
-        
-        .sidebar, .main-content {
-          width: 100% !important;
-          padding: 0 !important;
-          margin: 0 !important;
-        }
-        
-        .dashboard-card, 
-        .action-card, 
-        .recent-activity {
-          width: 100% !important;
-          margin: 0 0 10px 0 !important;
-          padding: 10px !important;
-          border-radius: 10px !important;
-          overflow: hidden !important;
-        }
-        
-        .stats {
-          gap: 5px !important;
-        }
-        
-        .stat-item {
-          padding: 5px !important;
-        }
-        
-        /* Simplify headings */
-        .dashboard-header h1 {
-          font-size: 1.5rem !important;
-          margin-bottom: 20px !important;
-        }
-        
-        .dashboard-card h2, .dashboard-card h3,
-        .action-card h3, .recent-activity h3 {
-          font-size: 1.1rem !important;
-          margin-bottom: 10px !important;
-        }
-      }
+    .sparkle-btn:hover .star-1 {
+      position: absolute;
+      top: -80%;
+      left: -30%;
+      width: 25px;
+      height: auto;
+      filter: drop-shadow(0 0 15px rgba(255, 255, 255, 1));
+      z-index: 2;
+      opacity: 1;
     }
 
-    /* Final iPhone 12 Pro specific fix with exact width targeting */
-    @media screen and (width: 390px) {
-      .home-container {
-        padding: 0 !important;
-        width: 100% !important;
-        max-width: 100% !important;
-      }
-      
-      .dashboard-container {
-        width: 100% !important;
-        padding: 5px !important;
-        margin: 0 !important;
-      }
-      
-      .dashboard-card, 
-      .action-card, 
-      .recent-activity {
-        border-radius: 8px !important;
-        padding: 8px !important;
-        width: 100% !important;
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-      }
-      
-      .sidebar, .main-content {
-        padding: 0 !important;
-      }
+    .sparkle-btn:hover .star-2 {
+      position: absolute;
+      top: -25%;
+      left: 10%;
+      width: 15px;
+      height: auto;
+      filter: drop-shadow(0 0 15px rgba(255, 255, 255, 1));
+      z-index: 2;
+      opacity: 1;
     }
 
-    /* Prevent horizontal scrolling at all costs */
-    body {
-      overflow-x: hidden;
-      max-width: 100%;
+    .sparkle-btn:hover .star-3 {
+      position: absolute;
+      top: 55%;
+      left: 25%;
+      width: 5px;
+      height: auto;
+      filter: drop-shadow(0 0 15px rgba(255, 255, 255, 1));
+      z-index: 2;
+      opacity: 1;
     }
+
+    .sparkle-btn:hover .star-4 {
+      position: absolute;
+      top: 30%;
+      left: 80%;
+      width: 8px;
+      height: auto;
+      filter: drop-shadow(0 0 15px rgba(255, 255, 255, 1));
+      z-index: 2;
+      opacity: 1;
+    }
+
+    .sparkle-btn:hover .star-5 {
+      position: absolute;
+      top: 25%;
+      left: 115%;
+      width: 15px;
+      height: auto;
+      filter: drop-shadow(0 0 15px rgba(255, 255, 255, 1));
+      z-index: 2;
+      opacity: 1;
+    }
+
+    .sparkle-btn:hover .star-6 {
+      position: absolute;
+      top: 5%;
+      left: 60%;
+      width: 5px;
+      height: auto;
+      filter: drop-shadow(0 0 15px rgba(255, 255, 255, 1));
+      z-index: 2;
+      opacity: 1;
+    }
+
+    .sparkle-btn .fil0 {
+      fill: rgba(255, 255, 255, 0.9);
+    }
+
+    /* Enhanced button hover effect */
+    .sparkle-btn:hover {
+      box-shadow: 0 15px 30px rgba(65, 88, 208, 0.4), 0 5px 15px rgba(200, 80, 192, 0.3);
+      transform: translateY(-3px) scale(1.02);
+    }
+
+    
 
     /* Avatar Selection Modal Styles */
     .avatar-modal {
@@ -1395,11 +1563,11 @@
 
     .avatar-modal-content {
       background-color: var(--card-bg);
-      margin: 10% auto;
+      margin: 5% auto;
       padding: 0;
       border-radius: 20px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-      width: 90%;
+      width: 100%;
       max-width: 550px;
       animation: fadeIn 0.3s ease;
       overflow: hidden;
@@ -1565,48 +1733,6 @@
       background-color: #e9ecef;
     }
 
-    @media (max-width: 576px) {
-      .avatar-modal-content {
-        width: 95%;
-        margin: 40px auto;
-        max-height: 85vh;
-      }
-      
-      .avatar-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 15px;
-      }
-    }
-/**/
-    @media (max-width: 400px) {
-      .avatar-modal-header h3 {
-        font-size: 1.1rem;
-      }
-      
-      .avatar-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-      }
-      
-      .avatar-modal-body {
-        padding: 15px;
-        max-height: 50vh;
-      }
-      
-      .avatar-modal-content {
-        margin: 20px auto;
-      }
-      
-      .avatar-modal-footer {
-        padding: 12px 15px;
-      }
-      
-      .avatar-selection {
-        width: 95%;
-        height: 95%;
-      }
-    }
-
     .edit-btn-avatar {
       background-color: transparent;
       border: none;
@@ -1709,136 +1835,929 @@
       margin-left: 10px !important;
     }
 
-    /* Make edit form and buttons responsive */
-    @media (max-width: 576px) {
-      .info-row {
-        flex-wrap: wrap;
-      }
-      
-      .info-label {
-        min-width: 100px;
-        font-size: 12px;
-      }
-      
-      .info-value {
-        flex: 1;
-        font-size: 14px;
-      }
-      
-      .edit-input {
-        padding: 6px 8px;
-        font-size: 13px;
-      }
-      
-      .save-btn, 
-      .cancel-btn,
-      .edit-btn {
-        width: 26px;
-        height: 26px;
-        font-size: 12px;
-      }
-    }
+/* ========================================== */
+/* RESPONSIVE DESIGN - MOBILE OPTIMIZED      */
+/* ========================================== */
+@media (max-width: 1100px) { 
+  .dashboard-card h3 {
+    font-weight: 700;
+    font-size: 20px;
+  } 
+  .tasks-header h5 {
+    font-weight: 800;
+    font-size: 1.3rem;
+  }
 
-    /* For smaller screens make edit layout vertical */
-    @media (max-width: 414px) {
-      .info-row {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      
-      .info-label {
-        margin-bottom: 5px;
-      }
-      
-      .info-value {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-      
-      .edit-username, 
-      .edit-email {
-        margin: 0 !important;
-        margin-left: auto !important;
-      }
-      
-      .username-display,
-      .email-display {
-        flex: 1;
-      }
-    }
+  .activity-title {
+    max-width: 200px;
+  }
 
-/* Additional mobile fixes for the progress bar */
-@media (max-width: 480px) {
-  .progress-container {
+  .action-card p {
+    font-weight: 600;
+    font-size: 0.7rem;
+  }
+
+  .info-value {
+    font-size: 1rem;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .notification-badge {
+    width: 50%;
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .row-name {
+    display: block;
+  }
+
+  .row-email {
+    display: block;
+  }
+}
+
+
+@media (max-width: 890px) {
+  
+  .dashboard-container {
+    gap: 1rem;
+  }
+  .activity-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    max-width: 170px;
+  }
+
+  .word-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+
+  .user-dashboard {
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .user-info {
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .notification-badge {
+    width: 50%;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .info-value {
+    font-size: 0.9rem;
+    flex: 1;
+    min-width: 0;
+    text-overflow: ellipsis;
+  }
+}
+
+/* ============================ */
+/* ÉCRAN 432PX ET PLUS          */
+/* ============================ */
+@media (max-width: 433px) {
+  .home-container {
+    max-width: 100%;
+    padding: 0;
+    overflow: visible;
+    width: 100vw;
+  }
+  
+  /* Prevent all content from overflowing */
+  * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .dashboard-container {
+    grid-template-columns: 1fr;
+    grid-template-areas: 
+      "header"
+      "welcome"
+      "sidebar"
+      "main"
+      "user-dashboard"
+      "footer";
+    gap: 1rem;
+    padding: 0;
+    max-width: 100%;
+    overflow: visible;
+  }
+
+  .dashboard-header {
+    margin-bottom: 1rem;
+  }
+
+  .dashboard-header h1 {
+    font-size: 3rem;
+  }
+
+  .dashboard-card {
+    padding: 0.75rem;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: visible;
+  }
+
+  .dashboard-card h2, 
+  .dashboard-card h3 {
+    font-size: 1.2rem;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .stat-item {
+    padding: 0.75rem;
+  }
+
+  .stat-number {
+    font-size: 1.3rem;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+  }
+
+  .action-card {
+    flex-direction: column;
+    text-align: center;
     padding: 1rem;
     width: 100%;
-    max-width: 100%;
-    margin: 0 auto;
+    box-sizing: border-box;
   }
-  
-  .progress-bar-container {
-    width: 100%;
-    display: block;
-    min-width: 100px; /* Ensure it has a minimum width */
-    height: 0.75rem;
-    position: relative; /* Ensure proper positioning */
-    overflow: visible; /* Make sure overflow is visible */
-  }
-  
-  .progress-bar-fill {
-    display: block !important; /* Force display as block */
-    height: 100% !important;
-    min-height: 0.75rem;
-    position: absolute; /* Use absolute positioning to fix iOS rendering issues */
-    left: 0;
-    top: 0;
-    min-width: 5px; /* Ensure a minimum visible width */
-    transition: width 1.5s ease; /* Simplify the transition */
-  }
-  
-  .progress-bar-labels {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    margin-top: 0.75rem;
-  }
-}
 
-/* Specifically for old iPhones and very small screens */
-@media (max-width: 375px) {
-  .progress-bar-container {
-    height: 0.6rem;
-    min-height: 0.6rem;
-  }
-  
-  .progress-bar-fill {
-    height: 0.6rem !important;
-    min-height: 0.6rem;
-  }
-  
-  .progress-container h3 {
-    font-size: 1.1rem;
+  .action-card-icon {
     margin-bottom: 0.75rem;
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .user-avatar-dashboard {
+    width: 70px;
+    height: 70px;
+  }
+  
+  /* Tasks section responsive */
+  .tasks-header {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .tasks-header h5 {
+    font-size: 1.2rem;
+  }
+
+  .activity-list {
+    max-height: 250px;
+  }
+
+  .task-card {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .task-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    margin-right: 0.5rem;
+  }
+  .activity-title {
+    max-width: 150px;
+  }
+  .activity-time {
+    font-size: 0.8rem;
+  }
+
+  /* Progress bar fixes */
+  .progress-container {
+    padding: 1rem;
+    gap: 1rem;
+  }
+  
+  .fire-section {
+    height: 90px;
+  }
+  
+  .fire {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .fire-streak-text {
+    font-size: 2.5rem;
+  }
+  
+  /* Ensure all cards don't overflow */
+  .dashboard-card,
+  .action-card,
+  .tasks-activity {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    box-sizing: border-box;
+    overflow: visible;
+  }
+  
+  /* Fix user info section overflow */
+  .user-info {
+    width: 100%;
+    padding: 0.5rem;
+    box-sizing: border-box;
+  }
+  
+  .info-row {
+    width: 100%;
+    padding: 0.5rem 0.25rem;
+    margin-bottom: 0.75rem;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  
+  .info-label {
+    min-width: 100px;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+  
+  .info-value {
+    font-size: 0.8rem;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Dashboard buttons responsive */
+  .dashboard-btn {
+    padding: 0.6rem 1rem;
+    font-size: 0.8rem;
+    width: auto;
+    max-width: 100%;
   }
 }
 
-/* iOS-specific fixes for progress bar */
+/* ============================ */
+/* ÉCRAN 412PX ET MOINS         */
+/* ============================ */
+@media (max-width: 413px) {
+  .home-container {
+    max-width: 100%;
+    overflow: visible;
+    width: 100vw;
+  }
+
+  /* Prevent all content from overflowing */
+  * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .dashboard-container {
+    grid-template-columns: 1fr;
+    grid-template-areas: 
+      "header"
+      "welcome"
+      "sidebar"
+      "main"
+      "user-dashboard"
+      "footer";
+    gap: 1rem;
+    padding: 0;
+    max-width: 100%;
+    overflow: visible;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dashboard-header {
+    margin-bottom: 1rem;
+  }
+
+  .dashboard-header h1 {
+    font-size: 3rem;
+  }
+
+  .dashboard-card {
+    padding: 0.75rem;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: visible;
+  }
+
+  .dashboard-card h2, 
+  .dashboard-card h3 {
+    font-size: 1.2rem;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .stat-item {
+    padding: 0.75rem;
+  }
+  
+  .stat-number {
+    font-size: 1.3rem;
+  }
+  
+  .stat-label {
+    font-size: 0.7rem;
+  }
+  
+  .action-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .action-card-icon {
+    margin-bottom: 0.75rem;
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  
+  .user-avatar-dashboard {
+    width: 70px;
+    height: 70px;
+}
+
+  /* Tasks section responsive */
+  .tasks-header {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .tasks-header h5 {
+    font-size: 1.2rem;
+  }
+
+  .activity-list {
+    max-height: 250px;
+  }
+
+  .task-card {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .task-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    margin-right: 0.5rem;
+  }
+
+  .activity-title {
+    max-width: 150px;
+  }
+
+  .activity-time {
+    font-size: 0.8rem;
+    margin-right: 20px;
+  }
+
+  /* Progress bar fixes */
+  .progress-container {
+    padding: 1rem;
+    gap: 1rem;
+  }
+  
+  .fire-section {
+    height: 90px;
+  }
+  
+  .fire {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .fire-streak-text {
+    font-size: 2.5rem;
+  }
+  
+  /* Ensure all cards don't overflow */
+  .dashboard-card,
+  .action-card,
+  .tasks-activity {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    box-sizing: border-box;
+    overflow: visible;
+  }
+  
+  /* Fix user info section overflow */
+  .user-info {
+    width: 100%;
+    padding: 0.5rem;
+    box-sizing: border-box;
+  }
+  
+  .info-row {
+    width: 100%;
+    padding: 0.5rem 0.25rem;
+    margin-bottom: 0.75rem;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  
+  .info-label {
+    min-width: 100px;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+  
+  .info-value {
+    font-size: 0.8rem;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Dashboard buttons responsive */
+  .dashboard-btn {
+    padding: 0.6rem 1rem;
+    font-size: 0.8rem;
+    width: auto;
+    max-width: 100%;
+  }
+}
+
+/* ============================ */
+/* ÉCRAN 394PX ET MOINS         */
+/* ============================ */
+@media (max-width: 395px) {
+  .home-container {
+    max-width: 100%;
+    overflow: visible;
+    width: 100vw;
+  }
+  
+  /* Prevent all content from overflowing */
+  * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .dashboard-container {
+    grid-template-columns: 1fr;
+    grid-template-areas: 
+      "header"
+      "welcome"
+      "sidebar"
+      "main"
+      "user-dashboard"
+      "footer";
+    gap: 1rem;
+    padding: 0;
+    max-width: 100%;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dashboard-header {
+    margin-bottom: 1rem;
+  }
+
+  .dashboard-header h1 {
+    font-size: 3rem;
+  }
+
+  .dashboard-card {
+    padding: 0.75rem;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+  }
+
+  .dashboard-card h2, 
+  .dashboard-card h3 {
+    font-size: 1.2rem;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .stat-item {
+    padding: 0.75rem;
+  }
+
+  .stat-number {
+    font-size: 1.3rem;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+  }
+
+  .action-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .action-card-icon {
+    margin-bottom: 0.75rem;
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .user-avatar-dashboard {
+    width: 70px;
+    height: 70px;
+  }
+
+  /* Tasks section responsive */
+  .tasks-header {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .tasks-header h5 {
+    font-size: 1.2rem;
+  }
+  
+  .activity-list {
+    max-height: 250px;
+  }
+  
+  .task-card {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .task-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    margin-right: 0.5rem;
+  }
+
+  
+  .activity-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    max-width: 130px;
+  }
+  
+  .activity-time {
+    font-size: 0.8rem;
+    margin-right: 20px;
+  }
+
+  /* Progress bar fixes */
+  .progress-container {
+    padding: 1rem;
+    gap: 1rem;
+  }
+  
+  .fire-section {
+    height: 90px;
+  }
+  
+  .fire {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .fire-streak-text {
+    font-size: 2.5rem;
+  }
+  
+  /* Ensure all cards don't overflow */
+  .dashboard-card,
+  .action-card,
+  .tasks-activity,
+  .dashboard-welcome {
+    width: 95%;
+    margin: 0 auto;
+    box-sizing: border-box;
+    overflow: visible;
+  }
+  
+  /* Fix user info section overflow */
+  .user-info {
+    width: 100%;
+    padding: 0.5rem;
+    box-sizing: border-box;
+  }
+  
+  .notification-badge {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .info-row {
+    width: 100%;
+    padding: 0.5rem 0.25rem;
+    margin-bottom: 0.75rem;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  
+  .info-label {
+    min-width: 100px;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+  
+  .info-value {
+    font-size: 0.8rem;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Dashboard buttons responsive */
+  .dashboard-btn {
+    padding: 0.6rem 1rem;
+    font-size: 0.8rem;
+    width: auto;
+    max-width: 100%;
+  }
+}
+
+/* ============================ */
+/* ÉCRAN 360PX ET MOINS         */
+/* ============================ */
+@media (max-width: 362px) {
+  .home-container {
+    max-width: 100%;
+    overflow: visible;
+    width: 100vw;
+  }
+  
+  /* Prevent all content from overflowing */
+  * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .dashboard-container {
+    grid-template-columns: 1fr;
+    grid-template-areas: 
+      "header"
+      "welcome"
+      "sidebar"
+      "main"
+      "user-dashboard"
+      "footer";
+    gap: 1rem;
+    padding: 0;
+    max-width: 100%;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .dashboard-header {
+    margin-bottom: 1rem;
+  }
+
+  .dashboard-header h1 {
+    font-size: 3rem;
+  }
+
+  .dashboard-card {
+    padding: 0.75rem;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+  }
+
+  .dashboard-card h2, 
+  .dashboard-card h3 {
+    font-size: 1.2rem;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .stat-item {
+    padding: 0.75rem;
+  }
+
+  .stat-number {
+    font-size: 1.3rem;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+  }
+
+  .action-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .action-card-icon {
+    margin-bottom: 0.75rem;
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .user-avatar-dashboard {
+    width: 70px;
+    height: 70px;
+  }
+
+  /* Tasks section responsive */
+  .tasks-header {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .tasks-header h5 {
+    font-size: 1.2rem;
+  }
+
+  .activity-list {
+    max-height: 250px;
+  }
+
+  .task-card {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .task-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    margin-right: 0.5rem;
+  }
+
+  
+  .activity-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    max-width: 130px;
+  }
+  
+  .activity-time {
+    font-size: 0.8rem;
+    margin-right: 20px;
+  }
+
+  .word-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  /* Progress bar fixes */
+  .progress-container {
+    padding: 1rem;
+    gap: 1rem;
+  }
+  
+  .fire-section {
+    height: 90px;
+  }
+  
+  .fire {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .fire-streak-text {
+    font-size: 2.5rem;
+  }
+  
+  /* Ensure all cards don't overflow */
+  .dashboard-card,
+  .action-card,
+  .tasks-activity,
+  .dashboard-welcome {
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+    overflow: visible;
+  }
+  
+  /* Fix user info section overflow */
+  .user-info {
+    width: 100%;
+    padding: 0.5rem;
+    box-sizing: border-box;
+  }
+  .notification-badge {
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .info-row {
+    width: 100%;
+    padding: 0.5rem 0.25rem;
+    margin-bottom: 0.75rem;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  
+  .info-label {
+    min-width: 100px;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+  
+  .info-value {
+    font-size: 0.8rem;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Dashboard buttons responsive */
+  .dashboard-btn {
+    padding: 0.6rem 1rem;
+    font-size: 0.8rem;
+    width: auto;
+    max-width: 100%;
+  }
+}
+
+/* ============================ */
+/* OPTIMISATIONS iOS            */
+/* ============================ */
 @supports (-webkit-touch-callout: none) {
-  /* iOS only CSS */
-  @media (max-width: 480px) {
-    .progress-bar-container {
-      -webkit-transform: translateZ(0); /* Fix Safari rendering issues */
-      transform: translateZ(0);
-      -webkit-backface-visibility: hidden; /* Another Safari fix */
-      backface-visibility: hidden;
-    }
-    
+  @media (max-width: 432px) {
+    .progress-bar-container,
     .progress-bar-fill {
       -webkit-transform: translateZ(0);
       transform: translateZ(0);
-      will-change: width; /* Optimize animations */
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
     }
+    
+    .home-container {
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+}
+
+/* ============================ */
+/* MODE PAYSAGE MOBILE          */
+/* ============================ */
+@media (max-height: 500px) and (orientation: landscape) {
+  .home-container {
+    padding: 0.5rem;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 1.25rem;
+    margin-bottom: 8px;
+  }
+  
+  .dashboard-card {
+    padding: 0.5rem;
+  }
+  
+  .fire-section {
+    height: 50px;
+  }
+  
+  .fire {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .fire-streak-text {
+    font-size: 1.5rem;
   }
 }

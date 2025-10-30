@@ -7,6 +7,7 @@ const gameRouter = require('./game/game');
 const apiRouter = require('./api');
 const authRouter = require('./auth/auth');
 const newUserDashboard = require('./user/dashboard');
+const newUserPackages = require('./package/package');
 const levelProgressRouter = require('./level_progress');
 // Import controllers
 
@@ -26,21 +27,14 @@ function route(app) {
     app.use('/logout', newUserLogout);
     app.use('/monVocabs', newVocabsRouter);
     app.use('/dashboard', newUserDashboard);
+    app.use('/myPackages', newUserPackages);
     app.use('/games', gameRouter);
     app.use('/api', apiRouter);
     app.use('/auth', authRouter);
     app.use('/level-progress', levelProgressRouter);
     
     // Streak update route
-    app.post('/update-streak', ensureAuthenticated, async (req, res) => {
-        try {
-            const result = await LearningController.checkAndUpdateStreak(req.session.user.id);
-            res.json({ success: true, ...result });
-        } catch (error) {
-            console.error('Erreur lors de la mise à jour du streak:', error);
-            res.status(500).json({ success: false, message: 'Erreur lors de la mise à jour du streak' });
-        }
-    });
+    app.post('/update-streak', ensureAuthenticated, LearningController.checkAndUpdateStreak);
     
     // All site routes including /feedback are handled here
     app.use('/', siteRouter);

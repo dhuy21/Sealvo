@@ -17,14 +17,14 @@ class VocabQuizController {
             if (!req.session.user) {
                 return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
             }
-            
+            const package_id = req.query.package;
             const optionsCount = 6
             
-            // Récupérer tous les mots de l'utilisateur
-            const wordIds = await learningModel.findWordsByLevel(req.session.user.id, levelGame);
+            // Récupérer tous les mots de package selon le niveau de jeu
+            const detailWordsIds = await learningModel.findWordsByLevel(package_id, levelGame);
             let words = [];
-            for (const wordId of wordIds) {
-                const word = await wordModel.findById(wordId.word_id);
+            for (const detailWordId of detailWordsIds) {
+                const word = await wordModel.findById(detailWordId.detail_id);
                 words.push(word);
             }
             
@@ -35,49 +35,60 @@ class VocabQuizController {
             }
             
             // Mélanger les mots
-            const shuffledWords = this.shuffleArray([...words]);
-            
-            // Sélectionner un mot pour la question
-            const questionWord = shuffledWords[0];
-            
-            // Sélectionner des mots pour les options incorrectes
-            const incorrectOptions = shuffledWords.slice(1, optionsCount);
-            
-            // Créer les options
-            const options = [];
-            
-            // Ajouter l'option correcte
-            let correctMeaning = '';
-            if (questionWord.type) {
-                correctMeaning += `${questionWord.type} : `;
-            }
-            correctMeaning += questionWord.meaning;
-            
-            options.push(correctMeaning);
-            
-            // Ajouter les options incorrectes
-            incorrectOptions.forEach(word => {
-                let meaning = '';
-                if (word.type) {
-                    meaning += `${word.type} : `;
-                }
-                meaning += word.meaning;
+            let questionWords = [];
+
+            for (let i = 0; i < words.length; i++) {
+                let correctMeaning = [];
+
+                const shuffledWords = this.shuffleArray([...words]);
+                // Sélectionner un mot pour la question
+                questionWords[i] = shuffledWords[0];
                 
-                options.push(meaning);
-            });
-            
-            // Mélanger les options
-            const shuffledOptions = this.shuffleArray(options);
-            
-            // Trouver l'index de la bonne réponse dans les options mélangées
-            const correctIndex = shuffledOptions.findIndex(option => option === correctMeaning);
-            
-            return res.json({
-                question: {
-                    word: questionWord.word,
-                    options: shuffledOptions,
-                    correctIndex: correctIndex
+                // Initialiser correctIndex comme un array
+                questionWords[i].correctIndex = [];
+
+                // Sélectionner des mots pour les options incorrectes (copie des objets)
+                questionWords[i].incorrectOptions = shuffledWords.slice(1, optionsCount).map(word => ({
+                    id: word.id,
+                    word: word.word,
+                    type: word.type,
+                    meaning: word.meaning
+                }));
+                // Ajouter l'option correcte
+                if (questionWords[i].type) {
+                    correctMeaning[0] = `${questionWords[i].type} : `;
+                    correctMeaning[0] += questionWords[i].meaning;
+                    questionWords[i].options = [];
+                    questionWords[i].options.push(correctMeaning[0]);
                 }
+
+                // Ajouter les options incorrectes et verifier si un mot a plusieurs significations
+                questionWords[i].incorrectOptions.forEach(word => {
+                    let meaning = '';
+                    if (word.type) {
+                        meaning += `${word.type} : `;
+                    }
+                    meaning += word.meaning;
+                    
+                    if ( questionWords[i].word === word.word ) {
+                        correctMeaning.push(meaning);
+                        questionWords[i].options.push(meaning);
+                    }else{
+                        questionWords[i].options.push(meaning);
+                    }    
+                });
+
+                // Mélanger les options
+                questionWords[i].options = this.shuffleArray(questionWords[i].options);
+
+                // Trouver l'index de la bonne réponse dans les options mélangées
+                for (let j = 0; j < correctMeaning.length; j++) {
+                    questionWords[i].correctIndex.push(questionWords[i].options.findIndex(option => option === correctMeaning[j]));
+                }
+            }
+          
+            return res.json({
+                questionWords: questionWords
             });
         } catch (error) {
             console.error('Erreur lors de la récupération d\'une question:', error);
@@ -101,7 +112,8 @@ class VocabQuizController {
             }
             
             // Compter le nombre de mots disponibles pour ce niveau
-            const wordCount = await learningModel.countUserWordsByLevel(req.session.user.id, levelGame);
+            const package_id = req.query.package;
+            const wordCount = await learningModel.countUserWordsByLevel(package_id, levelGame);
             
             return res.json({
                 success: true,

@@ -1,6 +1,6 @@
 
 <link rel="stylesheet" href="/css/styleVocabs.css">
-<div class="vocabulary-container">
+<div class="vocabulary-container" data-package="{{package_id}}">
   <h1>{{title}}</h1>
     
   {{#if error}}
@@ -19,17 +19,15 @@
   
   
   <div class="action-container">
-    <a href="/monVocabs/add" class="add-word-btn">
+    <a href="/monVocabs/add?package={{package_id}}" class="add-word-btn">
       <i class="fas fa-plus"></i> Ajouter un nouveau mot
     </a>
     
-    <a href="/monVocabs/learn" class="learn-btn">
+    <a href="/monVocabs/learn?package={{package_id}}" class="learn-btn">
       <i class="fas fa-book-open"></i> Mode d'apprentissage
     </a>
     
-    <form action="/monVocabs/deleteAll" method="POST" onsubmit="return confirm('ATTENTION: Cette action supprimera TOUS vos mots de vocabulaire. Cette action est irréversible. Êtes-vous vraiment sûr de vouloir continuer?');">
-      <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Supprimer tous les mots</button>
-    </form>
+    <button type="submit" class="btn-danger" id = "deleteAllBtn"><i class="fas fa-trash"></i> Supprimer tous les mots</button>
   </div>
 
   <!-- Search Form -->
@@ -67,6 +65,7 @@
         <thead>
           <tr>
             <th width="35%">Mot</th>
+            <th width="10%">Langue</th>
             <th width="15%">Type</th>
             <th width="15%">Meaning</th>
             <th width="35%">Prononciation</th>
@@ -80,28 +79,24 @@
         <tbody>
           {{#each levelWords}}
           <tr>
-            <td>{{word}}</td>
-            <td>{{type}}</td> 
-            <td>{{meaning}}</td>
-            <td>{{pronunciation}}</td>
-            <td>{{synonyms}}</td>
-            <td>{{antonyms}}</td>
-            <td>{{example}}</td>
-            <td>{{grammar}}</td>
-            <td>
+            <td class="table-cell"><div class="table-cell-content">{{word}}</div></td>
+            <td class="table-cell"><div class="table-cell-content">{{language_code}}</div></td>
+            <td class="table-cell"><div class="table-cell-content">{{type}}</div></td> 
+            <td class="table-cell"><div class="table-cell-content">{{meaning}}</div></td>
+            <td class="table-cell"><div class="table-cell-content">{{pronunciation}}</div></td>
+            <td class="table-cell"><div class="table-cell-content">{{synonyms}}</div></td>
+            <td class="table-cell"><div class="table-cell-content">{{antonyms}}</div></td>
+            <td class="table-cell"><div class="table-cell-content">{{example}}</div></td>
+            <td class="table-cell"><div class="table-cell-content">{{grammar}}</div></td>
+            <td class="table-cell">
               <div class="action-buttons">
-                <form action="/monVocabs/edit/{{word_id}}" method="POST" class="edit-form" onsubmit="return false;">
-                  <button type="submit" class="edit-btn" title="Modifier" data-id="{{word_id}}">
+                  <button  class="edit-btn" title="Modifier" data-id="{{detail_id}}">
                     <i class="fas fa-edit"></i>
                   </button>
-                </form>
 
-                <form action="/monVocabs/delete/{{word_id}}" method="POST" class="delete-form" onsubmit="return false;">
-                  <button type="submit" class="delete-btn" title="Supprimer" data-id="{{word_id}}">
+                  <button type="submit" class="delete-btn" title="Supprimer" data-id="{{detail_id}}">
                     <i class="fas fa-trash"></i>
                   </button>
-                </form>
-              </div>
             </td>
           </tr>
           {{/each}}
@@ -114,7 +109,7 @@
       <i class="fas fa-book"></i>
       <h3>Aucun mot dans votre vocabulaire</h3>
       <p>Commencez à ajouter des mots pour enrichir votre vocabulaire.</p>
-      <a href="/monVocabs/add" class="btn">Ajouter votre premier mot</a>
+      <a href="/monVocabs/add?package={{package_id}}" class="btn">Ajouter votre premier mot</a>
     </div>
   {{/if}}
     
@@ -122,4 +117,4 @@
     <a href="/" class="btn">Retour à l'accueil</a>
   </div>
 </div>
-<script src="/js/vocabs.js"></script>
+<script src="/js/vocabs.js" nonce="{{nonce}}"></script>

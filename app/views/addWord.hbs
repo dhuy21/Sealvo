@@ -4,21 +4,95 @@
   <h1>Ajouter un nouveau mot</h1>
 
   <div class="import-section">
-    <form action="/monVocabs/add/import" method="POST" enctype="multipart/form-data" class="import-form">
+    <form action="/monVocabs/add/import?package={{package_id}}" method="POST" enctype="multipart/form-data" class="import-form">
       <div class="file-upload-container">
         <input type="file" id="vocab-file" name="file" accept=".xlsx,.xls,.csv,.pdf" class="file-input">
         <label for="vocab-file" class="file-label">
-          <span class="file-icon">📄</span>
-          <span class="file-text">Choisir un fichier</span>
+          <span class="file-icon" id="file-icon">📄</span>
+          <span class="file-text" id="file-text">Choisir un fichier</span>
+          <div class="loader" id="loader" style="display: none;">
+            <div class="book-wrapper">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="white"
+                viewBox="0 0 126 75"
+                class="book"
+              >
+                <rect
+                  stroke-width="5"
+                  stroke="#e05452"
+                  rx="7.5"
+                  height="70"
+                  width="121"
+                  y="2.5"
+                  x="2.5"
+                ></rect>
+                <line
+                  stroke-width="5"
+                  stroke="#e05452"
+                  y2="75"
+                  x2="63.5"
+                  x1="63.5"
+                ></line>
+                <path
+                  stroke-linecap="round"
+                  stroke-width="4"
+                  stroke="#c18949"
+                  d="M25 20H50"
+                ></path>
+                <path
+                  stroke-linecap="round"
+                  stroke-width="4"
+                  stroke="#c18949"
+                  d="M101 20H76"
+                ></path>
+                <path
+                  stroke-linecap="round"
+                  stroke-width="4"
+                  stroke="#c18949"
+                  d="M16 30L50 30"
+                ></path>
+                <path
+                  stroke-linecap="round"
+                  stroke-width="4"
+                  stroke="#c18949"
+                  d="M110 30L76 30"
+                ></path>
+              </svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="#ffffff74"
+                viewBox="0 0 65 75"
+                class="book-page"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-width="4"
+                  stroke="#c18949"
+                  d="M40 20H15"
+                ></path>
+                <path
+                  stroke-linecap="round"
+                  stroke-width="4"
+                  stroke="#c18949"
+                  d="M49 30L15 30"
+                ></path>
+                <path
+                  stroke-width="5"
+                  stroke="#e05452"
+                  d="M2.5 2.5H55C59.1421 2.5 62.5 5.85786 62.5 10V65C62.5 69.1421 59.1421 72.5 55 72.5H2.5V2.5Z"
+                ></path>
+              </svg>
+            </div>
+        </div>
         </label>
         <span class="selected-file-name">Aucun fichier sélectionné</span>
       </div>
-      <button type="submit" class="btn btn-primary import-btn">Importer du vocabulaire</button>
+      <button type="submit" class="btn btn-primary import-btn" id="import-btn"> <i class="fas fa-upload"></i>Importer du vocabulaire</button>
     </form>
     
     <div class="format-info">
-      <p><strong>Format requis pour Excel/CSV:</strong> Les colonnes doivent être dans l'ordre: Mot, Sujet, Type, Prononciation, Signification, Exemple, Synonymes, Antonymes, Grammaire, Niveau</p>
-      <p><a href="/data/example-vocab.csv" download class="example-link">Télécharger un fichier CSV d'exemple</a></p>
+      <p><strong>Format requis pour Excel:</strong> Les colonnes doivent être dans l'ordre: Mot, Langue, Sujet, Type, Prononciation, Signification, Exemple, Synonymes, Antonymes, Grammaire, Niveau</p>
       <p><a href="/data/example-vocab.xlsx" download class="example-link">Télécharger un fichier XLSX d'exemple</a></p>
       <details class="import-help">
         <summary>Aide pour l'importation</summary>
@@ -26,7 +100,7 @@
           <p>Pour que l'importation fonctionne correctement:</p>
           <ol>
             <li>Créez un fichier Excel avec les colonnes dans le bon ordre</li>
-            <li>Assurez-vous que chaque ligne contient au moins: Mot, Sujet, Type, Signification et Exemple</li>
+            <li>Assurez-vous que chaque ligne contient au moins: Mot, Sujet, Langue, Type, Signification</li>
             <li>Pour le type, utilisez uniquement: noun, verb, adjective, adverb, ph.v, idiom, collocation</li>
             <li>Pour le niveau, utilisez <strong>uniquement les chiffres</strong> x, 0, 1, 2 ou v (pas de texte comme "Niveau 1")</li>
             <li>Limitez la taille du fichier à moins de 5 Mo</li>
@@ -40,175 +114,170 @@
   <div class="separator">
     <span>OU</span>
   </div>
-
-
-  {{#if error}}
-  <div class="alert alert-error">
-    {{error}}
-  </div>
-  {{/if}}
-  
-  {{#if success}}
-  <div class="alert alert-success">
-    {{success}}
-  </div>
-  {{/if}}
   
     <!-- Formulaire pour ajouter plusieurs mots -->
-    <form action="/monVocabs/add" method="POST" class="word-form multiple-words-form">
-      <input type="hidden" name="isMultipleWords" value="true">
+    <form action="/monVocabs/add?package={{package_id}}" method="POST" enctype="multipart/form-data" class="word-form multiple-words-form">
 
-      <div class="table-responsive">
-        <table class="multi-word-table">
-          <thead>
-            <tr>
-              <th>Mot</th>
-              <th>Sujet</th>
-              <th>Type</th>
-              <th>Prononciation</th>
-              <th>Signification*</th>
-              <th>Exemple*</th>
-              <th>Synonymes</th>
-              <th>Antonymes</th>
-              <th>Grammaire</th>
-              <th>Niveau*</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="word-rows">
-            <tr class="word-row">
-              <td><input type="text" name="words[]" required placeholder="Mot" class="form-control"></td>
-              <td><input type="text" name="subjects[]" required placeholder="Sujet" class="form-control"></td>
-              <td>
-                <select name="types[]" required class="form-control">
-                  <option value="" disabled selected>Type</option>
-                  <option value="noun">Nom</option>
-                  <option value="verb">Verbe</option>
-                  <option value="adjective">Adjectif</option>
-                  <option value="adverb">Adverbe</option>
-                  <option value="ph.v">Ph.V</option>
-                  <option value="idiom">Idiom</option>
-                  <option value="collocation">Colloc</option>
-                </select>
-              </td>
-              <td><input type="text" name="pronunciations[]" placeholder="Prononciation" class="form-control"></td>
-              <td><input type="text" name="meanings[]" required placeholder="Signification" class="form-control"></td>
-              <td><input type="text" name="examples[]" required placeholder="Exemple" class="form-control"></td>
-              <td><input type="text" name="synonyms[]" placeholder="Synonymes" class="form-control"></td>
-              <td><input type="text" name="antonyms[]" placeholder="Antonymes" class="form-control"></td>
-              <td><input type="text" name="grammars[]" placeholder="Grammaire" class="form-control"></td>
-              <td>
-                <select name="levels[]" required class="form-control">
-                  <option value="x">Niveau x</option>
-                  <option value="0">Niveau 0</option>
-                  <option value="1">Niveau 1</option>
-                  <option value="2">Niveau 2</option>
-                  <option value="v">Niveau v</option>
-                </select>
-              </td>
-              <td>
-                <button type="button" class="btn btn-danger remove-row"><i class="fas fa-trash"></i></button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="words-cards-container" id="word-rows">
+        <!-- Card Template -->
+        <div class="word-card-form" data-index="0">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="card-number">1</span>
+              <h3>Nouveau mot</h3>
+            </div>
+            <div class="card-actions">
+              <button type="button" class="btn-icon btn-duplicate" title="Dupliquer">
+                <i class="fas fa-copy"></i>
+              </button>
+              <button type="button" class="btn-icon btn-collapse" title="Réduire/Agrandir">
+                <i class="fas fa-chevron-up"></i>
+              </button>
+              <button type="button" class="btn-icon btn-remove" title="Supprimer">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <!-- Section: Informations de base -->
+            <div class="form-section">
+              <div class="section-title">
+                <i class="fas fa-info-circle"></i>
+                <span>Informations de base</span>
+              </div>
+              <div class="form-grid">
+                <div class="form-group full-width">
+                  <label for="word-0">Mot *</label>
+                  <input type="text" name="words[]" id="word-0" required placeholder="Entrez le mot" class="form-control">
+                </div>
+  
+                <div class="form-group">
+                  <label for="language-0">Langue *</label>
+                  
+                  <select name="language_codes[]" id="language-0" required placeholder="ex: en, fr" class="form-control" >
+                    <option value="en-US">en-US (English United States)</option>
+                    <option value="en-GB">en-GB (English United Kingdom)</option>
+                    <option value="fr-FR">fr-FR (French)</option>
+                    <option value="es-ES">es-ES (Spanish Spain)</option>
+                    <option value="de-DE">de-DE (German)</option>
+                    <option value="it-IT">it-IT (Italian)</option>
+                    <option value="ja-JP">ja-JP (Japanese)</option>
+                    <option value="zh-CN">zh-CN (Chinese Simplified)</option>
+                    <option value="zh-HK">zh-HK (Chinese Hong Kong)</option>
+                    <option value="zh-TW">zh-TW (Chinese Traditional)</option>
+                    <option value="pt-PT">pt-PT (Portuguese)</option>
+                    <option value="ru-RU">ru-RU (Russian)</option>
+                    <option value="vi-VN">vi-VN (Vietnamese)</option>
+                    <option value="ko-KR">ko-KR (Korean)</option>
+                    <option value="id-ID">id-ID (Indonesian)</option>
+                    <option value="hi-IN">hi-IN (Hindi)</option>
+                    <option value="pl-PL">pl-PL (Polish)</option>
+                    <option value="nl-NL">nl-NL (Dutch)</option>
+                  </select>
+                </div>
+                
+                <div class="form-group">
+                  <label for="subject-0">Sujet *</label>
+                  <input type="text" name="subjects[]" id="subject-0" required placeholder="ex: Technology" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                  <label for="type-0">Type *</label>
+                  <select name="types[]" id="type-0" required class="form-control">
+                    <option value="" disabled selected>Choisir un type</option>
+                    <option value="noun">Nom</option>
+                    <option value="verb">Verbe</option>
+                    <option value="adjective">Adjectif</option>
+                    <option value="adverb">Adverbe</option>
+                    <option value="ph.v">Phrasal Verb</option>
+                    <option value="idiom">Idiom</option>
+                    <option value="collocation">Collocation</option>
+                  </select>
+                </div>
+                
+                <div class="form-group">
+                  <label for="pronunciation-0">Prononciation</label>
+                  <input type="text" name="pronunciations[]" id="pronunciation-0" placeholder="ex: /həˈloʊ/" class="form-control">
+                </div>
+
+                <div class="form-group">
+                  <label for="level-0">Niveau d'apprentissage *</label>
+                  <select name="levels[]" id="level-0" required class="form-control">
+                    <option value="x">x - À réviser</option>
+                    <option value="0">0 - Débutant</option>
+                    <option value="1">1 - Intermédiaire</option>
+                    <option value="2">2 - Avancé</option>
+                    <option value="v">v - Maîtrisé</option>
+                  </select>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Section: Définition et exemples -->
+            <div class="form-section">
+              <div class="section-title">
+                <i class="fas fa-book"></i>
+                <span>Définition et exemples</span>
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="meaning-0">Signification *</label>
+                  <textarea name="meanings[]" id="meaning-0" required placeholder="Entrez la signification du mot" class="form-control" rows="2"></textarea>
+                </div>
+                
+                <div class="form-group">
+                  <label for="example-0">Exemple</label>
+                  <textarea name="examples[]" id="example-0"  placeholder="Entrez un exemple d'utilisation" class="form-control" rows="2"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section: Détails grammaticaux -->
+            <details class="form-section">
+              <summary class="section-title">
+                <i class="fas fa-graduation-cap"></i>
+                <span>Plus de détails supplémentaires</span>
+              </summary>
+              <div class="form-grid">
+                
+                <div class="form-group">
+                  <label for="synonyms-0">Synonymes</label>
+                  <input type="text" name="synonyms[]" id="synonyms-0" placeholder="ex: happy, joyful" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                  <label for="antonyms-0">Antonymes</label>
+                  <input type="text" name="antonyms[]" id="antonyms-0" placeholder="ex: sad, unhappy" class="form-control">
+                </div>
+
+                <div class="form-group">
+                  <label for="grammar-0">Grammaire</label>
+                  <input type="text" name="grammars[]" id="grammar-0" placeholder="ex: irregular verb" class="form-control">
+                </div>
+                
+            
+              </div>
+            </details>
+          </div>
+        </div>
       </div>
 
       <div class="multiple-form-actions">
         <button type="button" id="add-row" class="btn btn-secondary">
-          <i class="fas fa-plus"></i> Ajouter une ligne
+          <i class="fas fa-plus"></i> Ajouter un nouveau mot
         </button>
-        <button type="submit" class="btn btn-primary">
-          <span><i class="fas fa-save"></i>         Enregistrer tous les mots</span>
+        <button type="submit" id="save-words" class="btn btn-primary">
+          <i class="fas fa-save"></i> Enregistrer tous les mots
         </button>
       </div>
     </form>
   
   <div class="form-actions">
-    <a href="/monVocabs" class="btn btn-tertiary">Annuler</a>
+    <a href="/monVocabs?package={{package_id}}" class="btn btn-tertiary">Annuler</a>
   </div>
 </div>
 
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Fonction pour le fichier d'importation
-    const fileInput = document.getElementById('vocab-file');
-    const fileNameDisplay = document.querySelector('.selected-file-name');
-    
-    if (fileInput && fileNameDisplay) {
-      fileInput.addEventListener('change', function() {
-        if (this.files.length > 0) {
-          fileNameDisplay.textContent = this.files[0].name;
-        } else {
-          fileNameDisplay.textContent = 'Aucun fichier sélectionné';
-        }
-      });
-    }
-    
-    // Fonctions pour le formulaire multi-mots
-    const addRowButton = document.getElementById('add-row');
-    const wordRows = document.getElementById('word-rows');
-    
-    if (addRowButton && wordRows) {
-      // Ajouter une nouvelle ligne
-      addRowButton.addEventListener('click', function() {
-        const newRow = document.createElement('tr');
-        newRow.className = 'word-row';
-        newRow.innerHTML = `
-          <td><input type="text" name="words[]" required placeholder="Mot" class="form-control"></td>
-          <td><input type="text" name="subjects[]" required placeholder="Sujet" class="form-control"></td>
-          <td>
-            <select name="types[]" required class="form-control">
-              <option value="" disabled selected>Type</option>
-              <option value="noun">Nom</option>
-              <option value="verb">Verbe</option>
-              <option value="adjective">Adjectif</option>
-              <option value="adverb">Adverbe</option>
-              <option value="ph.v">Ph.V</option>
-              <option value="idiom">Idiom</option>
-              <option value="collocation">Colloc</option>
-            </select>
-          </td>
-          <td><input type="text" name="pronunciations[]" placeholder="Prononciation" class="form-control"></td>
-          <td><input type="text" name="meanings[]" required placeholder="Signification" class="form-control"></td>
-          <td><input type="text" name="examples[]" required placeholder="Exemple" class="form-control"></td>
-          <td><input type="text" name="synonyms[]" placeholder="Synonymes" class="form-control"></td>
-          <td><input type="text" name="antonyms[]" placeholder="Antonymes" class="form-control"></td>
-          <td><input type="text" name="grammars[]" placeholder="Grammaire" class="form-control"></td>
-          <td>
-            <select name="levels[]" required class="form-control">
-              <option value="x">Niveau x</option>
-              <option value="0">Niveau 0</option>
-              <option value="1">Niveau 1</option>
-              <option value="2">Niveau 2</option>
-            </select>
-          </td>
-          <td>
-            <button type="button" class="btn btn-danger remove-row"><i class="fas fa-trash"></i></button>
-          </td>
-        `;
-        wordRows.appendChild(newRow);
-        
-        // Ajouter l'écouteur d'événement pour supprimer la ligne
-        setupRemoveRowListeners();
-      });
-      
-      // Fonction pour configurer les écouteurs de suppression de ligne
-      function setupRemoveRowListeners() {
-        document.querySelectorAll('.remove-row').forEach(button => {
-          button.addEventListener('click', function() {
-            // Ne pas permettre de supprimer la dernière ligne
-            if (wordRows.querySelectorAll('.word-row').length > 1) {
-              this.closest('.word-row').remove();
-            } else {
-              alert('Vous devez avoir au moins une ligne');
-            }
-          });
-        });
-      }
-      
-      // Configurer les écouteurs au chargement initial
-      setupRemoveRowListeners();
-    }
-  });
-</script>
+<script src="/js/addWord.js" nonce="{{nonce}}"></script>
+

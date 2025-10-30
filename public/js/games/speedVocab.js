@@ -7,8 +7,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Variables du jeu
     let currentWord = null;
+    let words = [];
     let previousWordId = null; // Stocke l'ID du mot précédent au lieu du mot entier
     let attemptCount = 0; // Compteur pour éviter les boucles infinies
+    let currentIndex = 0;
     let score = 0;
     let timer = 150;
     let gameActive = false;
@@ -40,12 +42,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const timerDisplay = document.getElementById('timer');
     const streakDisplay = document.getElementById('streak');
     const finalScoreDisplay = document.getElementById('final-score');
-    const correctWordsDisplay = document.getElementById('correct-words');
-    const accuracyDisplay = document.getElementById('accuracy');
     const bestStreakDisplay = document.getElementById('best-streak');
     const wpmDisplay = document.getElementById('wpm');
     const playAgainBtn = document.getElementById('play-again');
-    const highScoreMessage = document.getElementById('high-score-message');
+    const trackLevelMessage = document.getElementById('track-level-message');
+    const packageId = document.getElementById('speed-vocab').getAttribute('data-package');
+    const loader = document.getElementById('loader');
+    const playAgainContainer = document.getElementById('play-again-container');
+    
     
     // Écrans de jeu
     const preGameScreen = document.querySelector('.pre-game-screen');
@@ -59,6 +63,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle window resize for responsive particles
     window.addEventListener('resize', updateMobileSettings);
+
+    // Verify required elements exist before initializing
+    if (!activeGameScreen || !preGameScreen || !postGameScreen) {
+        return;
+    }
     
     // Function to update mobile settings based on screen size
     function updateMobileSettings() {
@@ -150,6 +159,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour créer les lignes de vitesse
     function createSpeedLines() {
+        if (!activeGameScreen) {
+            return;
+        }
+        
         const speedLinesContainer = document.createElement('div');
         speedLinesContainer.className = 'speed-lines';
         activeGameScreen.appendChild(speedLinesContainer);
@@ -237,12 +250,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function startGame() {
         // Réinitialiser les variables
         score = 0;
-        timer = 150;
+        timer = 0;
         wordsTyped = 0;
         correctWords = 0;
         streak = 0;
         bestStreak = 0;
         gameActive = true;
+        loader.removeAttribute('style');
         
         // Mettre à jour l'affichage
         scoreDisplay.textContent = score;
@@ -254,9 +268,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Charger le premier mot
         loadNewWord();
-        
-        // Démarrer le timer
-        timerInterval = setInterval(updateTimer, 1000);
         
         // Afficher l'écran de jeu actif
         preGameScreen.classList.remove('active');
@@ -276,14 +287,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Réinitialiser le compteur de tentatives si c'est un nouveau chargement (pas une répétition)
         if (attemptCount === 0) {
             console.log("Chargement d'un nouveau mot...");
-        } else if (attemptCount > 5) {
-            // Éviter les boucles infinies si le vocabulaire est très limité
-            console.log("Vocabulaire limité, acceptation du même mot après 5 tentatives");
-            attemptCount = 0; // Réinitialiser pour le prochain chargement
-        }
+        } 
         
         // Simuler une requête à l'API pour obtenir un mot
-        fetch(`/games/speedVocab/word?previous=${previousWordId || ''}`, {
+        fetch(`/games/speedVocab/words?package=${packageId}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -295,31 +302,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error(data.error);
                 return;
             }
+            words = data.words;
             
-            // Vérifier si le nouveau mot est le même que le précédent
-            if (previousWordId && data.word_id === previousWordId) {
-                attemptCount++;
-                console.log(`Mot identique au précédent (tentative ${attemptCount}), rechargement...`);
-                
-                // Attendre un peu avant de réessayer pour éviter les problèmes de timing
-                setTimeout(() => {
-                    loadNewWord(); // Relancer la fonction pour obtenir un mot différent
-                }, 100);
-                return;
-            }
+            timer = 100+words.length*6;
+            // Démarrer le timer
+            timerDisplay.classList.remove('warning');
+            timerInterval = setInterval(updateTimer, 1000);
             
-            // Réinitialiser le compteur de tentatives
-            attemptCount = 0;
-            
-            // Stocker l'ID du mot actuel comme "précédent" pour la prochaine fois
-            previousWordId = data.word_id;
+            // Initialiser le compteur de tentatives
+            attemptCount = 0; //
+            const randomIndex = Math.floor(Math.random() * words.length);
+            currentIndex = randomIndex;
             
             // Mettre à jour le mot courant
-            currentWord = data;
+            currentWord = words[currentIndex];
             
             // Afficher le mot et sa signification
-            wordDisplay.textContent = data.word;
-            meaningDisplay.textContent = data.meaning || '';
+            loader.setAttribute('style', 'display: none;');
+            wordDisplay.textContent = currentWord.word;
+            meaningDisplay.textContent = currentWord.meaning || '';
             
             // Animation d'apparition du mot
             wordDisplay.classList.add('fadeIn');
@@ -381,7 +382,33 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Charger un nouveau mot
             wordInput.value = '';
-            loadNewWord();
+            // Add energy animation when loading new word
+            addWordEnergyAnimation();
+        
+            // Réinitialiser le compteur de tentatives si c'est un nouveau chargement (pas une répétition)
+            if (attemptCount === 0) {
+                console.log("Chargement d'un nouveau mot...");
+            } 
+            // Vérifier si le nouveau mot est le même que le précédent
+            let randomIndex = Math.floor(Math.random() * words.length);
+
+            while (currentIndex === randomIndex) {
+                randomIndex = Math.floor(Math.random() * words.length);
+            }
+            currentIndex = randomIndex;
+             // Mettre à jour le mot courant
+             currentWord = words[currentIndex];
+            
+             // Afficher le mot et sa signification
+             wordDisplay.textContent = currentWord.word;
+             meaningDisplay.textContent = currentWord.meaning || '';
+             
+             // Animation d'apparition du mot
+             wordDisplay.classList.add('fadeIn');
+             setTimeout(() => {
+                 wordDisplay.classList.remove('fadeIn');
+             }, 500);
+
         } else if (userInput.length >= correctWord.length) {
             // Mot incorrect
             wordsTyped++;
@@ -404,7 +431,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 wordInput.classList.remove('incorrect');
                 wordInput.classList.remove('incorrect-shake');
                 wordInput.value = '';
-                loadNewWord();
+                
+                // Add energy animation when loading new word
+                addWordEnergyAnimation();
+        
+                // Réinitialiser le compteur de tentatives si c'est un nouveau chargement (pas une répétition)
+                if (attemptCount === 0) {
+                    console.log("Chargement d'un nouveau mot...");
+                }
+                // Vérifier si le nouveau mot est le même que le précédent
+                let randomIndex = Math.floor(Math.random() * words.length);
+
+                while (currentIndex === randomIndex) {
+                    randomIndex = Math.floor(Math.random() * words.length);
+                }
+                currentIndex = randomIndex;
+
+                // Mettre à jour le mot courant
+                currentWord = words[currentIndex];
+                
+                // Afficher le mot et sa signification
+                wordDisplay.textContent = currentWord.word;
+                meaningDisplay.textContent = currentWord.meaning || '';
+                
+                // Animation d'apparition du mot
+                wordDisplay.classList.add('fadeIn');
+                setTimeout(() => {
+                    wordDisplay.classList.remove('fadeIn');
+                }, 500);
             }, 500);
         }
     }
@@ -448,37 +502,85 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Mettre à jour l'écran de fin de jeu
         finalScoreDisplay.textContent = score;
-        correctWordsDisplay.textContent = correctWords;
-        accuracyDisplay.textContent = `${accuracy}%`;
         bestStreakDisplay.textContent = bestStreak;
         wpmDisplay.textContent = wpm;
         
         // Check if game was completed successfully
-        const minCorrectWords = 15; // At least 15 words typed correctly
         const minAccuracy = 70; // 70% accuracy
-        const isSuccessful = correctWords >= minCorrectWords && accuracy >= minAccuracy;
+        const isSuccessful = accuracy >= minAccuracy;
         
-        // Track level progress
-        trackLevelProgress(isSuccessful);
-        
-        // Vérifier si c'est un nouveau record
-        const currentHighScore = document.getElementById('game-container').dataset.highScore || 0;
-        if (score > currentHighScore) {
-            highScoreMessage.textContent = 'Nouveau record personnel !';
-            highScoreMessage.classList.add('new-record');
-            
-            // Enregistrer le score
-            saveScore(score);
-        } else {
-            // Save score anyway
-            saveScore(score);
+         // Afficher le message de progression de niveau
+         if (trackLevelMessage) {
+            if (isSuccessful) {
+                trackLevelMessage.textContent = 'Excellent travail ! Progressez les autres jeux de ce niveau 😍';
+                trackLevelMessage.classList.remove('level-failed');
+                trackLevelMessage.classList.add('level-completed');
+            } else {
+                trackLevelMessage.textContent = 'Bon courage ! Réessayer ce jeu pour améliorer vos compétences 🤧' ;
+                trackLevelMessage.classList.remove('level-completed');
+                trackLevelMessage.classList.add('level-failed');
+            }
         }
-        
+
+        // Save score anyway
+        saveScore(score);
+
         // Afficher l'écran de fin de jeu
-        activeGameScreen.classList.remove('active');
-        postGameScreen.classList.add('active');
+        console.log('Switching to post game screen...');
+        setTimeout(() => {
+            if (activeGameScreen) activeGameScreen.classList.remove('active');
+            if (postGameScreen) postGameScreen.classList.add('active');
+            console.log('Post game screen should now be visible');
+
+            // Track level progress
+            trackLevelProgress(isSuccessful);
+
+            // Lancer l'animation confetti simple
+            launchConfetti();
+        }, 1000);
     }
     
+    // Fonction pour lancer l'animation confetti avec confetti.js.org
+    function launchConfetti() {
+        const duration = 15* 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = {
+            spread: 360,
+            ticks: 100,
+            gravity: 0,
+            decay: 0.94,
+            startVelocity: 30,
+            shapes: ["circle"],
+            colors: ["FF0000", "FF7F00", "FFFF00", "FFA500", "FF4500"],
+          };
+
+        const interval = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+          
+            if (timeLeft <= 0) {
+              return clearInterval(interval);
+            }
+              
+              confetti({
+                ...defaults,
+                particleCount: 50,
+                scalar: 2,
+              });
+              
+              confetti({
+                ...defaults,
+                particleCount: 25,
+                scalar: 2,
+              });
+              
+              confetti({
+                ...defaults,
+                particleCount: 10,
+                scalar: 2,
+              });
+          }, 600);
+    }
+
     // Fonction pour enregistrer le score
     function saveScore(score) {
         // Envoyer le score au serveur
@@ -510,7 +612,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour suivre la progression de niveau
     function trackLevelProgress(isSuccessful) {
-        fetch('/level-progress/track', {
+        fetch(`/level-progress/track?package=${packageId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -527,7 +629,21 @@ document.addEventListener('DOMContentLoaded', function() {
             // If all games for this level are completed and words were updated
             if (data.level_completed && data.words_updated > 0) {
                 // You could show a notification or modal here
-                console.log(`Niveau terminé! ${data.words_updated} mots sont passés au niveau ${data.to_level}`);
+                showNotification(`Niveau terminé! ${data.words_updated} mots sont passés au niveau ${data.to_level}`, 'success');
+                playAgainContainer.innerHTML = `
+                    <button id="finish-level" class="play-again-btn">
+                        <i class="fa-solid fa-heart" style="color: #FFD43B;" width="40" height="40"></i> Terminé
+                    </button>
+                `;
+                
+                // Ajouter l'event listener APRÈS la création du bouton
+                const finishLevelBtn = document.getElementById('finish-level');
+                if (finishLevelBtn) {
+                    finishLevelBtn.addEventListener('click', function() {
+                        window.location.href = `/games?package=${packageId}`;
+                        console.log('Finish level button clicked');
+                    });
+                }
             }
         })
         .catch(error => {
@@ -585,15 +701,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
-        
-        oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.2);
-        
-        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+
+        // Error sound: descending low frequencies
+        oscillator.frequency.setValueAtTime(300, audioContext.currentTime); // Low frequency
+        oscillator.frequency.exponentialRampToValueAtTime(150, audioContext.currentTime + 0.6); // Descending
+
+        gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
         
         oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.2);
+        oscillator.stop(audioContext.currentTime + 0.6);
     }
     
     // Fonction pour mettre à jour le niveau d'intensité
@@ -659,11 +776,41 @@ document.addEventListener('DOMContentLoaded', function() {
     if (wordInput) {
         wordInput.addEventListener('input', checkInput);
     }
+
+
     
     // Empêcher la perte du focus sur l'input pendant le jeu
     document.addEventListener('click', function() {
         if (gameActive) {
             wordInput.focus();
+        }
+    });
+
+    // Fonction de test pour forcer l'affichage de l'écran de fin (pour débogage)
+    window.testEndGame = function() {
+        console.log('Testing end game...');
+        correctWords = wordsTyped;
+        endGame();
+    };
+
+    window.testFailedGame = function() {
+        console.log('Testing failed game...');
+        correctWords = 0;
+        endGame();
+    };
+    
+    // Ajouter un raccourci clavier pour tester (Ctrl+Shift+E)
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+            console.log('Test end game triggered by keyboard shortcut');
+            window.testEndGame();
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && e.key === 'F') {
+            console.log('Test failed game triggered by keyboard shortcut');
+            window.testFailedGame();
         }
     });
 });

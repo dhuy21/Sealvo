@@ -32,12 +32,13 @@ class LevelProgressController {
                 'word_scramble': '0',
                 'phrase_completion': '0',
                 'speed_vocab': '1',
-                'word_search': '2'
+                'word_search': '2',
+                'test_pronunciation': 'x'
             };
             
             // Required games for each level
             const levelGames = {
-                'x': ['flash_match', 'vocab_quiz'],
+                'x': ['flash_match', 'vocab_quiz', 'test_pronunciation'],
                 '0': ['word_scramble', 'phrase_completion'],
                 '1': ['speed_vocab'],
                 '2': ['word_search']
@@ -80,13 +81,14 @@ class LevelProgressController {
                 // If all games for this level are completed, update all words at this level
                 if (allCompleted) {
                     // Get all words of today at this level
-                    const wordIds = await learningModel.findWordsTodayByLevel(req.session.user.id, currentLevel);
+                    const package_id = req.query.package;
+                    const words = await learningModel.findWordsTodayByLevel(package_id, currentLevel);
                     
                     // Update each word to the next level
                     const updatedWords = [];
-                    for (const wordId of wordIds) {
-                        await learningModel.updateLevelWord(req.session.user.id, wordId.word_id, currentLevel);
-                        updatedWords.push(wordId.word_id);
+                    for (const word of words) {
+                        await learningModel.updateLevelWord(package_id, word.detail_id, currentLevel);
+                        updatedWords.push(word.detail_id);
                     }
                     
                     // Reset progress for this level

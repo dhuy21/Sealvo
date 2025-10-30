@@ -1,18 +1,17 @@
 const db = require('../core/database');
 
 class Word {
-    // Récupérer tous les mots de l'utilisateur
-    async findWordsByUserId(userId) {
+    // Récupérer tous les mots d'un package
+    async findWordsByPackageId(package_id) {
         try {
             const [rows] = await global.dbConnection.execute(
-                'SELECT w.word_id, w.word, wd.meaning, wd.type, wd.synonyms, wd.antonyms, wd.example, wd.grammar, wp.pronunciation, ln.level ' +
+                'SELECT wd.detail_id, w.word_id, w.word, w.language_code, wd.meaning, wd.type, wd.synonyms, wd.antonyms, wd.example, wd.grammar, wd.pronunciation, ln.level, ln.package_id ' +
                 'FROM words w ' +
                 'JOIN word_details wd ON w.word_id = wd.word_id ' +
-                'JOIN word_pronunciations wp ON wd.detail_id = wp.detail_id ' +
-                'JOIN learning ln ON w.word_id = ln.word_id ' +
-                'WHERE ln.user_id = ? ' +
+                'JOIN learning ln ON wd.detail_id = ln.detail_id ' +
+                'WHERE ln.package_id = ? ' +
                 'ORDER BY w.word ASC',
-                [userId]
+                [package_id]
             );
             return rows;
         } catch (error) {
@@ -22,7 +21,7 @@ class Word {
     }
 
     /**
-     * Compte le nombre de mots dans le vocabulaire d'un utilisateur
+     * Compte le nombre de mots  d'un utilisateur dans tous ses packages
      * @param {string|number} userId - L'ID de l'utilisateur
      * @returns {Promise<number>} Le nombre de mots
      */
@@ -30,14 +29,17 @@ class Word {
         try {
             // Ensure userId is treated as a string since user_id is CHAR(7) in the database
             const userIdStr = String(userId);
-            console.log(`Counting words for user: ${userIdStr} (type: ${typeof userIdStr})`);
             
             const [rows] = await global.dbConnection.execute(
-                'SELECT COUNT(*) as count FROM learning WHERE user_id = ?',
+                'SELECT COUNT(*) as count ' +
+                'FROM learning l ' +
+                'JOIN word_details wd ON l.detail_id = wd.detail_id ' +
+                'JOIN words w ON wd.word_id = w.word_id ' +
+                'JOIN packages p ON l.package_id = p.package_id ' +
+                'WHERE p.user_id = ?',
                 [userIdStr]
             );
             
-            console.log(`Found ${rows[0].count} words for user ${userIdStr}`);
             return rows[0].count;
         } catch (error) {
             console.error('Erreur lors du comptage des mots de l\'utilisateur:', error);
@@ -49,30 +51,37 @@ class Word {
     }
 
     // Ajouter un nouveau mot
-    async create(wordData, userId) {
+    async create(wordData, package_id) {
         // Démarrer une transaction
         let transaction;
         try {
-            console.log(`Démarrage transaction pour le mot: ${wordData.word}`);
             transaction = await global.dbConnection.beginTransaction();
-            
+            let wordId
             // 1. Insérer le mot dans la table words
-            console.log(`Insertion dans words: ${wordData.word}, ${wordData.subject}`);
-            const [wordResult] = await transaction.execute(
-                'INSERT INTO words (word, subject) VALUES (?, ?)',
-                [wordData.word, wordData.subject]
+            // Vérifier si le mot existe déjà dans la table words
+            const [existingWord] = await transaction.execute(
+                'SELECT word_id FROM words WHERE word = ? AND subject = ? AND language_code = ?',
+                [wordData.word, wordData.subject, wordData.language_code]
             );
-            const wordId = wordResult.insertId;
-            console.log(`Word inséré avec ID: ${wordId}`);
-
+            if (existingWord.length === 0) {
+                // Insérer le mot dans la table words
+                const [wordResult] = await transaction.execute(
+                    'INSERT INTO words (word, subject, language_code) VALUES (?, ?, ?)',
+                    [wordData.word, wordData.subject, wordData.language_code]
+                );
+                 wordId = wordResult.insertId;
+            } else {
+                wordId = existingWord[0].word_id;
+            }
+            
             // 2. Insérer les détails du mot
-            console.log(`Insertion dans word_details pour word_id: ${wordId}`);
             const [detailResult] = await transaction.execute(
-                'INSERT INTO word_details (word_id, type, meaning, synonyms, antonyms, example, grammar) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                'INSERT INTO word_details (word_id, type, meaning, pronunciation, synonyms, antonyms, example, grammar) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                 [
                     wordId,
                     wordData.type,
                     wordData.meaning,
+                    wordData.pronunciation,
                     wordData.synonyms,
                     wordData.antonyms,
                     wordData.example,
@@ -80,51 +89,39 @@ class Word {
                 ]
             );
             const detailId = detailResult.insertId;
-            console.log(`Detail inséré avec ID: ${detailId}`);
 
-            // 3. Insérer la prononciation
-            console.log(`Insertion dans word_pronunciations pour detail_id: ${detailId}`);
+            // 3. Associer le mot à l'utilisateur avec le niveau spécifié
             await transaction.execute(
-                'INSERT INTO word_pronunciations (detail_id, pronunciation) VALUES (?, ?)',
-                [detailId, wordData.pronunciation]
-            );
-
-            // 4. Associer le mot à l'utilisateur avec le niveau spécifié
-            console.log(`Insertion dans learning pour user_id: ${userId}, word_id: ${wordId}, level: ${wordData.level}`);
-            console.log(typeof wordData.level);
-            await transaction.execute(
-                'INSERT INTO learning (user_id, word_id, level) VALUES (?, ?, ?)',
-                [userId, wordId,wordData.level.toString()]
+                'INSERT INTO learning (package_id, detail_id, level) VALUES (?, ?, ?)',
+                [package_id, detailId,wordData.level.toString()]
             );
             
             // Valider la transaction
-            console.log(`Commit de la transaction pour le mot: ${wordData.word}`);
             await transaction.commit();
-            console.log(`Transaction validée avec succès pour le mot: ${wordData.word}`);
             return wordId;
         } catch (error) {
             // Annuler la transaction en cas d'erreur
             console.error(`ROLLBACK pour le mot ${wordData.word}:`, error);
             if (transaction) {
-                try {
+            try {
                     await transaction.rollback();
-                    console.log(`Rollback réussi pour le mot: ${wordData.word}`);
-                } catch (rollbackError) {
-                    console.error(`Erreur lors du rollback pour le mot ${wordData.word}:`, rollbackError);
+                console.error(`Rollback réussi pour le mot: ${wordData.word}`);
+            } catch (rollbackError) {
+                console.error(`Erreur lors du rollback pour le mot ${wordData.word}:`, rollbackError);
                 }
             }
             throw error;
         }
     }
-    async deleteWord(wordId, userId) {
+
+    //Supprimer un mot
+    async deleteWord(detailId, packageId) {
         try {
-            console.log('Word ID:', wordId);
-            console.log('User ID:', userId);
+
             await global.dbConnection.execute(
-                'DELETE FROM learning WHERE word_id = ? AND user_id = ?',
-                [wordId, userId]
+                'DELETE FROM learning WHERE detail_id = ? AND package_id = ?',
+                [detailId, packageId]
             );
-            console.log(`Mot supprimé avec succès: ${wordId}`);
             return true;
         } catch (error) {
             console.error('Erreur lors de la suppression du mot:', error);
@@ -132,34 +129,31 @@ class Word {
         }
     }
 
-    async deleteAllWords(userId) {
+    //Supprimer tous les mots d'un package d'un utilisateur
+    async deleteAllWords(packageId) {
         try {
-            await global.dbConnection.execute('DELETE FROM learning WHERE user_id = ?', [userId]);
-            console.log('Tous les mots ont été supprimés avec succès');
-            return true;
+            // Supprimer directement les word_details liés à ce package
+            // (CASCADE supprimera automatiquement les relations dans learning)
+            const [result] = await global.dbConnection.execute(`
+                DELETE wd FROM word_details wd
+                INNER JOIN learning l ON wd.detail_id = l.detail_id
+                WHERE l.package_id = ?
+            `, [packageId]);
+            
+            return result.affectedRows;
         } catch (error) {
             console.error('Erreur lors de la suppression de tous les mots:', error);
             throw error;
         }
     }
 
-    async findUsersByWordId(word_id) {
+
+    //Trouver les utilisateurs qui ont appris un mot par son detail_id
+    async findUsersByWordId(detail_id) {
         try {
             const [rows] = await global.dbConnection.execute(
-                'SELECT * FROM learning WHERE word_id = ?',
-                [word_id]
-            );
-            return rows[0] || null;
-        } catch (error) {
-            console.error('Erreur lors de la recherche du mot:', error);
-            throw error;
-        }
-    }
-    async findWordById(word_id) {
-        try {
-            const [rows] = await global.dbConnection.execute(
-                'SELECT * FROM words WHERE word_id = ?',
-                [word_id]
+                'SELECT * FROM learning WHERE detail_id = ?',
+                [detail_id]
             );
             return rows[0] || null;
         } catch (error) {
@@ -168,18 +162,18 @@ class Word {
         }
     }
 
+
     // Trouver un mot par son ID avec tous les détails
-    async findById(wordId) {
+    async findById(detailId) {
         try {
             const [rows] = await global.dbConnection.execute(
-                'SELECT w.word_id as id, w.word, w.subject, wd.type, wd.meaning, wd.synonyms, wd.antonyms, ' +
-                'wd.example, wd.grammar, wp.pronunciation, ln.level, ln.user_id ' +
+                'SELECT wd.detail_id as id, w.word, w.language_code, w.subject, wd.type, wd.meaning, wd.synonyms, wd.antonyms, ' +
+                'wd.example, wd.grammar, wd.pronunciation, ln.level, ln.package_id ' +
                 'FROM words w ' +
                 'JOIN word_details wd ON w.word_id = wd.word_id ' +
-                'JOIN word_pronunciations wp ON wd.detail_id = wp.detail_id ' +
-                'JOIN learning ln ON w.word_id = ln.word_id ' +
-                'WHERE w.word_id = ?',
-                [wordId]
+                'JOIN learning ln ON wd.detail_id = ln.detail_id ' +
+                'WHERE wd.detail_id = ?',
+                [detailId]
             );
             return rows[0] || null;
         } catch (error) {
@@ -188,49 +182,78 @@ class Word {
         }
     }
 
-    async updateWord(wordData, wordId, userId) {
+    async updateWord(wordData, detailId, packageId) {
         let transaction;
         try {
             transaction = await global.dbConnection.beginTransaction();
-            // Mettre à jour le mot dans la table words
-            console.log(`Mise à jour du mot dans words: ${wordData.word}, ${wordData.subject}`);
-            const [result] = await transaction.execute(
-                'UPDATE words SET word = ?, subject = ? WHERE word_id = ?',
-                [wordData.word, wordData.subject, wordId]
+            
+            // 1. Récupérer les infos actuelles
+            const [currentDetails] = await transaction.execute(
+                'SELECT wd.*, w.word, w.subject, w.language_code FROM word_details wd ' +
+                'JOIN words w ON wd.word_id = w.word_id WHERE wd.detail_id = ?',
+                [detailId]
             );
-            console.log(`Mot mis à jour avec succès: ${wordId}`);
-            // Mettre à jour les détails du mot
-            console.log(`Mise à jour des détails du mot pour word_id: ${wordId}`);
+            
+            if (!currentDetails.length) {
+                throw new Error('Mot non trouvé');
+            }
+            
+            const current = currentDetails[0];
+            const wordChanged = current.word !== wordData.word || 
+                               current.language_code !== wordData.language_code;
+            
+            let wordId = current.word_id;
+            
+            // 2. Si le mot de base a changé, gérer le nouveau mot
+            if (wordChanged) {
+                const [existingWord] = await transaction.execute(
+                    'SELECT word_id FROM words WHERE word = ? AND language_code = ?',
+                    [wordData.word, wordData.language_code]
+                );
+                
+                if (existingWord.length === 0) {
+                    // Créer nouveau mot dans words
+                    const [wordResult] = await transaction.execute(
+                        'INSERT INTO words (word, subject, language_code) VALUES (?, ?, ?)',
+                        [wordData.word, 'Daily', wordData.language_code]
+                    );
+                    wordId = wordResult.insertId;
+                } else {
+                    wordId = existingWord[0].word_id;
+                }
+                
+                // Mettre à jour le word_id dans word_details
+                await transaction.execute(
+                    'UPDATE word_details SET word_id = ? WHERE detail_id = ?',
+                    [wordId, detailId]
+                );
+            }
+            
+            // 3. Mettre à jour les détails du mot (spécifique à l'utilisateur)
             await transaction.execute(
-                'UPDATE word_details SET type = ?, meaning = ?, synonyms = ?, antonyms = ?, example = ?, grammar = ? WHERE word_id = ?',
+                'UPDATE word_details SET type = ?, meaning = ?, pronunciation = ?, synonyms = ?, antonyms = ?, example = ?, grammar = ? WHERE detail_id = ?',
                 [
                     wordData.type,
                     wordData.meaning,
+                    wordData.pronunciation,
                     wordData.synonyms,
                     wordData.antonyms,
                     wordData.example,
                     wordData.grammar,
-                    wordId
+                    detailId
                 ]
             );
-            // Mettre à jour la prononciation
-            console.log(`Mise à jour de la prononciation pour detail_id: ${wordId}`);
+
+            // 4. Mettre à jour l'association avec l'utilisateur
             await transaction.execute(
-                'UPDATE word_pronunciations SET pronunciation = ? WHERE detail_id = ?',
-                [wordData.pronunciation, wordId]
+                'UPDATE learning SET level = ? WHERE detail_id = ? AND package_id = ?',
+                [wordData.level, detailId, packageId]
             );
-            // Mettre à jour l'association avec l'utilisateur
-            console.log(`Mise à jour de l'association avec l'utilisateur pour word_id: ${wordId}`);
-            await transaction.execute(
-                'UPDATE learning SET level = ? WHERE word_id = ? AND user_id = ?',
-                [wordData.level, wordId, userId]
-            );
-           
-            // Valider la transaction
-            console.log(`Commit de la transaction pour le mot: ${wordData.word}`);  
+
+            // Valider la transaction 
             await transaction.commit();
-            console.log(`Transaction validée avec succès pour le mot: ${wordData.word}`);
-            return wordId;  
+            
+            return detailId;  
         } catch (error) {
             // Annuler la transaction en cas d'erreur
             console.error(`ROLLBACK pour le mot ${wordData.word}:`, error);

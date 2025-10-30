@@ -1,12 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Vérifier si nous sommes sur la page du jeu FlashMatch
-    if (!document.getElementById('game-board')) {
-        // Nous ne sommes pas sur la page FlashMatch, ne pas exécuter le script
-        return;
-    }
     
-    // Create animated bubbles for background
+    // Create animated bubbles for background 
     createAnimatedBubbles();
+    
     
     // Variables du jeu
     let cards = [];
@@ -14,7 +11,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let matchedPairs = 0;
     let totalPairs = 15; // Par défaut (max 15)
     let moves = 0;
-    let score = 0;
     let gameActive = false;
     let timerInterval = null;
     let startTime = null;
@@ -30,30 +26,35 @@ document.addEventListener('DOMContentLoaded', function() {
     const finalScore = document.getElementById('final-score');
     const finalTime = document.getElementById('final-time');
     const finalMoves = document.getElementById('final-moves');
-    const highScoreMessage = document.getElementById('high-score-message');
+    const trackLevelMessage = document.getElementById('track-level-message');
+    const packageId = document.getElementById('package-id').getAttribute('data-package');
+    const loader = document.getElementById('loader');
+    const playAgainContainer = document.getElementById('play-again-container');
     
     // Écrans de jeu
     const preGameScreen = document.querySelector('.pre-game-screen');
     const activeGameScreen = document.querySelector('.active-game-screen');
     const postGameScreen = document.querySelector('.post-game-screen');
+    ;
     
-    // Function to create animated bubbles
+    // Function to create optimized animated bubbles
     function createAnimatedBubbles() {
         const gameContainer = document.querySelector('.game-container');
         if (!gameContainer) return;
         
-        // Bubble configurations
+        // Optimized bubble configurations - reduced count for better performance
         const bubbleConfigs = [
-            // Large bubbles
-            { size: 'large', count: 3, colors: ['', 'blue', 'purple'] },
-            // Medium bubbles  
-            { size: 'medium', count: 4, colors: ['', 'purple', 'pink', ''] },
-            // Small bubbles
-            { size: 'small', count: 5, colors: ['', 'blue', 'purple', 'pink', ''] },
-            // Tiny bubbles
-            { size: 'tiny', count: 6, colors: ['', 'pink', '', 'blue', 'purple', ''] }
+            // Large bubbles - reduced from 3 to 2
+            { size: 'large', count: 2, colors: ['', 'blue'] },
+            // Medium bubbles - reduced from 4 to 3
+            { size: 'medium', count: 3, colors: ['', 'purple', 'pink'] },
+            // Small bubbles - reduced from 5 to 4
+            { size: 'small', count: 4, colors: ['', 'blue', 'purple', 'pink'] },
+            // Tiny bubbles - reduced from 6 to 3
+            { size: 'tiny', count: 3, colors: ['', 'pink', 'blue'] }
         ];
         
+        // Create bubbles with optimized performance
         bubbleConfigs.forEach(config => {
             for (let i = 0; i < config.count; i++) {
                 const bubble = document.createElement('div');
@@ -65,35 +66,39 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 // Set random horizontal position
-                const leftPosition = Math.random() * 90 + 5; // 5% to 95%
+                const leftPosition = Math.random() * 90 + 5;
                 bubble.style.left = leftPosition + '%';
                 
-                // Set random animation delay
-                const delay = Math.random() * 20; // 0 to 20 seconds
+                // Optimized animation delay - reduced range
+                const delay = Math.random() * 10; // Reduced from 20 to 10 seconds
                 bubble.style.animationDelay = delay + 's';
                 
-                // Set random animation duration based on size
+                // Optimized animation duration - faster animations
                 let baseDuration;
                 switch (config.size) {
-                    case 'large': baseDuration = 18; break;
-                    case 'medium': baseDuration = 13; break;
-                    case 'small': baseDuration = 8; break;
-                    case 'tiny': baseDuration = 6; break;
-                    default: baseDuration = 10;
+                    case 'large': baseDuration = 12; break; // Reduced from 18
+                    case 'medium': baseDuration = 9; break;  // Reduced from 13
+                    case 'small': baseDuration = 6; break;   // Reduced from 8
+                    case 'tiny': baseDuration = 4; break;    // Reduced from 6
+                    default: baseDuration = 8;
                 }
                 
-                const duration = baseDuration + (Math.random() * 5 - 2.5); // ±2.5s variation
+                const duration = baseDuration + (Math.random() * 3 - 1.5); // Reduced variation
                 bubble.style.animationDuration = duration + 's';
+                
+                // Add performance optimizations
+                bubble.style.willChange = 'transform';
+                bubble.style.transform = 'translateZ(0)'; // Force hardware acceleration
                 
                 gameContainer.appendChild(bubble);
             }
         });
         
-        // Create additional random bubbles for more variety
-        for (let i = 0; i < 8; i++) {
+        // Create fewer additional random bubbles
+        for (let i = 0; i < 4; i++) { // Reduced from 8 to 4
             const bubble = document.createElement('div');
-            const sizes = ['tiny', 'small', 'medium'];
-            const colors = ['', 'purple', 'blue', 'pink'];
+            const sizes = ['tiny', 'small']; // Removed 'medium' for better performance
+            const colors = ['', 'purple', 'blue'];
             const randomSize = sizes[Math.floor(Math.random() * sizes.length)];
             const randomColor = colors[Math.floor(Math.random() * colors.length)];
             
@@ -102,16 +107,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 bubble.classList.add(randomColor);
             }
             
-            // Random positioning and timing
+            // Optimized random positioning and timing
             bubble.style.left = (Math.random() * 90 + 5) + '%';
-            bubble.style.animationDelay = (Math.random() * 25) + 's';
-            bubble.style.animationDuration = (Math.random() * 8 + 6) + 's';
+            bubble.style.animationDelay = (Math.random() * 12) + 's'; // Reduced from 25
+            bubble.style.animationDuration = (Math.random() * 4 + 4) + 's'; // Reduced from 8+6
+            
+            // Add performance optimizations
+            bubble.style.willChange = 'transform';
+            bubble.style.transform = 'translateZ(0)';
             
             gameContainer.appendChild(bubble);
         }
         
-        console.log('Animated bubbles created successfully!');
+        console.log('Optimized animated bubbles created successfully!');
     }
+    
+    
     
     // Fonction pour démarrer le jeu
     function startGame() {
@@ -120,8 +131,10 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedCards = [];
         matchedPairs = 0;
         moves = 0;
-        score = 0;
         gameActive = true;
+        gameBoard.innerHTML = '';
+        loader.removeAttribute('style');
+
         
         // Mettre à jour l'affichage
         movesCount.textContent = moves;
@@ -131,9 +144,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Charger les cartes
         loadCards();
         
-        // Démarrer le timer
-        startTime = Date.now();
-        timerInterval = setInterval(updateTimer, 1000);
         
         // Afficher l'écran de jeu actif
         preGameScreen.classList.remove('active');
@@ -144,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fonction pour charger les cartes
     function loadCards() {
         // Faire la requête API pour obtenir les cartes
-        fetch(`/games/flashMatch/cards`, {
+        fetch(`/games/flashMatch/cards?package=${packageId}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -173,7 +183,15 @@ document.addEventListener('DOMContentLoaded', function() {
             totalPairs = data.cards.length / 2;
             pairsCount.textContent = `0/${totalPairs}`;
             
+                    
+            //Hide loader
+            loader.setAttribute('style', 'display: none;');
+
             createGameBoard(data.cards);
+
+            // Démarrer le timer
+            startTime = Date.now();
+            timerInterval = setInterval(updateTimer, 1000);
         })
         .catch(error => {
             console.error('Erreur lors du chargement des cartes:', error);
@@ -182,9 +200,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour créer le plateau de jeu
     function createGameBoard(cardData) {
-        // Vider le plateau
-        gameBoard.innerHTML = '';
-        cards = [];
         
         // Mélanger les cartes
         const shuffledCards = shuffleArray([...cardData]);
@@ -192,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Créer les éléments de carte
         shuffledCards.forEach((card, index) => {
             const cardElement = document.createElement('div');
-            cardElement.className = 'card';
+            cardElement.className = 'card-container';
             cardElement.dataset.index = index;
             
             const cardInner = document.createElement('div');
@@ -203,11 +218,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const cardBack = document.createElement('div');
             cardBack.className = 'card-back';
-            cardBack.textContent = card.content;
             if (card.type === 'meaning') {
-                cardBack.classList.add('meaning-card');
+                const meaningCard = document.createElement('div');
+                meaningCard.className = 'meaning-card';
+                meaningCard.textContent = card.content;
+                cardBack.appendChild(meaningCard);
             } else {
-                cardBack.classList.add('word-card');
+                const wordCard = document.createElement('div');
+                wordCard.className = 'card-word';
+                wordCard.textContent = card.content;
+                cardBack.appendChild(wordCard);
             }
             
             cardInner.appendChild(cardFront);
@@ -279,6 +299,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function checkMatch() {
         const card1 = selectedCards[0];
         const card2 = selectedCards[1];
+
         
         if (card1.pairId === card2.pairId && card1.type !== card2.type) {
             // Les cartes forment une paire
@@ -290,10 +311,12 @@ document.addEventListener('DOMContentLoaded', function() {
             cards[card2.index].element.classList.add('matched');
             
             matchedPairs++;
-            pairsCount.textContent = `${matchedPairs}/${totalPairs}`;
+            
+            if (pairsCount) pairsCount.textContent = `${matchedPairs}/${totalPairs}`;
             
             // Vérifier si toutes les paires ont été trouvées
             if (matchedPairs === totalPairs) {
+                console.log('All pairs matched! Ending game...');
                 endGame();
             }
         } else {
@@ -304,6 +327,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Retourner les cartes
             cards[card1.index].element.classList.remove('flipped');
             cards[card2.index].element.classList.remove('flipped');
+            
+            console.log('No match found');
         }
         
         // Réinitialiser les cartes sélectionnées
@@ -323,57 +348,59 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour terminer le jeu
     function endGame() {
+        console.log('Ending game...');
         gameActive = false;
         clearInterval(timerInterval);
         
-        // Calculer le score
-        // Formule: (totalPairs * 100) * (totalPairs / moves) * (totalPairs * 10 / elapsedTime)
-        // Cette formule récompense: plus de paires, moins de coups, moins de temps
-        const timeBonus = Math.max(1, totalPairs * 10 / currentTime);
-        const movesBonus = Math.max(0.1, totalPairs / moves);
-        score = Math.floor((totalPairs * 100) * movesBonus * timeBonus);
-        
         // Mettre à jour l'écran de fin de jeu
-        finalScore.textContent = score;
+        if (finalScore) finalScore.textContent = matchedPairs;
         
         const minutes = Math.floor(currentTime / 60);
         const seconds = currentTime % 60;
-        finalTime.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        if (finalTime) finalTime.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         
-        finalMoves.textContent = moves;
+        if (finalMoves) finalMoves.textContent = moves;
         
         // Check if game was completed successfully
         const successThreshold = Math.ceil(totalPairs * 0.8); // 80% success rate
         const isSuccessful = matchedPairs >= successThreshold;
         
+        console.log('Game completion status:', isSuccessful, 'Matched pairs:', matchedPairs, 'Threshold:', successThreshold);
+        
         // Track level progress
         trackLevelProgress(isSuccessful);
         
-        // Vérifier si c'est un nouveau record
-        // Récupérer le highScore depuis un élément data ou une variable globale
-        const currentHighScore = document.getElementById('game-container').dataset.highScore || 0;
-        if (score > currentHighScore) {
-            highScoreMessage.textContent = 'Nouveau record personnel !';
-            highScoreMessage.classList.add('new-record');
-            
-            // Enregistrer le score
-            saveScore(score);
-        } else {
-            // Save score anyway
-            saveScore(score);
+        // Enregistrer le score
+        saveScore(matchedPairs);
+        
+        // Afficher le message de progression de niveau
+        if (trackLevelMessage) {
+            if (isSuccessful) {
+                trackLevelMessage.textContent = 'Excellent travail ! Progressez les autres jeux de ce niveau 😍';
+                trackLevelMessage.classList.remove('level-failed');
+                trackLevelMessage.classList.add('level-completed');
+            } else {
+                trackLevelMessage.textContent = 'Bon courage ! Réessayer ce jeu pour améliorer vos compétences 🤧';
+                trackLevelMessage.classList.remove('level-completed');
+                trackLevelMessage.classList.add('level-failed');
+            }
         }
         
         // Afficher l'écran de fin de jeu
+        console.log('Switching to post game screen...');
         setTimeout(() => {
-            activeGameScreen.classList.remove('active');
-            postGameScreen.classList.add('active');
+            if (activeGameScreen) activeGameScreen.classList.remove('active');
+            if (postGameScreen) postGameScreen.classList.add('active');
+            console.log('Post game screen should now be visible');
+            
+            // Lancer l'animation confetti simple
+            launchConfetti();
         }, 1000);
     }
     
     // Fonction pour enregistrer le score
-    function saveScore(score) {
-        // Simuler l'enregistrement du score
-        // Dans une vraie implémentation, vous feriez un appel fetch à votre API
+    function saveScore(matchedPairs) {
+        console.log('Saving score:', matchedPairs);
         fetch('/games/score', {
             method: 'POST',
             headers: {
@@ -381,9 +408,8 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify({
                 game_type: 'flash_match',
-                score: score,
+                score: matchedPairs,
                 details: {
-                    difficulty: selectedDifficulty,
                     pairs: totalPairs,
                     moves: moves,
                     time: currentTime
@@ -410,7 +436,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour suivre la progression de niveau
     function trackLevelProgress(isSuccessful) {
-        fetch('/level-progress/track', {
+        fetch(`/level-progress/track?package=${packageId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -427,7 +453,22 @@ document.addEventListener('DOMContentLoaded', function() {
             // If all games for this level are completed and words were updated
             if (data.level_completed && data.words_updated > 0) {
                 // You could show a notification or modal here
-                console.log(`Niveau terminé! ${data.words_updated} mots sont passés au niveau ${data.to_level}`);
+                showNotification(`Niveau terminé! ${data.words_updated} mots sont passés au niveau ${data.to_level}`, 'success');
+
+                playAgainContainer.innerHTML = `
+                    <button id="finish-level" class="play-again-btn">
+                        <i class="fa-solid fa-heart" style="color: #FFD43B;" width="40" height="40"></i> Terminé
+                    </button>
+                `;
+                
+                // Ajouter l'event listener APRÈS la création du bouton
+                const finishLevelBtn = document.getElementById('finish-level');
+                if (finishLevelBtn) {
+                    finishLevelBtn.addEventListener('click', function() {
+                        window.location.href = `/games?package=${packageId}`;
+                        console.log('Finish level button clicked');
+                    });
+                }
             }
         })
         .catch(error => {
@@ -443,5 +484,55 @@ document.addEventListener('DOMContentLoaded', function() {
     if (playAgainBtn) {
         playAgainBtn.addEventListener('click', startGame);
     }
+    
+    // Fonction pour lancer l'animation confetti avec confetti.js.org
+    function launchConfetti() {
+        const duration = 15* 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        const interval = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+          
+            if (timeLeft <= 0) {
+              return clearInterval(interval);
+            }
+          
+            const particleCount = 50 * (timeLeft / duration);
+          
+            // since particles fall down, start a bit higher than random
+            confetti(
+              Object.assign({}, defaults, {
+                particleCount,
+                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+              })
+            );
+            confetti(
+              Object.assign({}, defaults, {
+                particleCount,
+                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+              })
+            );
+          }, 250);
+    }
+    
+    // Fonction de test pour forcer l'affichage de l'écran de fin (pour débogage)
+    window.testEndGame = function() {
+        console.log('Testing end game...');
+        matchedPairs = totalPairs;
+        endGame();
+    };
+    
+    // Ajouter un raccourci clavier pour tester (Ctrl+Shift+E)
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+            console.log('Test end game triggered by keyboard shortcut');
+            window.testEndGame();
+        }
+    });
 });
 

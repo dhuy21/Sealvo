@@ -26,6 +26,7 @@
   text-align: center;
   animation: fadeIn 0.7s ease;
   padding: 0 15px;
+  overflow: visible;
 }
 
 @keyframes fadeIn {
@@ -40,29 +41,34 @@
 }
 
 .learn-title {
-  text-align: center;
-  font-size: 2.5rem;
-  margin-bottom: 35px;
-  color: var(--primary-color);
-  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  font-weight: 700;
-  background: var(--bg-gradient);
+  margin-bottom: 5rem;
+  font-weight: 800;
+  font-size: 3rem;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
   background-clip: text;
   -webkit-background-clip: text;
-  color: transparent;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
   position: relative;
 }
 
 .learn-title::after {
   content: '';
   position: absolute;
-  width: 80px;
-  height: 4px;
-  bottom: -12px;
+  bottom: -15px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--bg-gradient);
-  border-radius: 10px;
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 2px;
+  animation: lineGrow 1s ease-out 0.5s both;
+}
+
+@keyframes lineGrow {
+  from { width: 0; opacity: 0; }
+  to { width: 60px; opacity: 1; }
 }
 
 .streak-update-notification {
@@ -312,37 +318,80 @@
 /* Flashcard Container */
 .flashcard-container {
   position: relative;
-  margin-bottom: 70px;
+  margin-bottom: 60px;
   perspective: 2000px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 500px;
+  overflow: visible;
+}
+
+
+/* Force proper grid positioning even with overflow content */
+.flashcard-container .card-count {
+  order: 1;
+}
+
+.flashcard-container .flashcard-with-navigation {
+  order: 2;
+}
+
+.flashcard-container .knowledge-buttons {
+  order: 3;
+}
+
+.flashcard-with-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 50px;
+  width: 100%;
+  grid-row: 2;
+  overflow: visible;
 }
 
 .card-count {
   text-align: center;
-  margin-bottom: 15px;
   font-weight: 600;
   color: #555;
   font-size: 1.1rem;
   letter-spacing: 0.5px;
+  grid-row: 1;
+  margin: 0;
 }
 
 .flashcard {
   width: 100%;
-  height: 380px;
-  max-height: 380px;
+  max-width: 1000px;
+  min-height: 400px;
+  max-height: none;
   perspective: 1000px;
-  margin-bottom: 30px;
+  height: 100%;
   cursor: pointer;
   position: relative;
+  margin: 0;
+  flex: 1;
+  order: 2;
 }
 
 .flashcard-inner {
   position: relative;
   width: 100%;
   height: 100%;
+  min-height: inherit;
   transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   transform-style: preserve-3d;
   box-shadow: var(--card-shadow);
   border-radius: var(--card-radius);
+}
+
+.flashcard, .flashcard-inner, .flashcard-front, .flashcard-back {
+  height: auto;
+  overflow: visible;
 }
 
 .flashcard.flipped .flashcard-inner {
@@ -353,16 +402,17 @@
   position: absolute;
   width: 100%;
   height: 100%;
+  min-height: inherit;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 30px 20px;
+  gap: 3px;
   border-radius: var(--card-radius);
   box-sizing: border-box;
-  overflow: auto;
+  overflow: visible;
 }
 
 .flashcard-front {
@@ -370,6 +420,7 @@
   color: #333;
   box-shadow: var(--card-inner-shadow);
   border: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 70px 20px 20px;
 }
 
 .flashcard-front::before {
@@ -391,6 +442,7 @@
   color: white;
   transform: rotateY(180deg);
   text-align: center;
+  padding: 40px 20px 20px;
 }
 
 .flashcard-back::before {
@@ -423,8 +475,23 @@
   margin-bottom: 15px;
 }
 
+.card-language {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 5px 15px;
+  border-radius: 50px;
+  background: rgba(0, 0, 0, 0.1);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  margin-bottom: 15px;
+}
 .card-content {
-  font-size: 2.2rem;
+  font-size: 2rem;
   margin: 10px 0 15px;
   text-align: center;
   max-width: 90%;
@@ -432,9 +499,43 @@
   word-wrap: break-word;
   word-break: break-word;
   animation: fadeScale 0.5s ease;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.5px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+  
+  /* Scrollbar personnalisé */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(188, 253, 224, 0.919) transparent;
+
+}
+
+/* Styles pour Webkit (Chrome, Safari, Edge) */
+.card-content::-webkit-scrollbar {
+  width: 9px;
+  opacity: 0.5;
+}
+
+.card-content::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 30px;
+}
+
+.card-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.2));
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 1s ease;
+}
+
+.card-content::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.6));
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.4);
+}
+
+/* Animation de scroll fluide */
+.card-content {
+  scroll-behavior:smooth;
 }
 
 @keyframes fadeScale {
@@ -449,8 +550,7 @@
 }
 
 .card-prompt {
-  position: absolute;
-  bottom: 25px;
+  position: relative;
   font-size: 1rem;
   color: rgba(0, 0, 0, 0.6);
   font-style: italic;
@@ -494,6 +594,7 @@
   transition: all var(--transition-speed);
   color: var(--primary-color);
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05);
+  overflow: visible;
 }
 
 .hint-btn:hover {
@@ -516,27 +617,19 @@
 }
 
 .card-details {
-  margin-top: 15px;
   width: 100%;
-  height: auto;
-  max-height: none;
+  max-height: 100%;
   text-align: left;
   background: rgba(255, 255, 255, 0.15);
   padding: 15px;
   border-radius: 15px;
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
-  box-shadow: var(--card-inner-shadow);
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  overflow: visible;
+  box-shadow: var(--card-inner-shadow); 
 }
 
-.card-details p {
-  margin: 8px 0;
-  font-size: 0.95rem;
-  line-height: 1.4;
-}
+
+
 
 /* Final fixes for synonym/antonym clipping */
 .card-details p:has(strong:contains("Synonymes")) {
@@ -552,76 +645,60 @@
 }
 
 /* Fallback for browsers that don't support :has */
-.card-details p strong {
-  display: inline-block;
-  margin-right: 5px;
-}
 
-/* Ensure any long words in synonyms/antonyms wrap properly */
-.card-details {
-  word-break: break-all;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  text-overflow: ellipsis;
-}
-
-/* For all screen sizes, ensure the flashcard can expand to fit content */
-@media (min-width: 320px) {
-  .flashcard, 
-  .flashcard-inner, 
-  .flashcard-front, 
-  .flashcard-back {
-    height: 350px !important;
-    min-height: 350px !important;
-    max-height: 350px !important;
-  }
-}
-
-@media (min-width: 577px) {
-  .flashcard, 
-  .flashcard-inner, 
-  .flashcard-front, 
-  .flashcard-back {
-    height: 420px !important;
-    min-height: 420px !important;
-    max-height: 420px !important;
-  }
-}
-
-@media (max-width: 414px) {
-  .flashcard, 
-  .flashcard-inner, 
-  .flashcard-front, 
-  .flashcard-back {
-    height: 280px !important;
-    min-height: 280px !important;
-    max-height: 280px !important;
-  }
-  
-  .flashcard-container {
-    margin-bottom: 50px;
-  }
-}
-
-/* Fix specifically for synonyms and antonyms that might be clipped */
-p strong + span, 
-p strong + span + span {
-  word-break: break-word;
-  white-space: normal;
-  display: inline-block;
-  width: auto;
-  max-width: 100%;
-}
 
 .example-text {
   font-style: italic;
   border-left: 3px solid rgba(255, 255, 255, 0.3);
   padding-left: 10px;
   margin-left: 5px;
-  display: inline-block;
-  max-width: 100%;
-  overflow-wrap: break-word;
+  display: block;
+  width: 100%;
+  max-height: 60px;
+  overflow-y: auto;
+  overflow-x: hidden;
   word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.example-text {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(188, 253, 224, 0.919) transparent;
+}
+
+.pronunciation-text, .synonymes, .antonymes {
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(188, 253, 224, 0.919) transparent;
+}
+
+/* Styles pour Webkit scrollbar de .example-text */
+.example-text::-webkit-scrollbar {
+  width: 6px;
+}
+
+.example-text::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 8px;
+}
+
+.example-text::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(188, 253, 224, 0.8), rgba(188, 253, 224, 0.4));
+  border-radius: 8px;
+  border: 1px solid rgba(188, 253, 224, 0.2);
+  transition: all 0.3s ease;
+}
+
+.example-text::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, rgba(188, 253, 224, 1), rgba(188, 253, 224, 0.6));
+  transform: scale(1.1);
+  box-shadow: 0 2px 6px rgba(188, 253, 224, 0.4);
+}
+
+.example-text::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(135deg, rgba(188, 253, 224, 1), rgba(188, 253, 224, 0.8));
+  box-shadow: 0 3px 10px rgba(188, 253, 224, 0.5);
 }
 
 .pronunciation-text {
@@ -631,8 +708,6 @@ p strong + span + span {
   padding: 3px 8px;
   border-radius: 6px;
   max-width: 100%;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
 }
 
 .pronunciation-btn {
@@ -658,14 +733,32 @@ p strong + span + span {
 }
 
 /* Flashcard Navigation */
-.flashcard-navigation {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 30px !important;
-  clear: both;
+.nav-btn-left,
+.nav-btn-right {
+  background: white;
+  min-width: 60px;
+  min-height: 60px;
+  max-width: 60px;
+  max-height: 60px;
+  border-radius: 50% !important;
+  font-size: 1.2rem;
+  font-weight: 400;
   position: relative;
+  cursor: pointer;
   z-index: 50;
+  padding: 0;
+  border: none;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  transition: all var(--transition-speed);
+}
+
+.nav-btn-left {
+  order: 1;
+}
+
+.nav-btn-right {
+  order: 3;
 }
 
 .nav-btn {
@@ -678,13 +771,16 @@ p strong + span + span {
   cursor: pointer;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   transition: all var(--transition-speed);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(0, 0, 0, 0.03);
 }
 
-.nav-btn:hover:not([disabled]) {
+.nav-btn:hover:not([disabled]),
+.nav-btn-left:hover:not([disabled]),
+.nav-btn-right:hover:not([disabled]) {
   animation: pulse-primary 2s infinite;
   background: #f8f9fa;
   transform: translateY(-3px);
@@ -692,14 +788,16 @@ p strong + span + span {
   color: var(--primary-color);
 }
 
-.nav-btn:disabled {
+.nav-btn:disabled,
+.nav-btn-left:disabled,
+.nav-btn-right:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   box-shadow: none;
 }
 
 .knowledge-buttons {
-  display: flex;
+  display: inline-flex;
   gap: 12px;
 }
 
@@ -1122,239 +1220,6 @@ p strong + span + span {
   animation: wiggle 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
 }
 
-/* Game button special styling */
-.game-btn {
-  background: linear-gradient(135deg, #ff9f43 0%, #ff6b6b 100%);
-  box-shadow: 0 6px 12px rgba(255, 107, 107, 0.25);
-  text-decoration: none;
-}
-
-.game-btn:hover {
-  animation: pulse-warning 1.5s infinite;
-  box-shadow: 0 8px 20px rgba(255, 107, 107, 0.35);
-}
-
-/* Improved Responsive Design for iPhone and small devices */
-@media (max-width: 992px) {
-  .flashcard {
-    height: 350px;
-    max-height: 350px;
-  }
-  
-  .flashcard-controls {
-    grid-template-columns: 1fr;
-  }
-  
-  .learn-title {
-    font-size: 2.2rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .knowledge-buttons {
-    flex-direction: column;
-    width: 100%;
-  }
-  
-  .flashcard-navigation {
-    flex-direction: column;
-    gap: 15px;
-  }
-  
-  .nav-btn {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .card-content {
-    font-size: 2rem;
-  }
-  
-  .progress-stats {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .stat-card {
-    padding: 16px;
-  }
-
-  .stat-icon {
-    width: 48px;
-    height: 48px;
-    font-size: 1.5rem;
-  }
-
-  .flashcard {
-    height: 320px;
-    max-height: 320px;
-  }
-  
-  .flashcard-inner, .flashcard-front, .flashcard-back {
-    min-height: 400px;
-  }
-  
-  .card-details {
-    padding: 15px;
-    margin-top: 10px;
-  }
-}
-
-@media (max-width: 576px) {
-  .flashcard {
-    height: 300px;
-    max-height: 300px;
-  }
-  
-  .flashcard-inner, .flashcard-front, .flashcard-back {
-    min-height: 350px;
-  }
-  
-  .dashboard-stats {
-    grid-template-columns: 1fr;
-  }
-  
-  .flashcard-actions {
-    flex-direction: column;
-    width: 100%;
-  }
-  
-  .action-btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .card-content {
-    font-size: 1.8rem;
-    margin: 10px 0;
-  }
-
-  .learn-title {
-    font-size: 1.8rem;
-  }
-
-  .card-details p {
-    font-size: 1rem;
-  }
-}
-
-@media screen and (max-width: 414px) {
-  .flashcard {
-    height: 280px;
-    max-height: 280px;
-  }
-  
-  .flashcard-front, .flashcard-back {
-    padding: 20px 15px;
-  }
-
-  .card-content {
-    font-size: 1.5rem;
-  }
-
-  .stat-card {
-    padding: 12px;
-  }
-
-  .stat-icon {
-    width: 40px;
-    height: 40px;
-    font-size: 1.2rem;
-    margin-right: 12px;
-  }
-
-  .stat-content h3 {
-    font-size: 1.5rem;
-  }
-
-  .flashcard-filters, .mode-selector, .mode-vocab-selector {
-    padding: 15px;
-  }
-
-  .filter-label, .mode-label {
-    padding: 8px 10px;
-  }
-
-  .custom-checkbox, .custom-radio {
-    width: 20px;
-    height: 20px;
-  }
-
-  .filter-label input:checked ~ .custom-checkbox:after {
-    left: 7px;
-    top: 4px;
-    width: 5px;
-    height: 9px;
-  }
-
-  .card-type {
-    font-size: 0.7rem;
-    top: 10px;
-    left: 10px;
-    padding: 3px 10px;
-  }
-
-  .card-prompt {
-    font-size: 0.8rem;
-    bottom: 15px;
-    padding: 6px 12px;
-  }
-
-  .card-details {
-    padding: 15px;
-    margin-top: 15px;
-  }
-
-  .card-details p {
-    margin: 8px 0;
-    font-size: 0.9rem;
-    line-height: 1.4;
-  }
-
-  .achievement-popup {
-    min-width: 280px;
-    padding: 20px;
-  }
-
-  .knowledge-btn, .nav-btn, .action-btn {
-    padding: 10px 16px;
-    font-size: 0.9rem;
-  }
-
-  .progress-container {
-    padding: 15px;
-  }
-
-  .progress-header h3 {
-    font-size: 1rem;
-  }
-
-  #progress-text {
-    font-size: 0.9rem;
-    padding: 4px 10px;
-  }
-}
-
-/* Height adjustments for shorter screens */
-@media (max-height: 700px) {
-  .flashcard {
-    height: 280px;
-  }
-
-  .learn-title {
-    margin-bottom: 20px;
-  }
-
-  .dashboard-stats {
-    margin-bottom: 20px;
-  }
-
-  .flashcard-container {
-    margin-bottom: 20px;
-  }
-}
-
 /* Pulse Animation Effects for Buttons */
 @keyframes pulse-primary {
   0% {
@@ -1417,6 +1282,17 @@ p strong + span + span {
   box-shadow: 0 8px 20px rgba(255, 107, 107, 0.35);
 }
 
+/* Game button special styling */
+.game-btn {
+  background: linear-gradient(135deg, #ff9f43 0%, #ff6b6b 100%);
+  box-shadow: 0 6px 12px rgba(255, 107, 107, 0.25);
+  text-decoration: none;
+}
+
+.game-btn:hover {
+  animation: pulse-warning 1.5s infinite;
+  box-shadow: 0 8px 20px rgba(255, 107, 107, 0.35);
+}
 /* Add pulse effects to knowledge buttons */
 .knowledge-btn[data-level="0"]:hover {
   animation: pulse-danger 1.5s infinite;
@@ -1437,7 +1313,9 @@ p strong + span + span {
 }
 
 /* Add pulse to navigation buttons */
-.nav-btn:hover:not([disabled]) {
+.nav-btn:hover:not([disabled]),
+.nav-btn-left:hover:not([disabled]),
+.nav-btn-right:hover:not([disabled]) {
   animation: pulse-primary 2s infinite;
   background: #f8f9fa;
   transform: translateY(-3px);
@@ -1477,7 +1355,9 @@ p strong + span + span {
 .action-btn:active, 
 .game-btn:active, 
 .knowledge-btn:active, 
-.nav-btn:active:not([disabled]), 
+.nav-btn:active:not([disabled]),
+.nav-btn-left:active:not([disabled]),
+.nav-btn-right:active:not([disabled]), 
 .hint-btn:active, 
 .pronunciation-btn:active {
   animation-play-state: paused;
@@ -1485,8 +1365,514 @@ p strong + span + span {
   transition: transform 0.1s;
 }
 
+/* Browser Modal */
+.browser-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.8) 0%, rgba(30, 30, 60, 0.9) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: modalFadeIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(20px);
+  }
+}
+
+.modal-exit {
+  animation: modalFadeOut 0.3s ease-in forwards;
+}
+
+@keyframes modalFadeOut {
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+.browser-content {
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
+  padding: 0;
+  border-radius: 16px;
+  text-align: center;
+  max-width: 320px;
+  margin: 20px;
+  box-shadow: 
+    0 15px 30px rgba(0, 0, 0, 0.15),
+    0 8px 15px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  position: relative;
+  animation: modalSlideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.browser-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+  background-size: 200% 100%;
+  animation: gradientShift 3s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Modal Header */
+.modal-header {
+  padding: 20px 20px 12px;
+  position: relative;
+}
+
+.warning-icon {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  animation: warningBounce 2s ease-in-out infinite;
+  box-shadow: 
+    0 4px 12px rgba(251, 191, 36, 0.4),
+    0 2px 6px rgba(251, 191, 36, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.warning-icon i {
+  font-size: 1.5rem;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes warningBounce {
+  0%, 100% { 
+    transform: translateY(0) scale(1);
+    box-shadow: 0 8px 25px rgba(251, 191, 36, 0.4);
+  }
+  50% { 
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 12px 35px rgba(251, 191, 36, 0.5);
+  }
+}
+
+.modal-header h2 {
+  color: #1e293b;
+  margin: 0 0 4px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  color: #64748b;
+  font-size: 0.8rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Modal Body */
+.modal-body {
+  padding: 0 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.current-browser {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.7;
+}
+
+.current-browser .browser-icon {
+  width: 35px;
+  height: 35px;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: shake 1.5s ease-in-out infinite;
+}
+
+.current-browser .browser-icon i {
+  color: white;
+  font-size: 1.1rem;
+}
+
+.current-browser span {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px) rotate(-2deg); }
+  75% { transform: translateX(3px) rotate(2deg); }
+}
+
+.arrow-transition {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0;
+}
+
+.arrow-transition i {
+  color: #9ca3af;
+  font-size: 1.2rem;
+  animation: arrowPulse 2s ease-in-out infinite;
+}
+
+@keyframes arrowPulse {
+  0%, 100% { 
+    transform: translateX(0) scale(1);
+    color: #9ca3af;
+  }
+  50% { 
+    transform: translateX(5px) scale(1.1);
+    color: #6366f1;
+  }
+}
+
+.recommended-browsers {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin: 8px 0;
+}
+
+.browser-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+  animation: bounceIn 0.6s ease-out;
+  animation-fill-mode: both;
+}
+
+.browser-option:nth-child(1) { animation-delay: 0.1s; }
+.browser-option:nth-child(2) { animation-delay: 0.2s; }
+.browser-option:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes bounceIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.3);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.05);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.browser-option:hover {
+  background: rgba(99, 102, 241, 0.05);
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.15);
+}
+
+.browser-option .browser-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.browser-option.chrome .browser-icon {
+  background: linear-gradient(135deg, #4285f4 0%, #34a853 25%, #fbbc05 50%, #ea4335 75%);
+}
+
+.browser-option.edge .browser-icon {
+  background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+}
+
+.browser-option.safari .browser-icon {
+  background: linear-gradient(135deg, #1daeff 0%, #0ea5e9 100%);
+}
+
+.browser-option .browser-icon i {
+  color: white;
+  font-size: 1rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.browser-option span {
+  font-size: 0.75rem;
+  color: #374151;
+  font-weight: 600;
+}
+
+.site-info {
+  margin-top: 12px;
+}
+
+.site-badge {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 10px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.site-badge:hover {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.site-badge i {
+  color: #6366f1;
+  font-size: 1.1rem;
+}
+
+.site-badge span {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.85rem;
+}
+
+.copy-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 6px 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.8rem;
+}
+
+.copy-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+/* Modal Actions */
+.modal-actions {
+  padding: 15px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border: none;
+  border-radius: 12px;
+  padding: 12px 18px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 
+    0 4px 12px rgba(99, 102, 241, 0.3),
+    0 2px 6px rgba(99, 102, 241, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.primary-btn:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 
+    0 12px 30px rgba(99, 102, 241, 0.4),
+    0 8px 20px rgba(99, 102, 241, 0.3);
+}
+
+.primary-btn:active {
+  transform: translateY(-1px) scale(0.98);
+}
+
+.btn-glow {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg, 
+    rgba(255, 255, 255, 0) 0%, 
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transition: left 0.6s ease;
+}
+
+.primary-btn:hover .btn-glow {
+  left: 100%;
+}
+
+.secondary-btn {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 16px;
+  color: #64748b;
+  font-weight: 500;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.secondary-btn:hover {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  border-color: #cbd5e1;
+  color: #475569;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.secondary-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Browser Modal Responsive */
+@media (max-width: 600px) {
+  .browser-content {
+    margin: 15px;
+    max-width: calc(100% - 30px);
+    border-radius: 24px;
+  }
+  
+  .modal-header {
+    padding: 25px 25px 15px;
+  }
+  
+  .warning-icon {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 15px;
+  }
+  
+  .warning-icon i {
+    font-size: 1.8rem;
+  }
+  
+  .modal-header h2 {
+    font-size: 1.4rem;
+  }
+  
+  .subtitle {
+    font-size: 0.9rem;
+  }
+  
+  .modal-body {
+    padding: 0 25px 15px;
+    gap: 20px;
+  }
+  
+  .recommended-browsers {
+    gap: 15px;
+  }
+  
+  .browser-option {
+    padding: 12px;
+  }
+  
+  .browser-option .browser-icon {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .browser-option .browser-icon i {
+    font-size: 1rem;
+  }
+  
+  .browser-option span {
+    font-size: 0.8rem;
+  }
+  
+  .site-badge {
+    padding: 10px 16px;
+    border-radius: 16px;
+  }
+  
+  .site-badge span {
+    font-size: 0.9rem;
+  }
+  
+  .modal-actions {
+    padding: 20px 25px 25px;
+    gap: 12px;
+  }
+  
+  .primary-btn {
+    padding: 14px 20px;
+    font-size: 0.95rem;
+    border-radius: 14px;
+  }
+  
+  .secondary-btn {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+  }
+}
+
 /* Add a subtle transition effect to all buttons */
-button, .btn, .action-btn, .knowledge-btn, .nav-btn, .hint-btn, .pronunciation-btn, .back-btn {
+button, .btn, .action-btn, .knowledge-btn, .nav-btn, .nav-btn-left, .nav-btn-right, .hint-btn, .pronunciation-btn, .back-btn {
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -1495,453 +1881,702 @@ button:active, .btn:active {
   transform: scale(0.97);
 }
 
-/* iPhone XS/11 Pro/12 Pro specific adjustments (390px width) */
-@media screen and (min-width: 385px) and (max-width: 415px) {
-  .flashcard {
-    height: 290px;
-  }
-  
-  .knowledge-buttons {
-    gap: 8px;
-  }
-  
-  .knowledge-btn {
-    padding: 8px 14px;
-    font-size: 0.85rem;
-  }
-  
-  .card-details {
-    padding: 12px;
-  }
-  
-  .card-details p {
-    margin: 6px 0;
-    font-size: 0.85rem;
-  }
-  
-  .progress-stat {
-    padding: 5px 10px;
-  }
-}
 
-/* Fix for very small screens like iPhone SE */
-@media screen and (max-width: 375px) {
-  .flashcard {
-    height: 270px;
-  }
-  
-  .stat-card {
-    padding: 10px;
-  }
-  
-  .progress-container {
-    padding: 12px;
-  }
-  
-  .knowledge-btn {
-    padding: 6px 10px;
-    font-size: 0.8rem;
-  }
-}
-
-/* Orientation specific adjustments for mobile */
-@media screen and (max-height: 800px) and (orientation: landscape) {
-  .flashcard {
-    height: 220px;
-  }
-  
-  .dashboard-stats {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  
-  .knowledge-buttons {
-    flex-direction: row;
-  }
-}
-
-/* Laptop Responsive Styles */
-@media screen and (min-width: 800px) and (max-width: 1440px) {
-  .learn-container {
-    max-width: 1200px;
-    padding: 0 30px;
-  }
-  
-  .dashboard-stats {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-  }
-  
-  .flashcard-controls {
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
-  
-  .flashcard {
-    height: 380px;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-  
-  .card-content {
-    font-size: 2.5rem;
-    max-width: 80%;
-  }
-  
-  .card-details {
-    max-width: 90%;
-  }
-  
-  .flashcard-navigation {
-    max-width: 800px;
-    margin: 25px auto 0;
-  }
-  
-  .knowledge-buttons {
-    gap: 15px;
-  }
-  
-  .progress-container {
-    max-width: 800px;
-    margin: 35px auto;
-  }
-  
-  .flashcard-actions {
-    max-width: 800px;
-    margin: 35px auto;
-    gap: 20px;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  
-  .action-btn {
-    min-width: 180px;
-  }
-}
-
-/* Larger Laptops / Small Desktops */
-@media screen and (min-width: 1441px) and (max-width: 1920px) {
-  .learn-container {
-    max-width: 1400px;
-  }
-  
-  .flashcard {
-    height: 420px;
-    max-width: 900px;
-    margin: 0 auto;
-  }
-  
-  .card-content {
-    font-size: 2.8rem;
-  }
-  
-  .flashcard-navigation,
-  .progress-container,
-  .flashcard-actions {
-    max-width: 900px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-}
-
-/* Wide screens / High-resolution laptops */
-@media screen and (min-width: 1600px) {
-  .learn-container {
-    max-width: 1600px;
-  }
-  
-  .flashcard-controls {
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
-    max-width: 1200px;
-    margin: 0 auto 35px;
-  }
-  
-  .dashboard-stats {
-    grid-template-columns: repeat(3, 1fr);
-    max-width: 1200px;
-    margin: 0 auto 35px;
-  }
-}
-
-/* Laptop in landscape mode (shorter height) */
-@media screen and (min-width: 1024px) and (max-height: 800px) {
-  .learn-title {
-    font-size: 2.2rem;
-    margin-bottom: 25px;
-  }
-  
-  .dashboard-stats {
-    margin-bottom: 25px;
-  }
-  
-  .flashcard {
-    height: 320px;
-  }
-  
-  .flashcard-controls {
-    margin-bottom: 25px;
-  }
-  
-  .flashcard-container {
-    margin-bottom: 25px;
-  }
-  
-  .progress-container {
-    margin: 25px auto;
-    padding: 20px;
-  }
-  
-  .flashcard-actions {
-    margin-top: 25px;
-  }
-}
-
-/* General laptop adjustments (better centering and layout) */
-@media screen and (min-width: 992px) {
-  .learn-container {
-    padding: 20px 40px;
-  }
-  
-  .dashboard-stats, 
-  .flashcard-controls, 
-  .flashcard-container, 
-  .progress-container, 
-  .flashcard-actions {
-    max-width: 1100px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  
-  .home-cta {
-    margin-top: 30px;
-    padding-bottom: 20px;
-  }
-  
-  /* Better balance for 3-column stats */
-  .dashboard-stats {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  
-  /* Better arrangement of controls */
-  .flashcard-controls {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 25px;
-  }
-  
-  /* Better read experience for card content */
-  .card-content {
-    line-height: 1.2;
-  }
-  
-  /* Improved navigation buttons */
-  .flashcard-navigation {
-    padding: 0 50px;
-  }
-  
-  /* Better alignment for knowledge buttons */
-  .knowledge-buttons {
-    justify-content: center;
-  }
-}
-
-/* Specific wide-screen laptop adjustments (16:9) */
-@media screen and (min-width: 992px) and (aspect-ratio: 16/9) {
-  .flashcard {
-    height: 400px;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-  
-  .learn-title {
-    margin-bottom: 30px;
-  }
-}
-
-/* MacBook Pro and similar laptops (16:10) */
-@media screen and (min-width: 992px) and (aspect-ratio: 16/10) {
-  .flashcard {
-    height: 380px;
-  }
-  
-  .flashcard-actions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 15px;
-  }
-  
-  .action-btn {
-    flex: 0 0 auto;
-    min-width: 200px;
-  }
-}
-
-/* High-DPI laptop screens */
-@media screen and (min-width: 992px) and (min-resolution: 192dpi) {
-  .card-shadow {
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08), 0 6px 16px rgba(0, 0, 0, 0.06);
-  }
-  
-  .flashcard-inner {
-    box-shadow: var(--card-shadow);
-  }
-  
-  .learn-title {
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-  }
-}
-
-/* Fix for content overflow */
-.example-text, .pronunciation-text, .synonymes, .antonymes {
-  max-width: 100%;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-}
-
-/* Make sure the flashcard grows to fit content */
-.flashcard, .flashcard-inner, .flashcard-front, .flashcard-back {
-  height: auto !important;
-  min-height: 350px !important;
-  max-height: none !important;
-  overflow: visible;
-}
-
-/* Fix the scrolling issue in card-details */
-.card-details {
-  margin-top: 15px;
-  width: 100%;
-  height: auto;
-  max-height: none;
-  text-align: left;
-  background: rgba(255, 255, 255, 0.15);
-  padding: 15px;
-  border-radius: 15px;
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  box-shadow: var(--card-inner-shadow);
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  overflow: visible;
-}
-
-/* Responsive adjustments for card-details */
-@media (max-width: 768px) {
-  .card-details {
-    max-height: none;
-    padding: 12px;
-  }
-}
-
-@media (max-width: 576px) {
-  .card-details {
-    max-height: none;
-    padding: 10px;
-  }
-}
-
-@media (max-width: 414px) {
-  .card-details {
-    max-height: none;
-    padding: 8px;
-  }
-}
 
 /* Meaning-to-word mode adjustments */
 input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card-content {
-  font-size: 1.8rem;
+  font-size: 2rem;
   line-height: 1.3;
   font-weight: 600;
   margin-bottom: 20px;
-  max-height: none;
-  overflow: visible;
 }
 
 /* Better direct targeting with the added classes */
 .flashcard.meaning-to-word-mode .flashcard-front .card-content {
-  font-size: 1.5rem !important;
+  font-size: 2rem !important;
   line-height: 1.4 !important;
   font-weight: 600 !important;
-  max-width: 95% !important;
-  margin: 15px 0 25px !important;
+
 }
 
 .flashcard.meaning-to-word-mode .flashcard-back .card-content {
-  font-size: 2.2rem !important;
+  font-size: 2rem !important;
   line-height: 1.2 !important;
-  font-weight: 700 !important;
+  font-weight: 600 !important;
+  max-width: 100%;
+  height: 25%;
+  gap: 5px;
 }
 
 .flashcard.meaning-to-word-mode .hint-container {
   margin-top: 20px !important;
 }
 
-/* Responsive styles for meaning-to-word mode */
-@media (max-width: 768px) {
+
+
+/* Écrans 432px et plus (Samsung Galaxy A series, etc.) */
+@media (max-width: 432px) {
+  .flashcard-container {
+    gap: 20px;
+    margin-bottom: 40px;
+    width: 100%;
+  }
+  
+  .flashcard {
+    min-height: 340px;
+    max-width: 400px;
+  }
+
+
+  .flashcard-front{
+    padding: 40px 20px 15px;
+    gap: 5px;
+  }
+  
+  .knowledge-buttons {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 5px;
+  }
+
+  .knowledge-btn {
+    border: none;
+    padding: 11px 18px;
+    border-radius: 14px;
+    font-weight: 600;
+  }
+  
+  .flashcard-with-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 110%;
+    z-index: 5;
+    position: relative;
+  }
+  
+  .nav-btn-left,
+  .nav-btn-right {
+    border-radius: 50% !important;
+    padding: 0 !important;
+    font-size: 0.8rem !important;
+    min-width: 35px !important;
+    min-height: 35px !important;
+    max-width: 35px !important;
+    max-height: 35px !important;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    color: #444;
+    font-weight: 600;
+    position: relative;
+    cursor: pointer;
+    z-index: 50;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.03);
+    transition: all var(--transition-speed);
+  }
+  
+  .nav-btn-left {
+    order: 1;
+  }
+  
+  .flashcard {
+    order: 2;
+    flex: 1;
+  }
+  
+  .nav-btn-right {
+    order: 3;
+  }
+  
+  .card-content {
+    font-size: 1.2rem;
+    font-weight: 500;
+  }
+
+  .example-text {
+    font-size: 1rem;
+  }
+
+  .pronunciation-text {
+    font-size: 1rem;
+  }
+  .pronunciation-btn{
+ 
+    gap: 5px;
+    font-size: 0.8rem !important;
+    padding: 1px 3px !important;
+    border-radius: 30% !important;
+  }
+  .hint-text {
+    font-size: 0.7rem;
+  }
+  .hint-btn {
+    font-size: 0.7rem;
+    width: 40%;
+    height: 40%;
+  }
+  .card-language {
+    font-size: 0.8rem;
+  }
+  .card-type {
+    font-size: 0.8rem;
+  }
+  .card-prompt {
+    font-size: 0.8rem;
+  }
+  .dashboard-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .flashcard-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .learn-title {
+    font-size: 2rem;
+  }
+
+  .card-details {
+    padding: 15px;
+    margin-top: 10px;
+    max-height: none;
+    padding: 15px;
+  }
+  .card-details p {
+    font-size: 0.95rem;
+  }
+
   .flashcard.meaning-to-word-mode .flashcard-front .card-content {
-    font-size: 1.3rem !important;
-    line-height: 1.3 !important;
-    margin: 10px 0 15px !important;
+    font-size: 1.2rem !important;
+    font-weight: 500 !important;
+    max-width: 100%;
+    height: 25%;
+    gap: 5px;
   }
   
   .flashcard.meaning-to-word-mode .flashcard-back .card-content {
-    font-size: 1.8rem !important;
+    font-size: 1.2rem !important;
+    font-weight: 500 !important;
+    max-width: 100%;
+    height: 25%;
+    gap: 5px;
   }
+
 }
 
-@media (max-width: 576px) {
+/* Écrans 412px (Google Pixel, OnePlus, etc.) */
+@media (max-width: 412px) {
+  .flashcard-container {
+    gap: 20px;
+    margin-bottom: 40px;
+    width: 100%;
+  }
+  
+  .flashcard {
+    min-height: 340px;
+    max-width: 400px;
+  }
+
+
+  .flashcard-front{
+    padding: 40px 20px 15px;
+    gap: 5px;
+  }
+  
+  .knowledge-buttons {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .knowledge-btn {
+    font-size: 0.8rem;
+    padding: 9px 15px;
+    border-radius: 14px;
+    font-weight: 600;
+  }
+  
+  .flashcard-with-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 110%;
+    z-index: 5;
+    position: relative;
+  }
+  
+  .nav-btn-left,
+  .nav-btn-right {
+    border-radius: 50% !important;
+    padding: 0 !important;
+    font-size: 0.8rem !important;
+    min-width: 35px !important;
+    min-height: 35px !important;
+    max-width: 35px !important;
+    max-height: 35px !important;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    color: #444;
+    font-weight: 600;
+    position: relative;
+    cursor: pointer;
+    z-index: 50;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.03);
+    transition: all var(--transition-speed);
+  }
+  
+  .nav-btn-left {
+    order: 1;
+  }
+  
+  .flashcard {
+    order: 2;
+    flex: 1;
+  }
+  
+  .nav-btn-right {
+    order: 3;
+  }
+  
+  .flashcard-front .card-content {
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .flashcard-back .card-content {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .example-text {
+    font-size: 1rem;
+  }
+
+  .pronunciation-text {
+    font-size: 1rem;
+  }
+  .pronunciation-btn{
+ 
+    gap: 5px;
+    font-size: 0.8rem !important;
+    padding: 1px 3px !important;
+    border-radius: 30% !important;
+  }
+  .hint-text {
+    font-size: 0.7rem;
+  }
+  .hint-btn {
+    font-size: 0.7rem;
+    width: 40%;
+    height: 40%;
+  }
+  .card-type {
+    font-size: 0.8rem;
+  }
+  .card-language {
+    font-size: 0.8rem;
+  }
+  .card-prompt {
+    font-size: 0.8rem;
+  }
+  .dashboard-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .flashcard-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .learn-title {
+    font-size: 1.9rem;
+  }
+
+  .card-details {
+    padding: 15px;
+    margin-top: 10px;
+    max-height: none;
+    padding: 15px;
+  }
+  .card-details p {
+    font-size: 0.95rem;
+  }
+
   .flashcard.meaning-to-word-mode .flashcard-front .card-content {
-    font-size: 1.1rem !important;
-    line-height: 1.3 !important;
-    margin: 5px 0 10px !important;
+    font-size: 1.2rem !important;
+    font-weight: 500 !important;
+    max-width: 100%;
+    height: 25%;
+    gap: 5px;
   }
   
   .flashcard.meaning-to-word-mode .flashcard-back .card-content {
     font-size: 1.6rem !important;
-  }
-  
-  .flashcard.meaning-to-word-mode .hint-container {
-    margin-top: 10px !important;
+    font-weight: 500 !important;
+    max-width: 100%;
+    height: 25%;
+    gap: 5px;
   }
 }
 
-@media (max-width: 414px) {
+/* Écrans 394px (iPhone 14 Pro, iPhone 13 Pro, etc.) */
+@media (max-width: 394px) {
+  .flashcard-container {
+    gap: 20px;
+    margin-bottom: 40px;
+    width: 100%;
+  }
+  
+  .flashcard {
+    min-height: 340px;
+    max-width: 400px;
+  }
+
+
+  .flashcard-front{
+    padding: 40px 20px 15px;
+    gap: 5px;
+  }
+  
+  .knowledge-buttons {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .knowledge-btn {
+    font-size: 1rem;
+    padding: 9px 15px;
+    border-radius: 14px;
+    font-weight: 600;
+  }
+  
+  .flashcard-with-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 110%;
+    z-index: 5;
+    position: relative;
+  }
+  
+  .nav-btn-left,
+  .nav-btn-right {
+    border-radius: 50% !important;
+    padding: 0 !important;
+    font-size: 0.8rem !important;
+    min-width: 35px !important;
+    min-height: 35px !important;
+    max-width: 35px !important;
+    max-height: 35px !important;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    color: #444;
+    font-weight: 600;
+    position: relative;
+    cursor: pointer;
+    z-index: 50;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.03);
+    transition: all var(--transition-speed);
+  }
+  
+  .nav-btn-left {
+    order: 1;
+  }
+  
+  .flashcard {
+    order: 2;
+    flex: 1;
+  }
+  
+  .nav-btn-right {
+    order: 3;
+  }
+  
+  .flashcard-front .card-content {
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .flashcard-back .card-content {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .example-text {
+    font-size: 1rem;
+  }
+
+  .pronunciation-text {
+    font-size: 1rem;
+  }
+  .pronunciation-btn{
+ 
+    gap: 5px;
+    font-size: 0.8rem !important;
+    padding: 1px 3px !important;
+    border-radius: 30% !important;
+  }
+  .hint-text {
+    font-size: 0.7rem;
+  }
+  .hint-btn {
+    font-size: 0.7rem;
+    width: 40%;
+    height: 40%;
+  }
+  .card-type {
+    font-size: 0.8rem;
+  }
+  .card-language {
+    font-size: 0.8rem;
+  }
+  .card-prompt {
+    font-size: 0.8rem;
+  }
+  .dashboard-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .flashcard-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .learn-title {
+    font-size: 1.8rem;
+  }
+
+  .card-details {
+    padding: 15px;
+    margin-top: 10px;
+    max-height: none;
+    padding: 15px;
+  }
+  .card-details p {
+    font-size: 0.95rem;
+  }
+
   .flashcard.meaning-to-word-mode .flashcard-front .card-content {
-    font-size: 1rem !important;
-    margin: 5px 0 8px !important;
+    font-size: 1.2rem !important;
+    font-weight: 500 !important;
+    max-width: 100%;
+    height: 25%;
+    gap: 5px;
   }
   
   .flashcard.meaning-to-word-mode .flashcard-back .card-content {
-    font-size: 1.4rem !important;
+    font-size: 1.6rem !important;
+    font-weight: 500 !important;
+    max-width: 100%;
+    height: 25%;
+    gap: 5px;
   }
 }
 
-/* Override height constraints for meaning-to-word-mode */
-.flashcard.meaning-to-word-mode,
-.flashcard.meaning-to-word-mode .flashcard-inner,
-.flashcard.meaning-to-word-mode .flashcard-front,
-.flashcard.meaning-to-word-mode .flashcard-back {
-  height: auto !important;
-  min-height: 380px !important;
-  max-height: none !important;
-  overflow: visible !important;
-}
+/* Écrans 360px (Samsung Galaxy S series, petits Android) */
+@media (max-width: 365px) {
+  .flashcard-container {
+    gap: 20px;
+    margin-bottom: 40px;
+    width: 100%;
+  }
+  
+  .flashcard {
+    min-height: 340px;
+    max-width: 400px;
+  }
 
-@media (max-width: 768px) {
-  .flashcard.meaning-to-word-mode,
-  .flashcard.meaning-to-word-mode .flashcard-inner,
-  .flashcard.meaning-to-word-mode .flashcard-front,
-  .flashcard.meaning-to-word-mode .flashcard-back {
-    min-height: 320px !important;
+
+  .flashcard-front{
+    padding: 40px 20px 15px;
+    gap: 5px;
+  }
+  
+  .knowledge-buttons {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 5px;
+  }
+
+  .knowledge-btn {
+    font-size: 0.8rem;
+    padding: 8px 15px;
+    border-radius: 14px;
+    font-weight: 700;
+  }
+
+  .flashcard-with-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 110%;
+    z-index: 5;
+    position: relative;
+  }
+  
+  .nav-btn-left,
+  .nav-btn-right {
+    border-radius: 50% !important;
+    padding: 0 !important;
+    font-size: 0.8rem !important;
+    min-width: 35px !important;
+    min-height: 35px !important;
+    max-width: 35px !important;
+    max-height: 35px !important;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    color: #444;
+    font-weight: 600;
+    position: relative;
+    cursor: pointer;
+    z-index: 50;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.03);
+    transition: all var(--transition-speed);
+  }
+  
+  .nav-btn-left {
+    order: 1;
+  }
+  
+  .flashcard {
+    order: 2;
+    flex: 1;
+  }
+  
+  .nav-btn-right {
+    order: 3;
+  }
+  
+  .flashcard-front .card-content {
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .flashcard-back .card-content {
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  .example-text {
+    font-size: 1rem;
+  }
+
+  .pronunciation-text {
+    font-size: 1rem;
+  }
+  .pronunciation-btn{
+ 
+    gap: 5px;
+    font-size: 0.8rem !important;
+    padding: 1px 3px !important;
+    border-radius: 30% !important;
+  }
+  .hint-text {
+    font-size: 0.7rem;
+  }
+  .hint-btn {
+    font-size: 0.5rem;
+    width: 50%;
+    height: 45%;
+  }
+  .card-type {
+    font-size: 0.8rem;
+  }
+  .card-language {
+    font-size: 0.8rem;
+  }
+  
+  .card-prompt {
+    font-size: 0.8rem;
+  }
+  .dashboard-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .flashcard-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .learn-title {
+    font-size: 1.7rem;
+  }
+
+  .card-details {
+    padding: 15px;
+    margin-top: 10px;
+    max-height: none;
+    padding: 15px;
+  }
+  .card-details p {
+    font-size: 0.95rem;
+  }
+
+  
+  .flashcard.meaning-to-word-mode .flashcard-front .card-content {
+    font-size: 1.2rem !important;
+    font-weight: 500 !important;
+    max-width: 100%;
+    height: 25%;
+    gap: 5px;
+  }
+  
+  .flashcard.meaning-to-word-mode .flashcard-back .card-content {
+    font-size: 1.6rem !important;
+    font-weight: 500 !important;
+    max-width: 100%;
+    height: 25%;
+    gap: 5px;
   }
 }
 
-@media (max-width: 576px) {
-  .flashcard.meaning-to-word-mode,
-  .flashcard.meaning-to-word-mode .flashcard-inner,
-  .flashcard.meaning-to-word-mode .flashcard-front,
-  .flashcard.meaning-to-word-mode .flashcard-back {
-    min-height: 280px !important;
-  }
-}

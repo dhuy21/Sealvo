@@ -1,9 +1,41 @@
+ //Package id
+const packageId = document.querySelector('.vocabulary-container')?.getAttribute('data-package');
+
+// Détection du type d'appareil mobile
+let isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+ // Screen rotation notification state
+ let rotationNotification = null;
+ let isLandscapeMode = false;
+
+
+if (!packageId) {
+    console.error('Package ID not found. Check if data-package attribute exists on .vocabulary-container');
+}
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize search functionality
     initSearch();
 
-    // Add pulsing effect to the learn button
-    
+   // Check initial screen orientation
+   checkScreenOrientation();
+        
+   // Add orientation change event listeners
+   window.addEventListener('resize', handleOrientationChange);
+   window.addEventListener('orientationchange', handleOrientationChange);
+   
+   // Add iOS Safari specific orientation detection
+   if (isTouchDevice) {
+       // Check orientation on touch events
+       document.addEventListener('touchstart', () => {
+           setTimeout(checkScreenOrientation, 100);
+       }, { passive: true });
+   }
+
+   // Window resize listener
+   window.addEventListener('resize', checkScreenSize);
+        
+   // Initial screen size check
+   checkScreenSize();
 
     // 3D button hover effect enhancement
     const buttons = document.querySelectorAll('.add-word-btn, .learn-btn, .btn-danger, .home-cta .btn, .no-words .btn');
@@ -49,7 +81,9 @@ document.addEventListener('DOMContentLoaded', function() {
         button.addEventListener('click', handleEditClick);
         
     });
-    
+
+    document.getElementById('deleteAllBtn').addEventListener('click', handleDeleteAllClick);
+
     // Ajouter des styles pour les inputs d'édition et animations
     const style = document.createElement('style');
     style.textContent = `
@@ -147,15 +181,101 @@ document.addEventListener('DOMContentLoaded', function() {
     document.head.appendChild(style);
 });
 
+// Screen Rotation Notification Functions
+function checkScreenOrientation() {
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    
+    // Check if screen width is <= 950px (mobile/tablet portrait)
+    if (screenWidth <= 1280) {
+        // Check if device is in landscape mode
+        isLandscapeMode = screenWidth > screenHeight;
+        console.log('isLandscapeMode', isLandscapeMode);
+        if (!isLandscapeMode) {
+            // Show rotation notification
+            showRotationNotification();
+            console.log('showRotationNotification');
+            return false;
+        } else {
+            // Hide rotation notification if it exists
+            hideRotationNotification();
+            console.log('hideRotationNotification');
+            return true;
+        }
+    } else {
+        // Large screen, no rotation needed
+        hideRotationNotification();
+        isLandscapeMode = true;
+        return true;
+    }
+}
+
+function showRotationNotification() {
+    // Don't show multiple notifications
+    if (rotationNotification) return;
+    
+    // Create rotation notification
+    rotationNotification = document.createElement('div');
+    rotationNotification.className = 'rotation-notification';
+    rotationNotification.innerHTML = `
+        <div class="rotation-icon">📱</div>
+        <div class="rotation-content">
+            <div class="rotation-title">Tourner l'écran</div>
+            <div class="rotation-message">Il faudrait tourner votre appareil en mode paysage</div>
+        </div>
+    `;
+    
+    // Add to body
+    document.body.appendChild(rotationNotification);
+    
+    // Force reflow for iOS Safari
+    rotationNotification.offsetHeight;
+    
+    // Show notification with animation
+    setTimeout(() => {
+        rotationNotification.classList.add('show');
+    }, 100);
+    
+}
+
+function hideRotationNotification() {
+    if (rotationNotification) {
+        rotationNotification.classList.remove('show');
+        
+        setTimeout(() => {
+            if (rotationNotification && rotationNotification.parentNode) {
+                rotationNotification.parentNode.removeChild(rotationNotification);
+                rotationNotification = null;
+            }
+        }, 300);
+    }
+}
+
+function checkScreenSize() {
+    const isSmallScreen = window.innerWidth <= 1300;
+    
+    // Also check orientation when screen size changes
+    checkScreenOrientation();
+}
+
+function handleOrientationChange() {
+    // Debounce the orientation check
+    clearTimeout(window.orientationChangeTimeout);
+    window.orientationChangeTimeout = setTimeout(() => {
+        checkScreenOrientation();
+    }, 100);
+}
+
 function handleDeleteClick(e) {
     e.preventDefault();
-    const wordId = this.getAttribute('data-id');
+    const detailId = this.getAttribute('data-id');
     this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     
     // Add visual feedback
     const row = this.closest('tr');
     
-    fetch(`/monVocabs/delete/${wordId}`, {
+    console.log('Deleting word with ID:', detailId, 'Package ID:', packageId);
+    fetch(`/monVocabs/delete/${detailId}?package=${packageId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -163,6 +283,10 @@ function handleDeleteClick(e) {
     })
     .then(response => response.json())
     .then(data => {
+        if (data.error) {
+            showNotification(data.error, 'error');
+            return;
+        }
         if (data.success) {
             // Supprimer la ligne du tableau avec animation améliorée
             if (row) {
@@ -257,14 +381,15 @@ function handleDeleteClick(e) {
 
 function handleEditClick(e) {
     e.preventDefault();
-    const wordId = this.getAttribute('data-id');
+    const detailId = this.getAttribute('data-id');
     const row = this.closest('tr');
     
     if (!row.dataset.editing) {
         // Sauvegarder les valeurs originales pour pouvoir annuler
         const originalValues = [];
-        for (let i = 0; i < 8; i++) {
-            originalValues.push(row.cells[i].textContent.trim());
+        for (let i = 0; i < 9; i++) {
+            const cellContent = row.cells[i].querySelector('.table-cell-content');
+            originalValues.push(cellContent ? cellContent.textContent.trim() : row.cells[i].textContent.trim());
         }
         row.dataset.originalValues = JSON.stringify(originalValues);
         
@@ -278,10 +403,15 @@ function handleEditClick(e) {
         let cellContents = [];
         
         // Mot (cell 0)
-        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[0].textContent.trim()}" required>`);
+        const wordText = row.cells[0].querySelector('.table-cell-content')?.textContent.trim() || row.cells[0].textContent.trim();
+        cellContents.push(`<input type="text" class="edit-input" value="${wordText}" required>`);
         
-        // Type (cell 1)
-        const typeText = row.cells[1].textContent.trim();
+        //language_code (cell 1)
+        const langText = row.cells[1].querySelector('.table-cell-content')?.textContent.trim() || row.cells[1].textContent.trim();
+        cellContents.push(`<input type="text" class="edit-input" value="${langText}" required>`);
+        
+        // Type (cell 2)
+        const typeText = row.cells[2].querySelector('.table-cell-content')?.textContent.trim() || row.cells[2].textContent.trim();
         cellContents.push(`
             <select class="edit-input" required>
                 <option value="noun" ${typeText === 'noun' ? 'selected' : ''}>Nom</option>
@@ -294,33 +424,47 @@ function handleEditClick(e) {
             </select>
         `);
         
-        // Meaning (cell 2)
-        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[2].textContent.trim()}" required>`);
+        // Meaning (cell 3)
+        const meaningText = row.cells[3].querySelector('.table-cell-content')?.textContent.trim() || row.cells[3].textContent.trim();
+        cellContents.push(`<input type="text" class="edit-input" value="${meaningText}" required>`);
         
-        // Pronunciation (cell 3)
-        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[3].textContent.trim()}">`);
+        // Pronunciation (cell 4)
+        const pronText = row.cells[4].querySelector('.table-cell-content')?.textContent.trim() || row.cells[4].textContent.trim();
+        cellContents.push(`<input type="text" class="edit-input" value="${pronText}">`);
         
-        // Synonyms (cell 4)
-        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[4].textContent.trim()}">`);
+        // Synonyms (cell 5)
+        const synText = row.cells[5].querySelector('.table-cell-content')?.textContent.trim() || row.cells[5].textContent.trim();
+        cellContents.push(`<input type="text" class="edit-input" value="${synText}">`);
         
-        // Antonyms (cell 5)
-        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[5].textContent.trim()}">`);
+        // Antonyms (cell 6)
+        const antText = row.cells[6].querySelector('.table-cell-content')?.textContent.trim() || row.cells[6].textContent.trim();
+        cellContents.push(`<input type="text" class="edit-input" value="${antText}">`);
         
-        // Example (cell 6)
-        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[6].textContent.trim()}" required>`);
+        // Example (cell 7)
+        const exText = row.cells[7].querySelector('.table-cell-content')?.textContent.trim() || row.cells[7].textContent.trim();
+        cellContents.push(`<input type="text" class="edit-input" value="${exText}" required>`);
         
-        // Grammar (cell 7)
-        cellContents.push(`<input type="text" class="edit-input" value="${row.cells[7].textContent.trim()}">`);
+        // Grammar (cell 8)
+        const gramText = row.cells[8].querySelector('.table-cell-content')?.textContent.trim() || row.cells[8].textContent.trim();
+        cellContents.push(`<input type="text" class="edit-input" value="${gramText}">`);
         
-        // Appliquer les inputs aux cellules
+        // Appliquer les inputs aux cellules en préservant la structure
         for (let i = 0; i < cellContents.length; i++) {
-            row.cells[i].innerHTML = cellContents[i];
+            // Vérifier si la cellule a déjà un div table-cell-content
+            const existingDiv = row.cells[i].querySelector('.table-cell-content');
+            if (existingDiv) {
+                // Remplacer le contenu du div existant
+                existingDiv.innerHTML = cellContents[i];
+            } else {
+                // Créer un nouveau div si nécessaire
+                row.cells[i].innerHTML = `<div class="table-cell-content">${cellContents[i]}</div>`;
+            }
         }
         
         // Remplacer les boutons d'action
-        row.cells[8].innerHTML = `
+        row.cells[9].innerHTML = `
             <div class="action-buttons">
-                <button type="button" class="save-btn" title="Valider" data-id="${wordId}">
+                <button type="button" class="save-btn" title="Valider" data-id="${detailId}">
                     <i class="fas fa-check"></i>
                 </button>
             
@@ -347,7 +491,7 @@ function handleEditClick(e) {
         row.dataset.editing = "true";
         
         // Ajouter l'event listener pour le bouton de sauvegarde
-        row.querySelector('.save-btn').addEventListener('click', saveWord);
+        row.querySelector('.save-btn').addEventListener('click', saveWordPost);
         
         // Ajouter l'event listener pour le bouton d'annulation
         row.querySelector('.cancel-btn').addEventListener('click', cancelEdit);
@@ -361,29 +505,33 @@ function cancelEdit() {
     if (row.dataset.originalValues) {
         const originalValues = JSON.parse(row.dataset.originalValues);
         
-        // Restaurer les cellules
+        // Restaurer les cellules avec la structure table-cell-content
         for (let i = 0; i < originalValues.length; i++) {
-            row.cells[i].textContent = originalValues[i];
+            // Vérifier si la cellule a déjà un div table-cell-content
+            let cellContent = row.cells[i].querySelector('.table-cell-content');
+            if (!cellContent) {
+                // Créer le div s'il n'existe pas
+                row.cells[i].innerHTML = `<div class="table-cell-content">${originalValues[i]}</div>`;
+            } else {
+                // Restaurer le contenu dans le div existant
+                cellContent.textContent = originalValues[i];
+            }
         }
         
         // Récupérer l'ID du mot
-        const wordId = row.querySelector('.save-btn')?.getAttribute('data-id') || 
-                      this.closest('.action-buttons')?.querySelector('.save-btn')?.getAttribute('data-id');
+        const detailId = row.querySelector('.save-btn')?.getAttribute('data-id') || 
+                        this.closest('.action-buttons')?.querySelector('.save-btn')?.getAttribute('data-id');
         
         // Restaurer les boutons d'action
-        row.cells[8].innerHTML = `
+        row.cells[9].innerHTML = `
             <div class="action-buttons">
-                <form action="/monVocabs/edit/${wordId}" method="POST" class="edit-form" onsubmit="return false;">
-                    <button type="submit" class="edit-btn" title="Modifier" data-id="${wordId}">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                </form>
+                <button class="edit-btn" title="Modifier" data-id="${detailId}">
+                    <i class="fas fa-edit"></i>
+                </button>
 
-                <form action="/monVocabs/delete/${wordId}" method="POST" class="delete-form" onsubmit="return false;">
-                    <button type="submit" class="delete-btn" title="Supprimer" data-id="${wordId}">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </form>
+                <button class="delete-btn" title="Supprimer" data-id="${detailId}">
+                    <i class="fas fa-trash"></i>
+                </button>
             </div>
         `;
         
@@ -397,30 +545,33 @@ function cancelEdit() {
     delete row.dataset.originalValues;
 }
 
-function saveWord() {
+function saveWordPost() {
     const row = this.closest('tr');
-    const wordId = this.getAttribute('data-id');
+    const detailId = this.getAttribute('data-id');
     
     // Collecter les données du formulaire
     const word = row.cells[0].querySelector('input').value.trim();
-    const type = row.cells[1].querySelector('select').value;
-    const meaning = row.cells[2].querySelector('input').value.trim();
-    const pronunciation = row.cells[3].querySelector('input').value.trim();
-    const synonyms = row.cells[4].querySelector('input').value.trim();
-    const antonyms = row.cells[5].querySelector('input').value.trim();
-    const example = row.cells[6].querySelector('input').value.trim();
-    const grammar = row.cells[7].querySelector('input').value.trim();
+    const language_code = row.cells[1].querySelector('input').value.trim();
+    const type = row.cells[2].querySelector('select').value;
+    const meaning = row.cells[3].querySelector('input').value.trim();
+    const pronunciation = row.cells[4].querySelector('input').value.trim();
+    const synonyms = row.cells[5].querySelector('input').value.trim();
+    const antonyms = row.cells[6].querySelector('input').value.trim();
+    const example = row.cells[7].querySelector('input').value.trim();
+    const grammar = row.cells[8].querySelector('input').value.trim();
     const level = row.querySelector('.level-select').value;
     
     // Valider les champs obligatoires
-    if (!word || !type || !meaning || !example) {
+    if (!word || !language_code || !type || !meaning || !example) {
         showNotification('Veuillez remplir tous les champs obligatoires', 'error');
         return;
     }
     
+    
     // Préparation des données pour l'envoi
     const wordData = {
         word,
+        language_code,
         type,
         meaning,
         pronunciation,
@@ -428,8 +579,7 @@ function saveWord() {
         antonyms,
         example,
         grammar,
-        level,
-        subject: 'General' // Valeur par défaut pour le sujet, à adapter si nécessaire
+        level
     };
     
     // Afficher un indicateur de chargement
@@ -437,7 +587,7 @@ function saveWord() {
     this.disabled = true;
     
     // Envoyer les données au serveur
-    fetch(`/monVocabs/edit/${wordId}`, {
+    fetch(`/monVocabs/edit/${detailId}?package=${packageId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -453,30 +603,39 @@ function saveWord() {
                 return;
             }
             
-            // Mettre à jour les cellules
-            row.cells[0].textContent = word;
-            row.cells[1].textContent = type;
-            row.cells[2].textContent = meaning;
-            row.cells[3].textContent = pronunciation;
-            row.cells[4].textContent = synonyms;
-            row.cells[5].textContent = antonyms;
-            row.cells[6].textContent = example;
-            row.cells[7].textContent = grammar;
+            // Mettre à jour les cellules avec la structure table-cell-content
+            const updateCell = (index, value) => {
+                // Vérifier si la cellule a déjà un div table-cell-content
+                let cellContent = row.cells[index].querySelector('.table-cell-content');
+                if (!cellContent) {
+                    // Créer le div s'il n'existe pas
+                    row.cells[index].innerHTML = `<div class="table-cell-content">${value}</div>`;
+                } else {
+                    // Mettre à jour le contenu dans le div existant
+                    cellContent.textContent = value;
+                }
+            };
+            
+            updateCell(0, word);
+            updateCell(1, language_code);
+            updateCell(2, type);
+            updateCell(3, meaning);
+            updateCell(4, pronunciation);
+            updateCell(5, synonyms);
+            updateCell(6, antonyms);
+            updateCell(7, example);
+            updateCell(8, grammar);
             
             // Restaurer les boutons d'action
-            row.cells[8].innerHTML = `
+            row.cells[9].innerHTML = `
                 <div class="action-buttons">
-                    <form action="/monVocabs/edit/${wordId}" method="POST" class="edit-form" onsubmit="return false;">
-                        <button type="submit" class="edit-btn" title="Modifier" data-id="${wordId}">
+                        <button  class="edit-btn" title="Modifier" data-id="${detailId}">
                             <i class="fas fa-edit"></i>
                         </button>
-                    </form>
 
-                    <form action="/monVocabs/delete/${wordId}" method="POST" class="delete-form" onsubmit="return false;">
-                        <button type="submit" class="delete-btn" title="Supprimer" data-id="${wordId}">
+                        <button  class="delete-btn" title="Supprimer" data-id="${detailId}">
                             <i class="fas fa-trash"></i>
                         </button>
-                    </form>
                 </div>
             `;
             
@@ -509,45 +668,245 @@ function saveWord() {
     });
 }
 
-function showNotification(message, type) {
-    // Supprimer les notifications existantes
-    const existingNotifications = document.querySelectorAll('.alert');
-    existingNotifications.forEach(notif => notif.remove());
+function handleDeleteAllClick() {
+    // Create confirmation modal
+    const modal = createConfirmationModal();
+    document.body.appendChild(modal);
     
-    // Créer la nouvelle notification
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type}`;
-    notification.textContent = message;
+    // Force reflow for iOS Safari
+    modal.offsetHeight;
     
-    // Ajouter la notification au début du conteneur
+    // Show modal with animation
+    setTimeout(() => {
+        modal.classList.add('show');
+    }, 100);
+    
+    // Add event listeners to modal buttons
+    const confirmBtn = modal.querySelector('.confirm-delete-btn');
+    const cancelBtn = modal.querySelector('.cancel-delete-btn');
+    const closeBtn = modal.querySelector('.close-modal-btn');
+    
+    confirmBtn.addEventListener('click', () => {
+        executeDeleteAll(modal);
+    });
+    
+    cancelBtn.addEventListener('click', () => {
+        closeModal(modal);
+    });
+    
+    closeBtn.addEventListener('click', () => {
+        closeModal(modal);
+    });
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeModal(modal);
+        }
+    });
+    
+    // Close modal with escape key
+    const handleKeyPress = (e) => {
+        if (e.key === 'Escape') {
+            closeModal(modal);
+            document.removeEventListener('keydown', handleKeyPress);
+        }
+    };
+    document.addEventListener('keydown', handleKeyPress);
+}
+
+function createConfirmationModal() {
+    const modal = document.createElement('div');
+    modal.className = 'delete-confirmation-modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <button class="close-modal-btn" aria-label="Fermer">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="modal-header">
+                <div class="warning-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h2>Supprimer tous les mots</h2>
+            </div>
+            
+            <div class="modal-body">
+                <p>Êtes-vous absolument sûr de vouloir supprimer <strong>tous les mots</strong> de votre vocabulaire ?</p>
+                <div class="warning-message">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Cette action est <strong>irréversible</strong> et supprimera définitivement tous vos mots.</span>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="cancel-delete-btn">
+                    <i class="fas fa-times"></i>
+                    Annuler
+                </button>
+                <button class="confirm-delete-btn">
+                    <i class="fas fa-trash"></i>
+                    Oui
+                </button>
+            </div>
+        </div>
+    `;
+    
+    return modal;
+}
+
+function executeDeleteAll(modal) {
+    const confirmBtn = modal.querySelector('.confirm-delete-btn');
+    const originalContent = confirmBtn.innerHTML;
+    
+    // Show loading state
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Suppression...';
+    confirmBtn.disabled = true;
+    confirmBtn.classList.add('loading');
+    
+    // Disable cancel button during deletion
+    const cancelBtn = modal.querySelector('.cancel-delete-btn');
+    cancelBtn.disabled = true;
+    
+    console.log('Deleting all words for package:', packageId);
+    
+    fetch(`/monVocabs/deleteAll?package=${packageId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Success animation
+            confirmBtn.innerHTML = '<i class="fas fa-check"></i> Supprimé !';
+            confirmBtn.classList.remove('loading');
+            confirmBtn.classList.add('success');
+            
+            // Close modal after a delay
+            setTimeout(() => {
+                closeModal(modal);
+                
+                // Remove all level containers with staggered animation
+                const levelContainers = document.querySelectorAll('.level-container');
+                levelContainers.forEach((container, index) => {
+                    setTimeout(() => {
+                        container.style.transition = 'all 0.6s ease';
+                        container.style.opacity = '0';
+                        container.style.transform = 'translateY(-30px) scale(0.95)';
+                        
+                        setTimeout(() => {
+                            container.remove();
+                        }, 600);
+                    }, index * 100);
+                });
+                
+                // Show no words message after animations complete
+                setTimeout(() => {
+                    showNoWordsMessage();
+                    showNotification(data.message, 'success');
+                }, levelContainers.length * 100 + 600);
+                
+            }, 1500);
+            
+        } else {
+            // Error state
+            confirmBtn.innerHTML = originalContent;
+            confirmBtn.disabled = false;
+            confirmBtn.classList.remove('loading');
+            cancelBtn.disabled = false;
+            
+            showNotification(data.message || 'Erreur lors de la suppression des mots', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        
+        // Error state
+        confirmBtn.innerHTML = originalContent;
+        confirmBtn.disabled = false;
+        confirmBtn.classList.remove('loading');
+        cancelBtn.disabled = false;
+        
+        showNotification('Une erreur est survenue lors de la suppression des mots', 'error');
+    });
+}
+
+function closeModal(modal) {
+    modal.classList.remove('show');
+    
+    setTimeout(() => {
+        if (modal.parentNode) {
+            modal.parentNode.removeChild(modal);
+        }
+    }, 300);
+}
+
+function showNoWordsMessage() {
+    // Check if no words message already exists
+    if (document.querySelector('.no-words')) {
+        return;
+    }
+    
+    const noWordsDiv = document.createElement('div');
+    noWordsDiv.className = 'no-words';
+    noWordsDiv.innerHTML = `
+        <i class="fas fa-book"></i>
+        <h3>Aucun mot dans votre vocabulaire</h3>
+        <p>Commencez à ajouter des mots pour enrichir votre vocabulaire.</p>
+        <a href="/monVocabs/add?package=${packageId}" class="btn">Ajouter votre premier mot</a>
+    `;
+    
+    noWordsDiv.style.opacity = '0';
+    noWordsDiv.style.transform = 'translateY(30px) scale(0.95)';
+    noWordsDiv.style.transition = 'all 0.6s ease';
+    
     const container = document.querySelector('.vocabulary-container');
-    const title = container.querySelector('h1');
-    
-    if (title) {
-        container.insertBefore(notification, title.nextSibling);
+    const homeCta = container.querySelector('.home-cta');
+    if (homeCta) {
+        container.insertBefore(noWordsDiv, homeCta);
     } else {
-        container.insertBefore(notification, container.firstChild);
+        container.appendChild(noWordsDiv);
     }
     
     // Animation d'entrée
-    notification.style.opacity = '0';
-    notification.style.transform = 'translateY(-10px)';
-    
     setTimeout(() => {
-        notification.style.opacity = '1';
-        notification.style.transform = 'translateY(0)';
-        notification.style.transition = 'all 0.4s ease';
+        noWordsDiv.style.opacity = '1';
+        noWordsDiv.style.transform = 'translateY(0) scale(1)';
+    }, 50);
+}
+
+function showNotification(message, type) {
+    // Create notification element if it doesn't exist
+    let notification = document.getElementById('notification');
+    if (!notification) {
+        notification = document.createElement('div');
+        notification.id = 'notification';
+        document.body.appendChild(notification);
+    }
+    
+    // Set icon based on type
+    let icon = '';
+    if (type === 'success') {
+        icon = '<i class="fas fa-check-circle"></i>';
+    } else if (type === 'error') {
+        icon = '<i class="fas fa-exclamation-circle"></i>';
+    } else {
+        icon = '<i class="fas fa-info-circle"></i>';
+    }
+    
+    // Set content and type
+    notification.innerHTML = icon + message;
+    notification.className = type;
+    
+    // Show and hide notification
+    setTimeout(() => {
+        notification.classList.add('show');
     }, 10);
     
-    // Faire disparaître après 3 secondes
     setTimeout(() => {
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateY(-10px)';
-        
-        // Supprimer complètement après la transition
-        setTimeout(() => {
-            notification.remove();
-        }, 400);
+        notification.classList.remove('show');
     }, 3000);
 }
 
@@ -610,7 +969,9 @@ function initSearch() {
                 const cells = row.querySelectorAll('td:not(:last-child)');
                 let rowText = '';
                 cells.forEach(cell => {
-                    rowText += cell.textContent.toLowerCase() + ' ';
+                    const cellContent = cell.querySelector('.table-cell-content');
+                    const text = cellContent ? cellContent.textContent : cell.textContent;
+                    rowText += text.toLowerCase() + ' ';
                 });
                 
                 // Check if the search term is in any cell text
@@ -822,7 +1183,10 @@ function initSearch() {
     function highlightMatches(row, searchTerm) {
         const cells = row.querySelectorAll('td:not(:last-child)');
         cells.forEach(cell => {
-            const text = cell.textContent;
+            const cellContent = cell.querySelector('.table-cell-content');
+            if (!cellContent) return;
+            
+            const text = cellContent.textContent;
             const lowerText = text.toLowerCase();
             const index = lowerText.indexOf(searchTerm.toLowerCase());
             
@@ -842,7 +1206,7 @@ function initSearch() {
                     }
                 }
                 
-                cell.innerHTML = newHtml;
+                cellContent.innerHTML = newHtml;
             }
         });
     }

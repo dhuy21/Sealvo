@@ -12,19 +12,19 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Variables du jeu
     let currentPhrase = null;
-    let correctWord = null;
-    let previousWordId = null;
+    let correctWords = [];
+    let phrases = [];
     let score = 0;
-    let timer = 300;
+    let timer = 200;
     let gameActive = false;
     let timerInterval = null;
-    let questionsAnswered = 0;
     let correctAnswers = 0;
     let streak = 0;
     let bestStreak = 0;
     let totalQuestions = 0; // Valeur par défaut qui sera mise à jour
     let availableWords = 0; // Nombre de mots disponibles pour ce niveau
-    const maxQuestions = 20; // Maximum de questions
+    let currentQuestionIndex = 0;
+    const maxQuestions = 100; // Maximum de questions
 
     
     let timePerQuestion = [];
@@ -39,7 +39,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const wordInput = document.getElementById('word-input');
     const submitBtn = document.getElementById('submit-answer');
     const wordMeaning = document.getElementById('word-meaning');
-    const hintText = document.getElementById('hint-text');
     const feedbackMessage = document.getElementById('feedback-message');
     const nextPhraseBtn = document.getElementById('next-phrase-btn');
     const scoreDisplay = document.getElementById('score');
@@ -47,12 +46,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const timerDisplay = document.getElementById('timer');
     const finalScoreDisplay = document.getElementById('final-score');
     const correctAnswersDisplay = document.getElementById('correct-answers');
-    const accuracyDisplay = document.getElementById('accuracy');
     const bestStreakDisplay = document.getElementById('best-streak');
-    const avgTimeDisplay = document.getElementById('avg-time');
-    const highScoreMessage = document.getElementById('high-score-message');
+    const loader = document.getElementById('loader');
     const playAgainBtn = document.getElementById('play-again');
-    
+    const trackLevelMessage = document.getElementById('track-level-message');
+    const package_id = document.getElementById('package-id').getAttribute('data-package');
+    const playAgainContainer = document.getElementById('play-again-container');
     // Écrans de jeu
     const preGameScreen = document.querySelector('.pre-game-screen');
     const activeGameScreen = document.querySelector('.active-game-screen');
@@ -313,16 +312,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Fonction pour démarrer le jeu
-    function startGame() {
-        // Vérifier le nombre de mots disponibles
-        fetch('/games/phraseCompletion/available-words', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
+    async function startGame() {
+        try {
+            // Vérifier le nombre de mots disponibles
+            const response = await fetch(`/games/phraseCompletion/available-words?package=${package_id}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            const data = await response.json();
+
             if (data.error) {
                 console.error(data.error);
                 return;
@@ -330,45 +330,39 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Mettre à jour le nombre total de questions en fonction des mots disponibles
             availableWords = data.count;
-            totalQuestions = Math.min(availableWords, maxQuestions) ;
-            totalQuestions += parseInt(0.5*availableWords); // Maximum 20 questions ou le nombre de mots disponibles
-            console.log('Nombre de mots disponibles:', availableWords);
-            console.log('Nombre de questions:', totalQuestions);
+            totalQuestions = Math.min(availableWords, maxQuestions) ; // Maximum 100 questions ou le nombre de mots disponibles
+            totalQuestions += parseInt(0.5*availableWords);
             
             // Continuer l'initialisation du jeu
-            initializeGame();
-        })
-        .catch(error => {
+            await initializeGame();
+
+        }catch(error) {
             console.error('Erreur lors de la vérification des mots disponibles:', error);
-        });
+        }
     }
     
     // Fonction pour initialiser le jeu après avoir vérifié les mots disponibles
-    function initializeGame() {
+    async function initializeGame() {
         // Réinitialiser les variables
         score = 0;
-        timer = 300;
-        questionsAnswered = 0;
+        timer = 200 + 4*totalQuestions;
         correctAnswers = 0;
+        currentQuestionIndex = 0;
         streak = 0;
         bestStreak = 0;
         gameActive = true;
-        previousWordId = null;
         timePerQuestion = [];
+        phraseDisplay.textContent = '';
+        loader.removeAttribute('style');
         
         // Mettre à jour l'affichage
         scoreDisplay.textContent = score;
-        questionCountDisplay.textContent = `0/${totalQuestions}`;
-        timerDisplay.textContent = timer;
+        questionCountDisplay.textContent = `${currentQuestionIndex}/${totalQuestions}`;
+
+        nextPhraseBtn.children[1].innerHTML = '<i class="fas fa-play"></i>';
         
         console.log('Starting game, loading first phrase');
-        
-        // Charger la première phrase
-        loadNewPhrase();
-        
-        // Démarrer le timer
-        timerInterval = setInterval(updateTimer, 1000);
-        
+            
         // Afficher l'écran de jeu actif
         preGameScreen.classList.remove('active');
         activeGameScreen.classList.add('active');
@@ -376,10 +370,18 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Focus sur l'input
         wordInput.focus();
+
+        // Charger la première phrase
+        await loadNewPhrase();
+
+        // Démarrer le timer
+        console.log('Starting timer');
+        timerDisplay.textContent = timer;
+        timerInterval = setInterval(updateTimer, 1000);
     }
     
     // Fonction pour charger une nouvelle phrase
-    function loadNewPhrase() {
+   async function loadNewPhrase() {
         // Guard to prevent multiple simultaneous calls
         if (isLoadingPhrase) {
             console.log('Already loading a phrase, ignoring duplicate call');
@@ -398,47 +400,53 @@ document.addEventListener('DOMContentLoaded', function() {
         feedbackMessage.className = 'feedback-message';
         nextPhraseBtn.disabled = true;
         wordMeaning.textContent = '';
-        hintText.textContent = '';
         attempts = 0;
         
         // Enregistrer le temps de début pour calculer le temps par question
         startQuestionTime = Date.now();
-        
-        // Charger une nouvelle phrase du serveur
-        fetch(`/games/phraseCompletion/phrase?previousWordId=${previousWordId || ''}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
+        try {
+            // Charger une nouvelle phrase du serveur
+            const response = await fetch(`/games/phraseCompletion/phrases?package=${package_id}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            const data = await response.json();
             if (data.error) {
                 console.error(data.error);
                 isLoadingPhrase = false;
                 return;
             }
-            
+                
+            for (let i=0; i < totalQuestions; i++) {
+                    
+                phrases[i] = data.phrases[i % data.phrases.length];
+
+            }
+
             // Stocker les données de la phrase courante
-            currentPhrase = data;
-            previousWordId = data.word_id;
-            correctWord = data.word;
-            
+            currentPhrase = phrases[currentQuestionIndex];
+            correctWords = currentPhrase.correctWords;
+                
             // Formater la phrase avec un espace pour saisir le mot
-            const formattedPhrase = data.phrase;
-            
+            const formattedPhrase = currentPhrase.phrase;
+                
             // Effet de machine à écrire pour la phrase
             phraseDisplay.innerHTML = '';
+            loader.setAttribute('style', 'display: none;');
             createTypewriterEffect(phraseDisplay, formattedPhrase, 30);
-            
+
             // Focus sur l'input
             wordInput.focus();
             isLoadingPhrase = false;
-        })
-        .catch(error => {
+            console.log('Phrase loaded');
+
+        } catch (error) {
+
             console.error('Erreur lors du chargement de la phrase:', error);
             isLoadingPhrase = false;
-        });
+        }
     }
     
     // Fonction pour vérifier la réponse
@@ -446,12 +454,13 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('checkAnswer');
         if (!gameActive || !currentPhrase) return;
         
-        const userInput = wordInput.value.trim();
+        const userInputs = wordInput.value.trim().split(';');
+        const cleanedUserInputs = userInputs.map(input => input.trim());
         
         attempts++;
         
         // Si l'utilisateur a soumis une réponse vide, ne rien faire
-        if (userInput === '') {
+        if (userInputs === '') {
             feedbackMessage.textContent = 'Veuillez saisir un mot';
             feedbackMessage.className = 'feedback-message';
             return;
@@ -462,35 +471,26 @@ document.addEventListener('DOMContentLoaded', function() {
         timePerQuestion.push(questionTime);
         
         // Mettre à jour le compteur de questions
-        questionsAnswered++;
-        questionCountDisplay.textContent = `${questionsAnswered}/${totalQuestions}`;
+        currentQuestionIndex++;
+        questionCountDisplay.textContent = `${currentQuestionIndex}/${totalQuestions}`;
         
         // Désactiver l'input et le bouton de validation
         wordInput.disabled = true;
         submitBtn.disabled = true;
-        
+
         // Afficher la signification du mot
-        if (currentPhrase && currentPhrase.meaning) {
-            wordMeaning.textContent = `Signification: ${currentPhrase.meaning}`;
+        if (currentPhrase && currentPhrase.meaningWord) {
+            wordMeaning.textContent = `Signification: ${currentPhrase.meaningWord}`;
         }
         
-        fetch(`/games/phraseCompletion/check`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ userInput, correctWord })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                console.error(data.error);
-                return;
-            }
-        
-            const isCorrect = data.correct;
-        
-            if (isCorrect) {
+        // Vérifier si la réponse est correcte
+        const correctWordsLower = correctWords.map(word => word.toLowerCase());
+
+        // vérifier si deux array sont identiques dans l'ordre
+        const isCorrect = cleanedUserInputs.length === correctWordsLower.length && cleanedUserInputs.every((val, i) => val === correctWordsLower[i]);
+
+
+        if (isCorrect) {
                 // Réponse correcte
                 correctAnswers++;
                 streak++;
@@ -524,9 +524,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 wordInput.classList.remove('incorrect', 'correct');
                 wordInput.classList.add('correct');
                 
-                // Remplacer le blanc par le mot correct en vert
-                phraseDisplay.innerHTML = currentPhrase.phrase.replace('_____', `<span class="blank correct">${correctWord}</span>`);
-            } else {
+                // Remplacer chaque blanc par chaque mot correct en vert
+                // Replace all blanks with correct words
+                let updatedPhrase = currentPhrase.phrase;
+                for (let i = 0; i < correctWords.length; i++) {
+                    updatedPhrase = updatedPhrase.replace('_____', `<span class="blank correct">${correctWords[i]}</span>`);
+                }
+                phraseDisplay.innerHTML = updatedPhrase;
+               
+        } else {
             // Réponse incorrecte
                 streak = 0;
                 
@@ -535,40 +541,65 @@ document.addEventListener('DOMContentLoaded', function() {
                 createConstellationEffect(false);
                 
                 // Feedback
-                feedbackMessage.textContent = `Incorrect. La bonne réponse était "${correctWord}"`;
+                feedbackMessage.textContent = `Incorrect. La bonne réponse était "${correctWords.join(' ')}"`;
                 feedbackMessage.className = 'feedback-message incorrect';
                 wordInput.classList.remove('incorrect', 'correct');
                 wordInput.classList.add('incorrect');
                 
-                // Remplacer le blanc par le mot correct en rouge
-                phraseDisplay.innerHTML = currentPhrase.phrase.replace('_____', `<span class="blank incorrect">${correctWord}</span>`);
-            }
+                //replace all blanks with correct words in red
+                let updatedPhrase = currentPhrase.phrase;
+                for (let i = 0; i < correctWords.length; i++) {
+                    updatedPhrase = updatedPhrase.replace('_____', `<span class="blank incorrect">${correctWords[i]}</span>`);
+                }
+                phraseDisplay.innerHTML = updatedPhrase;
+        }
         
         // Activer le bouton Suivant
-            nextPhraseBtn.disabled = false;
+        nextPhraseBtn.disabled = false;
             
-            // Si c'est la dernière question, changer le texte du bouton
-            if (questionsAnswered >= totalQuestions) {
-                nextPhraseBtn.textContent = 'Voir les résultats';
-            }
-        })
-        .catch(error => {
-            console.error('Erreur lors de la vérification de la réponse:', error);
-        });
+        // Si c'est la dernière question, changer le texte du bouton
+        if (currentQuestionIndex >= totalQuestions) {
+            nextPhraseBtn.children[1].innerHTML = '<i class="fa-solid fa-medal"></i>';
+        }
+        
     }
     
     // Fonction pour passer à la phrase suivante
     function goToNextPhrase() {
-        console.log('Going to next phrase');
         
         // Si c'est la dernière question, terminer le jeu
-        if (questionsAnswered >= totalQuestions) {
+        if (currentQuestionIndex >= totalQuestions) {
             endGame();
             return;
         }
         
         // Sinon, charger une nouvelle phrase
-        loadNewPhrase();
+        // Réinitialiser l'état de la question
+        wordInput.value = '';
+        wordInput.classList.remove('correct', 'incorrect');
+        wordInput.removeAttribute('disabled');
+        submitBtn.disabled = false;
+        feedbackMessage.textContent = '';
+        feedbackMessage.className = 'feedback-message';
+        nextPhraseBtn.disabled = true;
+        wordMeaning.textContent = '';
+        attempts = 0;
+        
+        // Enregistrer le temps de début pour calculer le temps par question
+        startQuestionTime = Date.now();
+        // Stocker les données de la phrase courante
+        currentPhrase = phrases[currentQuestionIndex];
+        correctWords = currentPhrase.correctWords;
+        
+        // Formater la phrase avec un espace pour saisir le mot
+        const formattedPhrase = currentPhrase.phrase;
+        
+        // Effet de machine à écrire pour la phrase
+        phraseDisplay.innerHTML = '';
+        createTypewriterEffect(phraseDisplay, formattedPhrase, 30);
+        
+        // Focus sur l'input
+        wordInput.focus();
     }
     
     // Fonction pour mettre à jour le timer
@@ -592,7 +623,7 @@ document.addEventListener('DOMContentLoaded', function() {
         clearInterval(timerInterval);
         
         // Calculer les statistiques
-        const accuracy = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
+        const accuracy = currentQuestionIndex > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
         
         // Calculer le temps moyen par question
         const avgTime = timePerQuestion.length > 0 
@@ -601,35 +632,87 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Mettre à jour l'écran de fin de jeu
         finalScoreDisplay.textContent = score;
-        correctAnswersDisplay.textContent = `${correctAnswers}/${questionsAnswered}`;
-        accuracyDisplay.textContent = `${accuracy}%`;
+        correctAnswersDisplay.textContent = `${correctAnswers}/${totalQuestions}`;
         bestStreakDisplay.textContent = bestStreak;
-        avgTimeDisplay.textContent = `${avgTime}s`;
+
         
         // Check if game was completed successfully
-        const minAccuracy = 70; // 70% accuracy
-        const minQuestionsAnswered = Math.ceil(totalQuestions * 0.8); // 80% completion
-        const isSuccessful = accuracy >= minAccuracy && questionsAnswered >= minQuestionsAnswered;
+        const minAccuracy = 80; // 80% accuracy
+        console.log('Accuracy:', accuracy);
+        const isSuccessful = accuracy >= minAccuracy ;
         
         // Track level progress
         trackLevelProgress(isSuccessful);
-        
-        // Vérifier si c'est un nouveau record
-        const currentHighScore = document.getElementById('game-container').dataset.highScore || 0;
-        if (score > currentHighScore) {
-            highScoreMessage.textContent = 'Nouveau record personnel !';
-            highScoreMessage.classList.add('new-record');
-            
-            // Enregistrer le score
-            saveScore(score);
-        } else {
-            // Save score anyway
-            saveScore(score);
+ 
+        // Save score
+        saveScore(score);
+
+        // Afficher le message de progression de niveau
+        if (trackLevelMessage) {
+            if (isSuccessful) {
+                trackLevelMessage.textContent = 'Excellent travail ! Progressez les autres jeux de ce niveau 😍';
+                trackLevelMessage.classList.remove('level-failed');
+                trackLevelMessage.classList.add('level-completed');
+            } else {
+                trackLevelMessage.textContent = 'Bon courage ! Réessayer ce jeu pour améliorer vos compétences 🤧' ;
+                trackLevelMessage.classList.remove('level-completed');
+                trackLevelMessage.classList.add('level-failed');
+            }
         }
         
         // Afficher l'écran de fin de jeu
-        activeGameScreen.classList.remove('active');
-        postGameScreen.classList.add('active');
+        console.log('Switching to post game screen...');
+        setTimeout(() => {
+            if (activeGameScreen) activeGameScreen.classList.remove('active');
+            if (postGameScreen) postGameScreen.classList.add('active');
+            console.log('Post game screen should now be visible');
+            
+            // Lancer l'animation confetti simple
+            launchConfetti();
+        }, 1000);
+    }
+
+    // Fonction pour lancer l'animation confetti avec confetti.js.org
+    function launchConfetti() {
+        const duration = 15* 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = {
+            spread: 360,
+            ticks: 50,
+            gravity: 0,
+            decay: 0.94,
+            startVelocity: 30,
+            shapes: ["star"],
+            colors: ["FFE400", "FFBD00", "E89400", "FFCA6C", "FDFFB8"],
+          };
+          
+          function shoot() {
+            confetti({
+              ...defaults,
+              particleCount: 40,
+              scalar: 1.2,
+              shapes: ["star"],
+            });
+          
+            confetti({
+              ...defaults,
+              particleCount: 10,
+              scalar: 0.75,
+              shapes: ["circle"],
+            });
+          }
+
+        const interval = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+          
+            if (timeLeft <= 0) {
+              return clearInterval(interval);
+            }
+
+            setTimeout(shoot, 0);
+            setTimeout(shoot, 100);
+            setTimeout(shoot, 200);
+        }, 2000);
     }
     
     // Fonction pour enregistrer le score
@@ -643,9 +726,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 game_type: 'phrase_completion',
                 score: score,
                 details: {
-                    questions_answered: questionsAnswered,
+                    questions_answered: currentQuestionIndex,
                     correct_answers: correctAnswers,
-                    accuracy: questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0,
+                    accuracy: currentQuestionIndex > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0,
                     best_streak: bestStreak,
                     avg_time: timePerQuestion.length > 0 
                         ? Math.round(timePerQuestion.reduce((a, b) => a + b, 0) / timePerQuestion.length * 10) / 10
@@ -664,7 +747,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour suivre la progression de niveau
     function trackLevelProgress(isSuccessful) {
-        fetch('/level-progress/track', {
+        fetch(`/level-progress/track?package=${package_id}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -681,7 +764,22 @@ document.addEventListener('DOMContentLoaded', function() {
             // If all games for this level are completed and words were updated
             if (data.level_completed && data.words_updated > 0) {
                 // You could show a notification or modal here
-                console.log(`Niveau terminé! ${data.words_updated} mots sont passés au niveau ${data.to_level}`);
+                showNotification(`Niveau terminé! ${data.words_updated} mots sont passés au niveau ${data.to_level}`, 'success');
+
+                playAgainContainer.innerHTML = `
+                <button id="finish-level" class="play-again-btn">
+                    <i class="fa-solid fa-heart" style="color: #FFD43B;" width="40" height="40"></i> Terminé
+                </button>
+                `;
+            
+                // Ajouter l'event listener APRÈS la création du bouton
+                const finishLevelBtn = document.getElementById('finish-level');
+                if (finishLevelBtn) {
+                    finishLevelBtn.addEventListener('click', function() {
+                        window.location.href = `/games?package=${package_id}`;
+                        console.log('Finish level button clicked');
+                    });
+                }
             }
         })
         .catch(error => {
@@ -691,7 +789,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Événements
     if (startGameBtn) {
-        startGameBtn.addEventListener('click', startGame);
+        startGameBtn.addEventListener('click', async () => {
+            await startGame();
+        });
     }
     
     if (submitBtn) {
@@ -711,6 +811,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     if (playAgainBtn) {
-        playAgainBtn.addEventListener('click', startGame);
+        playAgainBtn.addEventListener('click', async () => await startGame());
     }
+
+    // Fonction de test pour forcer l'affichage de l'écran de fin (pour débogage)
+    window.testEndGame = function() {
+        console.log('Testing end game...');
+        correctAnswers = totalQuestions;
+        endGame();
+    };
+    
+    window.testFailedGame = function() {
+        console.log('Testing failed game...');
+        correctAnswers = 0;
+        endGame();
+    };
+    
+    // Ajouter un raccourci clavier pour tester (Ctrl+Shift+E)
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+            console.log('Test end game triggered by keyboard shortcut');
+            window.testEndGame();
+        }
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && e.key === 'F') {
+            console.log('Test failed game triggered by keyboard shortcut');
+            window.testFailedGame();
+        }
+    });
 });

@@ -1,6 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Récupérer les mots depuis un attribut data de l'élément HTML
-    // ou depuis une variable globale définie dans le template
+          // Vérifier le navigateur
+      checkBrowser();
+      
+      // Récupérer les mots depuis un attribut data de l'élément HTML
+      // ou depuis une variable globale définie dans le template
     let allWords = [];
     
     // Essayer de récupérer les mots depuis un élément avec un attribut data
@@ -8,24 +11,19 @@ document.addEventListener('DOMContentLoaded', function() {
     if (wordsContainer && wordsContainer.dataset.words) {
         try {
             allWords = JSON.parse(wordsContainer.dataset.words);
-            console.log(`Successfully loaded ${allWords.length} words from data attribute`);
+            console.log(allWords);
         } catch (e) {
             console.error('Erreur lors du parsing des mots:', e);
         }
     } 
-  
-    let currentWords = [...allWords]; // Copie pour permettre le filtrage
+
+    let wordsFilteredByLevel = allWords;
+    let wordsFilteredByVocab = allWords.filter(word => word.dueToday);
+    console.log(wordsFilteredByVocab);
+    let currentWords = [...wordsFilteredByVocab]; // Copie pour permettre le filtrage
     let currentIndex = 0;
     let progress = []; // Pour suivre les progrès (0: ne sait pas, 1: incertain, 2: sait)
     let sessionStartTime = new Date();
-    
-    
-    // Streak update variables
-    let streakUpdateTimeout = null;
-    let streakUpdated = false;
-    const STREAK_UPDATE_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
-    
-   
     
     // Éléments DOM
     let flashcard = document.getElementById('flashcard');
@@ -131,7 +129,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Mettre à jour l'affichage de la carte
     function updateCardDisplay() {
-      console.log(`Updating card display. Currently have ${currentWords.length} words, index: ${currentIndex}`);
       
       if (currentWords.length === 0) {
         console.error('No words available to display');
@@ -189,6 +186,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="flashcard-inner">
               <div class="flashcard-front">
                 <span class="card-type">${word.type}</span>
+                <span class="card-language">${word.language_code}</span>
                 <h2 class="card-content">${frontContent}</h2>
                 <div class="hint-container">
                   <button id="hint-button" class="hint-btn"><i class="fas fa-lightbulb"></i> Indice</button>
@@ -198,6 +196,7 @@ document.addEventListener('DOMContentLoaded', function() {
               </div>
               <div class="flashcard-back">
                 <span class="card-type">${word.type}</span>
+                <span class="card-language">${word.language_code}</span>
                 <h2 class="card-content">${backContent}</h2>
                 <div class="card-details">
                   <p><strong>Exemple:</strong> <span class="example-text">${word.example}</span></p>
@@ -207,9 +206,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p><strong>Prononciation:</strong> <span class="pronunciation-text">${word.pronunciation}</span></p>
                     <button class="pronunciation-btn" data-text="${word.word}">
                       <i class="fas fa-volume-up"></i> Écouter
-                    </button>
+                    </button> 
                   ` : ''}
-                  
+                    <button class="pronunciation-btn" data-text="${word.example}">
+                      <i class="fas fa-volume-up"></i> Écouter l'exemple
+                    </button>
                 </div>
               </div>
             </div>
@@ -325,9 +326,10 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       // Bouton de prononciation
-      const pronunciationBtn = document.querySelector('.pronunciation-btn');
+      const pronunciationBtn = document.querySelectorAll('.pronunciation-btn');
       if (pronunciationBtn) {
-        pronunciationBtn.addEventListener('click', function(e) {
+        pronunciationBtn.forEach(btn => {
+          btn.addEventListener('click', function(e) {
           e.stopPropagation(); // Empêcher la propagation au flashcard
           
           // Animation du bouton
@@ -337,70 +339,78 @@ document.addEventListener('DOMContentLoaded', function() {
           }, 500);
           
           const text = this.getAttribute('data-text');
-          speakText(text);
+          speakText(this,text);
+        });
         });
       }
     }
     
-    // Fonction pour prononcer un texte avec l'API Speech Synthesis
-    function speakText(text) {
-      if ('speechSynthesis' in window) {
-        // Cancel any ongoing speech
-        speechSynthesis.cancel();
+    // Fonction pour prononcer un texte avec Google Cloud TTS (support multi-langues)
+    async function speakText(btn,text) {
+      try {
+
+        const word = currentWords[currentIndex];
+        const language = word.language_code;
+
+        // Afficher un indicateur de chargement
+        btn.disabled = true;
+        const oldHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> En cours';
         
-        const utterance = new SpeechSynthesisUtterance(text);
+        // Faire l'appel à l'API TTS
+        const response = await fetch('/api/tts/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text: text, language: language })
+        });
         
-        // Set language to English
-        utterance.lang = 'en-US';
-        
-        // Adjust rate (slightly slower)
-        utterance.rate = 0.9;
-        
-        // Set pitch (slightly lower for better clarity)
-        utterance.pitch = 1.0;
-        
-        // Detect iOS device
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        
-        // Select the best voice available (prioritize female voices which are usually clearer)
-        let voices = speechSynthesis.getVoices();
-        
-        // If voices array is empty, wait for them to load
-        if (voices.length === 0) {
-          speechSynthesis.addEventListener('voiceschanged', function() {
-            voices = speechSynthesis.getVoices();
-            selectAndSpeakWithBestVoice();
-          }, { once: true });
-        } else {
-          selectAndSpeakWithBestVoice();
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP: ${response.status}`);
         }
         
-        function selectAndSpeakWithBestVoice() {
-          // Filter English voices
-          let englishVoices = voices.filter(voice => voice.lang.includes('en-'));
+        // Traiter la réponse comme blob audio (plus efficace)
+        const audioBlob = await response.blob();
+        
+        // Créer une URL blob pour l'audio (streaming efficace)
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        // Créer et jouer l'élément audio
+        const audio = new Audio(audioUrl);
+        audio.volume = 0.8;
+        
+        // Gérer les événements audio
+        audio.onended = () => {
+          // Nettoyer l'URL blob pour éviter les fuites mémoire
+          URL.revokeObjectURL(audioUrl);
           
-          // Look for specific voices based on device
-          if (isIOS) {
-            // Try to use Samantha voice on iOS (high quality)
-            const samanthaVoice = englishVoices.find(v => v.name.includes('Samantha'));
-            if (samanthaVoice) utterance.voice = samanthaVoice;
-          } else {
-            // On other devices, prefer Google voices if available
-            const googleVoice = englishVoices.find(v => v.name.includes('Google'));
-            if (googleVoice) utterance.voice = googleVoice;
-          }
+          // Restaurer les boutons
+          btn.disabled = false;
+          btn.innerHTML = oldHtml;
+        };
+        
+        audio.onerror = () => {
+          console.error('Erreur lors de la lecture audio');
+          // Nettoyer l'URL blob
+          URL.revokeObjectURL(audioUrl);
           
-          // If no specific voice was found, try any English female voice
-          if (!utterance.voice) {
-            const femaleVoice = englishVoices.find(v => v.name.includes('female') || v.name.includes('Female'));
-            if (femaleVoice) utterance.voice = femaleVoice;
-          }
-          
-          // Start speaking
-          speechSynthesis.speak(utterance);
-        }
+          // Restaurer les boutons en cas d'erreur
+          btn.disabled = false;
+          btn.innerHTML = oldHtml;
+        };
+        
+        // Jouer l'audio
+        await audio.play();
+        
+      } catch (error) {
+        console.error('Erreur lors de la génération de l\'audio:', error);
+        
+        // Restaurer les boutons en cas d'erreur
+        btn.disabled = false;
+        btn.innerHTML = oldHtml;
       }
-    }
+     }
     
     // Filtrer les mots en fonction des niveaux sélectionnés
     function filterWords() {
@@ -419,14 +429,16 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       console.log(selectedLevels);
       // Mode normal
-      currentWords = allWords.filter(word => selectedLevels.includes(word.level));
-      
+      wordsFilteredByLevel = allWords.filter(word => selectedLevels.includes(word.level));
+
+      //Intersect of 2 filters
+      const setWords = new Set(wordsFilteredByVocab);
+      currentWords = wordsFilteredByLevel.filter(word => setWords.has(word)) ;
+
       console.log(`Filtered words: ${currentWords.length} words match selected levels`);
       
       // Réinitialiser l'index si nécessaire
-      if (currentIndex >= currentWords.length) {
-        currentIndex = Math.max(0, currentWords.length - 1);
-      }
+      currentIndex = 0;
       
       // Réinitialiser les progrès
       initProgress();
@@ -437,12 +449,22 @@ document.addEventListener('DOMContentLoaded', function() {
     
     //Filtrer le vocabulaire en fonction du mode ( aujourd'hui ou tous les mots)
     function filterVocab() {
+
       const vocabMode = document.querySelector('input[name="vocab-mode"]:checked').value;
+
+
       if (vocabMode === 'today-words') {
-        currentWords = allWords.filter(word => word.dueToday);
+        wordsFilteredByVocab = allWords.filter(word => word.dueToday);
       } else {
-        currentWords = [...allWords];
+        wordsFilteredByVocab = [...allWords];
       }
+
+      //Intersect of 2 filters
+      const setWords = new Set(wordsFilteredByLevel);
+      currentWords = wordsFilteredByVocab.filter(word => setWords.has(word)) ;
+
+      console.log(`Filtered words: ${currentWords.length} words match selected levels`);
+      currentIndex = 0;
       
       initProgress();
       updateCardDisplay();  
@@ -529,53 +551,113 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('Erreur lors du chargement des progrès', e);
       }
     }
-    
-    // Function to update streak after 5 minutes
-    function setupStreakUpdate() {
-        // Clear any existing timeout
-        if (streakUpdateTimeout) {
-            clearTimeout(streakUpdateTimeout);
-        }
-        
-        // Set a new timeout for 5 minutes
-        streakUpdateTimeout = setTimeout(() => {
-            // Only update once per session
-            if (!streakUpdated) {
-                updateUserStreak();
-            }
-        }, STREAK_UPDATE_TIME);
-    }
-    
-    // Function to call the API to update streak
-    function updateUserStreak() {
-        fetch('/update-streak', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Streak update response:', data);
-            
-            if (data.updated) {
-                streakUpdated = true;
-                //Notify in the page that the streak has been updated
-                const streakUpdateNotification = document.getElementById('streak-update-notification');
-                streakUpdateNotification.textContent = `🔥 Série de ${data.newStreak} jours! Continuez comme ça!`;
-                streakUpdateNotification.classList.add('show');
-                setTimeout(() => {
-                    streakUpdateNotification.classList.remove('show');
-                }, 5000);
-            }
-        })
-        .catch(error => {
-            console.error('Error updating streak:', error);
-        });
-    }
-    
-    
-    // Navigation entre les cartes
+
+         function checkBrowser() {
+         const userAgent = navigator.userAgent.toLowerCase();
+         console.log(userAgent);
+         const isChrome = userAgent.includes('chrome') && !userAgent.includes('edg');
+         const isSafari = userAgent.includes('safari') && !userAgent.includes('chrome');
+         const isEdge = userAgent.includes('edg');
+         
+         if (!isChrome && !isSafari && !isEdge) {
+             showInstructions();
+             return false;
+         }
+         return true;
+     }
+     
+          function showInstructions() {
+         const modal = document.createElement('div');
+         modal.className = 'browser-modal';
+         modal.innerHTML = `
+             <div class="browser-content">
+                 <div class="modal-header">
+                     <div class="warning-icon">
+                         <i class="fas fa-exclamation-triangle"></i>
+                     </div>
+                     <h2>Oops ! Navigateur non optimal</h2>
+                     <p class="subtitle">Passons à quelque chose de mieux ✨</p>
+                 </div>
+                 
+                 <div class="modal-body">
+                     <div class="recommended-browsers">
+                         <div class="browser-option chrome">
+                             <div class="browser-icon">
+                                 <i class="fab fa-chrome"></i>
+                             </div>
+                             <span>Chrome</span>
+                         </div>
+                         <div class="browser-option edge">
+                             <div class="browser-icon">
+                                 <i class="fab fa-edge"></i>
+                             </div>
+                             <span>Edge</span>
+                         </div>
+                         <div class="browser-option safari">
+                             <div class="browser-icon">
+                                 <i class="fab fa-safari"></i>
+                             </div>
+                             <span>Safari</span>
+                         </div>
+                     </div>
+                     
+                     <div class="site-info">
+                         <div class="site-badge">
+                             <i class="fas fa-globe"></i>
+                             <span>sealvo.it.com</span>
+                             <button class="copy-btn" title="Copier l'URL">
+                                 <i class="fas fa-copy"></i>
+                             </button>
+                         </div>
+                     </div>
+                 </div>
+                 
+                 <div class="modal-actions">
+                     <button class="change-browser-btn primary-btn">
+                         <i class="fas fa-external-link-alt"></i>
+                         <span>Ouvrir dans Edge</span>
+                         <div class="btn-glow"></div>
+                     </button>
+                     <button class="continue-anyway-btn secondary-btn">
+                         <i class="fas fa-play"></i>
+                         Continuer quand même
+                     </button>
+                 </div>
+             </div>
+         `;
+         document.body.appendChild(modal);
+         
+                  // Event listeners pour éviter CSP inline
+         const changeBrowserBtn = modal.querySelector('.change-browser-btn');
+         const continueBtn = modal.querySelector('.continue-anyway-btn');
+         const copyBtn = modal.querySelector('.copy-btn');
+         
+         // Copier l'URL
+         copyBtn.addEventListener('click', () => {
+             navigator.clipboard.writeText('https://sealvo.it.com').then(() => {
+                 copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+                 copyBtn.style.background = '#10b981';
+                 setTimeout(() => {
+                     copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+                     copyBtn.style.background = '';
+                 }, 2000);
+             });
+         });
+         
+         // Ouvrir dans Edge
+         changeBrowserBtn.addEventListener('click', () => {
+             const link = document.createElement('a');
+             link.href = 'microsoft-edge:https://sealvo.it.com';
+             link.click();
+         });
+ 
+         continueBtn.addEventListener('click', () => {
+             modal.classList.add('modal-exit');
+             setTimeout(() => modal.remove(), 300);
+         });
+     }
+     
+     // Navigation entre les cartes
     prevBtn.addEventListener('click', function() {
       if (currentIndex > 0) {
         // Animation de glissement
@@ -640,7 +722,7 @@ document.addEventListener('DOMContentLoaded', function() {
       checkbox.addEventListener('change', filterWords);
     });
     
-    //filtrer les mots en fonction du mode
+    //filtrer les mots en fonction du vocabulaire
     vocabModeRadios.forEach(radio => {
       radio.addEventListener('change', filterVocab);
     }); 
@@ -841,15 +923,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateCardDisplay();
     loadProgress(); // Essayer de charger les progrès sauvegardés
     setupCardListeners();
-    setupStreakUpdate(); // Start the streak update timer
     
-    // Ajouter des écouteurs d'événements pour réinitialiser le minuteur de streak
-    // quand l'utilisateur interagit avec la page
-    document.querySelectorAll('.knowledge-btn, #next-card, #prev-card, #shuffle-cards').forEach(btn => {
-        btn.addEventListener('click', function() {
-            setupStreakUpdate();
-        });
-    });
     
     // Animation d'entrée initiale
     document.querySelectorAll('.stat-card, .flashcard-filters, .mode-selector, .flashcard-container, .progress-container, .flashcard-actions').forEach((element, index) => {
@@ -863,13 +937,4 @@ document.addEventListener('DOMContentLoaded', function() {
         element.style.transform = 'translateY(0)';
       }, 100);
     });
-    
-    // Fix to prevent meaning-to-word mode issues
-    setTimeout(() => {
-      if (currentWords.length === 0 && allWords.length > 0) {
-        console.log('No current words but allWords exists, restoring from allWords');
-        currentWords = [...allWords];
-        updateCardDisplay();
-      }
-    }, 1000);
   });

@@ -5,6 +5,7 @@ const wordModel = require('../../models/words');
 const learningModel = require('../../models/learning');
 
 class GoogleAuthController {
+    
     constructor() {
         this.clientID = process.env.GOOGLE_CLIENT_ID;
         this.clientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -60,7 +61,6 @@ class GoogleAuthController {
             let userInfo;
             if (user) {
 
-                console.log('Existing user logged in:', user);
                 userInfo = await User.findById(user.id);
 
             } else {
@@ -77,17 +77,14 @@ class GoogleAuthController {
                 
                 // Créer un nouvel utilisateur
                 const newUserId = await User.create(userData);
-                console.log('New user created with ID:', newUserId);
-
                 // Prendre les informations de l'utilisateur nouvellement créé
                 userInfo = await User.findById(newUserId); 
             }
             
             const totalWords = await wordModel.countUserWords(userInfo.id);
-            const learnedWords = await learningModel.getNumWordsByLevel(userInfo.id, 'v');
-            const newWords = await learningModel.getNumWordsByLevel(userInfo.id, 'x');
-            const islearningWords = await learningModel.getNumWordsByLevel(userInfo.id, '0') + await learningModel.getNumWordsByLevel(userInfo.id, '1') + await learningModel.getNumWordsByLevel(userInfo.id, '2');
-            console.log('islearningWords', islearningWords);
+            const learnedWords = await learningModel.getNumWordsByLevelAllPackages(userInfo.id, 'v');
+            const newWords = await learningModel.getNumWordsByLevelAllPackages(userInfo.id, 'x');
+            const islearningWords = await learningModel.getNumWordsByLevelAllPackages(userInfo.id, '0') + await learningModel.getNumWordsByLevelAllPackages(userInfo.id, '1') + await learningModel.getNumWordsByLevelAllPackages(userInfo.id, '2');
             
             // Créer une session utilisateur (sans stocker le mot de passe)
             req.session.user = {
@@ -110,6 +107,7 @@ class GoogleAuthController {
         } catch (error) {
             console.error('Google authentication error:', error);
             return res.redirect('/login?error=Authentication failed');
+            
         }
     }
 }

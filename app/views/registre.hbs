@@ -1,8 +1,5 @@
 <link rel="stylesheet" href="/css/style.css">
   <div class="auth-page">
-    <div class="auth-bg-shape shape-1"></div>
-    <div class="auth-bg-shape shape-2"></div>
-    <div class="auth-bg-shape shape-3"></div>
     <div class="floating-card card-1">
       <i class="fas fa-quote-left"></i>
       <span> 🌱 It always seems impossible until it's done.</span>
@@ -38,19 +35,8 @@
         <p class="auth-subtitle">Créez votre compte pour commencer votre apprentissage</p>
       </div>
 
-      {{#if error}}
-      <div class="alert alert-error">
-        <i class="fas fa-exclamation-circle"></i>
-        {{error}}
+      <div id="alert" class="alert">
       </div>
-      {{/if}}
-
-      {{#if success}}
-      <div class="alert alert-success">
-        <i class="fas fa-check-circle"></i>
-        {{success}}
-      </div>
-      {{/if}}
 
       <form action="/registre" method="POST" class="auth-form">
         <div class="form-group" data-delay="100">
@@ -128,4 +114,4 @@
       </div>
     </div>
   </div>
-
+<script src="/js/auth.js" nonce="{{nonce}}"></script>

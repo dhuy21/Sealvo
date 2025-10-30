@@ -69,7 +69,6 @@ const sanitizationUtils = {
                 '<': '&lt;',
                 '>': '&gt;',
                 '"': '&quot;',
-                "'": '&#39;',
                 '&': '&amp;'
             };
             return entities[match];
@@ -115,12 +114,9 @@ const sanitizeInput = (fieldMappings = {}) => {
         if (req.body && typeof req.body === 'object') {
             try {
                 req.body = sanitizationUtils.sanitizeObject(req.body, fieldMappings);
-                console.log('✅ Input sanitized:', {
-                    originalKeys: Object.keys(req.body),
-                    sanitized: true
-                });
+
             } catch (error) {
-                console.error('❌ Sanitization error:', error.message);
+                console.error('Sanitization error:', error.message);
                 return res.status(400).json({ 
                     error: 'Données invalides: ' + error.message 
                 });

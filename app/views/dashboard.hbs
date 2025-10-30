@@ -5,11 +5,13 @@
     <i class="fas fa-language floating-icons float-icon-1"></i>
     <i class="fas fa-brain floating-icons float-icon-2"></i>
     <i class="fas fa-graduation-cap floating-icons float-icon-3"></i>
+
+    <!-- Header -->
+    <div class="dashboard-header fade-in">
+      <h1>Tableau de Bord</h1>
+    </div>
+
     <div class="dashboard-container">
-      <!-- Header -->
-      <div class="dashboard-header fade-in">
-        <h1>Tableau de Bord</h1>
-      </div>
       
       <!-- Welcome Message -->
       <div class="dashboard-welcome fade-in" data-user="{{user.username}}">
@@ -40,23 +42,10 @@
             </div>
           </div>
         </div>
-        <div class="dashboard-card fade-in">
-          <div class="text-center" style="margin-top: 1.5rem;">
-            <div class="streak-display">
-              <div class="progress-container fade-in">
-                <h3><i class="fas fa-fire" style="color: #F59E0B; margin-right: 0.5rem;"></i>Séries d'Apprentissage</h3>
-                <div class="progress-bar-container">
-                  <div class="progress-bar-fill" data-width="{{user.streak}}"></div>
-                </div>
-                <div class="progress-bar-labels">
-                  <span><i class="fas fa-tachometer-alt" style="color: #4158D0; margin-right: 0.25rem;"></i>Progression</span>
-                  <span id="progress-percentage"><i class="fas fa-trophy" style="color: #FFCC70; margin-right: 0.25rem;"></i>{{user.streak}}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
+      </div>
+
+      <!-- User Info -->
+      <div class="user-dashboard">
         <!-- User Info Card -->
         <div class="dashboard-card fade-in user-profile-card">
           <div class="user-profile-header">
@@ -66,25 +55,25 @@
                 <i class="fas fa-edit"></i>
               </button>
             </div>
-            <h2>Informations Utilisateur</h2>
-            {{#if notifications}}
-              <span class="notification-badge">{{notifications.length}}</span>
+
+            {{#if user.notifications}}
+              <span class="notification-badge">{{user.notifications}}</span>
             {{/if}}
           </div>
           <div class="user-info">
-            <div class="info-row">
+            <div class="info-row row-name">
               <div class="info-label"><i class="fas fa-user-tag" style="color: #2b44bf; width: 30px; margin-right: 8px;"></i>Nom d'utilisateur: </div>
               <div class="info-value"> 
-                <span class="username-display">{{user.username}}</span>
+                <div class="username-display">{{user.username}}</div>
                 <button type="button" class="edit-btn" title="Modifier">
                   <i class="fas fa-edit"></i>
                 </button>
               </div> 
             </div>
-            <div class="info-row">
+            <div class="info-row row-email">
               <div class="info-label"><i class="fas fa-envelope" style="color: #b720ad; width: 30px; margin-right: 8px;"></i>Email: </div>
               <div class="info-value"> 
-                <span class="email-display">{{user.email}}</span>
+                <div class="email-display">{{user.email}}</div>
                 <button type="button" class="edit-btn" title="Modifier">
                   <i class="fas fa-edit"></i>
                 </button>
@@ -102,85 +91,132 @@
               <div class="info-label">
                 <i class="fas fa-bell" style="color: #ee1616; width: 20px; margin-right: 20px;"></i>
                 <div class="info-value">
-                  <form action="/api/reminder" method="post">
-                    <button class="dashboard-btn dashboard-btn-primary" type="submit">Test Reminder</button>
-                  </form>
+                  <button class="dashboard-btn dashboard-btn-primary sparkle-btn" id="reminderBtn">
+                    <i class="fas fa-mail-bulk"></i> Test Reminder
+                    <div class="star-1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                    <div class="star-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                    <div class="star-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                    <div class="star-4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                    <div class="star-5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                    <div class="star-6"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                  </button>
                 </div>
               </div>
             </div> 
           </div>
-          <div class="text-center" style="margin-top: 1.5rem;">
-              <button class="dashboard-btn dashboard-btn-primary" type="button" id="changePasswordBtn">
-                <i class="fas fa-key"></i> Changer le mot de passe
+          <div class="text-center" style="margin-top: 4rem;">
+              <button class="dashboard-btn dashboard-btn-primary sparkle-btn" id="changePasswordBtn">
+                    <i class="fas fa-key"></i> Changer le mot de passe
+                    <div class="star-1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                    <div class="star-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                    <div class="star-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                    <div class="star-4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                    <div class="star-5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                    <div class="star-6"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
               </button>
           </div>
         </div>
+        
       </div>
       
       <!-- Main Content -->
       <div class="main-content">
         <!-- Action Cards -->
         <div class="dashboard-actions">
-          <div class="action-card fade-in" style="border-left: 4px solid #4158D0;">
-            <div class="action-card-icon" style="background: linear-gradient(135deg, rgba(65, 88, 208, 0.2), rgba(65, 88, 208, 0.1));">
-              <i class="fas fa-book-open"></i>
-            </div>
-            <div class="action-card-content">
-              <h3><i class="fas fa-graduation-cap" style="margin-right: 0.5rem;"></i>Apprendre</h3>
-              <p><i class="fas fa-lightbulb" style="color: #FFCC70; margin-right: 0.25rem;"></i>Réviser votre vocabulaire avec des cartes mémoire personnalisées.</p>
-              <a href="/monVocabs/learn" class="dashboard-btn dashboard-btn-primary">
-                <i class="fas fa-play-circle"> </i>  Commencer l'apprentissage
-              </a>
-            </div>
-          </div>
           
           <div class="action-card fade-in" style="border-left: 4px solid #C850C0;">
             <div class="action-card-icon" style="background: linear-gradient(135deg, rgba(200, 80, 192, 0.2), rgba(200, 80, 192, 0.1));">
               <i class="fas fa-plus-circle"></i>
             </div>
             <div class="action-card-content">
-              <h3><i class="fas fa-magic" style="margin-right: 0.5rem;"></i>Vocabulaire</h3>
-              <p><i class="fas fa-feather-alt" style="color: #C850C0; margin-right: 0.25rem;"></i>Enrichissez votre base de connaissances avec de nouveaux mots.</p>
-              <a href="/monVocabs" class="dashboard-btn dashboard-btn-primary">
-                <span><i class="fas fa-bookmark"> </i>      Vocabulaire</span>
+              <h3><i class="fas fa-magic" style="margin-right: 0.5rem;"></i>Mes Packages</h3>
+              <p><i class="fas fa-feather-alt" style="color: #C850C0; margin-right: 0.25rem;"></i>Créez vos propres packages de mots.</p>
+              <a href="/myPackages" class="dashboard-btn dashboard-btn-primary sparkle-btn">
+                <i class="fas fa-bookmark"> </i>      Mes Packages
+                <div class="star-1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                <div class="star-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                <div class="star-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                <div class="star-4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                <div class="star-5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+                <div class="star-6"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
               </a>
             </div>
           </div>
           
-          <div class="action-card fade-in" style="border-left: 4px solid #F59E0B;">
-            <div class="action-card-icon" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));">
-              <i class="fas fa-gamepad"></i>
-            </div>
-            <div class="action-card-content">
-              <h3><i class="fas fa-dice" style="margin-right: 0.5rem;"></i>Jouer</h3>
-              <p><i class="fas fa-puzzle-piece" style="color: #F59E0B; margin-right: 0.25rem;"></i>Apprenez tout en vous amusant avec nos jeux éducatifs.</p>
-              <a href="/games" class="dashboard-btn dashboard-btn-primary">
-                <i class="fas fa-running"> </i> Explorer les jeux
-              </a>
+        </div>
+        
+        <div class="dashboard-card fade-in">
+          <div class="text-center">
+            <div class="streak-display">
+              <div class="progress-container fade-in">
+                <h3><i class="fas fa-fire" style="color: #F59E0B; margin-right: 0.5rem;"></i>Séries d'Apprentissage</h3>
+                <div class="fire-section">
+                  <div class="fire">
+                      <div class="fire-left">
+                        <div class="main-fire"></div>
+                        <div class="particle-fire"></div>
+                      </div>
+                      <div class="fire-center">
+                        <div class="main-fire"></div>
+                        <div class="particle-fire"></div>
+                      </div>
+                      <div class="fire-right">
+                        <div class="main-fire"></div>
+                        <div class="particle-fire"></div>
+                      </div>
+                      <div class="fire-bottom">
+                        <div class="main-fire"></div>
+                      </div>
+                      <div class="fire-streak-text" id="fireStreakText">{{user.streak}}</div>
+                  </div>
+                </div>
+                <div class="progress-bar-container">
+                  <div class="progress-bar-fill" data-width="{{user.streak}}"></div>
+                </div>
+                <div class="progress-bar-labels">
+                  <span><i class="fas fa-tachometer-alt" style="color: #4158D0; margin-right: 0.25rem;"></i>Progression</span>
+                  <span id="progress-percentage"><i class="fas fa-trophy" style="color: #FFCC70; margin-right: 0.25rem;"></i>{{user.streak}}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        
-        <!-- Recent Activity -->
-        <div class="recent-activity fade-in">
-          <h3><i class="fas fa-history" style="color: #0EA5E9; margin-right: 0.5rem;"></i>Activité Récente</h3>
-          {{#if activities.length}}
+
+        <!-- Tasks -->
+        <div class="tasks-activity fade-in">
+          <div class="tasks-header">
+            <h5>🔖 Packages à Réviser</h5>
+            <span class="tasks-count">{{user.packagesToReview.length}}</span>
+          </div>
+          {{#if user.packagesToReview.length}}
             <ul class="activity-list">
-              {{#each activities}}
-                <li class="activity-item">
-                  <div class="activity-icon {{this.iconClass}}">
-                    <i class="fas {{this.icon}}"></i>
+              {{#each user.packagesToReview}}
+                <li class="activity-item task-card" data-package="{{this.package_id}}">
+                  <div class="task-icon"> 📜 </div>
+                  <div class="task-content">
+                    <div class="activity-title">{{this.package_name}}</div>
+
+                    <div class="activity-time">
+                      🧠
+                      <div class="word-count">{{this.num_words}}</div>
+                      <div class="word-label">mots à réviser</div>
+                    </div>
                   </div>
-                  <div class="activity-content">
-                    <div class="activity-title">{{this.title}}</div>
-                    <div class="activity-time"><i class="far fa-clock" style="margin-right: 0.25rem;"></i>{{this.time}}</div>
+                  <div class="task-actions">
+                    <div class="task-priority">
+                      <div class="priority-dot"></div>
+                    </div>
                   </div>
                 </li>
               {{/each}}
             </ul>
           {{else}}
             <div class="no-activity">
-              <p><i class="fas fa-info-circle" style="color: #4158D0; margin-right: 0.5rem;"></i>Aucune activité récente. Commencez à explorer l'application!</p>
+              <div class="no-activity-icon">
+                <i class="fas fa-check-circle"></i>
+              </div>
+              <h4>Excellent travail !</h4>
+              <p>Toutes vos tâches sont terminées. Vous êtes à jour dans vos révisions !</p>
             </div>
           {{/if}}
         </div>
@@ -188,12 +224,24 @@
       
       <!-- Footer -->
       <div class="dashboard-footer fade-in">
-        <a href="/" class="dashboard-btn dashboard-btn-primary">
+        <a href="/" class="dashboard-btn dashboard-btn-primary sparkle-btn">
           <i class="fas fa-home"></i> Retour à l'accueil
+          <div class="star-1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+          <div class="star-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+          <div class="star-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+          <div class="star-4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+          <div class="star-5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+          <div class="star-6"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
         </a>
         <span style="display: inline-block; margin: 0 10px; color: var(--text-secondary);"><i class="fas fa-heart" style="color: #EF4444;"></i></span>
-        <a href="/feedback" class="dashboard-btn dashboard-btn-primary">
+        <a href="/feedback" class="dashboard-btn dashboard-btn-primary sparkle-btn">
           <i class="fas fa-comment-dots"></i> Feedback
+          <div class="star-1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+          <div class="star-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+          <div class="star-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+          <div class="star-4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+          <div class="star-5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
+          <div class="star-6"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53"><path class="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"></path></svg></div>
         </a>
       </div>
     </div>
@@ -227,5 +275,5 @@
       </div>
     </div>
   </div>
-  <script src="/js/dashboard.js"></script>
+  <script src="/js/dashboard.js" nonce="{{nonce}}"></script>
 

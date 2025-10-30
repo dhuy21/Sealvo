@@ -1,38 +1,44 @@
 const gameScoresModel = require('../../models/game_scores');
 const learningModel = require('../../models/learning');
+const wordModel = require('../../models/words');
 const levelGame = '1';
 
 class SpeedVocabController {
     constructor() {
         // Bind all methods to maintain 'this' context
-        this.getWordForSpeedVocab = this.getWordForSpeedVocab.bind(this);
+        this.getWordsForSpeedVocab = this.getWordsForSpeedVocab.bind(this);
     }
 
-    async getWordForSpeedVocab(req, res) {
+    async getWordsForSpeedVocab(req, res) {
         try {
-            // Vérifier si l'utilisateur est connecté
-            if (!req.session.user) {
-                return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
-            }
-        
-            const previousWordId = req.query.previous || null; // Récupérer l'ID du mot précédent
-            
-            const words = await learningModel.findRandomWordsExcluding(
-                req.session.user.id, 
-                previousWordId, 
-                1,
-                levelGame
-            );
-                
-            if (!words || words.length === 0) {
-                return res.status(404).json({ error: 'Aucun mot trouvé dans votre vocabulaire.' });
-            }
+            const package_id = req.query.package;
 
-            return res.json(words[0]);
+            // Récupérer tous les mots de l'utilisateur
+            const detailWordsIds = await learningModel.findWordsByLevel(package_id, levelGame);
+            let words = [];
+            for (const detailWordId of detailWordsIds) {
+                let word = await wordModel.findById(detailWordId.detail_id);
+
+                // Construire une définition à partir des détails du mot
+                let meaning = '';
+                if (word.type) {
+                    meaning += `${word.type} : `;
+                }
+                meaning += word.meaning;
+
+                words.push({
+                    word: word.word,
+                    meaning: meaning
+                });
+            }
             
+            return res.json({
+                words: words
+            });
+
         } catch (error) {
-            console.error('Erreur lors de la récupération du mot pour SpeedVocab:', error);
-            res.status(500).json({ error: 'Erreur lors de la récupération du mot.' });
+            console.error('Erreur lors de la récupération d\'un mot aléatoire:', error);
+            return res.status(500).json({ error: 'Une erreur est survenue lors de la récupération d\'un mot.' });
         }
     }
 }

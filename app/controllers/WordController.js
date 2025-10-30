@@ -1,5 +1,7 @@
 const wordModel = require('../models/words');
 const learningModel = require('../models/learning');
+const geminiService = require('../services/gemini');
+
 
 class WordController {
     // Afficher la page de vocabulaire
@@ -9,16 +11,16 @@ class WordController {
             if (!req.session.user) {
                 return res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
             }
-
+            const package_id = req.query.package;
             // Récupérer tous les mots de l'utilisateur
-            const words = await wordModel.findWordsByUserId(req.session.user.id);
+            const words = await wordModel.findWordsByPackageId(package_id);
 
             // Grouper les mots par niveau
             const wordsByLevel = {};
             words.forEach(word => {
                 // S'assurer que level est une clé valide (0, 1, 2, x)
                 const level = word.level;
-                
+                word.example = word.example.replace(/\*\*([^\*]+)\*\*/g, '$1');
                 if (!wordsByLevel[level]) {
                     wordsByLevel[level] = [];
                 }
@@ -29,6 +31,7 @@ class WordController {
                 title: 'Mon Vocabulaire',
                 user: req.session.user,
                 words: words,
+                package_id: package_id,
                 wordsByLevel: wordsByLevel,
                 hasWords: words.length > 0
             });
@@ -37,6 +40,7 @@ class WordController {
             res.render('monVocabs', {
                 title: 'Mon Vocabulaire',
                 user: req.session.user,
+                package_id: package_id,
                 error: 'Une erreur est survenue lors de la récupération de vos mots.'
             });
         }
@@ -51,6 +55,7 @@ class WordController {
         
         res.render('addWord', {
             title: 'Ajouter un mot',
+            package_id: req.query.package,
             user: req.session.user,
             multipleWords: req.query.multiple === 'true' // Pass flag for multiple words view
         });
@@ -58,45 +63,32 @@ class WordController {
     
     // Traiter la soumission du formulaire d'ajout de mot(s)
     async addWordPost(req, res) {
+         // Vérifier si l'utilisateur est connecté
+         if (!req.session.user) {
+            return res.redirect('/login?error=Vous devez être connecté pour ajouter un mot');
+        }
+
+        const package_id = req.query.package;
+
         try {
-            // Vérifier si l'utilisateur est connecté
-            if (!req.session.user) {
-                return res.redirect('/login?error=Vous devez être connecté pour ajouter un mot');
-            }
             
-            // Déterminer si c'est un envoi de plusieurs mots
-            const isMultipleWords = req.body.isMultipleWords === 'true';
+            let wordsData = [];
+            let words_no_example = [];
+            let words_with_error_example = [];
             
-            if (isMultipleWords) {
+            if (package_id) {
                 // Traitement de plusieurs mots
-                const { words, subjects, types, meanings, pronunciations, synonyms, antonyms, examples, grammars, levels } = req.body;
-                
-                // Vérifier que les tableaux sont bien définis et ont la même longueur
-                if (!words || !Array.isArray(words) || words.length === 0) {
-                    return res.render('addWord', {
-                        title: 'Ajouter des mots',
-                        user: req.session.user,
-                        multipleWords: true,
-                        error: 'Veuillez ajouter au moins un mot',
-                        formData: req.body
-                    });
-                }
-                
+                const { words, language_codes, subjects, types, meanings, pronunciations, synonyms, antonyms, examples, grammars, levels } = req.body;
                 const wordCount = words.length;
-                let successCount = 0;
-                let errors = [];
-                
+                console.log(words);
                 // Traiter chaque mot
                 for (let i = 0; i < wordCount; i++) {
-                    // Vérifier les champs obligatoires pour chaque mot
-                    if (!words[i] || !subjects[i] || !types[i] || !meanings[i] || !examples[i] || levels[i] === undefined) {
-                        errors.push(`Ligne ${i+1}: Veuillez remplir tous les champs obligatoires`);
-                        continue;
-                    }
                     
                     // Créer le mot dans la base de données
                     const wordData = {
+                        id: i,
                         word: words[i],
+                        language_code: language_codes[i].replace(/\([^)]*\)/g, '').trim(),
                         subject: subjects[i],
                         type: types[i],
                         meaning: meanings[i],
@@ -107,69 +99,105 @@ class WordController {
                         grammar: grammars[i] || '',
                         level: levels[i]
                     };
-                    
-                    try {
-                        await wordModel.create(wordData, req.session.user.id);
-                        successCount++;
-                    } catch (err) {
-                        errors.push(`Erreur lors de l'ajout du mot "${words[i]}": ${err.message}`);
+
+                    if (wordData.example === '') {
+                        words_no_example.push({
+                            id: wordData.id,
+                            word: wordData.word,
+                            language_code: wordData.language_code,
+                            meaning: wordData.meaning,
+                            type: wordData.type
+                        });
+                    } else if (wordData.example !== '') {
+                        words_with_error_example.push({
+                            id: wordData.id,
+                            word: wordData.word,
+                            language_code: wordData.language_code,
+                            meaning: wordData.meaning,
+                            type: wordData.type,
+                            example: wordData.example
+                        });
                     }
+
+                    wordsData.push(wordData);
                 }
                 
-                // Rediriger avec les résultats
-                if (successCount > 0) {
-                    const message = `${successCount} mot(s) ajouté(s) avec succès${errors.length > 0 ? '. Certaines erreurs sont survenues.' : ''}`;
-                    return res.redirect(`/monVocabs?success=${encodeURIComponent(message)}`);
-                } else {
-                    return res.render('addWord', {
-                        title: 'Ajouter des mots',
-                        user: req.session.user,
-                        multipleWords: true,
-                        error: 'Aucun mot n\'a pu être ajouté. ' + errors.join('. '),
-                        formData: req.body
-                    });
-                }
-            } else {
-                // Traitement d'un seul mot (fonctionnalité existante)
-                // Récupérer les données du formulaire
-                const { word, subject, type, meaning, pronunciation, synonyms, antonyms, example, grammar, level } = req.body;
-                
-                // Vérifier que les champs obligatoires sont présents
-                if (!word || !subject || !type || !meaning || !example || level === undefined) {
-                    return res.render('addWord', {
-                        title: 'Ajouter un mot',
-                        user: req.session.user,
-                        error: 'Veuillez remplir tous les champs obligatoires',
-                        formData: req.body
-                    });
-                }
-                
-                // Créer le mot dans la base de données
-                const wordData = {
-                    word,
-                    subject,
-                    type,
-                    meaning,
-                    pronunciation: pronunciation || '',
-                    synonyms: synonyms || '',
-                    antonyms: antonyms || '',
-                    example,
-                    grammar: grammar || '',
-                    level
-                };
-                
-                await wordModel.create(wordData, req.session.user.id);
-                
-                // Rediriger vers la page de vocabulaire avec un message de succès
-                res.redirect('/monVocabs?success=Mot ajouté avec succès');
             }
+
+            let errExample = 0;
+            // Générer des exemples pour les mots sans exemples
+            if (words_no_example.length > 0) {
+                
+                try {
+                    const words_with_examples = await geminiService.generateExemple(words_no_example);
+                    if (Array.isArray(words_with_examples) && words_with_examples.length > 0) {
+                        console.log('Examples generated successfully');
+                        wordsData = await geminiService.replaceExample(wordsData, words_with_examples);
+                    } else {
+                        console.log('No examples were generated');
+                        errExample ++ ;
+                    }
+                } catch (error) {
+                    console.error('Error generating examples:', error);
+                }
+            }
+            // Corriger les exemples des mots avec des exemples en erreur
+            if (words_with_error_example.length > 0) {
+                console.log('Correcting examples for words with error examples...');
+                try {
+                    const words_with_correct_examples = await geminiService.modifyExample(words_with_error_example);
+                    if (Array.isArray(words_with_correct_examples) && words_with_correct_examples.length > 0) {
+                        console.log('Examples corrected successfully');
+                        wordsData = await geminiService.replaceExample(wordsData, words_with_correct_examples);
+                    } else {
+                        console.log('No examples were corrected');
+                        errExample ++ ;
+                    }
+                } catch (error) {
+                    console.error('❌ Error correcting examples:', error);
+                }
+            }
+
+            // Ajouter chaque mot à la base de données
+            let successCount = 0;
+            let errChamps = 0;
+        
+            for (const wordData of wordsData) {
+                try {
+                    // Vérifier que les champs obligatoires sont présents
+                    if (!wordData.word || !wordData.language_code || !wordData.subject || !wordData.type || 
+                        !wordData.meaning ) {
+                            errChamps ++ ;
+                        continue;
+                    }
+                    
+                    // Assurer que level est défini
+                    if (wordData.level === undefined || wordData.level === null) {
+                        wordData.level = 'x'; // Niveau par défaut
+                    }
+
+                    await wordModel.create(wordData, package_id);
+                    successCount++;
+
+                } catch (error) {
+                    console.error(`Erreur lors de l'ajout du mot ${wordData.word}:`, error);
+                    errChamps ++ ;
+                }
+            }
+
+            // Rediriger avec un message de succès
+            res.status(200).json({
+                success: true,
+                message: `${successCount} mot(s) importé(s) avec succès. ${errChamps} erreur(s) de champs obligatoires. ${errExample} erreur(s) de generation d'exemples`
+            });
             
+
         } catch (error) {
             console.error('Erreur lors de l\'ajout du mot:', error);
             res.render('addWord', {
                 title: 'Ajouter un mot',
+                package_id: package_id,
                 user: req.session.user,
-                multipleWords: req.body.isMultipleWords === 'true',
                 error: 'Une erreur est survenue lors de l\'ajout du mot',
                 formData: req.body
             });
@@ -182,28 +210,38 @@ class WordController {
             if (!req.session.user) {
                 return res.redirect('/login?error=Vous devez être connecté pour effectuer cette action');
             }
-            
-            const count = await wordModel.deleteAllWords(req.session.user.id);
+            const package_id = req.query.package;
+            const count = await wordModel.deleteAllWords(package_id);
             
             // Rediriger avec un message de succès
-            if (count > 0) {
-                res.redirect(`/monVocabs?success=${count} mot(s) supprimé(s) avec succès`);
+            if (count) {
+                res.status(200).json({
+                    success: true,
+                    message: `Le(s) mot(s) supprimé(s) avec succès`
+                });
             } else {
-                res.redirect('/monVocabs?success=Aucun mot à supprimer');
+                res.status(200).json({
+                    success: true,
+                    message: 'Aucun mot à supprimer'
+                });
             }
+            
         } catch (error) {
+            const package_id = req.query.package;
             console.error('Erreur lors de la suppression de tous les mots:', error);
-            res.redirect('/monVocabs?error=Une erreur est survenue lors de la suppression des mots');
+            res.status(500).json({
+                success: false,
+                message: 'Une erreur est survenue lors de la suppression des mots'
+            });
         }
     }
 
     async deleteWord(req, res) {
         try {
-            const wordId = req.params.id;
-            const userId = req.session.user.id;
-
+            const detail_id = req.params.id;
+            const package_id = req.query.package;
             // Vérifier si le mot appartient à l'utilisateur
-            const word = await wordModel.findUsersByWordId(wordId);
+            const word = await wordModel.findUsersByWordId(detail_id);
             if (!word) {
                 return res.status(404).json({ 
                     success: false, 
@@ -211,7 +249,7 @@ class WordController {
                 });
             }
 
-            if (word.user_id !== userId) {
+            if (word.package_id != package_id) {
                 return res.status(403).json({ 
                     success: false, 
                     message: 'Vous n\'êtes pas autorisé à supprimer ce mot' 
@@ -219,7 +257,7 @@ class WordController {
             }
 
             // Supprimer le mot
-            await wordModel.deleteWord(wordId, userId);
+            await wordModel.deleteWord(detail_id, package_id);
 
             res.json({ 
                 success: true, 
@@ -236,24 +274,25 @@ class WordController {
 
     // Afficher le formulaire d'édition de mot
     async editWord(req, res) {
+        const package_id = req.query.package;
         try {
             // Vérifier si l'utilisateur est connecté
             if (!req.session.user) {
                 return res.redirect('/login?error=Vous devez être connecté pour modifier un mot');
             }
             
-            const wordId = req.params.id;
-            const userId = req.session.user.id;
+            const detail_id = req.params.id;
+            
             
             // Récupérer les informations du mot
-            const word = await wordModel.findById(wordId);
+            const word = await wordModel.findById(detail_id);
             
             // Vérifier si le mot existe et appartient à l'utilisateur
             if (!word) {
                 return res.redirect('/monVocabs?error=Mot introuvable');
             }
             
-            if (word.user_id !== userId) {
+            if (word.package_id !== package_id) {
                 return res.status(403).render('error', {
                     title: 'Accès refusé',
                     user: req.session.user,
@@ -264,26 +303,27 @@ class WordController {
             res.render('editVocabs', {
                 title: 'Modifier un mot',
                 user: req.session.user,
-                word: word
+                word: word,
+                package_id: package_id
             });
         } catch (error) {
             console.error('Erreur lors de la récupération du mot:', error);
-            res.redirect('/monVocabs?error=Une erreur est survenue lors de la récupération du mot');
+            res.redirect(`/monVocabs?package=${package_id}&error=Une erreur est survenue lors de la récupération du mot`);
         }
     }
 
     async editWordPost(req, res) {
+        const detail_id = req.params.id;
+        const package_id = req.query.package;
         try {
-            const wordId = req.params.id;
-            const userId = req.session.user.id;
-
+            
             // Vérifier si l'utilisateur est connecté
             if (!req.session.user) {
                 return res.redirect('/login?error=Vous devez être connecté pour effectuer cette action');
             }
 
             // Vérifier si le mot appartient à l'utilisateur
-            const wordCheck = await wordModel.findById(wordId);
+            const wordCheck = await wordModel.findById(detail_id);
             
             if (!wordCheck) {
                 return res.status(404).json({ 
@@ -292,7 +332,7 @@ class WordController {
                 });
             }
             
-            if (wordCheck.user_id !== userId) {
+            if (wordCheck.package_id != package_id) {
                 return res.status(403).json({ 
                     success: false, 
                     message: 'Vous n\'êtes pas autorisé à modifier ce mot' 
@@ -300,20 +340,24 @@ class WordController {
             }
 
             // Récupérer les données du formulaire
-            const { word, subject, type, meaning, pronunciation, synonyms, antonyms, example, grammar, level } = req.body;
+            const { word, language_code, type, meaning, pronunciation, synonyms, antonyms, example, grammar, level } = req.body;
 
             // Vérifier que les champs obligatoires sont présents
-            if (!word || !subject || !type || !meaning || !example) {
+            if (!word || !language_code || !type || !meaning || !example) {
                 return res.status(403).json({
                     success: false,
                     message: 'Veuillez remplir tous les champs obligatoires'
                 });
             }
 
+            let words_no_example = [];
+            let words_with_error_example = [];
+
             // Mettre à jour le mot dans la base de données
-            const wordData = {
+            let wordData = {
+                id: 0,
                 word,
-                subject,
+                language_code: language_code.replace(/\([^)]*\)/g, '').trim(),
                 type,
                 meaning,
                 pronunciation: pronunciation || '', // Valeur par défaut si vide
@@ -324,7 +368,60 @@ class WordController {
                 level
             };
 
-            await wordModel.updateWord(wordData, wordId, userId);
+            if (wordData.example === '') {
+                words_no_example.push({
+                    id: wordData.id,
+                    word: wordData.word,
+                    language_code: wordData.language_code,
+                    meaning: wordData.meaning,
+                    type: wordData.type
+                });
+            } else if (wordData.example !== '') {
+                words_with_error_example.push({
+                    id: wordData.id,
+                    word: wordData.word,
+                    language_code: wordData.language_code,
+                    meaning: wordData.meaning,
+                    type: wordData.type,
+                    example: wordData.example
+                });
+            }
+
+            let errExample = 0;
+            // Générer des exemples pour les mots sans exemples
+            if (words_no_example.length > 0) {
+                
+                try {
+                    const words_with_examples = await geminiService.generateExemple(words_no_example);
+                    if (Array.isArray(words_with_examples) && words_with_examples.length > 0) {
+                        console.log('✅ Examples generated successfully');
+                        wordData = await geminiService.replaceExample(wordData, words_with_examples);
+                    } else {
+                        console.log('⚠️ No examples were generated');
+                        errExample ++ ;
+                    }
+                } catch (error) {
+                    console.error('❌ Error generating examples:', error);
+                }
+            }
+            // Corriger les exemples des mots avec des exemples en erreur
+            if (words_with_error_example.length > 0) {
+                console.log('Correcting examples for words with error examples...');
+                try {
+                    const words_with_correct_examples = await geminiService.modifyExample(words_with_error_example);
+                    if (Array.isArray(words_with_correct_examples) && words_with_correct_examples.length > 0) {
+                        console.log('✅ Examples corrected successfully');
+                        wordData = await geminiService.replaceExample(wordData, words_with_correct_examples);
+                    } else {
+                        console.log('⚠️ No examples were corrected');
+                        errExample ++ ;
+                    }
+                } catch (error) {
+                    console.error('❌ Error correcting examples:', error);
+                }
+            }
+
+            await wordModel.updateWord(wordData, detail_id, package_id);
 
             // Rediriger vers la page de vocabulaire avec un message de succès
             res.json({
@@ -342,6 +439,7 @@ class WordController {
     }
 
     async learnVocabs(req, res) {
+        const package_id = req.query.package;
         try {
             // Vérifier si l'utilisateur est connecté
             if (!req.session.user) {
@@ -349,23 +447,24 @@ class WordController {
             }
 
             // Récupérer les mots de l'utilisateur
-            const words = await wordModel.findWordsByUserId(req.session.user.id);
-            const wordIdsToReview = await learningModel.findWordsTodayToLearn(req.session.user.id);
+            const words = await wordModel.findWordsByPackageId(package_id);
+            const wordIdsToReview = await learningModel.findWordsTodayToLearn(package_id);
 
             // Add dueToday flag to each word
             words.forEach(word => {
-                word.dueToday = wordIdsToReview.some(item => item.word_id === word.word_id);
+                word.dueToday = wordIdsToReview.some(item => item.detail_id === word.detail_id);
+                word.example = word.example.replace(/\*\*([^\*]+)\*\*/g, '$1');
             });
-            console.log(words);
 
             res.render('learnVocabs', {
                 title: 'Apprendre des mots',
                 user: req.session.user,
-                words: words
+                words: words,
+                package_id: package_id
             });
         } catch (error) {
             console.error('Erreur lors de la récupération des mots à apprendre:', error);
-            res.redirect('/monVocabs?error=Une erreur est survenue lors de la récupération des mots à apprendre');
+            res.redirect(`/monVocabs?package=${package_id}&error=Une erreur est survenue lors de la récupération des mots à apprendre`);
         }
     }
     
