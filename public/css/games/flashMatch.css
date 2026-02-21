@@ -11,6 +11,7 @@
     font-family: 'Poppins', sans-serif;
     position: relative;
     overflow: hidden;
+    isolation: isolate; /* Stacking context: bubbles (z-index: -1) stay behind content but visible */
 }
 
 /* Modern floating elements */

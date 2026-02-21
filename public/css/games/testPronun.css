@@ -13,6 +13,7 @@
     font-family: 'Poppins', sans-serif;
     position: relative;
     overflow: hidden;
+    isolation: isolate; /* Stacking context: background animations (z-index: -1) stay visible */
 }
 
 /* Sound Wave Animation Background */
