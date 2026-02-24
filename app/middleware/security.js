@@ -20,63 +20,51 @@ const cspConfig = {
         "'self'",
         "'strict-dynamic'",
         (req, res) => `'nonce-${res.locals.nonce}'`,
-        "https://accounts.google.com",
-        "https://apis.google.com"
+        'https://accounts.google.com',
+        'https://apis.google.com',
       ],
       styleSrc: [
         "'self'",
         "'unsafe-inline'", // Still needed for CSS
-        "https://cdnjs.cloudflare.com",
-        "https://fonts.googleapis.com"
+        'https://cdnjs.cloudflare.com',
+        'https://fonts.googleapis.com',
       ],
-      fontSrc: [
-        "'self'",
-        "https://cdnjs.cloudflare.com",
-        "https://fonts.gstatic.com"
-      ],
-      imgSrc: [
-        "'self'",
-        "data:",
-        "https:",
-        "blob:"
-      ],
+      fontSrc: ["'self'", 'https://cdnjs.cloudflare.com', 'https://fonts.gstatic.com'],
+      imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
       connectSrc: [
         "'self'",
-        "https://accounts.google.com",
-        "https://oauth2.googleapis.com",
-        "https://www.googleapis.com",
-        "https://cdn.jsdelivr.net" // Pour les source maps et ressources CDN
+        'https://accounts.google.com',
+        'https://oauth2.googleapis.com',
+        'https://www.googleapis.com',
+        'https://cdn.jsdelivr.net', // Pour les source maps et ressources CDN
       ],
-      frameSrc: [
-        "'self'",
-        "https://accounts.google.com"
-      ],
+      frameSrc: ["'self'", 'https://accounts.google.com'],
       objectSrc: ["'none'"],
-      mediaSrc: ["'self'", "blob:"],
+      mediaSrc: ["'self'", 'blob:'],
       childSrc: ["'self'"],
       formAction: ["'self'"],
       frameAncestors: ["'none'"],
       baseUri: ["'self'"],
       manifestSrc: ["'self'"],
-      workerSrc: ["'self'", "blob:"],
+      workerSrc: ["'self'", 'blob:'],
       scriptSrcElem: [
         "'self'",
         (req, res) => `'nonce-${res.locals.nonce}'`,
-        "https://accounts.google.com",
-        "https://apis.google.com"
+        'https://accounts.google.com',
+        'https://apis.google.com',
       ],
-      upgradeInsecureRequests: []
+      upgradeInsecureRequests: [],
     },
   },
   crossOriginEmbedderPolicy: false,
   hsts: {
     maxAge: 31536000,
     includeSubDomains: true,
-    preload: true
+    preload: true,
   },
-  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
-  crossOriginOpenerPolicy: { policy: "same-origin" },
-  crossOriginResourcePolicy: { policy: "cross-origin" },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  crossOriginOpenerPolicy: { policy: 'same-origin' },
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
   dnsPrefetchControl: { allow: false },
   frameguard: { action: 'deny' },
   hidePoweredBy: true,
@@ -84,7 +72,7 @@ const cspConfig = {
   noSniff: true,
   originAgentCluster: true,
   permittedCrossDomainPolicies: false,
-  xssFilter: true
+  xssFilter: true,
 };
 
 /**
@@ -94,7 +82,7 @@ const cspConfig = {
 const initializeSecurity = (app) => {
   // Generate nonce for each request
   app.use(nonceMiddleware);
-  
+
   // Apply security headers with CSP
   app.use(helmet(cspConfig));
 };
@@ -102,5 +90,5 @@ const initializeSecurity = (app) => {
 module.exports = {
   initializeSecurity,
   nonceMiddleware,
-  cspConfig
-}; 
+  cspConfig,
+};

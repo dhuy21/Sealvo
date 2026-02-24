@@ -17,28 +17,34 @@
 .float-icon-1 {
   top: 5%;
   left: 5%;
-  color: #4158D0;
+  color: #4158d0;
   animation-delay: 0s;
 }
 
 .float-icon-2 {
   top: 15%;
   right: 10%;
-  color: #C850C0;
+  color: #c850c0;
   animation-delay: 2s;
 }
 
 .float-icon-3 {
   bottom: 10%;
   right: 15%;
-  color: #FFCC70;
+  color: #ffcc70;
   animation-delay: 4s;
 }
 
 @keyframes float {
-  0% { transform: translateY(0) rotate(0); }
-  50% { transform: translateY(-15px) rotate(5deg); }
-  100% { transform: translateY(0) rotate(0); }
+  0% {
+    transform: translateY(0) rotate(0);
+  }
+  50% {
+    transform: translateY(-15px) rotate(5deg);
+  }
+  100% {
+    transform: translateY(0) rotate(0);
+  }
 }
 
 .feedback-header {
@@ -50,7 +56,7 @@
   font-size: 2.5rem;
   color: #333;
   margin-bottom: 1rem;
-  background: linear-gradient(135deg, #4158D0, #C850C0);
+  background: linear-gradient(135deg, #4158d0, #c850c0);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -90,7 +96,7 @@ label {
 }
 
 .form-control:focus {
-  border-color: #4158D0;
+  border-color: #4158d0;
   box-shadow: 0 0 0 3px rgba(65, 88, 208, 0.2);
   outline: none;
 }
@@ -120,7 +126,7 @@ textarea.form-control {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #4158D0, #C850C0);
+  background: linear-gradient(135deg, #4158d0, #c850c0);
   color: white;
 }
 
@@ -145,8 +151,14 @@ textarea.form-control {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .alert {
@@ -175,15 +187,15 @@ textarea.form-control {
   .feedback-header h1 {
     font-size: 2rem;
   }
-  
+
   .feedback-form-container {
     padding: 1.5rem;
   }
-  
+
   .feedback-actions {
     flex-direction: column;
   }
-  
+
   .btn {
     width: 100%;
     justify-content: center;
@@ -194,11 +206,11 @@ textarea.form-control {
   .feedback-header h1 {
     font-size: 1.75rem;
   }
-  
+
   .feedback-description {
     font-size: 1rem;
   }
-  
+
   .form-control {
     padding: 0.75rem;
   }

@@ -16,8 +16,6 @@
   --pulse-shadow-danger: 0 0 0 rgba(255, 107, 107, 0.4);
 }
 
-
-
 .learn-container {
   max-width: 2000px;
   min-width: auto;
@@ -67,8 +65,14 @@
 }
 
 @keyframes lineGrow {
-  from { width: 0; opacity: 0; }
-  to { width: 60px; opacity: 1; }
+  from {
+    width: 0;
+    opacity: 0;
+  }
+  to {
+    width: 60px;
+    opacity: 1;
+  }
 }
 
 .streak-update-notification {
@@ -123,7 +127,9 @@
 
 .stat-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1), 0 8px 15px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 15px 30px rgba(0, 0, 0, 0.1),
+    0 8px 15px rgba(0, 0, 0, 0.05);
 }
 
 .stat-icon {
@@ -158,8 +164,8 @@
 .flashcard-controls {
   display: grid;
   grid-template-areas:
-    "filters mode-selector"
-    "vocab-selector vocab-selector";
+    'filters mode-selector'
+    'vocab-selector vocab-selector';
   grid-template-columns: 1fr 1fr;
 
   gap: 25px;
@@ -185,19 +191,21 @@
 @media (max-width: 768px) {
   .flashcard-controls {
     grid-template-areas:
-      "filters"
-      "mode-selector"
-      "vocab-selector";
+      'filters'
+      'mode-selector'
+      'vocab-selector';
     grid-template-columns: 1fr;
   }
-  
+
   .mode-vocab-selector {
     width: 100%;
     min-width: auto;
   }
 }
 
-.flashcard-filters, .mode-selector, .mode-vocab-selector {
+.flashcard-filters,
+.mode-selector,
+.mode-vocab-selector {
   background: white;
   border-radius: var(--card-radius);
   padding: 25px;
@@ -207,7 +215,9 @@
   overflow: hidden;
 }
 
-.flashcard-filters::before, .mode-selector::before, .mode-vocab-selector::before {
+.flashcard-filters::before,
+.mode-selector::before,
+.mode-vocab-selector::before {
   content: '';
   position: absolute;
   top: 0;
@@ -217,7 +227,9 @@
   background: var(--bg-gradient);
 }
 
-.flashcard-filters h3, .mode-selector h3, .mode-vocab-selector h3 {
+.flashcard-filters h3,
+.mode-selector h3,
+.mode-vocab-selector h3 {
   margin-top: 0;
   margin-bottom: 18px;
   color: var(--primary-color);
@@ -236,8 +248,8 @@
   gap: 0.5rem;
 }
 
-
-.filter-options, .mode-options {
+.filter-options,
+.mode-options {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -245,7 +257,8 @@
   gap: 12px;
 }
 
-.filter-label, .mode-label {
+.filter-label,
+.mode-label {
   position: relative;
   display: flex;
   align-items: center;
@@ -256,17 +269,20 @@
   font-weight: 500;
 }
 
-.filter-label:hover, .mode-label:hover {
+.filter-label:hover,
+.mode-label:hover {
   background-color: rgba(124, 92, 245, 0.06);
 }
 
-.filter-label input, .mode-label input {
+.filter-label input,
+.mode-label input {
   position: absolute;
   opacity: 0;
   cursor: pointer;
 }
 
-.custom-checkbox, .custom-radio {
+.custom-checkbox,
+.custom-radio {
   position: relative;
   display: inline-block;
   width: 24px;
@@ -283,13 +299,13 @@
   border-radius: 50%;
 }
 
-.filter-label input:checked ~ .custom-checkbox, 
+.filter-label input:checked ~ .custom-checkbox,
 .mode-label input:checked ~ .custom-radio {
   background: var(--bg-gradient);
   box-shadow: 0 4px 8px rgba(124, 92, 245, 0.25);
 }
 
-.filter-label input:checked ~ .custom-checkbox:after, 
+.filter-label input:checked ~ .custom-checkbox:after,
 .mode-label input:checked ~ .custom-radio:after {
   content: '';
   position: absolute;
@@ -329,7 +345,6 @@
   min-height: 500px;
   overflow: visible;
 }
-
 
 /* Force proper grid positioning even with overflow content */
 .flashcard-container .card-count {
@@ -389,7 +404,10 @@
   border-radius: var(--card-radius);
 }
 
-.flashcard, .flashcard-inner, .flashcard-front, .flashcard-back {
+.flashcard,
+.flashcard-inner,
+.flashcard-front,
+.flashcard-back {
   height: auto;
   overflow: visible;
 }
@@ -398,7 +416,8 @@
   transform: rotateY(180deg);
 }
 
-.flashcard-front, .flashcard-back {
+.flashcard-front,
+.flashcard-back {
   position: absolute;
   width: 100%;
   height: 100%;
@@ -430,7 +449,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: 
+  background-image:
     radial-gradient(circle at 15% 15%, rgba(124, 92, 245, 0.1) 0%, transparent 25%),
     radial-gradient(circle at 85% 85%, rgba(83, 169, 255, 0.08) 0%, transparent 25%);
   opacity: 0.8;
@@ -452,7 +471,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: 
+  background-image:
     radial-gradient(circle at 85% 15%, rgba(255, 255, 255, 0.15) 0%, transparent 25%),
     radial-gradient(circle at 15% 85%, rgba(255, 255, 255, 0.1) 0%, transparent 25%);
   opacity: 0.8;
@@ -503,11 +522,10 @@
   letter-spacing: -0.5px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   overflow-y: auto;
-  
+
   /* Scrollbar personnalisé */
   scrollbar-width: thin;
   scrollbar-color: rgba(188, 253, 224, 0.919) transparent;
-
 }
 
 /* Styles pour Webkit (Chrome, Safari, Edge) */
@@ -535,7 +553,7 @@
 
 /* Animation de scroll fluide */
 .card-content {
-  scroll-behavior:smooth;
+  scroll-behavior: smooth;
 }
 
 @keyframes fadeScale {
@@ -625,27 +643,23 @@
   border-radius: 15px;
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
-  box-shadow: var(--card-inner-shadow); 
+  box-shadow: var(--card-inner-shadow);
 }
 
-
-
-
 /* Final fixes for synonym/antonym clipping */
-.card-details p:has(strong:contains("Synonymes")) {
+.card-details p:has(strong:contains('Synonymes')) {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
 }
 
-.card-details p:has(strong:contains("Antonymes")) {
+.card-details p:has(strong:contains('Antonymes')) {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
 }
 
 /* Fallback for browsers that don't support :has */
-
 
 .example-text {
   font-style: italic;
@@ -667,7 +681,9 @@
   scrollbar-color: rgba(188, 253, 224, 0.919) transparent;
 }
 
-.pronunciation-text, .synonymes, .antonymes {
+.pronunciation-text,
+.synonymes,
+.antonymes {
   overflow-y: auto !important;
   scrollbar-width: thin;
   scrollbar-color: rgba(188, 253, 224, 0.919) transparent;
@@ -815,15 +831,15 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.knowledge-btn[data-level="0"] {
+.knowledge-btn[data-level='0'] {
   background: var(--danger-color);
 }
 
-.knowledge-btn[data-level="1"] {
+.knowledge-btn[data-level='1'] {
   background: var(--warning-color);
 }
 
-.knowledge-btn[data-level="2"] {
+.knowledge-btn[data-level='2'] {
   background: var(--success-color);
 }
 
@@ -971,8 +987,8 @@
   width: 100%;
   height: 100%;
   background: linear-gradient(
-    90deg, 
-    rgba(255, 255, 255, 0) 0%, 
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
     rgba(255, 255, 255, 0.2) 50%,
     rgba(255, 255, 255, 0) 100%
   );
@@ -1040,11 +1056,12 @@
 }
 
 @keyframes achievement-glow {
-  0%, 100% { 
+  0%,
+  100% {
     transform: scale(1);
     text-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
   }
-  50% { 
+  50% {
     transform: scale(1.1);
     text-shadow: 0 0 20px rgba(255, 193, 7, 0.7);
   }
@@ -1192,8 +1209,8 @@
   width: 100%;
   height: 100%;
   background: linear-gradient(
-    90deg, 
-    rgba(255, 255, 255, 0) 0%, 
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
     rgba(255, 255, 255, 0.2) 50%,
     rgba(255, 255, 255, 0) 100%
   );
@@ -1211,9 +1228,16 @@
 
 /* Animation for flipping card */
 @keyframes wiggle {
-  0%, 100% { transform: rotate(0); }
-  25% { transform: rotate(-3deg); }
-  75% { transform: rotate(3deg); }
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(-3deg);
+  }
+  75% {
+    transform: rotate(3deg);
+  }
 }
 
 .wiggle {
@@ -1294,19 +1318,19 @@
   box-shadow: 0 8px 20px rgba(255, 107, 107, 0.35);
 }
 /* Add pulse effects to knowledge buttons */
-.knowledge-btn[data-level="0"]:hover {
+.knowledge-btn[data-level='0']:hover {
   animation: pulse-danger 1.5s infinite;
   transform: translateY(-3px);
   box-shadow: 0 8px 15px rgba(255, 107, 107, 0.35);
 }
 
-.knowledge-btn[data-level="1"]:hover {
+.knowledge-btn[data-level='1']:hover {
   animation: pulse-warning 1.5s infinite;
   transform: translateY(-3px);
   box-shadow: 0 8px 15px rgba(255, 159, 67, 0.35);
 }
 
-.knowledge-btn[data-level="2"]:hover {
+.knowledge-btn[data-level='2']:hover {
   animation: pulse-success 1.5s infinite;
   transform: translateY(-3px);
   box-shadow: 0 8px 15px rgba(74, 217, 145, 0.35);
@@ -1345,20 +1369,20 @@
 }
 
 /* Add pulse effect to checkbox and radio elements */
-.filter-label:hover .custom-checkbox, 
+.filter-label:hover .custom-checkbox,
 .mode-label:hover .custom-radio {
   animation: pulse-primary 2s infinite;
   background-color: rgba(124, 92, 245, 0.15);
 }
 
 /* Add active pulse state to buttons */
-.action-btn:active, 
-.game-btn:active, 
-.knowledge-btn:active, 
+.action-btn:active,
+.game-btn:active,
+.knowledge-btn:active,
 .nav-btn:active:not([disabled]),
 .nav-btn-left:active:not([disabled]),
-.nav-btn-right:active:not([disabled]), 
-.hint-btn:active, 
+.nav-btn-right:active:not([disabled]),
+.hint-btn:active,
 .pronunciation-btn:active {
   animation-play-state: paused;
   transform: translateY(-1px);
@@ -1411,7 +1435,7 @@
   text-align: center;
   max-width: 320px;
   margin: 20px;
-  box-shadow: 
+  box-shadow:
     0 15px 30px rgba(0, 0, 0, 0.15),
     0 8px 15px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
@@ -1444,8 +1468,13 @@
 }
 
 @keyframes gradientShift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
 /* Modal Header */
@@ -1464,7 +1493,7 @@
   justify-content: center;
   margin: 0 auto 12px;
   animation: warningBounce 2s ease-in-out infinite;
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(251, 191, 36, 0.4),
     0 2px 6px rgba(251, 191, 36, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
@@ -1477,11 +1506,12 @@
 }
 
 @keyframes warningBounce {
-  0%, 100% { 
+  0%,
+  100% {
     transform: translateY(0) scale(1);
     box-shadow: 0 8px 25px rgba(251, 191, 36, 0.4);
   }
-  50% { 
+  50% {
     transform: translateY(-5px) scale(1.05);
     box-shadow: 0 12px 35px rgba(251, 191, 36, 0.5);
   }
@@ -1544,9 +1574,16 @@
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-3px) rotate(-2deg); }
-  75% { transform: translateX(3px) rotate(2deg); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-3px) rotate(-2deg);
+  }
+  75% {
+    transform: translateX(3px) rotate(2deg);
+  }
 }
 
 .arrow-transition {
@@ -1562,11 +1599,12 @@
 }
 
 @keyframes arrowPulse {
-  0%, 100% { 
+  0%,
+  100% {
     transform: translateX(0) scale(1);
     color: #9ca3af;
   }
-  50% { 
+  50% {
     transform: translateX(5px) scale(1.1);
     color: #6366f1;
   }
@@ -1592,9 +1630,15 @@
   animation-fill-mode: both;
 }
 
-.browser-option:nth-child(1) { animation-delay: 0.1s; }
-.browser-option:nth-child(2) { animation-delay: 0.2s; }
-.browser-option:nth-child(3) { animation-delay: 0.3s; }
+.browser-option:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.browser-option:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.browser-option:nth-child(3) {
+  animation-delay: 0.3s;
+}
 
 @keyframes bounceIn {
   from {
@@ -1721,7 +1765,7 @@
   position: relative;
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(99, 102, 241, 0.3),
     0 2px 6px rgba(99, 102, 241, 0.2);
   display: flex;
@@ -1732,7 +1776,7 @@
 
 .primary-btn:hover {
   transform: translateY(-3px) scale(1.02);
-  box-shadow: 
+  box-shadow:
     0 12px 30px rgba(99, 102, 241, 0.4),
     0 8px 20px rgba(99, 102, 241, 0.3);
 }
@@ -1748,8 +1792,8 @@
   width: 100%;
   height: 100%;
   background: linear-gradient(
-    90deg, 
-    rgba(255, 255, 255, 0) 0%, 
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
     rgba(255, 255, 255, 0.4) 50%,
     rgba(255, 255, 255, 0) 100%
   );
@@ -1796,75 +1840,75 @@
     max-width: calc(100% - 30px);
     border-radius: 24px;
   }
-  
+
   .modal-header {
     padding: 25px 25px 15px;
   }
-  
+
   .warning-icon {
     width: 60px;
     height: 60px;
     margin-bottom: 15px;
   }
-  
+
   .warning-icon i {
     font-size: 1.8rem;
   }
-  
+
   .modal-header h2 {
     font-size: 1.4rem;
   }
-  
+
   .subtitle {
     font-size: 0.9rem;
   }
-  
+
   .modal-body {
     padding: 0 25px 15px;
     gap: 20px;
   }
-  
+
   .recommended-browsers {
     gap: 15px;
   }
-  
+
   .browser-option {
     padding: 12px;
   }
-  
+
   .browser-option .browser-icon {
     width: 35px;
     height: 35px;
   }
-  
+
   .browser-option .browser-icon i {
     font-size: 1rem;
   }
-  
+
   .browser-option span {
     font-size: 0.8rem;
   }
-  
+
   .site-badge {
     padding: 10px 16px;
     border-radius: 16px;
   }
-  
+
   .site-badge span {
     font-size: 0.9rem;
   }
-  
+
   .modal-actions {
     padding: 20px 25px 25px;
     gap: 12px;
   }
-  
+
   .primary-btn {
     padding: 14px 20px;
     font-size: 0.95rem;
     border-radius: 14px;
   }
-  
+
   .secondary-btn {
     padding: 10px 16px;
     font-size: 0.9rem;
@@ -1872,19 +1916,27 @@
 }
 
 /* Add a subtle transition effect to all buttons */
-button, .btn, .action-btn, .knowledge-btn, .nav-btn, .nav-btn-left, .nav-btn-right, .hint-btn, .pronunciation-btn, .back-btn {
+button,
+.btn,
+.action-btn,
+.knowledge-btn,
+.nav-btn,
+.nav-btn-left,
+.nav-btn-right,
+.hint-btn,
+.pronunciation-btn,
+.back-btn {
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 /* Global active button pressing effect */
-button:active, .btn:active {
+button:active,
+.btn:active {
   transform: scale(0.97);
 }
 
-
-
 /* Meaning-to-word mode adjustments */
-input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card-content {
+input[name='mode'][value='meaning-to-word']:checked ~ .flashcard-container .card-content {
   font-size: 2rem;
   line-height: 1.3;
   font-weight: 600;
@@ -1896,7 +1948,6 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
   font-size: 2rem !important;
   line-height: 1.4 !important;
   font-weight: 600 !important;
-
 }
 
 .flashcard.meaning-to-word-mode .flashcard-back .card-content {
@@ -1912,8 +1963,6 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
   margin-top: 20px !important;
 }
 
-
-
 /* Écrans 432px et plus (Samsung Galaxy A series, etc.) */
 @media (max-width: 432px) {
   .flashcard-container {
@@ -1921,18 +1970,17 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     margin-bottom: 40px;
     width: 100%;
   }
-  
+
   .flashcard {
     min-height: 340px;
     max-width: 400px;
   }
 
-
-  .flashcard-front{
+  .flashcard-front {
     padding: 40px 20px 15px;
     gap: 5px;
   }
-  
+
   .knowledge-buttons {
     flex-direction: row;
     justify-content: space-between;
@@ -1947,7 +1995,7 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     border-radius: 14px;
     font-weight: 600;
   }
-  
+
   .flashcard-with-navigation {
     display: flex;
     align-items: center;
@@ -1957,7 +2005,7 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     z-index: 5;
     position: relative;
   }
-  
+
   .nav-btn-left,
   .nav-btn-right {
     border-radius: 50% !important;
@@ -1981,20 +2029,20 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     border: 1px solid rgba(0, 0, 0, 0.03);
     transition: all var(--transition-speed);
   }
-  
+
   .nav-btn-left {
     order: 1;
   }
-  
+
   .flashcard {
     order: 2;
     flex: 1;
   }
-  
+
   .nav-btn-right {
     order: 3;
   }
-  
+
   .card-content {
     font-size: 1.2rem;
     font-weight: 500;
@@ -2007,8 +2055,7 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
   .pronunciation-text {
     font-size: 1rem;
   }
-  .pronunciation-btn{
- 
+  .pronunciation-btn {
     gap: 5px;
     font-size: 0.8rem !important;
     padding: 1px 3px !important;
@@ -2034,12 +2081,12 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
   .dashboard-stats {
     grid-template-columns: 1fr;
   }
-  
+
   .flashcard-actions {
     flex-direction: column;
     width: 100%;
   }
-  
+
   .action-btn {
     width: 100%;
     justify-content: center;
@@ -2066,7 +2113,7 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     height: 25%;
     gap: 5px;
   }
-  
+
   .flashcard.meaning-to-word-mode .flashcard-back .card-content {
     font-size: 1.2rem !important;
     font-weight: 500 !important;
@@ -2074,7 +2121,6 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     height: 25%;
     gap: 5px;
   }
-
 }
 
 /* Écrans 412px (Google Pixel, OnePlus, etc.) */
@@ -2084,18 +2130,17 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     margin-bottom: 40px;
     width: 100%;
   }
-  
+
   .flashcard {
     min-height: 340px;
     max-width: 400px;
   }
 
-
-  .flashcard-front{
+  .flashcard-front {
     padding: 40px 20px 15px;
     gap: 5px;
   }
-  
+
   .knowledge-buttons {
     flex-direction: row;
     justify-content: space-between;
@@ -2110,7 +2155,7 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     border-radius: 14px;
     font-weight: 600;
   }
-  
+
   .flashcard-with-navigation {
     display: flex;
     align-items: center;
@@ -2120,7 +2165,7 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     z-index: 5;
     position: relative;
   }
-  
+
   .nav-btn-left,
   .nav-btn-right {
     border-radius: 50% !important;
@@ -2144,20 +2189,20 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     border: 1px solid rgba(0, 0, 0, 0.03);
     transition: all var(--transition-speed);
   }
-  
+
   .nav-btn-left {
     order: 1;
   }
-  
+
   .flashcard {
     order: 2;
     flex: 1;
   }
-  
+
   .nav-btn-right {
     order: 3;
   }
-  
+
   .flashcard-front .card-content {
     font-size: 1.5rem;
     font-weight: 600;
@@ -2175,8 +2220,7 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
   .pronunciation-text {
     font-size: 1rem;
   }
-  .pronunciation-btn{
- 
+  .pronunciation-btn {
     gap: 5px;
     font-size: 0.8rem !important;
     padding: 1px 3px !important;
@@ -2202,12 +2246,12 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
   .dashboard-stats {
     grid-template-columns: 1fr;
   }
-  
+
   .flashcard-actions {
     flex-direction: column;
     width: 100%;
   }
-  
+
   .action-btn {
     width: 100%;
     justify-content: center;
@@ -2234,7 +2278,7 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     height: 25%;
     gap: 5px;
   }
-  
+
   .flashcard.meaning-to-word-mode .flashcard-back .card-content {
     font-size: 1.6rem !important;
     font-weight: 500 !important;
@@ -2251,18 +2295,17 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     margin-bottom: 40px;
     width: 100%;
   }
-  
+
   .flashcard {
     min-height: 340px;
     max-width: 400px;
   }
 
-
-  .flashcard-front{
+  .flashcard-front {
     padding: 40px 20px 15px;
     gap: 5px;
   }
-  
+
   .knowledge-buttons {
     flex-direction: row;
     justify-content: space-between;
@@ -2277,7 +2320,7 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     border-radius: 14px;
     font-weight: 600;
   }
-  
+
   .flashcard-with-navigation {
     display: flex;
     align-items: center;
@@ -2287,7 +2330,7 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     z-index: 5;
     position: relative;
   }
-  
+
   .nav-btn-left,
   .nav-btn-right {
     border-radius: 50% !important;
@@ -2311,20 +2354,20 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     border: 1px solid rgba(0, 0, 0, 0.03);
     transition: all var(--transition-speed);
   }
-  
+
   .nav-btn-left {
     order: 1;
   }
-  
+
   .flashcard {
     order: 2;
     flex: 1;
   }
-  
+
   .nav-btn-right {
     order: 3;
   }
-  
+
   .flashcard-front .card-content {
     font-size: 1.5rem;
     font-weight: 600;
@@ -2342,8 +2385,7 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
   .pronunciation-text {
     font-size: 1rem;
   }
-  .pronunciation-btn{
- 
+  .pronunciation-btn {
     gap: 5px;
     font-size: 0.8rem !important;
     padding: 1px 3px !important;
@@ -2369,12 +2411,12 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
   .dashboard-stats {
     grid-template-columns: 1fr;
   }
-  
+
   .flashcard-actions {
     flex-direction: column;
     width: 100%;
   }
-  
+
   .action-btn {
     width: 100%;
     justify-content: center;
@@ -2401,7 +2443,7 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     height: 25%;
     gap: 5px;
   }
-  
+
   .flashcard.meaning-to-word-mode .flashcard-back .card-content {
     font-size: 1.6rem !important;
     font-weight: 500 !important;
@@ -2418,18 +2460,17 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     margin-bottom: 40px;
     width: 100%;
   }
-  
+
   .flashcard {
     min-height: 340px;
     max-width: 400px;
   }
 
-
-  .flashcard-front{
+  .flashcard-front {
     padding: 40px 20px 15px;
     gap: 5px;
   }
-  
+
   .knowledge-buttons {
     flex-direction: row;
     justify-content: space-between;
@@ -2454,7 +2495,7 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     z-index: 5;
     position: relative;
   }
-  
+
   .nav-btn-left,
   .nav-btn-right {
     border-radius: 50% !important;
@@ -2478,20 +2519,20 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     border: 1px solid rgba(0, 0, 0, 0.03);
     transition: all var(--transition-speed);
   }
-  
+
   .nav-btn-left {
     order: 1;
   }
-  
+
   .flashcard {
     order: 2;
     flex: 1;
   }
-  
+
   .nav-btn-right {
     order: 3;
   }
-  
+
   .flashcard-front .card-content {
     font-size: 1.5rem;
     font-weight: 600;
@@ -2509,8 +2550,7 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
   .pronunciation-text {
     font-size: 1rem;
   }
-  .pronunciation-btn{
- 
+  .pronunciation-btn {
     gap: 5px;
     font-size: 0.8rem !important;
     padding: 1px 3px !important;
@@ -2530,19 +2570,19 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
   .card-language {
     font-size: 0.8rem;
   }
-  
+
   .card-prompt {
     font-size: 0.8rem;
   }
   .dashboard-stats {
     grid-template-columns: 1fr;
   }
-  
+
   .flashcard-actions {
     flex-direction: column;
     width: 100%;
   }
-  
+
   .action-btn {
     width: 100%;
     justify-content: center;
@@ -2562,7 +2602,6 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     font-size: 0.95rem;
   }
 
-  
   .flashcard.meaning-to-word-mode .flashcard-front .card-content {
     font-size: 1.2rem !important;
     font-weight: 500 !important;
@@ -2570,7 +2609,7 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     height: 25%;
     gap: 5px;
   }
-  
+
   .flashcard.meaning-to-word-mode .flashcard-back .card-content {
     font-size: 1.6rem !important;
     font-weight: 500 !important;
@@ -2579,4 +2618,3 @@ input[name="mode"][value="meaning-to-word"]:checked ~ .flashcard-container .card
     gap: 5px;
   }
 }
-

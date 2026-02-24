@@ -40,7 +40,9 @@
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
   border: 1px solid rgba(230, 236, 245, 0.8);
 }
 
@@ -74,23 +76,23 @@
   transform: skewX(-30deg) translateX(50%);
 }
 
-.level-container[data-level="0"] .level-header {
+.level-container[data-level='0'] .level-header {
   background: linear-gradient(135deg, #11998e, #38ef7d);
 }
 
-.level-container[data-level="1"] .level-header {
+.level-container[data-level='1'] .level-header {
   background: linear-gradient(135deg, #4a00e0, #8e2de2);
 }
 
-.level-container[data-level="2"] .level-header {
+.level-container[data-level='2'] .level-header {
   background: linear-gradient(135deg, #f2994a, #f2c94c);
 }
 
-.level-container[data-level="v"] .level-header {
+.level-container[data-level='v'] .level-header {
   background: linear-gradient(135deg, #ee0979, #ff6a00);
 }
 
-.level-container[data-level="x"] .level-header {
+.level-container[data-level='x'] .level-header {
   background: linear-gradient(135deg, #6a11cb, #2575fc);
 }
 
@@ -109,8 +111,8 @@
   border-spacing: 0;
 }
 
-
-.words-table th, .table-cell {
+.words-table th,
+.table-cell {
   text-align: center;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   transition: background 0.2s ease;
@@ -150,8 +152,6 @@
   }
 }
 
-
-
 .words-table th {
   background: rgba(106, 17, 203, 0.05);
   font-weight: 600;
@@ -177,7 +177,7 @@
   gap: 12px;
 }
 
-.action-buttons a, 
+.action-buttons a,
 .action-buttons button {
   display: inline-flex;
   align-items: center;
@@ -192,12 +192,11 @@
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
 }
 
-.action-buttons a:hover, 
+.action-buttons a:hover,
 .action-buttons button:hover {
   transform: translateY(-3px) scale(1.05);
   box-shadow: 0 7px 15px rgba(0, 0, 0, 0.15);
 }
-
 
 .no-words {
   text-align: center;
@@ -319,7 +318,6 @@
   margin-right: 5px;
 }
 
-
 .home-cta {
   display: flex;
   justify-content: center;
@@ -330,7 +328,7 @@
   display: inline-flex;
   align-items: center;
   padding: 14px 30px;
-  background: linear-gradient(135deg, #8E2DE2, #4A00E0);
+  background: linear-gradient(135deg, #8e2de2, #4a00e0);
   color: white;
   border-radius: 50px;
   font-weight: 600;
@@ -344,7 +342,6 @@
   transform: translateY(-3px);
   box-shadow: 0 12px 25px rgba(142, 45, 226, 0.3);
 }
-
 
 .edit-input {
   width: 100%;
@@ -362,7 +359,8 @@
   box-shadow: 0 0 0 3px rgba(37, 117, 252, 0.15);
 }
 
-.save-btn, .cancel-btn {
+.save-btn,
+.cancel-btn {
   background: none;
   border: none;
   cursor: pointer;
@@ -390,11 +388,15 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-15px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-
-
 
 .words-table td:first-child {
   font-weight: 600;
@@ -433,7 +435,6 @@
   border: 1px solid rgba(230, 236, 245, 0.8);
   gap: 80px;
 }
-
 
 .action-container:before {
   content: '';
@@ -478,7 +479,9 @@
   text-transform: uppercase;
   border-radius: 0.75em;
   transform-style: preserve-3d;
-  transition: transform 150ms cubic-bezier(0, 0, 0.58, 1), background 150ms cubic-bezier(0, 0, 0.58, 1);
+  transition:
+    transform 150ms cubic-bezier(0, 0, 0.58, 1),
+    background 150ms cubic-bezier(0, 0, 0.58, 1);
   gap: 10px;
 }
 
@@ -488,7 +491,7 @@
 .home-cta .btn::before,
 .no-words .btn::before {
   position: absolute;
-  content: "";
+  content: '';
   width: 100%;
   height: 100%;
   top: 0;
@@ -497,7 +500,9 @@
   bottom: 0;
   border-radius: inherit;
   transform: translate3d(0, 0.75em, -1em);
-  transition: transform 150ms cubic-bezier(0, 0, 0.58, 1), box-shadow 150ms cubic-bezier(0, 0, 0.58, 1);
+  transition:
+    transform 150ms cubic-bezier(0, 0, 0.58, 1),
+    box-shadow 150ms cubic-bezier(0, 0, 0.58, 1);
 }
 
 .add-word-btn:hover,
@@ -529,7 +534,9 @@
 .btn-danger:active::before,
 .home-cta .btn:active::before,
 .no-words .btn:active::before {
-  box-shadow: 0 0 0 2px, 0 0;
+  box-shadow:
+    0 0 0 2px,
+    0 0;
 }
 
 /* Specific Button Styling */
@@ -542,7 +549,7 @@
 }
 
 .add-word-btn::before {
-  background: #2d0656 ;
+  background: #2d0656;
   box-shadow: 0 0 0 2px #37026f;
 }
 
@@ -576,15 +583,13 @@
 }
 
 .btn-danger {
-  background:  #e82282 ;
+  background: #e82282;
   border: 2px solid #e82282;
   color: #ffffff !important;
   padding: 1.25em 2em;
   margin-left: 15px;
   box-shadow: none;
 }
-
-
 
 .btn-danger::before {
   background: #910c32;
@@ -600,29 +605,34 @@
   box-shadow: 0 0 0 2px #ee0979;
 }
 
-.home-cta .btn, .no-words .btn {
+.home-cta .btn,
+.no-words .btn {
   background: #f0f0ff;
-  border: 2px solid #4A00E0;
+  border: 2px solid #4a00e0;
   color: #230070;
   padding: 1.25em 2em;
   box-shadow: none;
 }
 
-.home-cta .btn::before, .no-words .btn::before {
+.home-cta .btn::before,
+.no-words .btn::before {
   background: #c4a9fc;
-  box-shadow: 0 0 0 2px #4A00E0;
+  box-shadow: 0 0 0 2px #4a00e0;
 }
 
-.home-cta .btn:hover, .no-words .btn:hover {
+.home-cta .btn:hover,
+.no-words .btn:hover {
   background: #e9e9ff;
 }
 
-.home-cta .btn:hover::before, .no-words .btn:hover::before {
-  box-shadow: 0 0 0 2px #4A00E0;
+.home-cta .btn:hover::before,
+.no-words .btn:hover::before {
+  box-shadow: 0 0 0 2px #4a00e0;
 }
 
 /* Table action buttons (edit, delete) */
-.edit-btn, .delete-btn {
+.edit-btn,
+.delete-btn {
   max-width: 36px;
   max-height: 36px;
   border: 2px solid;
@@ -638,7 +648,9 @@
 
 .edit-btn::before {
   background: #2046b7;
-  box-shadow: 0 0 0 2px #2046b7, 0 0.625em 0 0 #e2f4ff;
+  box-shadow:
+    0 0 0 2px #2046b7,
+    0 0.625em 0 0 #e2f4ff;
 }
 
 .edit-btn:hover {
@@ -653,13 +665,14 @@
 
 .delete-btn::before {
   background: #f01818;
-  box-shadow: 0 0 0 2px #f01818, 0 0.625em 0 0 #ffe9e5;
+  box-shadow:
+    0 0 0 2px #f01818,
+    0 0.625em 0 0 #ffe9e5;
 }
 
 .delete-btn:hover {
   background: #f01818;
 }
-
 
 /* Override previous button-3d class since we're not using it anymore */
 
@@ -681,12 +694,12 @@
   position: relative;
   border-radius: 24px;
   background: white;
-  box-shadow: 0 15px 35px rgba(50, 50, 93, 0.1), 0 5px 15px rgba(0, 0, 0, 0.07);
+  box-shadow:
+    0 15px 35px rgba(50, 50, 93, 0.1),
+    0 5px 15px rgba(0, 0, 0, 0.07);
   transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
   overflow: hidden;
 }
-
-
 
 .input-group:hover::before,
 .input-group:focus-within::before {
@@ -694,19 +707,29 @@
 }
 
 @keyframes gradientBorder {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .input-group:hover {
   transform: translateY(-5px);
-  box-shadow: 0 22px 45px rgba(50, 50, 93, 0.15), 0 8px 20px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 22px 45px rgba(50, 50, 93, 0.15),
+    0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
 .input-group:focus-within {
   transform: translateY(-7px);
-  box-shadow: 0 25px 50px rgba(106, 17, 203, 0.2), 0 10px 25px rgba(37, 117, 252, 0.15);
+  box-shadow:
+    0 25px 50px rgba(106, 17, 203, 0.2),
+    0 10px 25px rgba(37, 117, 252, 0.15);
 }
 
 .search-icon {
@@ -751,8 +774,6 @@
   transform: translateX(10px);
 }
 
-
-
 .search-btn {
   position: absolute;
   right: 12px;
@@ -769,16 +790,13 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-  
+
   z-index: 2;
 }
 
 .search-btn:hover {
   transform: translateY(-50%) scale(1.1);
-  
 }
-
-
 
 .search-btn i {
   font-size: 20px;
@@ -874,8 +892,8 @@
 }
 
 .search-results-info p::before {
-  content: "\f002";
-  font-family: "Font Awesome 5 Free";
+  content: '\f002';
+  font-family: 'Font Awesome 5 Free';
   font-weight: 900;
   color: #6a11cb;
   font-size: 16px;
@@ -934,16 +952,24 @@
 }
 
 @keyframes highlightGlow {
-  0% { box-shadow: 0 0 0px rgba(106, 17, 203, 0); }
-  50% { box-shadow: 0 0 10px rgba(106, 17, 203, 0.3); }
-  100% { box-shadow: 0 0 0px rgba(106, 17, 203, 0); }
+  0% {
+    box-shadow: 0 0 0px rgba(106, 17, 203, 0);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(106, 17, 203, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0px rgba(106, 17, 203, 0);
+  }
 }
 
 #no-search-results {
   animation: fadeIn 0.5s ease-out;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(245, 247, 250, 0.95));
   border-radius: 24px;
-  box-shadow: 0 15px 35px rgba(50, 50, 93, 0.1), 0 5px 15px rgba(0, 0, 0, 0.07);
+  box-shadow:
+    0 15px 35px rgba(50, 50, 93, 0.1),
+    0 5px 15px rgba(0, 0, 0, 0.07);
   border: 1px solid rgba(106, 17, 203, 0.1);
   overflow: hidden;
 }
@@ -962,10 +988,12 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, 
-    rgba(106, 17, 203, 0), 
-    rgba(37, 117, 252, 0.2), 
-    rgba(106, 17, 203, 0));
+  background: linear-gradient(
+    90deg,
+    rgba(106, 17, 203, 0),
+    rgba(37, 117, 252, 0.2),
+    rgba(106, 17, 203, 0)
+  );
   border-radius: 24px;
   animation: searchPulse 0.6s ease-out;
   z-index: 1;
@@ -973,9 +1001,18 @@
 }
 
 @keyframes searchPulse {
-  0% { opacity: 0; transform: scale(0.95); }
-  50% { opacity: 1; transform: scale(1.02); }
-  100% { opacity: 0; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
 }
 
 /*================================
@@ -1037,17 +1074,18 @@
 }
 
 @keyframes rotateDevice {
-  0%, 100% {
-      transform: rotate(0deg);
+  0%,
+  100% {
+    transform: rotate(0deg);
   }
   25% {
-      transform: rotate(90deg);
+    transform: rotate(90deg);
   }
   50% {
-      transform: rotate(90deg);
+    transform: rotate(90deg);
   }
   75% {
-      transform: rotate(90deg);
+    transform: rotate(90deg);
   }
 }
 
@@ -1079,7 +1117,9 @@
 .modal-content {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98));
   border-radius: 24px;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25), 0 8px 20px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 25px 60px rgba(0, 0, 0, 0.25),
+    0 8px 20px rgba(0, 0, 0, 0.1);
   max-width: 500px;
   width: 100%;
   position: relative;
@@ -1145,7 +1185,8 @@
 }
 
 @keyframes warningPulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
   }
@@ -1329,45 +1370,46 @@
   .vocabulary-container {
     padding: 0px;
   }
-  .words-table th, .table-cell {
+  .words-table th,
+  .table-cell {
     text-align: center;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     transition: background 0.2s ease;
   }
-  
+
   .table-cell {
     width: 70px;
     max-height: 70px;
     padding: 9px;
   }
-  
+
   .table-cell-content {
     width: 70px;
     max-height: 70px;
     font-size: 13px;
   }
-  
-  
-  
+
   .words-table th {
     font-size: 13px;
     letter-spacing: 0.3px;
     padding: 9px 12px;
   }
-  
+
   .words-table tr:last-child td {
     border-bottom: none;
   }
-  
+
   .words-table tr:hover td {
     background: rgba(37, 117, 252, 0.07);
   }
 
-  .edit-btn, .delete-btn {
+  .edit-btn,
+  .delete-btn {
     max-width: 25px;
     max-height: 25px;
   }
-  .edit-btn::before, .delete-btn::before {
+  .edit-btn::before,
+  .delete-btn::before {
     width: 20px;
   }
 }
@@ -1379,45 +1421,46 @@
   .vocabulary-container {
     padding: 0px;
   }
-  .words-table th, .table-cell {
+  .words-table th,
+  .table-cell {
     text-align: center;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     transition: background 0.2s ease;
   }
-  
+
   .table-cell {
     width: 70px;
     max-height: 70px;
     padding: 9px;
   }
-  
+
   .table-cell-content {
     width: 70px;
     max-height: 70px;
     font-size: 11px;
   }
-  
-  
-  
+
   .words-table th {
     font-size: 11px;
     letter-spacing: 0.3px;
     padding: 9px 12px;
   }
-  
+
   .words-table tr:last-child td {
     border-bottom: none;
   }
-  
+
   .words-table tr:hover td {
     background: rgba(37, 117, 252, 0.07);
   }
 
-  .edit-btn, .delete-btn {
+  .edit-btn,
+  .delete-btn {
     max-width: 25px;
     max-height: 25px;
   }
-  .edit-btn::before, .delete-btn::before {
+  .edit-btn::before,
+  .delete-btn::before {
     width: 20px;
   }
 }
@@ -1427,7 +1470,7 @@
     display: block;
     overflow-x: auto;
   }
-  
+
   .vocabulary-container {
     padding: 20px;
   }
@@ -1440,45 +1483,46 @@
   .vocabulary-container {
     padding: 0px;
   }
-  .words-table th, .table-cell {
+  .words-table th,
+  .table-cell {
     text-align: center;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     transition: background 0.2s ease;
   }
-  
+
   .table-cell {
     width: 70px;
     max-height: 70px;
     padding: 9px;
   }
-  
+
   .table-cell-content {
     width: 70px;
     max-height: 70px;
     font-size: 11px;
   }
-  
-  
-  
+
   .words-table th {
     font-size: 11px;
     letter-spacing: 0.3px;
     padding: 9px 12px;
   }
-  
+
   .words-table tr:last-child td {
     border-bottom: none;
   }
-  
+
   .words-table tr:hover td {
     background: rgba(37, 117, 252, 0.07);
   }
 
-  .edit-btn, .delete-btn {
+  .edit-btn,
+  .delete-btn {
     max-width: 25px;
     max-height: 25px;
   }
-  .edit-btn::before, .delete-btn::before {
+  .edit-btn::before,
+  .delete-btn::before {
     width: 20px;
   }
 }
@@ -1490,45 +1534,46 @@
   .vocabulary-container {
     padding: 0px;
   }
-  .words-table th, .table-cell {
+  .words-table th,
+  .table-cell {
     text-align: center;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     transition: background 0.2s ease;
   }
-  
+
   .table-cell {
     width: 55px;
     max-height: 70px;
     padding: 9px;
   }
-  
+
   .table-cell-content {
     width: 55px;
     max-height: 70px;
     font-size: 10px;
   }
-  
-  
-  
+
   .words-table th {
     font-size: 10px;
     letter-spacing: 0.3px;
     padding: 9px 12px;
   }
-  
+
   .words-table tr:last-child td {
     border-bottom: none;
   }
-  
+
   .words-table tr:hover td {
     background: rgba(37, 117, 252, 0.07);
   }
 
-  .edit-btn, .delete-btn {
+  .edit-btn,
+  .delete-btn {
     max-width: 25px;
     max-height: 25px;
   }
-  .edit-btn::before, .delete-btn::before {
+  .edit-btn::before,
+  .delete-btn::before {
     width: 20px;
   }
 }
@@ -1540,45 +1585,46 @@
   .vocabulary-container {
     padding: 0px;
   }
-  .words-table th, .table-cell {
+  .words-table th,
+  .table-cell {
     text-align: center;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     transition: background 0.2s ease;
   }
-  
+
   .table-cell {
     width: 55px;
     max-height: 70px;
     padding: 9px;
   }
-  
+
   .table-cell-content {
     width: 55px;
     max-height: 70px;
     font-size: 10px;
   }
-  
-  
-  
+
   .words-table th {
     font-size: 10px;
     letter-spacing: 0.3px;
     padding: 9px 12px;
   }
-  
+
   .words-table tr:last-child td {
     border-bottom: none;
   }
-  
+
   .words-table tr:hover td {
     background: rgba(37, 117, 252, 0.07);
   }
 
-  .edit-btn, .delete-btn {
+  .edit-btn,
+  .delete-btn {
     max-width: 25px;
     max-height: 25px;
   }
-  .edit-btn::before, .delete-btn::before {
+  .edit-btn::before,
+  .delete-btn::before {
     width: 20px;
   }
 }
@@ -1589,60 +1635,60 @@
     margin: 20px;
     max-width: calc(100% - 40px);
   }
-  
+
   .modal-header,
   .modal-body {
     padding-left: 25px;
     padding-right: 25px;
   }
-  
+
   .modal-header {
     padding-top: 30px;
   }
-  
+
   .warning-icon {
     width: 60px;
     height: 60px;
     margin-bottom: 15px;
   }
-  
+
   .warning-icon i {
     font-size: 28px;
   }
-  
+
   .modal-header h2 {
     font-size: 20px;
   }
-  
+
   .modal-body p {
     font-size: 14px;
   }
-  
+
   .warning-message {
     padding: 12px;
     flex-direction: column;
     text-align: center;
     gap: 8px;
   }
-  
+
   .warning-message span {
     text-align: center;
     font-size: 13px;
   }
-  
+
   .modal-footer {
     padding: 15px 25px 30px;
     flex-direction: column;
     gap: 10px;
   }
-  
+
   .cancel-delete-btn,
   .confirm-delete-btn {
     width: 100%;
     padding: 12px 20px;
     font-size: 13px;
   }
-  
+
   .close-modal-btn {
     width: 35px;
     height: 35px;
@@ -1667,7 +1713,7 @@
     overflow: visible !important;
     box-sizing: border-box;
   }
-  
+
   .add-word-btn,
   .learn-btn,
   .btn-danger {
@@ -1681,7 +1727,7 @@
     position: relative;
     z-index: 1;
   }
-  
+
   .add-word-btn,
   .learn-btn,
   .btn-danger,
@@ -1690,8 +1736,9 @@
     padding: 1em 1.5em;
     font-size: 0.9em;
   }
-  
-  .edit-btn, .delete-btn {
+
+  .edit-btn,
+  .delete-btn {
     width: 32px;
     height: 32px;
   }
@@ -1699,7 +1746,7 @@
   .btn-danger {
     margin-left: 0 !important;
   }
-  
+
   .delete-all-form {
     width: 100%;
     max-width: 340px;
@@ -1718,27 +1765,26 @@
   .vocabulary-container {
     padding: 0px;
   }
-  .words-table th, .table-cell {
+  .words-table th,
+  .table-cell {
     text-align: center;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     transition: background 0.2s ease;
   }
-  
+
   .table-cell {
     width: 70px;
     max-height: 70px;
     padding: 9px;
   }
-  
+
   .table-cell-content {
     width: 70px;
     max-height: 70px;
     line-height: 1.2;
     font-size: 10px;
   }
-  
-  
-  
+
   .words-table th {
     background: rgba(106, 17, 203, 0.05);
     font-weight: 500;
@@ -1750,21 +1796,22 @@
     letter-spacing: 0.3px;
     padding: 9px 12px;
   }
-  
+
   .words-table tr:last-child td {
     border-bottom: none;
   }
-  
+
   .words-table tr:hover td {
     background: rgba(37, 117, 252, 0.07);
   }
 
-  .edit-btn, .delete-btn {
+  .edit-btn,
+  .delete-btn {
     max-width: 25px;
     max-height: 25px;
   }
-  .edit-btn::before, .delete-btn::before {
+  .edit-btn::before,
+  .delete-btn::before {
     width: 20px;
   }
 }
-

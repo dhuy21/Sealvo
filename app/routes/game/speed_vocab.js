@@ -1,16 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const speedVocabController = require('../../controllers/gameControllers/SpeedVocabController');
-
-// Middleware d'authentification
-const isAuthenticated = (req, res, next) => {
-    if (req.session.user) {
-        return next();
-    }
-    res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
-};
+const { isAuthenticatedAPI } = require('../../middleware/auth');
 
 // Route pour récupérer un mot pour le jeu SpeedVocab
-router.get('/words', isAuthenticated, speedVocabController.getWordsForSpeedVocab);
+router.get('/words', isAuthenticatedAPI, speedVocabController.getWordsForSpeedVocab);
 
 module.exports = router;

@@ -1,7 +1,8 @@
 <div align="center">
 
-# 🎯 Web Vocab v0 | SealVo 
-### *Révolutionnez votre apprentissage du vocabulaire avec la révision espacée*
+# 🎯 Web Vocab v0 | SealVo
+
+### _Révolutionnez votre apprentissage du vocabulaire avec la révision espacée_
 
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge)
 ![Version](https://img.shields.io/badge/Version-0.1.0-blue?style=for-the-badge)
@@ -9,7 +10,7 @@
 
 **🚀 Une plateforme d'apprentissage moderne qui transforme l'étude du vocabulaire en une expérience interactive et motivante !**
 
-[🎮 Démo Live](https://www.sealvo.it.com) • [📖 About me ](https://www.sealvo.it.com/aboutme) • [🐛 Signaler un Bug](https://www.sealvo.it.com/feedback) 
+[🎮 Démo Live](https://www.sealvo.it.com) • [📖 About me ](https://www.sealvo.it.com/aboutme) • [🐛 Signaler un Bug](https://www.sealvo.it.com/feedback)
 
 ---
 
@@ -65,24 +66,23 @@
 
 ### 📚 **Gestion Avancée du Vocabulaire**
 
-
-| Fonctionnalité | Description | Status |
-|---|---|---|
-| 📁 **Package System** | Organisation thématique avancée | ✅ |
-| 🌐 **Partage de packages entre utilisateurs** | 3 options de partage (protected, private, public) | ✅ |
-| 🔄 **Spaced Repetition** | Système d'appel de révision espacée | ✅ |
-| 📱 **Mobile-First** | Interface responsive optimisée | ✅ |
-| 🤖 **AI Assistance (Googel Gemini-2.5-Flash)** | Aide optionnelle pour generer les exemples | ✅ |
+| Fonctionnalité                                 | Description                                       | Status |
+| ---------------------------------------------- | ------------------------------------------------- | ------ |
+| 📁 **Package System**                          | Organisation thématique avancée                   | ✅     |
+| 🌐 **Partage de packages entre utilisateurs**  | 3 options de partage (protected, private, public) | ✅     |
+| 🔄 **Spaced Repetition**                       | Système d'appel de révision espacée               | ✅     |
+| 📱 **Mobile-First**                            | Interface responsive optimisée                    | ✅     |
+| 🤖 **AI Assistance (Googel Gemini-2.5-Flash)** | Aide optionnelle pour generer les exemples        | ✅     |
 
 ### 🎮 **Système de Jeux Intégré**
+
 - **Memory Cards** : Jeu de mémoire avec vos mots
 - **Phrases Completition** : Jeu de complétion de phrases avec vos mots
-- **Speed Vocab** : Jeu de vitesse de taper des mots 
+- **Speed Vocab** : Jeu de vitesse de taper des mots
 - **Prononciation** : Jeu de prononciation de mots
 - **Quiz** : Jeu de quiz avec vos mots
 - **Word Scramble** : Jeu de désordre de mots
 - **Word Search** : Jeu de recherche de mots
-
 
 ### 🧠 **Système de Révision Espacée**
 
@@ -98,6 +98,7 @@
 <summary>🔧 <strong>Stack Technologique Complète</strong></summary>
 
 ### **Backend Robuste**
+
 - **Node.js** + **Express 5** : Serveur haute performance
 - **MySQL2** : Base de données relationnelle optimisée
 - **Handlebars** : Templates dynamiques
@@ -105,12 +106,14 @@
 - **Multer** : Gestion des uploads de fichiers
 
 ### **Frontend Moderne**
+
 - **JavaScript** : Performance native
 - **CSS Grid/Flexbox** : Layouts responsives
 - **Web APIs** : Notifications, localStorage, etc.
 - **Progressive Enhancement** : Expérience dégradée gracieuse
 
 ### **Sécurité & Performance**
+
 - **Helmet.js** : Headers de sécurité
 - **DOMPurify** : Sanitization XSS
 - **bcryptjs** : Hachage sécurisé
@@ -118,6 +121,7 @@
 - **Validator** : Validation des données
 
 ### **Outils Optionnels**
+
 - **Google Generative AI** : Assistance pour définitions (optionnel)
 - **Nodemailer** : Envoi d'emails
 - **XLSX** : Import/Export Excel
@@ -189,6 +193,7 @@ app.js # Point d'entrée du serveur
 ## 🚀 Installation & Configuration
 
 ### **Prérequis Système**
+
 ```bash
 # Vérifiez votre configuration
 node --version  # v18.0.0+
@@ -197,6 +202,7 @@ mysql --version # v8.0+
 ```
 
 ### **Installation Express** ⚡
+
 ```bash
 # 1. Clonage du projet
 git clone https://github.com/votre-repo/Web_vocab_v0.git
@@ -219,13 +225,13 @@ npm run dev
 <summary>📧 <strong>Configuration Email & Base de Données</strong></summary>
 
 ```env
-# 🖥️ Server Configuration 
+# 🖥️ Server Configuration
 PORT=3000
 NODE_ENV=development
 
 #If you want to use the production environment, you can change the NODE_ENV to production and set the #SESSION_SECRET = your_secret_for_session_here
 
-# 🗄️ Database Configuration 
+# 🗄️ Database Configuration
 DB_HOST= name_of_your_host
 DB_DATABASE= name_of_your_database
 DB_PORT= 3306
@@ -233,20 +239,20 @@ DB_USER= name_of_your_user
 DB_PASSWORD= name_of_your_password
 DB_DIALECT= mysql
 
-# 🔐 Google Auth Configuration 
+# 🔐 Google Auth Configuration
 GOOGLE_CLIENT_ID= id_of_your_google_client
 GOOGLE_CLIENT_SECRET= secret_of_your_google_client
 
 # 🔊 Google Cloud text-to-speech
 GOOGLE_SERVICE_ACCOUNT_CREDENTIALS = the content of the json file of your google cloud service account
 
-# 🤖 Gemini API Key 
+# 🤖 Gemini API Key
 GEMINI_API_KEY_1 = key_of_your_gemini_api
 
-# 📧 Email Configuration 
+# 📧 Email Configuration
 USER_GMAIL = name_of_your_gmail
 
-# 🌐 URL Configuration 
+# 🌐 URL Configuration
 BASE_URL=https://your_domain.com/
 DOMAIN=your_domain
 
@@ -276,17 +282,19 @@ Or you can connect to your database mysql with your favorite tool and execute th
 ### **🎯 Démarrage Rapide**
 
 1. **Créez votre compte** 👤
+
    ```
    📧 Email + mot de passe sécurisé
    ✅ Vérification automatique
-   🎨 Personnalisation du profil par choix de l'avatar 
+   🎨 Personnalisation du profil par choix de l'avatar
    🔒 Les passwords sont hachés avec bcryptjs dans la base de données
 
-   Or simplement, vous pouvez se connecter avec votre compte Google 
+   Or simplement, vous pouvez se connecter avec votre compte Google
 
    ```
 
 2. **Créez votre premier package** 📦
+
    ```javascript
    // Interface intuitive
    Package: "Vocabulaire Professionnel"
@@ -295,6 +303,7 @@ Or you can connect to your database mysql with your favorite tool and execute th
    ```
 
 3. **Ajoutez vos mots** 📝
+
    ```
    📝 Saisie manuelle ou import Excel (xlsx, xls)
    📊 Exemples, contextuelles générées par l'API de Google Gemini-2.5-Flash
@@ -310,24 +319,26 @@ Or you can connect to your database mysql with your favorite tool and execute th
 
 ### **🎮 Modes d'Apprentissage (Spaced Repetition et flashcards)**
 
-| Mode | Description | Durée | Efficacité |
-|------|-------------|-------|------------|
-| 🚀 **Meaning to Word** | Apprentissage intensif | 5-10 min | ⭐⭐⭐⭐⭐ |
-| 🧠 **Word to Meaning** | Révision espacée | 15-20 min | ⭐⭐⭐⭐⭐ |
-| 🎯 **Game Mode** | Apprentissage ludique | 10-15 min | ⭐⭐⭐⭐ |
+| Mode                   | Description            | Durée     | Efficacité |
+| ---------------------- | ---------------------- | --------- | ---------- |
+| 🚀 **Meaning to Word** | Apprentissage intensif | 5-10 min  | ⭐⭐⭐⭐⭐ |
+| 🧠 **Word to Meaning** | Révision espacée       | 15-20 min | ⭐⭐⭐⭐⭐ |
+| 🎯 **Game Mode**       | Apprentissage ludique  | 10-15 min | ⭐⭐⭐⭐   |
 
 ---
 
 ## 📊 Statistiques & Performance
 
-
 ### **🎯 Système de Streaks**
+
 - **Streak Counter** : Suivi des jours consécutifs
+
 ---
 
 ## 🛡️ Sécurité & Performance
 
 ### **🔒 Sécurité Enterprise**
+
 - ✅ **Helmet.js** : Protection des en-têtes
 - ✅ **CSP** : Content Security Policy
 - ✅ **DOMPurify** : Sanitization XSS
@@ -336,6 +347,7 @@ Or you can connect to your database mysql with your favorite tool and execute th
 - ✅ **Session Security** : Gestion sécurisée
 
 ### **⚡ Optimisations Performance**
+
 - 🚀 **Lazy Loading** : Chargement progressif
 - 📱 **Mobile-First** : Responsive design
 - 📊 **Analytics** : Monitoring en temps réel
@@ -346,13 +358,13 @@ Or you can connect to your database mysql with your favorite tool and execute th
 
 ### **🔮 Prochaines Fonctionnalités**
 
-| Feature | Status | ETA |
-|---------|--------|-----|
-| 🌍 **Mode Hors-ligne** | 📋 Planifié 
-| 🎯 **Recompenses selon le niveau de streak** | 🔄 En travail 
-| 👥 **Collaboration** | 💡 Recherche 
-| 📱 **App Mobile** | 🎯 Roadmap 
-| 🧠 **IA Avancée** | 💡 Amélioration 
+| Feature                                      | Status          | ETA |
+| -------------------------------------------- | --------------- | --- |
+| 🌍 **Mode Hors-ligne**                       | 📋 Planifié     |
+| 🎯 **Recompenses selon le niveau de streak** | 🔄 En travail   |
+| 👥 **Collaboration**                         | 💡 Recherche    |
+| 📱 **App Mobile**                            | 🎯 Roadmap      |
+| 🧠 **IA Avancée**                            | 💡 Amélioration |
 
 ### **🤝 Contribuer**
 
@@ -389,6 +401,7 @@ git push origin feature/nouvelle-fonctionnalite
 <summary>🚨 <strong>Problèmes Courants</strong></summary>
 
 **Q: Erreur "Missing credentials for PLAIN"**
+
 ```bash
 # Solution
 1. Vérifiez votre .env
@@ -397,6 +410,7 @@ git push origin feature/nouvelle-fonctionnalite
 ```
 
 **Q: Le système de révision ne fonctionne pas**
+
 ```bash
 # Vérification
 1. Vérifiez la configuration de node-cron
@@ -405,6 +419,7 @@ git push origin feature/nouvelle-fonctionnalite
 ```
 
 **Q: Problème d'import de fichiers**
+
 ```bash
 # Debug
 1. Vérifiez la taille (< 5MB)
@@ -414,15 +429,16 @@ git push origin feature/nouvelle-fonctionnalite
 
 </details>
 
-
 ## 📄 Licence & Crédits
 
 ### **📜 Licence**
+
 ```
 This is a personal project in order to learn
 ```
 
 ### **🙏 Remerciements**
+
 - **Express.js Community** : Pour le framework robuste
 - **Open Source Contributors** : Pour les packages utilisés
 - **Google Gemini-2.5-Flash** : Pour les définitions contextuelles

@@ -1,137 +1,143 @@
-<link rel="stylesheet" href="/css/learnVocabs.css">
-<div class="learn-container">
-  <h1 class="learn-title">Apprendre mon vocabulaire</h1>
+<link rel='stylesheet' href='/css/learnVocabs.css' />
+<div class='learn-container'>
+  <h1 class='learn-title'>Apprendre mon vocabulaire</h1>
 
   {{#if error}}
-  <div class="alert alert-error">
-    {{error}}
-  </div>
+    <div class='alert alert-error'>
+      {{error}}
+    </div>
   {{/if}}
-  
+
   {{#if words.length}}
-    <div class="dashboard-stats">
-      <div class="stat-card">
-        <div class="stat-icon"><i class="fas fa-book"></i></div>
-        <div class="stat-content">
+    <div class='dashboard-stats'>
+      <div class='stat-card'>
+        <div class='stat-icon'><i class='fas fa-book'></i></div>
+        <div class='stat-content'>
           <h3>{{words.length}}</h3>
           <p>Mots disponibles</p>
         </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-        <div class="stat-content">
-          <h3 id="known-count">0</h3>
+      <div class='stat-card'>
+        <div class='stat-icon'><i class='fas fa-check-circle'></i></div>
+        <div class='stat-content'>
+          <h3 id='known-count'>0</h3>
           <p>Mots maîtrisés</p>
         </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon"><i class="fas fa-stopwatch"></i></div>
-        <div class="stat-content">
-          <h3 id="session-time">00:00</h3>
+      <div class='stat-card'>
+        <div class='stat-icon'><i class='fas fa-stopwatch'></i></div>
+        <div class='stat-content'>
+          <h3 id='session-time'>00:00</h3>
           <p>Temps de session</p>
         </div>
       </div>
     </div>
-    
-    <div class="flashcard-controls">
-      <div class="flashcard-filters">
+
+    <div class='flashcard-controls'>
+      <div class='flashcard-filters'>
         <h3>Niveaux</h3>
-        <div class="filter-options">
-          <div class="filter-row">
-            <label class="filter-label">
-              <input type="checkbox" id="levelx" value="x" checked>
-              <span class="custom-checkbox"></span>
+        <div class='filter-options'>
+          <div class='filter-row'>
+            <label class='filter-label'>
+              <input type='checkbox' id='levelx' value='x' checked />
+              <span class='custom-checkbox'></span>
               Niveau x
             </label>
 
-            <label class="filter-label">
-              <input type="checkbox" id="level0" value="0" checked>
-              <span class="custom-checkbox"></span>
+            <label class='filter-label'>
+              <input type='checkbox' id='level0' value='0' checked />
+              <span class='custom-checkbox'></span>
               Niveau 0
             </label>
           </div>
-          <div class="filter-row">  
-            <label class="filter-label">
-              <input type="checkbox" id="level1" value="1"  checked>
-              <span class="custom-checkbox"></span>
+          <div class='filter-row'>
+            <label class='filter-label'>
+              <input type='checkbox' id='level1' value='1' checked />
+              <span class='custom-checkbox'></span>
               Niveau 1
             </label>
-            <label class="filter-label">
-              <input type="checkbox" id="level2" value="2" checked>
-              <span class="custom-checkbox"></span>
+            <label class='filter-label'>
+              <input type='checkbox' id='level2' value='2' checked />
+              <span class='custom-checkbox'></span>
               Niveau 2
             </label>
           </div>
         </div>
       </div>
-      <div class="mode-selector">
+      <div class='mode-selector'>
         <h3>Mode d'apprentissage</h3>
-        <div class="mode-options">
-          <label class="mode-label">
-            <input type="radio" name="mode" value="word-to-meaning" checked>
-            <span class="custom-radio"></span>
+        <div class='mode-options'>
+          <label class='mode-label'>
+            <input type='radio' name='mode' value='word-to-meaning' checked />
+            <span class='custom-radio'></span>
             Mot → Signification
           </label>
-          <label class="mode-label">
-            <input type="radio" name="mode" value="meaning-to-word">
-            <span class="custom-radio"></span>
+          <label class='mode-label'>
+            <input type='radio' name='mode' value='meaning-to-word' />
+            <span class='custom-radio'></span>
             Signification → Mot
           </label>
         </div>
       </div>
 
-      <div class="mode-vocab-selector">
+      <div class='mode-vocab-selector'>
         <h3>Mode de vocabulaire</h3>
-        <div class="mode-options">
-          <label class="mode-label">
-            <input type="radio" name="vocab-mode" value="today-words" checked>
-            <span class="custom-radio"></span>
+        <div class='mode-options'>
+          <label class='mode-label'>
+            <input type='radio' name='vocab-mode' value='today-words' checked />
+            <span class='custom-radio'></span>
             Mots du jour
           </label>
-          <label class="mode-label">
-            <input type="radio" name="vocab-mode" value="all-words">
-            <span class="custom-radio"></span>
+          <label class='mode-label'>
+            <input type='radio' name='vocab-mode' value='all-words' />
+            <span class='custom-radio'></span>
             Tous les mots
           </label>
         </div>
       </div>
     </div>
-    
-    <div class="flashcard-container">
-      <div class="card-count">
-        <span id="current-card">1</span> / <span id="total-cards">{{words.length}}</span>
+
+    <div class='flashcard-container'>
+      <div class='card-count'>
+        <span id='current-card'>1</span>
+        /
+        <span id='total-cards'>{{words.length}}</span>
       </div>
-      
-      <div class="flashcard-with-navigation">
-        <button id="prev-card" class="nav-btn-left" disabled>
-          <i class="fas fa-chevron-left"></i>
+
+      <div class='flashcard-with-navigation'>
+        <button id='prev-card' class='nav-btn-left' disabled>
+          <i class='fas fa-chevron-left'></i>
         </button>
 
-        <div class="flashcard" id="flashcard">
-          <div class="flashcard-inner">
-            <div class="flashcard-front">
-              <span class="card-type">{{words.[0].type}}</span>
-              <h2 class="card-content">{{words.[0].word}}</h2>
-              <div class="hint-container">
-                <button id="hint-button" class="hint-btn"><i class="fas fa-lightbulb"></i> Indice</button>
-                <p id="hint-text" class="hint-text"></p>
+        <div class='flashcard' id='flashcard'>
+          <div class='flashcard-inner'>
+            <div class='flashcard-front'>
+              <span class='card-type'>{{words.[0].type}}</span>
+              <h2 class='card-content'>{{words.[0].word}}</h2>
+              <div class='hint-container'>
+                <button id='hint-button' class='hint-btn'><i class='fas fa-lightbulb'></i>
+                  Indice</button>
+                <p id='hint-text' class='hint-text'></p>
               </div>
-              <p class="card-prompt">Cliquez pour voir la traduction</p>
+              <p class='card-prompt'>Cliquez pour voir la traduction</p>
             </div>
-            <div class="flashcard-back">
-              <span class="card-type">{{words.[0].type}}</span>
-              <h2 class="card-content">{{words.[0].meaning}}</h2>
-              <div class="card-details">
-                <div class="example-text"><strong>Exemple:</strong> {{words.[0].example}} </div>
+            <div class='flashcard-back'>
+              <span class='card-type'>{{words.[0].type}}</span>
+              <h2 class='card-content'>{{words.[0].meaning}}</h2>
+              <div class='card-details'>
+                <div class='example-text'><strong>Exemple:</strong> {{words.[0].example}} </div>
                 {{#if words.[0].pronunciation}}
-                  <div class="pronunciation-text"><strong>Prononciation:</strong> {{words.[0].pronunciation}}</div>
-                  <button class="pronunciation-btn" data-text="{{words.[0].word}}">
-                    <i class="fas fa-volume-up"></i> Écouter
+                  <div class='pronunciation-text'><strong>Prononciation:</strong>
+                    {{words.[0].pronunciation}}</div>
+                  <button class='pronunciation-btn' data-text='{{words.[0].word}}'>
+                    <i class='fas fa-volume-up'></i>
+                    Écouter
                   </button>
                 {{/if}}
-                  <button class="pronunciation-btn" data-text="{{words.[0].example}}">
-                    <i class="fas fa-volume-up"></i> Écouter l'exemple
-                  </button>
+                <button class='pronunciation-btn' data-text='{{words.[0].example}}'>
+                  <i class='fas fa-volume-up'></i>
+                  Écouter l'exemple
+                </button>
                 {{#if words.[0].synonyms}}
                   <p><strong>Synonymes:</strong> {{words.[0].synonyms}}</p>
                 {{/if}}
@@ -143,80 +149,86 @@
           </div>
         </div>
 
-        <button id="next-card" class="nav-btn-right">
-          <i class="fas fa-chevron-right"></i>
+        <button id='next-card' class='nav-btn-right'>
+          <i class='fas fa-chevron-right'></i>
         </button>
       </div>
-      
-        <div class="knowledge-buttons">
-          <button class="knowledge-btn" data-level="0">
-            <i class="fas fa-times"></i> Je ne sais pas
-          </button>
-          <button class="knowledge-btn" data-level="1">
-            <i class="fas fa-question"></i> Incertain
-          </button>
-          <button class="knowledge-btn" data-level="2">
-            <i class="fas fa-check"></i> Je sais
-          </button>
-        </div>
+
+      <div class='knowledge-buttons'>
+        <button class='knowledge-btn' data-level='0'>
+          <i class='fas fa-times'></i>
+          Je ne sais pas
+        </button>
+        <button class='knowledge-btn' data-level='1'>
+          <i class='fas fa-question'></i>
+          Incertain
+        </button>
+        <button class='knowledge-btn' data-level='2'>
+          <i class='fas fa-check'></i>
+          Je sais
+        </button>
+      </div>
     </div>
-    
-    <div class="progress-container">
-      <div class="progress-header">
+
+    <div class='progress-container'>
+      <div class='progress-header'>
         <h3>Votre progression</h3>
-        <span id="progress-text">0%</span>
+        <span id='progress-text'>0%</span>
       </div>
-      <div class="progress-bar">
-        <div class="progress" id="progress-bar" style="width: 0%"></div>
+      <div class='progress-bar'>
+        <div class='progress' id='progress-bar' style='width: 0%'></div>
       </div>
-      <div class="progress-stats">
-        <div class="progress-stat">
-          <span class="stat-icon red"><i class="fas fa-times"></i></span>
-          <span id="not-known-count">0</span>
+      <div class='progress-stats'>
+        <div class='progress-stat'>
+          <span class='stat-icon red'><i class='fas fa-times'></i></span>
+          <span id='not-known-count'>0</span>
         </div>
-        <div class="progress-stat">
-          <span class="stat-icon orange"><i class="fas fa-question"></i></span>
-          <span id="uncertain-count">0</span>
+        <div class='progress-stat'>
+          <span class='stat-icon orange'><i class='fas fa-question'></i></span>
+          <span id='uncertain-count'>0</span>
         </div>
-        <div class="progress-stat">
-          <span class="stat-icon green"><i class="fas fa-check"></i></span>
-          <span id="mastered-count">0</span>
+        <div class='progress-stat'>
+          <span class='stat-icon green'><i class='fas fa-check'></i></span>
+          <span id='mastered-count'>0</span>
         </div>
       </div>
     </div>
-    
-    <div class="flashcard-actions">
-      <button id="shuffle-cards" class="action-btn">
-        <i class="fas fa-random"></i> Mélanger
+
+    <div class='flashcard-actions'>
+      <button id='shuffle-cards' class='action-btn'>
+        <i class='fas fa-random'></i>
+        Mélanger
       </button>
-      <button id="reset-progress" class="action-btn">
-        <i class="fas fa-redo"></i> Recommencer
+      <button id='reset-progress' class='action-btn'>
+        <i class='fas fa-redo'></i>
+        Recommencer
       </button>
-      <button id="save-progress" class="action-btn">
-        <i class="fas fa-save"></i> Sauvegarder
+      <button id='save-progress' class='action-btn'>
+        <i class='fas fa-save'></i>
+        Sauvegarder
       </button>
-      <a href="/games/flashMatch?package={{package_id}}" class="action-btn game-btn">
-        <i class="fas fa-gamepad"></i> Jouer pour apprendre
+      <a href='/games/flashMatch?package={{package_id}}' class='action-btn game-btn'>
+        <i class='fas fa-gamepad'></i>
+        Jouer pour apprendre
       </a>
     </div>
-    
+
   {{else}}
-    <div class="no-words">
-      <i class="fas fa-book"></i>
+    <div class='no-words'>
+      <i class='fas fa-book'></i>
       <h3>Aucun mot dans votre vocabulaire</h3>
       <p>Commencez à ajouter des mots pour pouvoir les apprendre.</p>
-      <a href="/monVocabs/add?package={{package_id}}" class="btn">Ajouter votre premier mot</a>
+      <a href='/monVocabs/add?package={{package_id}}' class='btn'>Ajouter votre premier mot</a>
     </div>
   {{/if}}
-  
-  <div id="words-data" data-words="{{json words}}"></div>
 
-  <div class="home-cta">
-    <a href="/monVocabs?package={{package_id}}" class="btn back-btn">
-      <i class="fas fa-arrow-left"></i> Retour à mon vocabulaire
+  <div id='words-data' data-words='{{json words}}'></div>
+
+  <div class='home-cta'>
+    <a href='/monVocabs?package={{package_id}}' class='btn back-btn'>
+      <i class='fas fa-arrow-left'></i>
+      Retour à mon vocabulaire
     </a>
   </div>
 </div>
-<script src="/js/learnVocabs.js" nonce="{{nonce}}"></script>
-
-
+<script src='/js/learnVocabs.js' nonce='{{nonce}}'></script>

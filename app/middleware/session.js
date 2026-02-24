@@ -8,7 +8,7 @@ const generateSecureSecret = () => {
   if (process.env.NODE_ENV === 'production') {
     // En production, utiliser un secret basé sur l'environnement + date pour rotation automatique
     const baseSecret = process.env.SESSION_SECRET;
-    
+
     const dateRotation = Math.floor(Date.now() / (1000 * 60 * 60 * 24 * 7)); // Rotation hebdomadaire
     return crypto.createHash('sha256').update(`${baseSecret}-${dateRotation}`).digest('hex');
   }
@@ -23,12 +23,12 @@ const sessionConfig = {
   secret: generateSecureSecret(),
   resave: false,
   saveUninitialized: false,
-  cookie: { 
+  cookie: {
     maxAge: 3 * 60 * 60 * 1000, // 3 hours
     secure: process.env.NODE_ENV === 'production', // HTTPS only in production
     httpOnly: true, // Prevent XSS attacks on cookies
-    sameSite: 'lax' // CSRF protection
-  }
+    sameSite: 'lax', // CSRF protection
+  },
 };
 
 /**
@@ -48,10 +48,10 @@ const initializeSession = (app) => {
   if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
   }
-  
+
   // Configure session middleware
   app.use(session(sessionConfig));
-  
+
   // Make user data available to all templates
   app.use(userSessionMiddleware);
 };
@@ -59,5 +59,5 @@ const initializeSession = (app) => {
 module.exports = {
   initializeSession,
   sessionConfig,
-  userSessionMiddleware
-}; 
+  userSessionMiddleware,
+};

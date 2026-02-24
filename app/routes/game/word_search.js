@@ -1,21 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const wordSearchController = require('../../controllers/gameControllers/WordSearchController');
-
-// Middleware d'authentification
-const isAuthenticated = (req, res, next) => {
-    if (req.session.user) {
-        return next();
-    }
-    res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
-};
+const { isAuthenticatedAPI } = require('../../middleware/auth');
 /**
  * Routes pour le jeu WordSearch (Mots cachés)
  */
 
-
-
 // Récupérer les mots pour le jeu
-router.get('/words', isAuthenticated, wordSearchController.getWordsForGame);
+router.get('/words', isAuthenticatedAPI, wordSearchController.getWordsForGame);
 
 module.exports = router;

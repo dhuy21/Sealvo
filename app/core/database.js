@@ -20,14 +20,14 @@ async function connect() {
       idleTimeout: 300000, // 5 minutes
       // Prevent connection timeout issues
       keepAliveInitialDelay: 0,
-      enableKeepAlive: true
+      enableKeepAlive: true,
     });
 
     // Test the connection
     const connection = await pool.getConnection();
     console.log('Connecté à la base de données MySQL avec pool de connexions.');
     connection.release();
-    
+
     return createConnectionWrapper(pool);
   } catch (error) {
     console.error('Erreur de connexion à la base de données :', error.message);
@@ -55,7 +55,7 @@ function createConnectionWrapper(pool) {
         }
       }
     },
-    
+
     async beginTransaction() {
       const connection = await pool.getConnection();
       await connection.beginTransaction();
@@ -70,7 +70,7 @@ function createConnectionWrapper(pool) {
         async rollback() {
           await connection.rollback();
           connection.release();
-        }
+        },
       };
     },
 
@@ -81,12 +81,12 @@ function createConnectionWrapper(pool) {
         pool = null;
         console.log('Database pool fermé.');
       }
-    }
+    },
   };
 }
 
 // Export both the connect function and a method to get the current pool
-module.exports = { 
+module.exports = {
   connect,
-  getPool: () => pool
+  getPool: () => pool,
 };

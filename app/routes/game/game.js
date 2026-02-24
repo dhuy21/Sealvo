@@ -8,14 +8,7 @@ const phraseCompletionRoutes = require('./phrase_completion');
 const wordSearchRoutes = require('./word_search');
 const testPronunRoutes = require('./test_pronun');
 const gameController = require('../../controllers/gameControllers/GameController');
-
-// Middleware d'authentification
-const isAuthenticated = (req, res, next) => {
-    if (req.session.user) {
-        return next();
-    }
-    res.redirect('/login?error=Vous devez être connecté pour accéder à cette page');
-};
+const { isAuthenticated } = require('../../middleware/auth');
 
 // Page d'accueil des jeux
 router.get('/', isAuthenticated, gameController.index);
@@ -23,13 +16,13 @@ router.get('/', isAuthenticated, gameController.index);
 // Route pour afficher un jeu spécifique directement depuis GameController
 router.get('/:gameType', isAuthenticated, gameController.showGame);
 
-// Routes spécifiques aux jeux individuels
-router.use('/wordScramble', isAuthenticated, wordScrambleRoutes);
-router.use('/flashMatch', isAuthenticated, flashMatchRoutes);
-router.use('/speedVocab', isAuthenticated, speedVocabRoutes);
-router.use('/vocabQuiz', isAuthenticated, vocabQuizRoutes);
-router.use('/phraseCompletion', isAuthenticated, phraseCompletionRoutes);
-router.use('/wordSearch', isAuthenticated, wordSearchRoutes);
-router.use('/testPronun', isAuthenticated, testPronunRoutes);
+// Routes spécifiques aux jeux individuels (auth gérée dans chaque sub-router)
+router.use('/wordScramble', wordScrambleRoutes);
+router.use('/flashMatch', flashMatchRoutes);
+router.use('/speedVocab', speedVocabRoutes);
+router.use('/vocabQuiz', vocabQuizRoutes);
+router.use('/phraseCompletion', phraseCompletionRoutes);
+router.use('/wordSearch', wordSearchRoutes);
+router.use('/testPronun', testPronunRoutes);
 
 module.exports = router;

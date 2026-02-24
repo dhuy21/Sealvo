@@ -18,4 +18,3 @@ router.get('/resetPassword', resetPasswordController.resetPassword);
 router.post('/resetPassword', resetPasswordController.resetPasswordPost);
 
 module.exports = router;
-  

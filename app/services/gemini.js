@@ -5,31 +5,31 @@ require('dotenv').config();
 const GEMINI_API_KEY_1 = process.env.GEMINI_API_KEY_1;
 
 class GeminiService {
-
-    //Replace the example of the words with the new example
-    async replaceExample(words, words_need_replace_example) {
-        if (words_need_replace_example.length === 1) { //check if  words_need_replace_example aren't iterable
-            words.example = words_need_replace_example[0].example;
-        } else {
-            for (const word of words) {
-                for (const word_need_replace_example of words_need_replace_example) {
-                    if (word.id === word_need_replace_example.id) {
-                        word.example = word_need_replace_example.example;
-                    }
-                }
-            }
+  //Replace the example of the words with the new example
+  async replaceExample(words, words_need_replace_example) {
+    if (words_need_replace_example.length === 1) {
+      //check if  words_need_replace_example aren't iterable
+      words.example = words_need_replace_example[0].example;
+    } else {
+      for (const word of words) {
+        for (const word_need_replace_example of words_need_replace_example) {
+          if (word.id === word_need_replace_example.id) {
+            word.example = word_need_replace_example.example;
+          }
         }
-        return words;
+      }
     }
-    //Modify the example of the words with examples in error format
-    async modifyExample(words) {
-        try {
-            console.log('Modify examples for words with examples in error format...');
-            
-            const genAI = new GoogleGenerativeAI(GEMINI_API_KEY_1);
-            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    return words;
+  }
+  //Modify the example of the words with examples in error format
+  async modifyExample(words) {
+    try {
+      console.log('Modify examples for words with examples in error format...');
 
-            const batchPrompt = `
+      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY_1);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+
+      const batchPrompt = `
             You are an expert language tutor. 
             Correct the example sentences for each of the input words according to the meaning, type of the word and the language of the word. 
             Note that the grammar of these words is important and correct. You must not change the meaning of the word and the sentence.
@@ -52,44 +52,41 @@ class GeminiService {
             Words: 
             ${JSON.stringify(words, null, 2)}`;
 
-            const result = await model.generateContent(batchPrompt);
-            const response = await result.response;
-            const text = response.text();
-            
-            // Try to parse the JSON response
-            try {
-                const parsedResponse = JSON.parse(text);
-                console.log('✅ Successfully parsed JSON response');
-                return parsedResponse;
-            } catch (parseError) {
-                
-                // Remove markdown backticks and extract JSON
-                const cleanText = text.replace(/```json|```/g, '').trim();
-                try {
-                    const extractedJson = JSON.parse(cleanText);
-                    return extractedJson;
-                } catch (extractError) {
-                    console.error('❌ Failed to parse extracted JSON:', extractError.message);
-                    return [];
-                }
-            }
-            
-        } catch (error) {
-            console.error('❌ Batch Error:', error.message);
-            return [];
-        }
+      const result = await model.generateContent(batchPrompt);
+      const response = await result.response;
+      const text = response.text();
 
-    }
-
-    //Generate examples for words without examples
-    async generateExemple(words) { 
+      // Try to parse the JSON response
+      try {
+        const parsedResponse = JSON.parse(text);
+        console.log('✅ Successfully parsed JSON response');
+        return parsedResponse;
+      } catch (parseError) {
+        // Remove markdown backticks and extract JSON
+        const cleanText = text.replace(/```json|```/g, '').trim();
         try {
-            console.log('Generating examples for words without examples...');
-            
-            const genAI = new GoogleGenerativeAI(GEMINI_API_KEY_1);
-            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+          const extractedJson = JSON.parse(cleanText);
+          return extractedJson;
+        } catch (extractError) {
+          console.error('❌ Failed to parse extracted JSON:', extractError.message);
+          return [];
+        }
+      }
+    } catch (error) {
+      console.error('❌ Batch Error:', error.message);
+      return [];
+    }
+  }
 
-            const batchPrompt = `
+  //Generate examples for words without examples
+  async generateExemple(words) {
+    try {
+      console.log('Generating examples for words without examples...');
+
+      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY_1);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+      const batchPrompt = `
             You are an expert language tutor. 
             Create example sentences for each of the input words according to the meaning, type of the word and the language of the word. 
             Note that the grammar of these words is important and correct. 
@@ -110,33 +107,31 @@ class GeminiService {
             Words: 
             ${JSON.stringify(words, null, 2)}`;
 
-            const result = await model.generateContent(batchPrompt);
-            const response = await result.response;
-            const text = response.text();
-            
-            // Try to parse the JSON response
-            try {
-                const parsedResponse = JSON.parse(text);
-                console.log('✅ Successfully parsed JSON response');
-                return parsedResponse;
-            } catch (parseError) {
-                
-                // Remove markdown backticks and extract JSON
-                const cleanText = text.replace(/```json|```/g, '').trim();
-                try {
-                    const extractedJson = JSON.parse(cleanText);
-                    return extractedJson;
-                } catch (extractError) {
-                    console.error('❌ Failed to parse extracted JSON:', extractError.message);
-                    return [];
-                }
-            }
-            
-        } catch (error) {
-            console.error('❌ Batch Error:', error.message);
-            return [];
+      const result = await model.generateContent(batchPrompt);
+      const response = await result.response;
+      const text = response.text();
+
+      // Try to parse the JSON response
+      try {
+        const parsedResponse = JSON.parse(text);
+        console.log('✅ Successfully parsed JSON response');
+        return parsedResponse;
+      } catch (parseError) {
+        // Remove markdown backticks and extract JSON
+        const cleanText = text.replace(/```json|```/g, '').trim();
+        try {
+          const extractedJson = JSON.parse(cleanText);
+          return extractedJson;
+        } catch (extractError) {
+          console.error('❌ Failed to parse extracted JSON:', extractError.message);
+          return [];
         }
+      }
+    } catch (error) {
+      console.error('❌ Batch Error:', error.message);
+      return [];
     }
+  }
 }
 
 module.exports = new GeminiService();

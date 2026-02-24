@@ -3,12 +3,16 @@
 <div class="vocabulary-container" data-package="{{package_id}}">
   <h1>{{title}}</h1>
     
+  {{#if flashMessage}}
+  <div class="alert alert-{{flashMessage.type}}">
+    <i class="fas fa-exclamation-circle"></i> {{flashMessage.message}}
+  </div>
+  {{/if}}
   {{#if error}}
   <div class="alert alert-error">
     {{error}}
   </div>
   {{/if}}
-    
   {{#if success}}
   <div class="alert alert-success">
     {{success}}

@@ -1,19 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const phraseCompletionController = require('../../controllers/gameControllers/PhraseCompletionController');
-
-// Middleware d'authentification
-const isAuthenticated = (req, res, next) => {
-    if (req.session.user) {
-        return next();
-    }
-    res.status(401).json({ success: false, message: 'Vous devez être connecté' });
-};
+const { isAuthenticatedAPI } = require('../../middleware/auth');
 
 // Route pour récupérer une phrase pour le jeu
-router.get('/phrases', isAuthenticated, phraseCompletionController.getPhrasesForCompletion);
+router.get('/phrases', isAuthenticatedAPI, phraseCompletionController.getPhrasesForCompletion);
 
 // Route pour obtenir le nombre de mots disponibles
-router.get('/available-words', isAuthenticated, phraseCompletionController.getAvailableWordsCount);
+router.get(
+  '/available-words',
+  isAuthenticatedAPI,
+  phraseCompletionController.getAvailableWordsCount
+);
 
 module.exports = router;

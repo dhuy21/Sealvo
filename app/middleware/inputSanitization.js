@@ -9,15 +9,15 @@ const sanitizationRoutes = {
     fields: {
       username: 'username',
       email: 'email',
-      password: 'text'
-    }
+      password: 'text',
+    },
   },
   googleAuth: {
     path: '/auth/google/callback',
     fields: {
       username: 'username',
-      email: 'email'
-    }
+      email: 'email',
+    },
   },
   addWord: {
     path: '/addWord',
@@ -29,9 +29,9 @@ const sanitizationRoutes = {
       example: 'text',
       grammar: 'text',
       pronunciation: 'text',
-      subject: 'text'
-    }
-  }
+      subject: 'text',
+    },
+  },
 };
 
 /**
@@ -63,5 +63,5 @@ const initializeInputSanitization = (app) => {
 module.exports = {
   initializeInputSanitization,
   sanitizationRoutes,
-  generalSanitizationMiddleware
-}; 
+  generalSanitizationMiddleware,
+};

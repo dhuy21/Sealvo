@@ -8,7 +8,6 @@
   position: relative;
 }
 
-
 .vocabulary-container > * {
   position: relative;
   z-index: 1;
@@ -27,25 +26,23 @@
   text-align: center;
 }
 .vocabulary-container h1:after {
-    content: '';
-    position: absolute;
-    bottom: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 150px;
-    height: 4px;
-    background: linear-gradient(90deg, #6a11cb, #2575fc);
-    border-radius: 2px;
-  }
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 150px;
+  height: 4px;
+  background: linear-gradient(90deg, #6a11cb, #2575fc);
+  border-radius: 2px;
+}
 /* Import Section */
 .import-section {
-
   border-radius: 20px;
   padding: 2rem;
   margin-bottom: 2rem;
   transition: all 0.3s ease;
 }
-
 
 .import-section h2 {
   color: #2d3748;
@@ -176,7 +173,6 @@
   }
 }
 
-
 /* Format Info */
 .format-info {
   margin-top: 1.5rem;
@@ -263,7 +259,6 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
-
 /* Multiple Words Form */
 .multiple-words-form {
   background: none;
@@ -282,7 +277,7 @@
 /* Word Card */
 .word-card-form {
   background: rgba(255, 255, 255, 0.103);
-  box-shadow: 
+  box-shadow:
     0 12px 40px rgba(255, 182, 193, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.6);
   border-radius: 16px;
@@ -296,17 +291,24 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, 
-      rgba(255, 255, 255, 0.1) 0%, 
-      rgba(255, 255, 255, 0.05) 50%, 
-      rgba(255, 255, 255, 0.1) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
   animation: glassShimmer 8s ease-in-out infinite;
   z-index: -1;
 }
 
 @keyframes glassShimmer {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .word-card-form.collapsed .card-body {
@@ -409,8 +411,6 @@
   position: relative;
 }
 
-
-
 /* Form Sections */
 .form-section {
   display: flex;
@@ -435,7 +435,6 @@
   border-bottom: 2px solid rgba(99, 102, 241, 0.1);
 }
 
-
 .section-title i {
   font-size: 1.1rem;
 }
@@ -456,7 +455,6 @@
 .form-group.full-width {
   grid-column: 1 / -1;
 }
-
 
 .form-group label {
   font-weight: 800;
@@ -543,15 +541,15 @@ select.form-control {
 }
 
 .btn-tertiary {
-    background: linear-gradient(45deg, #f38662, #ef4b1e);
-    color: white;
-    box-shadow: 0 8px 20px rgba(237, 69, 3, 0.858);
-  }
-  
-  .btn-tertiary:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 25px rgba(242, 32, 4, 0.744);
-  }
+  background: linear-gradient(45deg, #f38662, #ef4b1e);
+  color: white;
+  box-shadow: 0 8px 20px rgba(237, 69, 3, 0.858);
+}
+
+.btn-tertiary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 25px rgba(242, 32, 4, 0.744);
+}
 
 .btn-secondary {
   background: rgba(247, 250, 252, 0.9);
@@ -600,7 +598,7 @@ select.form-control {
   .vocabulary-container {
     padding: 1.5rem;
   }
-  
+
   .form-grid {
     grid-template-columns: 1fr;
   }
@@ -610,20 +608,20 @@ select.form-control {
   .vocabulary-container h1 {
     font-size: 2.5rem;
   }
-  
+
   .card-header {
     padding: 1rem 1.25rem;
   }
-  
+
   .card-body {
     padding: 1.25rem;
   }
-  
+
   .multiple-form-actions {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .multiple-form-actions .btn {
     justify-content: center;
     width: 100%;
@@ -634,60 +632,60 @@ select.form-control {
   .vocabulary-container {
     padding: 1rem;
   }
-  
+
   .vocabulary-container h1 {
     font-size: 2rem;
   }
-  
+
   .import-section h2 {
     font-size: 1.5rem;
   }
-  
+
   .file-label {
     padding: 1.5rem;
     min-height: 100px;
   }
-  
+
   .file-icon {
     font-size: 2rem;
   }
-  
+
   .words-cards-container {
     gap: 1rem;
   }
-  
+
   .card-header {
     padding: 0.875rem 1rem;
     flex-wrap: wrap;
   }
-  
+
   .card-title h3 {
     font-size: 1rem;
   }
-  
+
   .card-number {
     width: 32px;
     height: 32px;
     font-size: 0.9rem;
   }
-  
+
   .card-body {
     padding: 1rem;
   }
-  
+
   .form-section {
     gap: 0.875rem;
   }
-  
+
   .section-title {
     font-size: 0.95rem;
   }
-  
+
   .form-control {
     font-size: 0.9rem;
     padding: 0.65rem 0.875rem;
   }
-  
+
   .btn {
     font-size: 0.95rem;
   }
@@ -697,77 +695,77 @@ select.form-control {
   .vocabulary-container h1 {
     font-size: 1.75rem;
   }
-  
+
   .import-section {
     padding: 1rem;
   }
-  
+
   .file-label {
     padding: 1rem;
     min-height: 80px;
   }
-  
+
   .file-text {
     font-size: 1rem;
   }
-  
+
   .card-header {
     padding: 0.75rem 0.875rem;
   }
-  
+
   .card-title {
     gap: 0.5rem;
   }
-  
+
   .card-title h3 {
     font-size: 0.95rem;
   }
-  
+
   .card-number {
     width: 28px;
     height: 28px;
     font-size: 0.85rem;
   }
-  
+
   .btn-icon {
     width: 36px;
     height: 36px;
     font-size: 0.875rem;
   }
-  
+
   .card-actions {
     gap: 0.375rem;
   }
-  
+
   .card-body {
     padding: 0.875rem;
   }
-  
+
   .form-section {
     gap: 0.75rem;
   }
-  
+
   .section-title {
     font-size: 0.9rem;
   }
-  
+
   .section-title i {
     font-size: 1rem;
   }
-  
+
   .form-grid {
     gap: 0.875rem;
   }
-  
+
   .form-control {
     font-size: 0.875rem;
     padding: 0.625rem 0.75rem;
   }
-  
+
   textarea.form-control {
     min-height: 70px;
   }
-  
+
   .btn {
     padding: 0.65rem 1rem;
     font-size: 0.9rem;
@@ -778,16 +776,16 @@ select.form-control {
   .vocabulary-container h1 {
     font-size: 1.5rem;
   }
-  
+
   .card-actions {
     width: 100%;
     justify-content: flex-end;
   }
-  
+
   .section-title {
     font-size: 0.85rem;
   }
-  
+
   .form-control {
     font-size: 0.85rem;
   }
@@ -897,15 +895,15 @@ select.form-control {
     background: white;
     color: black;
   }
-  
+
   .vocabulary-container::before {
     display: none;
   }
-  
+
   .import-section,
   .multiple-words-form {
     background: white;
     box-shadow: none;
     border: 1px solid #ccc;
   }
-} 
+}

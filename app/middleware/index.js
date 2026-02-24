@@ -1,6 +1,7 @@
 const { initializeSecurity } = require('./security');
 const { initializeSession } = require('./session');
 const { initializeInputSanitization } = require('./inputSanitization');
+const { flashToLocalsMiddleware } = require('./flash');
 
 /**
  * Initialize all middleware in the correct order
@@ -8,16 +9,19 @@ const { initializeInputSanitization } = require('./inputSanitization');
  */
 const initializeMiddleware = (app) => {
   console.log('Initializing security middleware...');
-  
+
   // 1. Input sanitization (must be early in the pipeline)
   initializeInputSanitization(app);
-  
+
   // 2. Security headers and CSP (after sanitization, before sessions)
   initializeSecurity(app);
-  
+
   // 3. Session management (after security headers)
   initializeSession(app);
-  
+
+  // 4. Flash → res.locals so every view can use {{flashMessage}} without controller passing it
+  app.use(flashToLocalsMiddleware);
+
   console.log('All security middleware initialized successfully');
 };
 
@@ -26,5 +30,5 @@ module.exports = {
   // Export individual initializers for flexibility
   initializeSecurity,
   initializeSession,
-  initializeInputSanitization
-}; 
+  initializeInputSanitization,
+};

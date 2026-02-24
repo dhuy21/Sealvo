@@ -9,13 +9,13 @@
   --white: #ffffff;
   --header-height: 80px;
   --header-bg: rgba(23, 23, 23, 0.95);
-  --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 8px 20px rgba(106, 17, 203, 0.15);
   --shadow-lg: 0 15px 30px rgba(106, 17, 203, 0.25);
   --transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
   --header-bg: rgba(15, 23, 42, 0.95);
   --text-dark: #e2e8f0;
   --text-light: #cbd5e1;
@@ -92,9 +92,18 @@
 }
 
 @keyframes pulse {
-  0% { transform: scale(0.95); opacity: 0.5; }
-  50% { transform: scale(1.05); opacity: 0.8; }
-  100% { transform: scale(0.95); opacity: 0.5; }
+  0% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
 }
 
 .brand-text {
@@ -333,7 +342,7 @@
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  transition-duration: .3s;
+  transition-duration: 0.3s;
   box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.12);
   background-color: rgb(255, 65, 65);
   text-decoration: none;
@@ -342,7 +351,7 @@
 /* Sign icon container */
 .logout-btn.animated-logout-btn .sign {
   width: 100%;
-  transition-duration: .3s;
+  transition-duration: 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -365,7 +374,7 @@
   color: white;
   font-size: 0.85em;
   font-weight: 600;
-  transition-duration: .3s;
+  transition-duration: 0.3s;
   white-space: nowrap;
   display: flex;
   align-items: center;
@@ -377,12 +386,12 @@
 .logout-btn.animated-logout-btn:hover {
   width: 100px;
   border-radius: 30px;
-  transition-duration: .3s;
+  transition-duration: 0.3s;
 }
 
 .logout-btn.animated-logout-btn:hover .sign {
   width: 35%;
-  transition-duration: .3s;
+  transition-duration: 0.3s;
   padding-left: 15px;
 }
 
@@ -390,7 +399,7 @@
 .logout-btn.animated-logout-btn:hover .text {
   opacity: 1;
   width: 65%;
-  transition-duration: .3s;
+  transition-duration: 0.3s;
   padding-right: 12px;
   padding-left: 8px;
 }
@@ -491,8 +500,12 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Responsive Styles */
@@ -501,11 +514,11 @@
     height: auto;
     padding: 16px 24px;
   }
-  
+
   .menu-toggle {
     display: block;
   }
-  
+
   .nav-container {
     position: fixed;
     top: 0;
@@ -522,55 +535,75 @@
     overflow: auto;
     z-index: 1000;
   }
-  
+
   .nav-container.active {
     right: 0;
     opacity: 1;
     animation: slideIn 0.3s forwards;
   }
-  
+
   @keyframes slideIn {
-    from { right: -100%; opacity: 0; }
-    to { right: 0; opacity: 1; }
+    from {
+      right: -100%;
+      opacity: 0;
+    }
+    to {
+      right: 0;
+      opacity: 1;
+    }
   }
-  
+
   .main-nav {
     width: 100%;
     margin-right: 0;
     margin-bottom: 30px;
   }
-  
+
   .nav-list {
     flex-direction: column;
     gap: 10px;
     width: 100%;
   }
-  
+
   .nav-item {
     width: 100%;
     opacity: 0;
     transform: translateX(-20px);
   }
-  
+
   .nav-container.active .nav-item {
     animation: fadeInItem 0.5s forwards;
   }
-  
-  .nav-container.active .nav-item:nth-child(1) { animation-delay: 0.1s; }
-  .nav-container.active .nav-item:nth-child(2) { animation-delay: 0.2s; }
-  .nav-container.active .nav-item:nth-child(3) { animation-delay: 0.3s; }
-  .nav-container.active .nav-item:nth-child(4) { animation-delay: 0.4s; }
-  
-  @keyframes fadeInItem {
-    from { opacity: 0; transform: translateX(-20px); }
-    to { opacity: 1; transform: translateX(0); }
+
+  .nav-container.active .nav-item:nth-child(1) {
+    animation-delay: 0.1s;
   }
-  
+  .nav-container.active .nav-item:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .nav-container.active .nav-item:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+  .nav-container.active .nav-item:nth-child(4) {
+    animation-delay: 0.4s;
+  }
+
+  @keyframes fadeInItem {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
   .nav-link {
     width: 100%;
     padding: 15px;
   }
-  
+
   .dropdown-menu {
     position: static;
     top: auto;
@@ -586,71 +619,86 @@
     opacity: 0;
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease, opacity 0.3s ease, visibility 0s linear 0.3s, margin 0.3s ease;
+    transition:
+      max-height 0.3s ease,
+      opacity 0.3s ease,
+      visibility 0s linear 0.3s,
+      margin 0.3s ease;
     border: none;
   }
-  
+
   .dropdown.open .dropdown-menu {
     visibility: visible;
     opacity: 1;
     max-height: 300px;
     margin: 5px 0 5px 10px;
     padding: 5px 0;
-    transition: max-height 0.3s ease, opacity 0.3s ease, visibility 0s linear 0s, margin 0.3s ease;
+    transition:
+      max-height 0.3s ease,
+      opacity 0.3s ease,
+      visibility 0s linear 0s,
+      margin 0.3s ease;
   }
-  
+
   .dropdown-item {
     padding: 10px 15px;
     color: #fff;
   }
-  
+
   .dropdown.open .dropdown-menu {
     transform: none;
   }
-  
+
   .user-controls {
     width: 100%;
     opacity: 0;
     animation: fadeInControls 0.5s 0.5s forwards;
   }
-  
+
   @keyframes fadeInControls {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
-  
-  .login-btn, .user-profile {
+
+  .login-btn,
+  .user-profile {
     width: 100%;
     justify-content: center;
   }
-  
+
   /* Responsive styles for animated logout button */
   .logout-btn.animated-logout-btn {
     width: 28px;
     height: 28px;
   }
-  
+
   .logout-btn.animated-logout-btn .sign svg {
     width: 10px;
   }
-  
+
   .logout-btn.animated-logout-btn:hover {
     width: 85px;
   }
-  
+
   .logout-btn.animated-logout-btn:hover .sign {
     padding-left: 12px;
   }
-  
+
   .logout-btn.animated-logout-btn:hover .text {
     padding-right: 10px;
     padding-left: 6px;
   }
-  
+
   .logout-btn.animated-logout-btn .text {
     font-size: 0.8em;
   }
-  
+
   .body-noscroll {
     overflow: hidden;
   }
@@ -660,44 +708,44 @@
   .brand-text {
     font-size: 20px;
   }
-  
+
   .logo-wrapper {
     width: 35px;
     height: 35px;
     margin-right: 8px;
   }
-  
+
   .nav-container {
     width: 100%;
   }
-  
+
   .header-container {
     padding: 12px 16px;
   }
-  
+
   /* Smaller animated logout button for mobile */
   .logout-btn.animated-logout-btn {
     width: 26px;
     height: 26px;
   }
-  
+
   .logout-btn.animated-logout-btn .sign svg {
     width: 9px;
   }
-  
+
   .logout-btn.animated-logout-btn:hover {
     width: 75px;
   }
-  
+
   .logout-btn.animated-logout-btn:hover .sign {
     padding-left: 10px;
   }
-  
+
   .logout-btn.animated-logout-btn:hover .text {
     padding-right: 8px;
     padding-left: 5px;
   }
-  
+
   .logout-btn.animated-logout-btn .text {
     font-size: 0.75em;
   }
@@ -709,15 +757,15 @@
     padding-top: 70px;
     overflow-y: auto;
   }
-  
+
   .nav-list {
     gap: 5px;
   }
-  
+
   .nav-link {
     padding: 10px;
   }
-  
+
   .user-controls {
     padding-bottom: 20px;
   }
@@ -729,11 +777,11 @@
     background: linear-gradient(to right, rgba(106, 17, 203, 0.1), rgba(37, 117, 252, 0.1));
     color: var(--primary);
   }
-  
+
   .login-btn:active {
     transform: scale(0.98);
   }
-  
+
   .user-avatar:active {
     transform: scale(0.98);
   }

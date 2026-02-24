@@ -26,8 +26,6 @@ h1 {
   line-height: 1.1;
 }
 
-
-
 /* Section Profil */
 .profile-section {
   background: white;
@@ -78,7 +76,7 @@ h1 {
 }
 
 .section-title {
-    color: linear-gradient(90deg, #6a11cb, #2575fc);  
+  color: linear-gradient(90deg, #6a11cb, #2575fc);
   width: 100%;
   text-align: center;
   margin-bottom: 20px;
@@ -153,12 +151,12 @@ h1 {
 }
 
 .timeline-header i {
-    background: linear-gradient(90deg, #6a11cb, #2575fc);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-right: 10px;
-    font-size: 20px;
+  background: linear-gradient(90deg, #6a11cb, #2575fc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-right: 10px;
+  font-size: 20px;
 }
 
 .timeline-content {
@@ -336,7 +334,7 @@ h1 {
 
   border-radius: inherit;
   box-sizing: border-box;
-  content: "";
+  content: '';
   left: calc(50% - var(--size) / 2);
   position: absolute;
   width: var(--size);
@@ -460,7 +458,6 @@ h1 {
   --index: 9;
 }
 
-
 /* Bouton de retour */
 .home-cta {
   text-align: center;
@@ -488,26 +485,26 @@ h1 {
   .container {
     padding: 15px;
   }
-  
+
   .profile-container {
     flex-direction: column;
     text-align: center;
   }
-  
+
   .profile-image {
     margin: 0 auto;
   }
-  
+
   .skills-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .contact-links {
     flex-direction: column;
   }
-  
+
   .contact-link {
     width: 100%;
     justify-content: center;
   }
-} 
+}
