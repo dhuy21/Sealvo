@@ -1,4 +1,3 @@
-const wordModel = require('../models/words');
 const learningModel = require('../models/learning');
 
 class LevelProgressController {

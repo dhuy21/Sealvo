@@ -20,16 +20,14 @@ describe('Protected routes (integration)', () => {
   });
 
   describe('Page routes – redirect to /login when not authenticated', () => {
-    it.each([
-      ['/dashboard'],
-      ['/monVocabs'],
-      ['/myPackages'],
-      ['/games'],
-    ])('GET %s redirects to /login', async (path) => {
-      const res = await request(app).get(path);
-      expect(res.status).toBe(302);
-      expect(res.headers.location).toBe('/login');
-    });
+    it.each([['/dashboard'], ['/monVocabs'], ['/myPackages'], ['/games']])(
+      'GET %s redirects to /login',
+      async (path) => {
+        const res = await request(app).get(path);
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toBe('/login');
+      }
+    );
   });
 
   describe('API routes – 401 when not authenticated', () => {

@@ -76,28 +76,24 @@ describe('Auth routes (integration)', () => {
     });
 
     it('returns 400 when passwords do not match', async () => {
-      const res = await request(app)
-        .post('/registre')
-        .send({
-          username: 'newuser',
-          email: 'new@example.com',
-          password: 'secret12',
-          password2: 'different',
-        });
+      const res = await request(app).post('/registre').send({
+        username: 'newuser',
+        email: 'new@example.com',
+        password: 'secret12',
+        password2: 'different',
+      });
       expect(res.status).toBe(400);
       expect(res.body).toHaveProperty('success', false);
       expect(res.body.message).toMatch(/mots de passe|correspondent/i);
     });
 
     it('returns 400 when password is too short', async () => {
-      const res = await request(app)
-        .post('/registre')
-        .send({
-          username: 'newuser',
-          email: 'new@example.com',
-          password: 'short',
-          password2: 'short',
-        });
+      const res = await request(app).post('/registre').send({
+        username: 'newuser',
+        email: 'new@example.com',
+        password: 'short',
+        password2: 'short',
+      });
       expect(res.status).toBe(400);
       expect(res.body).toHaveProperty('success', false);
       expect(res.body.message).toMatch(/6 caractères|au moins/i);

@@ -244,7 +244,6 @@ class WordController {
         });
       }
     } catch (error) {
-      const package_id = req.query.package;
       console.error('Erreur lors de la suppression de tous les mots:', error);
       res.status(500).json({
         success: false,
@@ -459,7 +458,10 @@ class WordController {
       // Rediriger vers la page de vocabulaire avec un message de succès
       res.json({
         success: true,
-        message: 'Mot modifié avec succès',
+        message:
+          errExample > 0
+            ? `Mot modifié avec succès. ${errExample} erreur(s) de génération d'exemples.`
+            : 'Mot modifié avec succès',
       });
     } catch (error) {
       console.error('Erreur lors de la modification du mot:', error);

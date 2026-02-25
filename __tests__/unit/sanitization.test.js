@@ -1,10 +1,7 @@
 /**
  * Unit tests: sanitization (sanitizeUsername, sanitizeEmail, escapeHelper, sanitizeHtml)
  */
-const {
-  sanitizationUtils,
-  escapeHelper,
-} = require('../../app/middleware/sanitization');
+const { sanitizationUtils, escapeHelper } = require('../../app/middleware/sanitization');
 
 describe('Sanitization (unit)', () => {
   describe('sanitizeUsername', () => {
@@ -15,8 +12,8 @@ describe('Sanitization (unit)', () => {
     });
 
     it('strips dangerous characters <>\'"&/\\', () => {
-      expect(sanitizationUtils.sanitizeUsername("user<script>")).toMatch(/user/);
-      expect(sanitizationUtils.sanitizeUsername("a'b\"c&d/e\\f")).toBe('abcdef');
+      expect(sanitizationUtils.sanitizeUsername('user<script>')).toMatch(/user/);
+      expect(sanitizationUtils.sanitizeUsername('a\'b"c&d/e\\f')).toBe('abcdef');
     });
 
     it('trims and limits length to 50', () => {
