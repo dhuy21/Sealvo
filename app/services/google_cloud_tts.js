@@ -1,14 +1,22 @@
 // Imports the Google Cloud client library
 const textToSpeech = require('@google-cloud/text-to-speech');
-const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS);
 
-// Import other required libraries
-const { writeFile } = require('node:fs/promises');
+// Ne jamais faire JSON.parse(process.env.xxx) au top-level : en CI/tests l'env est absent → crash au require().
+// Client créé à la première utilisation (lazy) pour ne pas crasher au load si env manquant (ex: CI, tests).
+let _client = null;
 
-// Creates a client
-const client = new textToSpeech.TextToSpeechClient({
-  credentials: credentials,
-});
+function getClient() {
+  if (_client) return _client;
+  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS;
+  if (!raw || raw === 'undefined') {
+    throw new Error(
+      'TTS non configuré: variable GOOGLE_SERVICE_ACCOUNT_CREDENTIALS absente ou invalide'
+    );
+  }
+  const credentials = JSON.parse(raw);
+  _client = new textToSpeech.TextToSpeechClient({ credentials });
+  return _client;
+}
 
 class GoogleCloudTTS {
   async selectVoice(voicesList, languageCode) {
@@ -17,7 +25,6 @@ class GoogleCloudTTS {
         voice.languageCodes.includes(languageCode)
       );
 
-      //randomly select a voice from the filtered voices
       const randomIndex = Math.floor(Math.random() * filteredVoices.length);
       const selectedVoice = filteredVoices[randomIndex];
       return selectedVoice;
@@ -29,12 +36,11 @@ class GoogleCloudTTS {
 
   async getVoiceList(language) {
     try {
+      const client = getClient();
       const [response] = await client.listVoices({ languageCode: language });
       const voicesList = response.voices;
 
-      //Filter voice of Wavenet
       const filteredVoices = voicesList.filter((voice) => voice.name.includes('Wavenet'));
-      //randomly select a voice from the filtered voices
       const randomIndex = Math.floor(Math.random() * filteredVoices.length);
       const selectedVoice = filteredVoices[randomIndex];
 
@@ -47,19 +53,14 @@ class GoogleCloudTTS {
 
   async generateAudio(text, language, voiceName) {
     try {
-      // Construct the request
+      const client = getClient();
       const request = {
         input: { text: text },
-        // Select the language and SSML voice gender (optional)
         voice: { languageCode: language, name: voiceName, ssmlGender: 'NEUTRAL' },
-        // select the type of audio encoding
         audioConfig: { audioEncoding: 'MP3' },
       };
 
-      // Performs the text-to-speech request
       const [response] = await client.synthesizeSpeech(request);
-
-      // Return the raw audio buffer for streaming
       return response.audioContent;
     } catch (error) {
       console.error('❌ Error generating audio:', error.message);
