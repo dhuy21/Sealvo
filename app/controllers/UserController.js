@@ -234,6 +234,14 @@ class UserController {
       // Destroy the session
       await req.session.destroy();
 
+      // Clear the session cookie (options must match session config so client removes it)
+      res.clearCookie('connect.sid', {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+      });
+
       // Redirect to homepage
       res.redirect('/');
     } catch (error) {
