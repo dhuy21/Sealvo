@@ -47,20 +47,45 @@ jobs:
       - name: CI summary
         run: echo "✅ Lint, format check and tests passed."
 
-  # CD (tùy chọn): dùng khi deploy qua deploy hook (Render, v.v.).
-  # Railway + "Wait for CI" → không cần DEPLOY_HOOK_URL; Railway deploy sau khi CI pass.
+  # CD: deploy bằng Railway CLI trong workflow. Job chỉ xong khi deploy thật sự xong (đồng bộ).
+  # Cần: Railway → Project Settings → Tokens → Generate Project Token → GitHub Secrets: RAILWAY_TOKEN
+  # Cần: Tắt "Wait for CI" trên Railway (Source) để tránh deploy hai lần.
+  # Nếu project có nhiều service: thêm secret RAILWAY_SERVICE_ID = tên hoặc ID service (vd. web_vocab_v0).
   deploy:
-    name: Deploy (hook optional)
+    name: Deploy (Railway CLI)
     runs-on: ubuntu-latest
     needs: lint-and-test
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    timeout-minutes: 2
+    timeout-minutes: 15
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
     steps:
-      - name: Trigger deploy (deploy hook)
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies (for upload context)
+        run: npm ci
+
+      - name: Deploy to Railway
         run: |
-          if [ -n "${{ secrets.DEPLOY_HOOK_URL }}" ]; then
-            curl -fsS -X POST "${{ secrets.DEPLOY_HOOK_URL }}"
-            echo "Deploy hook called."
-          else
-            echo "DEPLOY_HOOK_URL not set — skip (Railway Wait for CI vẫn deploy khi CI pass)."
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "RAILWAY_TOKEN not set — skip deploy. Add Project Token in GitHub Secrets to enable."
+            exit 0
           fi
+          if [ -n "$RAILWAY_SERVICE_ID" ]; then
+            npx -y @railway/cli up --ci --service "$RAILWAY_SERVICE_ID"
+          else
+            npx -y @railway/cli up --ci
+          fi
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+
+      - name: Deploy summary
+        run: echo "✅ Deploy to Railway completed."
