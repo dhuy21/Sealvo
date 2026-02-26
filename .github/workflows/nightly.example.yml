@@ -1,0 +1,30 @@
+# Workflow nâng cao (ví dụ): chạy test với env từ Secrets (vd test DB).
+# Chỉ chạy khi bấm "Run workflow" trong tab Actions (workflow_dispatch).
+# Pipeline chính (ci.yml) không dùng secret; workflow này minh họa cách dùng Secrets.
+# Để dùng: tạo Secrets (TEST_SESSION_SECRET, TEST_DB_*, v.v.) trong Settings → Actions.
+name: Nightly / Integration (example)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  integration-with-secrets:
+    name: Test (with secrets)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      SESSION_SECRET: ${{ secrets.TEST_SESSION_SECRET }} 
+      DB_HOST: ${{ secrets.TEST_DB_HOST }}
+      DB_USER: ${{ secrets.TEST_DB_USER }}
+      DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
+      DB_DATABASE: ${{ secrets.TEST_DB_DATABASE }}
+      DB_PORT: 3306
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm test

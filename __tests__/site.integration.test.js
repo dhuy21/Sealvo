@@ -41,4 +41,26 @@ describe('Site routes (integration)', () => {
       expect(res.text).toMatch(/feedback|envoyer|sujet/i);
     });
   });
+
+  describe('POST /feedback', () => {
+    it('returns 400 when required fields are missing', async () => {
+      const res = await request(app).post('/feedback').send({});
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('success', false);
+      expect(res.body.message).toMatch(/champs obligatoires|remplir/i);
+    });
+
+    it('returns 400 when only some fields are sent', async () => {
+      const res = await request(app).post('/feedback').send({ type: 'bug' });
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('success', false);
+    });
+  });
+
+  describe('Unknown route', () => {
+    it('GET /nonexistent returns 404', async () => {
+      const res = await request(app).get('/nonexistent-page-xyz');
+      expect(res.status).toBe(404);
+    });
+  });
 });
