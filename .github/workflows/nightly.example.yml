@@ -14,7 +14,7 @@ jobs:
     timeout-minutes: 15
     env:
       NODE_ENV: test
-      SESSION_SECRET: ${{ secrets.TEST_SESSION_SECRET }} 
+      SESSION_SECRET: ${{ secrets.TEST_SESSION_SECRET }}
       DB_HOST: ${{ secrets.TEST_DB_HOST }}
       DB_USER: ${{ secrets.TEST_DB_USER }}
       DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
