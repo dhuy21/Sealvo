@@ -6,9 +6,9 @@ const { defineConfig, devices } = require('@playwright/test');
  * Par défaut : teste contre la production (https://www.sealvo.it.com).
  * Pour tester en local : BASE_URL=http://localhost:3000 npm run test:e2e
  *
- * Les tests E2E ne tournent PAS dans le CI principal (ci.yml) car ils
- * nécessitent un serveur HTTP actif. Ils s'exécutent localement ou
- * dans un job dédié post-deploy.
+ * Dans CI : job "E2E (production)" dans ci-cd.yml, après le job Deploy (push main),
+ * pour vérifier la production automatiquement. Workflow "E2E Production" reste
+ * disponible pour exécution manuelle ou schedule.
  */
 module.exports = defineConfig({
   testDir: './e2e',

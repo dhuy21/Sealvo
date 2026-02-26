@@ -31,8 +31,7 @@ class ReminderController {
           streakData,
           user
         );
-        const emailResult = await MailersendService.sendEmail(user.email, emailContent);
-        console.log(emailResult);
+        await MailersendService.sendEmail(user.email, emailContent);
         message = `L'email a été envoyé pour tester`;
       } else {
         message = `Aucun mot à réviser aujourd'hui`;
@@ -81,9 +80,9 @@ class ReminderController {
             streakData,
             user
           );
-          const emailResult = await MailersendService.sendEmail(user.email, emailContent);
-        } else {
-          console.log(`Aucun mot à réviser aujourd'hui pour ${user.email}.`);
+          await MailersendService.sendEmail(user.email, emailContent);
+        } else if (process.env.NODE_ENV !== 'production') {
+          console.log(`[Reminder] No words to review today for ${user.email}`);
         }
       }
 

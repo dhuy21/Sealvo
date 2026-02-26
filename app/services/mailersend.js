@@ -5,9 +5,9 @@ const path = require('path');
 const userModel = require('../models/users');
 
 const nodemailer = require('nodemailer');
-const { SESClient, SendRawEmailCommand } = require('@aws-sdk/client-ses');
+const { SESv2Client, SendEmailCommand } = require('@aws-sdk/client-sesv2');
 
-const ses = new SESClient({
+const sesClient = new SESv2Client({
   region: process.env.AWS_REGION,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -16,10 +16,7 @@ const ses = new SESClient({
 });
 
 const transporter = nodemailer.createTransport({
-  SES: {
-    ses,
-    aws: { SendRawEmailCommand },
-  },
+  SES: { sesClient, SendEmailCommand },
 });
 
 class MailersendService {
@@ -33,6 +30,9 @@ class MailersendService {
         html: content,
       });
 
+      if (result?.messageId && process.env.NODE_ENV !== 'production') {
+        console.log(`[Email] Sent to ${user_email} | messageId: ${result.messageId}`);
+      }
       return result;
     } catch (error) {
       console.error("Erreur lors de l'envoi de l'email:", error);

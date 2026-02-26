@@ -1,5 +1,5 @@
 # E2E against production – chạy thủ công (sau deploy) hoặc theo lịch (smoke hàng ngày).
-# Không chạy mỗi push: CI chính (ci.yml) chỉ làm lint + unit + integration.
+# Không chạy mỗi push: CI chính (ci-cd.yml) chỉ làm lint + unit + integration.
 # Cách chạy: Actions → E2E Production → Run workflow.
 name: E2E Production
 

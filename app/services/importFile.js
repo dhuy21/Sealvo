@@ -150,15 +150,16 @@ class ImportFile {
         }
 
         if (words_no_example.length > 0) {
-          console.log('Generating examples for words without examples...');
-
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('[Import] Generating examples for words without examples...');
+          }
           try {
             const words_with_examples = await geminiService.generateExemple(words_no_example);
             if (Array.isArray(words_with_examples) && words_with_examples.length > 0) {
-              console.log('✅ Examples generated successfully');
+              if (process.env.NODE_ENV !== 'production') {
+                console.log('[Import] Examples generated successfully');
+              }
               words = await geminiService.replaceExample(words, words_with_examples);
-            } else {
-              console.log('⚠️ No examples were generated');
             }
           } catch (err) {
             throw new Error('Erreur lors de la génération des exemples', { cause: err });
@@ -166,7 +167,9 @@ class ImportFile {
         }
 
         if (words_with_error_example.length > 0) {
-          console.log('Correcting examples for words with error examples...');
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('[Import] Correcting examples for words with invalid format...');
+          }
           try {
             const words_with_correct_examples =
               await geminiService.modifyExample(words_with_error_example);
@@ -174,10 +177,10 @@ class ImportFile {
               Array.isArray(words_with_correct_examples) &&
               words_with_correct_examples.length > 0
             ) {
-              console.log('✅ Examples corrected successfully');
+              if (process.env.NODE_ENV !== 'production') {
+                console.log('[Import] Examples corrected successfully');
+              }
               words = await geminiService.replaceExample(words, words_with_correct_examples);
-            } else {
-              console.log('⚠️ No examples were corrected');
             }
           } catch (err) {
             throw new Error('Erreur lors de la correction des exemples', { cause: err });

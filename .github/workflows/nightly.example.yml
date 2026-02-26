@@ -1,6 +1,6 @@
 # Workflow nâng cao (ví dụ): chạy test với env từ Secrets (vd test DB).
 # Chỉ chạy khi bấm "Run workflow" trong tab Actions (workflow_dispatch).
-# Pipeline chính (ci.yml) không dùng secret; workflow này minh họa cách dùng Secrets.
+# Pipeline chính (ci-cd.yml) không dùng secret; workflow này minh họa cách dùng Secrets.
 # Để dùng: tạo Secrets (TEST_SESSION_SECRET, TEST_DB_*, v.v.) trong Settings → Actions.
 name: Nightly / Integration (example)
 
