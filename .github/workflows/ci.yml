@@ -88,4 +88,4 @@ jobs:
           RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
 
       - name: Deploy summary
-        run: echo "✅ Deploy to Railway completed."
+        run: echo "Deploy to Railway completed."
