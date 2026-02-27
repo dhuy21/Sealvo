@@ -6,17 +6,9 @@ services:
     container_name: web_vocab_app
     ports:
       - '${APP_HOST_PORT}:${PORT}'
-    # Toutes les variables sont centralisées dans src/.env (un seul fichier).
+    # Un seul fichier .env : Compose l’injecte entièrement dans le container (pas besoin de répéter dans environment).
     env_file:
       - .env
-    environment:
-      PORT: ${PORT}
-      NODE_ENV: ${NODE_ENV}
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_DATABASE: ${DB_DATABASE}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
     depends_on:
       db:
         condition: service_healthy
@@ -33,12 +25,16 @@ services:
       - '${DB_HOST_PORT}:3306'
     volumes:
       - db_data:/var/lib/mysql
+      # Schéma exécuté une seule fois au premier démarrage (volume vide). Fichier existant app/core/database.sql
+      - ./app/core/database.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    # Healthcheck: ping qua TCP 3306 pour ne passer qu'une fois le serveur MySQL réel à l'écoute
+    # (évite de marquer healthy pendant le "temporary server" du first-run, qui écoute en socket / port 0)
     healthcheck:
-      test: ['CMD-SHELL', 'mysqladmin ping -h localhost -uroot -p${DB_PASSWORD}']
+      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -P 3306 -uroot -p${DB_PASSWORD}']
       interval: 5s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      retries: 15
+      start_period: 45s
 
 volumes:
   db_data:
