@@ -3,7 +3,7 @@
  * DB và TTS mock — không cần secret trong CI.
  */
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../app/config/.env') });
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const request = require('supertest');
 const { getApp } = require('../appFactory');

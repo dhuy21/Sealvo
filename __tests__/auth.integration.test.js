@@ -8,7 +8,7 @@
  * 5. it('mô tả kịch bản', async () => { request(app).get/post(...); expect(...) })
  */
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../app/config/.env') });
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const request = require('supertest');
 const { getApp } = require('../appFactory');

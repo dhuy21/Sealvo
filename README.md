@@ -212,8 +212,8 @@ cd Web_vocab_v0/src
 npm install
 
 # 3. Configuration rapide
-cp src/app/config/.env.example src/app/config/.env
-nano src/app/config/.env  # Éditez vos variables
+cp .env.example .env
+nano .env  # Éditez vos variables
 
 # 4. Démarrage immédiat ( mode du developpement en local)
 npm run dev
@@ -225,37 +225,44 @@ npm run dev
 <summary>📧 <strong>Configuration Email & Base de Données</strong></summary>
 
 ```env
-# 🖥️ Server Configuration
+# Toutes les variables sont dans un seul fichier : src/.env
+# Voir .env.example pour la liste complète.
+
+# 🖥️ Server
 PORT=3000
 NODE_ENV=development
 
-#If you want to use the production environment, you can change the NODE_ENV to production and set the #SESSION_SECRET = your_secret_for_session_here
+# 🗄️ Database
+DB_HOST=db
+DB_PORT=3306
+DB_DATABASE=web_db
+DB_USER=root
+DB_PASSWORD=example
 
-# 🗄️ Database Configuration
-DB_HOST= name_of_your_host
-DB_DATABASE= name_of_your_database
-DB_PORT= 3306
-DB_USER= name_of_your_user
-DB_PASSWORD= name_of_your_password
-DB_DIALECT= mysql
-
-# 🔐 Google Auth Configuration
-GOOGLE_CLIENT_ID= id_of_your_google_client
-GOOGLE_CLIENT_SECRET= secret_of_your_google_client
-
-# 🔊 Google Cloud text-to-speech
-GOOGLE_SERVICE_ACCOUNT_CREDENTIALS = the content of the json file of your google cloud service account
-
-# 🤖 Gemini API Key
-GEMINI_API_KEY_1 = key_of_your_gemini_api
-
-# 📧 Email Configuration
-USER_GMAIL = name_of_your_gmail
-
-# 🌐 URL Configuration
+# 🌐 URL
 BASE_URL=https://your_domain.com/
 DOMAIN=your_domain
 
+# 🔐 Google Auth
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# 🔊 Google Cloud TTS (voir app/config/README-TTS-CREDENTIALS.md)
+GOOGLE_TTS_PROJECT_ID=
+GOOGLE_TTS_CLIENT_EMAIL=
+GOOGLE_TTS_PRIVATE_KEY=
+
+# 🤖 Gemini
+GEMINI_API_KEY_1=
+
+# ☁️ AWS SES
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=eu-north-1
+AWS_SES_FROM=
+
+# 📧 Email
+USER_GMAIL=
 ```
 
 </details>

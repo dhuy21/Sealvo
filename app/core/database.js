@@ -1,6 +1,4 @@
 const mysql = require('mysql2/promise');
-const path = require('path');
-const dotenv = require('dotenv').config({ path: path.join(__dirname, '../../app/config/.env') });
 
 let pool = null;
 

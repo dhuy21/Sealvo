@@ -1,5 +1,8 @@
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, 'app/config/.env') });
+
+// Toutes les variables sont centralisées dans src/.env (un seul fichier).
+// En container : Compose injecte les variables via env_file ; dotenv ne surcharge pas les variables déjà présentes.
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const db = require('./app/core/database.js');
 const { getApp } = require('./appFactory');

@@ -1,0 +1,41 @@
+# Dependencies (reinstalled in image)
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Git and IDE
+.git
+.gitignore
+.husky
+
+# Tests and E2E (not needed in production image)
+__tests__
+e2e
+*.test.js
+*.spec.js
+playwright.config.js
+playwright-report
+test-results
+
+# Docs and examples
+docs
+*.md
+!README.md
+
+# Env and secrets (injected at runtime, not baked into image)
+.env
+.env.*
+!.env.example
+
+# CI/CD (not needed inside image)
+.github
+
+# Local and OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Optional: keep image smaller
+.cursor
+.vscode
