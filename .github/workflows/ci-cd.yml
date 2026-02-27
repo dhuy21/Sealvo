@@ -45,7 +45,7 @@ jobs:
         run: npm test
 
       - name: CI summary
-        run: echo "Lint, format check and tests passed."
+        run: echo "✅ Lint, format check and tests passed."
 
   # CD: deploy bằng Railway CLI trong workflow. Job chỉ xong khi deploy thật sự xong (đồng bộ).
   # Cần: Railway → Project Settings → Tokens → Generate Project Token → GitHub Secrets: RAILWAY_TOKEN
@@ -128,4 +128,4 @@ jobs:
           retention-days: 7
 
       - name: E2E summary
-        run: echo "E2E against production passed."
+        run: echo "✅ E2E against production passed."

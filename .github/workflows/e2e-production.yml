@@ -52,7 +52,7 @@ jobs:
       - name: E2E summary
         run: |
           if [ "${{ job.status }}" = "success" ]; then
-            echo "E2E against production passed."
+            echo "✅ E2E against production passed."
           else
-            echo "E2E failed. Xem artifact playwright-report để debug."
+            echo "❌ E2E failed. Xem artifact playwright-report để debug."
           fi

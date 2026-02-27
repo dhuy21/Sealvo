@@ -4,8 +4,9 @@
  * Mục tiêu : vérifier le comportement du formulaire de connexion côté
  * navigateur (HTML5 validation, redirections, messages d'erreur).
  *
- * Ces tests ne nécessitent PAS de mocker la BDD : ils testent le vrai
- * comportement de l'application déployée (ou locale).
+ * Impact DB : le test "submitting wrong credentials" envoie une requête
+ * POST /login → le backend fait un READ (findByUsername). Aucun WRITE.
+ * Voir src/e2e/README-E2E-DB.md pour la politique E2E vs DB et CI/CD.
  */
 
 const { test, expect } = require('@playwright/test');
@@ -24,7 +25,7 @@ test.describe('Login flow', () => {
   });
 
   test('submitting wrong credentials shows an error message', async ({ page }) => {
-    // Identifiants volontairement invalides (utilisateur inexistant)
+    // Identifiants volontairement invalides → backend lit la DB (SELECT), pas d'écriture
     await page.locator('input[name="username"]').fill('e2e_invalid_user_xyz_9999');
     await page.locator('input[name="password"]').fill('wrong_password_e2e_9999');
 
