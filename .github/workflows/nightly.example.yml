@@ -19,7 +19,7 @@ jobs:
       MYSQLUSER: ${{ secrets.TEST_MYSQLUSER }}
       MYSQL_ROOT_PASSWORD: ${{ secrets.TEST_MYSQL_ROOT_PASSWORD }}
       MYSQL_DATABASE: ${{ secrets.TEST_MYSQL_DATABASE }}
-      MYSQLPORT: 3306
+      MYSQLPORT: ${{ secrets.TEST_MYSQLPORT }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

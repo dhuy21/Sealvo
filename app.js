@@ -7,7 +7,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const db = require('./app/core/database.js');
 const { getApp } = require('./appFactory');
 
-const port = process.env.PORT || 3000;
+const appPort = process.env.APP_PORT || 3000;
 
 (async () => {
   try {
@@ -16,8 +16,8 @@ const port = process.env.PORT || 3000;
     console.log('Base de données connectée avec succès');
 
     const app = getApp();
-    const server = app.listen(port, '0.0.0.0');
-    console.log(`App listening at http://localhost:${port}`);
+    const server = app.listen(appPort, '0.0.0.0');
+    console.log(`App listening at http://localhost:${appPort}`);
 
     const gracefulShutdown = (signal) => {
       console.log(`${signal} received, shutting down gracefully...`);
