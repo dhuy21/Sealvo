@@ -219,6 +219,15 @@ nano .env  # Éditez vos variables
 npm run dev
 ```
 
+### **Docker** 🐳
+
+Pour lancer l’app et MySQL en local avec Docker Compose, build de l’image de production, ou déploiement sur Railway avec Dockerfile, voir **[docs/DOCKER.md](../docs/DOCKER.md)**.
+
+```bash
+# Exemple rapide (depuis src/)
+docker compose up -d
+```
+
 ### **Configuration Avancée** 🔧
 
 <details>

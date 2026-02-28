@@ -47,48 +47,75 @@ jobs:
       - name: CI summary
         run: echo "✅ Lint, format check and tests passed."
 
-  # CD: deploy bằng Railway CLI trong workflow. Job chỉ xong khi deploy thật sự xong (đồng bộ).
-  # Cần: Railway → Project Settings → Tokens → Generate Project Token → GitHub Secrets: RAILWAY_TOKEN
-  # Cần: Tắt "Wait for CI" trên Railway (Source) để tránh deploy hai lần.
-  # Nếu project có nhiều service: thêm secret RAILWAY_SERVICE_ID = tên hoặc ID service (vd. web_vocab_v0).
-  deploy:
-    name: Deploy (Railway CLI)
+  # Mô hình B: build image → push GHCR (chỉ khi push main/master) → Railway kéo image.
+  # Trên PR: chỉ build để validate Dockerfile, không push.
+  docker-build-push:
+    name: Build & Push to GHCR
     runs-on: ubuntu-latest
     needs: lint-and-test
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
     env:
-      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      REGISTRY: ghcr.io
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Set image name (lowercase for GHCR)
+        run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
-          node-version: '20'
-          cache: 'npm'
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install dependencies (for upload context)
-        run: npm ci
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
 
-      - name: Deploy to Railway
+      - name: Build summary
+        run: echo "✅ Build done. Image pushed to GHCR only on push to main/master."
+
+  # CD (Mô hình B): Railway service đã cấu hình "Connect Image" → ghcr.io/OWNER/REPO:latest.
+  # Job này trigger redeploy để Railway kéo image mới vừa push lên GHCR.
+  # Cần: GitHub Secrets RAILWAY_TOKEN (Project Token); RAILWAY_SERVICE_ID nếu project có nhiều service.
+  # Xem docs/DOCKER-MODEL-B.md để cấu hình Railway Connect Image và quyền GHCR.
+  deploy:
+    name: Deploy (trigger Railway redeploy)
+    runs-on: ubuntu-latest
+    needs: [lint-and-test, docker-build-push]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    timeout-minutes: 10
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+    steps:
+      - name: Trigger Railway redeploy
         run: |
           if [ -z "$RAILWAY_TOKEN" ]; then
-            echo "RAILWAY_TOKEN not set — skip deploy. Add Project Token in GitHub Secrets to enable."
+            echo "RAILWAY_TOKEN not set — skip. Add Project Token in GitHub Secrets."
             exit 0
           fi
           if [ -n "$RAILWAY_SERVICE_ID" ]; then
-            npx -y @railway/cli up --ci --service "$RAILWAY_SERVICE_ID"
+            npx -y @railway/cli redeploy --service "$RAILWAY_SERVICE_ID" --yes
           else
-            npx -y @railway/cli up --ci
+            npx -y @railway/cli redeploy --yes
           fi
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
 
       - name: Deploy summary
-        run: echo "Deploy to Railway completed."
+        run: echo "Railway redeploy triggered; service will pull new image from GHCR."
 
   # E2E sau deploy: chạy tự động trong cùng pipeline để verify production ngay sau khi deploy.
   # Chỉ chạy khi vừa deploy (push main/master). Fail thì run đỏ → biết production có thể lỗi.
