@@ -7,7 +7,9 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const db = require('./app/core/database.js');
 const { getApp } = require('./appFactory');
 
-const appPort = process.env.APP_PORT || 3000;
+// Railway/Heroku inject PORT; local/docker use APP_PORT or 3000
+const appPort = process.env.PORT || process.env.APP_PORT || 3000;
+const host = '0.0.0.0'; // required for container: accept connections from outside (e.g. Railway proxy)
 
 (async () => {
   try {
@@ -16,8 +18,8 @@ const appPort = process.env.APP_PORT || 3000;
     console.log('Base de données connectée avec succès');
 
     const app = getApp();
-    const server = app.listen(appPort, '0.0.0.0');
-    console.log(`App listening at http://localhost:${appPort}`);
+    const server = app.listen(appPort, host);
+    console.log(`App listening at http://${host}:${appPort}`);
 
     const gracefulShutdown = (signal) => {
       console.log(`${signal} received, shutting down gracefully...`);
