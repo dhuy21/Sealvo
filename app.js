@@ -8,7 +8,7 @@ const db = require('./app/core/database.js');
 const { getApp } = require('./appFactory');
 
 // Railway/Heroku inject PORT; local/docker use APP_PORT or 3000
-const appPort = process.env.PORT || process.env.APP_PORT || 3000;
+const appPort = process.env.PORT;
 const host = '0.0.0.0'; // required for container: accept connections from outside (e.g. Railway proxy)
 
 (async () => {

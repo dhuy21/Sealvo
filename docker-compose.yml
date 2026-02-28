@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: web_vocab_app
     ports:
-      - '${APP_HOST_PORT}:${APP_PORT}'
+      - '${HOST_PORT}:${PORT}'
     # Un seul fichier .env : Compose l’injecte entièrement dans le container (pas besoin de répéter dans environment).
     env_file:
       - .env
