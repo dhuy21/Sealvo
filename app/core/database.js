@@ -6,11 +6,11 @@ async function connect() {
   try {
     // Create connection pool instead of single connection
     pool = mysql.createPool({
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_DATABASE,
-      port: process.env.DB_PORT,
+      host: process.env.MYSQLHOST,
+      user: process.env.MYSQLUSER,
+      password: process.env.MYSQL_ROOT_PASSWORD,
+      database: process.env.MYSQL_DATABASE,
+      port: process.env.MYSQLPORT,
       // Connection pool settings
       connectionLimit: 10,
       queueLimit: 0,

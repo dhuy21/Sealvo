@@ -45,11 +45,11 @@ const port = process.env.PORT || 3000;
   } catch (error) {
     console.error('Erreur de connexion à la base de données:', error);
     console.error("Variables d'environnement DB:", {
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      database: process.env.DB_DATABASE,
-      port: process.env.DB_PORT,
-      password: process.env.DB_PASSWORD ? '[MASQUÉ]' : 'NON DÉFINI',
+      host: process.env.MYSQLHOST,
+      user: process.env.MYSQLUSER,
+      database: process.env.MYSQL_DATABASE,
+      port: process.env.MYSQLPORT,
+      password: process.env.MYSQL_ROOT_PASSWORD ? '[MASQUÉ]' : 'NON DÉFINI',
     });
     process.exit(1);
   }

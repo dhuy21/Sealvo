@@ -2,7 +2,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config();
 
 // API key - idéalement depuis .env file
-const GEMINI_API_KEY_1 = process.env.GEMINI_API_KEY_1;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 class GeminiService {
   //Replace the example of the words with the new example
@@ -26,7 +26,7 @@ class GeminiService {
     try {
       console.log('Modify examples for words with examples in error format...');
 
-      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY_1);
+      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
 
       const batchPrompt = `
@@ -83,7 +83,7 @@ class GeminiService {
     try {
       console.log('Generating examples for words without examples...');
 
-      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY_1);
+      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
       const batchPrompt = `

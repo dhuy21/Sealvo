@@ -15,11 +15,11 @@ jobs:
     env:
       NODE_ENV: test
       SESSION_SECRET: ${{ secrets.TEST_SESSION_SECRET }}
-      DB_HOST: ${{ secrets.TEST_DB_HOST }}
-      DB_USER: ${{ secrets.TEST_DB_USER }}
-      DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
-      DB_DATABASE: ${{ secrets.TEST_DB_DATABASE }}
-      DB_PORT: 3306
+      MYSQLHOST: ${{ secrets.TEST_MYSQLHOST }}
+      MYSQLUSER: ${{ secrets.TEST_MYSQLUSER }}
+      MYSQL_ROOT_PASSWORD: ${{ secrets.TEST_MYSQL_ROOT_PASSWORD }}
+      MYSQL_DATABASE: ${{ secrets.TEST_MYSQL_DATABASE }}
+      MYSQLPORT: 3306
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
