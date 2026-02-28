@@ -94,7 +94,6 @@ class WordController {
           levels,
         } = req.body;
         const wordCount = words.length;
-        console.log(words);
         // Traiter chaque mot
         for (let i = 0; i < wordCount; i++) {
           // Créer le mot dans la base de données
