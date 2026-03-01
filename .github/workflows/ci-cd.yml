@@ -123,23 +123,22 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Trivy chỉ chạy khi image đã push vào GHCR (staging hoặc main).
-      # Tải binary trực tiếp từ GitHub Releases (CDN) thay vì dùng trivy-action
-      # vì action nội bộ clone repo aquasecurity/trivy bằng git → không ổn định.
+      # Trivy scan chỉ chạy khi image đã push vào GHCR (staging hoặc main).
+      # Dùng Docker image aquasec/trivy từ Docker Hub — không phụ thuộc GitHub repo.
+      # continue-on-error: nếu Trivy infrastructure fail → pipeline vẫn tiếp tục.
       - name: Trivy vulnerability scan
         if: steps.meta.outputs.push == 'true'
+        continue-on-error: true
         run: |
-          TRIVY_VERSION="0.69.1"
-          wget -qO trivy.tar.gz "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
-          tar xzf trivy.tar.gz trivy
-          ./trivy image \
-            --username "${{ github.actor }}" \
-            --password "${{ secrets.GITHUB_TOKEN }}" \
-            --severity CRITICAL,HIGH \
-            --ignore-unfixed \
-            --exit-code 0 \
-            --format table \
-            "${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.meta.outputs.env_tag }}"
+          docker run --rm \
+            -e TRIVY_USERNAME="${{ github.actor }}" \
+            -e TRIVY_PASSWORD="${{ secrets.GITHUB_TOKEN }}" \
+            aquasec/trivy:latest image \
+              --severity CRITICAL,HIGH \
+              --ignore-unfixed \
+              --exit-code 0 \
+              --format table \
+              "${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.meta.outputs.env_tag }}"
 
       - name: Build summary
         if: always()
