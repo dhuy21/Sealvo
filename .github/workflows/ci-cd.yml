@@ -170,6 +170,9 @@ jobs:
     concurrency:
       group: deploy-production
       cancel-in-progress: false
+    # Deploy step dùng cùng secret names cho cả 2 environment.
+    # GitHub tự resolve secrets.RAILWAY_TOKEN → giá trị của environment "production".
+    # RAILWAY_SERVICE_ID ổn định hơn service name (UUID không bao giờ đổi).
     steps:
       - name: Trigger Railway redeploy
         run: |
@@ -177,13 +180,10 @@ jobs:
             echo "RAILWAY_TOKEN not set — skip."
             exit 0
           fi
-          # RAILWAY_TOKEN scoped đến environment "production" trên Railway.
-          # Token đã biết đúng environment → không cần --environment flag.
-          # Dùng tên service (vars.RAILWAY_SERVICE_NAME) thay vì service ID → đơn giản hơn.
-          npx -y @railway/cli redeploy --service "$RAILWAY_SERVICE_NAME" --yes
+          npx -y @railway/cli redeploy --service "$RAILWAY_SERVICE_ID" --yes
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_SERVICE_NAME: ${{ vars.RAILWAY_SERVICE_NAME }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
 
       - name: Wait for deployment to stabilize
         run: sleep 30
@@ -202,7 +202,6 @@ jobs:
           echo "❌ Health check failed after 5 attempts."
           exit 1
 
-      # if: always() để summary luôn ghi dù health check fail.
       - name: Deploy summary
         if: always()
         run: |
@@ -222,27 +221,24 @@ jobs:
     timeout-minutes: 10
     environment:
       name: staging
-      # vars.STAGING_URL là repository variable (không nhạy cảm, public URL).
       url: ${{ vars.STAGING_URL }}
     concurrency:
       group: deploy-staging
       cancel-in-progress: false
+    # Deploy step IDENTIQUE với production — cùng secret names.
+    # GitHub resolve secrets.RAILWAY_TOKEN → giá trị của environment "staging".
+    # GitHub resolve secrets.RAILWAY_SERVICE_ID → service ID staging (khác production).
     steps:
       - name: Trigger Railway redeploy
         run: |
           if [ -z "$RAILWAY_TOKEN" ]; then
-            echo "RAILWAY_TOKEN_STAGING not set — skip."
+            echo "RAILWAY_TOKEN not set — skip."
             exit 0
           fi
-          # RAILWAY_TOKEN_STAGING scoped đến environment "staging" trên Railway.
-          # Token đã biết đúng environment → không cần --environment flag.
-          # Cùng tên service với production (service tồn tại trong cả 2 Railway environments).
-          npx -y @railway/cli redeploy --service "$RAILWAY_SERVICE_NAME" --yes
+          npx -y @railway/cli redeploy --service "$RAILWAY_SERVICE_ID" --yes
         env:
-          # RAILWAY_TOKEN_STAGING là environment secret của GitHub environment "staging".
-          # Đây là token Railway scoped cho environment staging — KHÁC với RAILWAY_TOKEN production.
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
-          RAILWAY_SERVICE_NAME: ${{ vars.RAILWAY_SERVICE_NAME }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
 
       - name: Wait for deployment to stabilize
         run: sleep 30
