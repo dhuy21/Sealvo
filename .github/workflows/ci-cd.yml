@@ -1,26 +1,39 @@
-# Pipeline chính: chạy mỗi push/PR. Không dùng secret — unit + integration tests với mock;
-# test nhạy cảm (DB thật, API thật) chạy local hoặc workflow riêng (nightly).
+# Pipeline CI/CD theo chiến lược nhánh: feature → dev → staging → main.
+#
+# Lint + test  : mọi nhánh và PR.
+# Build        : mọi nhánh (validate Dockerfile + GHA cache).
+# Trivy scan   : chỉ khi push image (staging, main) — image phải có trong GHCR.
+# Push GHCR    : staging (:staging, :sha-xxx) và main (:latest, :sha-xxx).
+# Deploy       : staging → service Staging; main → service Production.
+# Health check : xác nhận service healthy sau deploy.
+# E2E          : chạy sau deploy thành công.
+#
+# GitHub Environments: "production" và "staging" (cấu hình protection rules trên GitHub).
+# Secrets / Variables: xem docs/BRANCHING-STRATEGY.md.
 name: CI/CD
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, staging, dev, 'feature/**']
   pull_request:
-    branches: [main, master]
+    branches: [main, master, staging, dev]
 
-# Hủy run cũ khi có push/PR mới trên cùng nhánh (tiết kiệm thời gian)
+# Cancel in-progress chỉ cho feature/dev/PR để tiết kiệm runner minutes.
+# KHÔNG cancel khi staging hoặc main đang chạy (tránh interrupt deploy job).
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' && github.ref != 'refs/heads/staging' }}
 
 jobs:
+  # ──────────────────────────────────────────────────────────────
+  # 1. LINT & TEST (mọi nhánh / PR)
+  # ──────────────────────────────────────────────────────────────
   lint-and-test:
     name: Lint & Test
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       NODE_ENV: test
-      # Dummy value for session middleware in integration tests; không dùng secret thật trong CI.
       SESSION_SECRET: ci-test-session-secret
     steps:
       - name: Checkout
@@ -44,27 +57,55 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: CI summary
-        run: echo "✅ Lint, format check and tests passed."
-
-  # Mô hình B: build image → push GHCR (chỉ khi push main/master) → Railway kéo image.
-  # Trên PR: chỉ build để validate Dockerfile, không push.
+  # ──────────────────────────────────────────────────────────────
+  # 2. BUILD IMAGE + PUSH GHCR + TRIVY SCAN
+  # ──────────────────────────────────────────────────────────────
   docker-build-push:
-    name: Build & Push to GHCR
+    name: Build, Scan & Push
     runs-on: ubuntu-latest
     needs: lint-and-test
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions:
       contents: read
       packages: write
+      security-events: write
     env:
       REGISTRY: ghcr.io
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set image name (lowercase for GHCR)
-        run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+      # Dùng step output thay vì GITHUB_ENV để tránh linter false-positive warnings.
+      - name: Set image name
+        id: image
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+
+      - name: Determine push strategy and tags
+        id: meta
+        run: |
+          SHOULD_PUSH="false"
+          ENV_TAG="ci"
+          IMAGE="${{ env.REGISTRY }}/${{ steps.image.outputs.name }}"
+          TAGS="${IMAGE}:ci-${{ github.sha }}"
+
+          if [ "${{ github.event_name }}" = "push" ]; then
+            if [ "${{ github.ref }}" = "refs/heads/main" ] || [ "${{ github.ref }}" = "refs/heads/master" ]; then
+              SHOULD_PUSH="true"
+              ENV_TAG="latest"
+              TAGS="${IMAGE}:latest,${IMAGE}:sha-${{ github.sha }}"
+            elif [ "${{ github.ref }}" = "refs/heads/staging" ]; then
+              SHOULD_PUSH="true"
+              ENV_TAG="staging"
+              TAGS="${IMAGE}:staging,${IMAGE}:sha-${{ github.sha }}"
+            fi
+          fi
+
+          echo "push=$SHOULD_PUSH" >> $GITHUB_OUTPUT
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+          echo "env_tag=$ENV_TAG" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -78,51 +119,164 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          push: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') }}
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          push: ${{ steps.meta.outputs.push }}
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Trivy chỉ chạy khi image đã push vào GHCR (staging hoặc main).
+      # Lý do: khi push=false, image không có trong GHCR → Trivy không thể pull để scan.
+      # Auth GHCR cần thiết nếu package ở chế độ private.
+      - name: Trivy vulnerability scan
+        if: steps.meta.outputs.push == 'true'
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.meta.outputs.env_tag }}
+          format: table
+          exit-code: '0'
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build summary
-        run: echo "✅ Build done. Image pushed to GHCR only on push to main/master."
+        if: always()
+        run: |
+          echo "### Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Push to GHCR:** ${{ steps.meta.outputs.push }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tags:** \`${{ steps.meta.outputs.tags }}\`" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.meta.outputs.push }}" = "true" ]; then
+            echo "- **Trivy scan:** ✅ completed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Trivy scan:** ⏭️ skipped (image not pushed to GHCR)" >> $GITHUB_STEP_SUMMARY
+          fi
 
-  # CD (Mô hình B): Railway service đã cấu hình "Connect Image" → ghcr.io/OWNER/REPO:latest.
-  # Job này trigger redeploy để Railway kéo image mới vừa push lên GHCR.
-  # Cần: GitHub Secrets RAILWAY_TOKEN (Project Token); RAILWAY_SERVICE_ID nếu project có nhiều service.
-  # Xem docs/DOCKER-MODEL-B.md để cấu hình Railway Connect Image và quyền GHCR.
-  deploy:
-    name: Deploy (trigger Railway redeploy)
+  # ──────────────────────────────────────────────────────────────
+  # 3a. DEPLOY PRODUCTION (main only)
+  # ──────────────────────────────────────────────────────────────
+  deploy-production:
+    name: Deploy Production
     runs-on: ubuntu-latest
     needs: [lint-and-test, docker-build-push]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     timeout-minutes: 10
-    env:
-      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+    environment:
+      name: production
+      url: https://www.sealvo.it.com
+    # Job-level concurrency: không cho 2 deploy production chạy đồng thời.
+    # cancel-in-progress: false → không hủy deploy đang chạy, xếp hàng thay thế.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
     steps:
       - name: Trigger Railway redeploy
         run: |
           if [ -z "$RAILWAY_TOKEN" ]; then
-            echo "RAILWAY_TOKEN not set — skip. Add Project Token in GitHub Secrets."
+            echo "RAILWAY_TOKEN not set — skip."
             exit 0
           fi
-          if [ -n "$RAILWAY_SERVICE_ID" ]; then
-            npx -y @railway/cli redeploy --service "$RAILWAY_SERVICE_ID" --yes
-          else
-            npx -y @railway/cli redeploy --yes
-          fi
+          # RAILWAY_TOKEN scoped đến environment "production" trên Railway.
+          # Token đã biết đúng environment → không cần --environment flag.
+          # Dùng tên service (vars.RAILWAY_SERVICE_NAME) thay vì service ID → đơn giản hơn.
+          npx -y @railway/cli redeploy --service "$RAILWAY_SERVICE_NAME" --yes
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+          RAILWAY_SERVICE_NAME: ${{ vars.RAILWAY_SERVICE_NAME }}
+
+      - name: Wait for deployment to stabilize
+        run: sleep 30
+
+      - name: Health check
+        run: |
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://www.sealvo.it.com/health || true)
+            echo "Attempt $i: HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Production is healthy."
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "❌ Health check failed after 5 attempts."
+          exit 1
+
+      # if: always() để summary luôn ghi dù health check fail.
+      - name: Deploy summary
+        if: always()
+        run: |
+          echo "### Production Deploy" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image:** \`:latest\` (sha-${{ github.sha }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL:** https://www.sealvo.it.com" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+
+  # ──────────────────────────────────────────────────────────────
+  # 3b. DEPLOY STAGING (staging only)
+  # ──────────────────────────────────────────────────────────────
+  deploy-staging:
+    name: Deploy Staging
+    runs-on: ubuntu-latest
+    needs: [lint-and-test, docker-build-push]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    timeout-minutes: 10
+    environment:
+      name: staging
+      # vars.STAGING_URL là repository variable (không nhạy cảm, public URL).
+      url: ${{ vars.STAGING_URL }}
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
+    steps:
+      - name: Trigger Railway redeploy
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "RAILWAY_TOKEN_STAGING not set — skip."
+            exit 0
+          fi
+          # RAILWAY_TOKEN_STAGING scoped đến environment "staging" trên Railway.
+          # Token đã biết đúng environment → không cần --environment flag.
+          # Cùng tên service với production (service tồn tại trong cả 2 Railway environments).
+          npx -y @railway/cli redeploy --service "$RAILWAY_SERVICE_NAME" --yes
+        env:
+          # RAILWAY_TOKEN_STAGING là environment secret của GitHub environment "staging".
+          # Đây là token Railway scoped cho environment staging — KHÁC với RAILWAY_TOKEN production.
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
+          RAILWAY_SERVICE_NAME: ${{ vars.RAILWAY_SERVICE_NAME }}
+
+      - name: Wait for deployment to stabilize
+        run: sleep 30
+
+      - name: Health check
+        run: |
+          STAGING_URL="${{ vars.STAGING_URL }}"
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${STAGING_URL}/health" || true)
+            echo "Attempt $i: HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Staging is healthy."
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "❌ Staging health check failed after 5 attempts."
+          exit 1
 
       - name: Deploy summary
-        run: echo "Railway redeploy triggered; service will pull new image from GHCR."
+        if: always()
+        run: |
+          echo "### Staging Deploy" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image:** \`:staging\` (sha-${{ github.sha }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL:** ${{ vars.STAGING_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
 
-  # E2E sau deploy: chạy tự động trong cùng pipeline để verify production ngay sau khi deploy.
-  # Chỉ chạy khi vừa deploy (push main/master). Fail thì run đỏ → biết production có thể lỗi.
-  e2e-after-deploy:
-    name: E2E (production)
+  # ──────────────────────────────────────────────────────────────
+  # 4a. E2E PRODUCTION
+  # ──────────────────────────────────────────────────────────────
+  e2e-production:
+    name: E2E (Production)
     runs-on: ubuntu-latest
-    needs: deploy
+    needs: deploy-production
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     timeout-minutes: 15
     steps:
@@ -141,7 +295,7 @@ jobs:
       - name: Install Playwright browsers (Chromium)
         run: npx playwright install chromium --with-deps
 
-      - name: Run E2E tests against production
+      - name: Run E2E tests
         run: npm run test:e2e
         env:
           BASE_URL: https://www.sealvo.it.com
@@ -150,9 +304,45 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-production
           path: playwright-report/
           retention-days: 7
 
-      - name: E2E summary
-        run: echo "✅ E2E against production passed."
+  # ──────────────────────────────────────────────────────────────
+  # 4b. E2E STAGING
+  # ──────────────────────────────────────────────────────────────
+  e2e-staging:
+    name: E2E (Staging)
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers (Chromium)
+        run: npx playwright install chromium --with-deps
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+        env:
+          # vars.STAGING_URL là repository variable — accessible từ mọi job kể cả không có environment.
+          BASE_URL: ${{ vars.STAGING_URL }}
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-staging
+          path: playwright-report/
+          retention-days: 7

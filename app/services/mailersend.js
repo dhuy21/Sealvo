@@ -20,18 +20,38 @@ const transporter = nodemailer.createTransport({
 });
 
 class MailersendService {
-  //sendEmail with mailersend
+  // Staging interceptor: redirect all emails to a test inbox.
+  // Prevents real users from receiving emails triggered by staging tests.
+  // Set STAGING_EMAIL_INTERCEPT in Railway staging variables.
+  _resolveRecipient(user_email) {
+    const isStaging = process.env.NODE_ENV === 'staging';
+    const interceptAddress = process.env.STAGING_EMAIL_INTERCEPT;
+    if (isStaging && interceptAddress) {
+      return { to: interceptAddress, intercepted: true, original: user_email };
+    }
+    return { to: user_email, intercepted: false, original: user_email };
+  }
+
   async sendEmail(user_email, content, subject = 'Révision quotidienne - SealVo') {
     try {
+      const { to, intercepted, original } = this._resolveRecipient(user_email);
+      const resolvedSubject = intercepted ? `[STAGING → ${original}] ${subject}` : subject;
+
       const result = await transporter.sendMail({
         from: process.env.AWS_SES_FROM,
-        to: user_email,
-        subject: subject,
+        to,
+        subject: resolvedSubject,
         html: content,
       });
 
-      if (result?.messageId && process.env.NODE_ENV !== 'production') {
-        console.log(`[Email] Sent to ${user_email} | messageId: ${result.messageId}`);
+      if (result?.messageId) {
+        if (intercepted) {
+          console.log(
+            `[Email][STAGING] Intercepted: original=${original} → sent to ${to} | messageId: ${result.messageId}`
+          );
+        } else if (process.env.NODE_ENV !== 'production') {
+          console.log(`[Email] Sent to ${to} | messageId: ${result.messageId}`);
+        }
       }
       return result;
     } catch (error) {
