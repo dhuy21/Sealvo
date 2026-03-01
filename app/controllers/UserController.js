@@ -5,7 +5,7 @@ const learningModel = require('../models/learning');
 const EmailVerificationModel = require('../models/email_verification');
 const MailersendService = require('../services/mailersend');
 const { setFlash } = require('../middleware/flash');
-const { isProductionLike } = require('../config/env');
+const { isProductionLike } = require('../config/environment');
 
 class UserController {
   login(req, res) {

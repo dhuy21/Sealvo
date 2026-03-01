@@ -1,6 +1,6 @@
 const session = require('express-session');
 const crypto = require('crypto');
-const { isProductionLike } = require('../config/env');
+const { isProductionLike } = require('../config/environment');
 
 const generateSecureSecret = () => {
   if (isProductionLike()) {

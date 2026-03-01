@@ -2,7 +2,7 @@ const { initializeSecurity } = require('./security');
 const { initializeSession } = require('./session');
 const { initializeInputSanitization } = require('./inputSanitization');
 const { flashToLocalsMiddleware } = require('./flash');
-const { getBaseUrl } = require('../config/env');
+const { getBaseUrl } = require('../config/environment');
 
 const initializeMiddleware = (app) => {
   initializeInputSanitization(app);
