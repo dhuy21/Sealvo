@@ -5,19 +5,17 @@ const learningModel = require('../models/learning');
 const EmailVerificationModel = require('../models/email_verification');
 const MailersendService = require('../services/mailersend');
 const { setFlash } = require('../middleware/flash');
+const { isProductionLike } = require('../config/env');
 
 class UserController {
-  // Afficher la page de connexion (flashMessage injecté par middleware → res.locals.flashMessage)
   login(req, res) {
     res.render('login', { title: 'Connexion' });
   }
 
-  // Traiter la soumission du formulaire de connexion
   async loginPost(req, res) {
     try {
       const { username, password } = req.body;
 
-      // Validation de base
       if (!username || !password) {
         return res.status(400).json({
           success: false,
@@ -25,10 +23,8 @@ class UserController {
         });
       }
 
-      // Rechercher l'utilisateur par username
       const user = await userModel.findByUsername(username);
 
-      // Si l'utilisateur n'existe pas
       if (!user) {
         return res.status(400).json({
           success: false,
@@ -36,7 +32,6 @@ class UserController {
         });
       }
 
-      // Vérifier le mot de passe
       const isMatch = await bcrypt.compare(password, user.password);
       const isVerified = user.is_verified;
 
@@ -63,7 +58,6 @@ class UserController {
         (await learningModel.getNumWordsByLevelAllPackages(user.id, '2'));
       const packagesToReview = await learningModel.countWordsToReviewTodayByPackage(user.id);
 
-      // Créer une session utilisateur (sans stocker le mot de passe)
       try {
         req.session.user = {
           id: user.id,
@@ -73,7 +67,7 @@ class UserController {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric',
-          }).format(user.last_login), //convertir en date dd/mm/yyyy
+          }).format(user.last_login),
           created_at: new Intl.DateTimeFormat('fr-FR', {
             day: '2-digit',
             month: '2-digit',
@@ -89,19 +83,16 @@ class UserController {
           notifications: '🏅 Beginner',
         };
       } catch (error) {
-        console.error('Erreur lors de la connexion:', error);
+        console.error('Session creation error:', error);
         res.status(500).json({
           success: false,
           message: 'Une erreur est survenue. Veuillez réessayer plus tard.',
         });
       }
 
-      // Retourner le succès en JSON
-      res.status(200).json({
-        redirect: '/dashboard',
-      });
+      res.status(200).json({ redirect: '/dashboard' });
     } catch (error) {
-      console.error('Erreur lors de la connexion:', error);
+      console.error('Login error:', error);
       res.status(500).json({
         success: false,
         message: 'Une erreur est survenue. Veuillez réessayer plus tard.',
@@ -109,23 +100,15 @@ class UserController {
     }
   }
 
-  // Afficher la page d'inscription
   registre(req, res) {
-    // Create array of avatars from 1 to 11
     const avatars = Array.from({ length: 11 }, (_, i) => `${i + 1}.png`);
-
-    res.render('registre', {
-      title: 'Inscription',
-      avatars: avatars,
-    });
+    res.render('registre', { title: 'Inscription', avatars });
   }
 
-  // Traiter la soumission du formulaire d'inscription
   async registrePost(req, res) {
     try {
       const { username, email, password, password2, avatar } = req.body;
 
-      // Validation de base
       if (!username || !email || !password || !password2) {
         return res.status(400).json({
           success: false,
@@ -147,9 +130,7 @@ class UserController {
         });
       }
 
-      // Vérifier si l'username existe déjà
       const existingUserName = await userModel.findByUsername(username);
-
       if (existingUserName) {
         return res.status(400).json({
           success: false,
@@ -157,9 +138,7 @@ class UserController {
         });
       }
 
-      // Vérifier si l'email existe déjà
       const existingEmail = await userModel.findByEmail(email);
-
       if (existingEmail) {
         return res.status(400).json({
           success: false,
@@ -167,22 +146,15 @@ class UserController {
         });
       }
 
-      // Hacher le mot de passe
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
-      // Convert avatar to integer (avatar is the filename like "1.png")
-      let avatarInt = 1; // Default avatar
+      let avatarInt = 1;
       if (avatar) {
-        // Extract the number from the filename
         const avatarNum = parseInt(avatar.replace(/\D/g, ''));
-        // Ensure it's within the valid range (1-11)
-        if (avatarNum >= 1 && avatarNum <= 11) {
-          avatarInt = avatarNum;
-        }
+        if (avatarNum >= 1 && avatarNum <= 11) avatarInt = avatarNum;
       }
 
-      // Créer le nouvel utilisateur
       const userId = await userModel.create({
         username,
         email,
@@ -190,24 +162,18 @@ class UserController {
         ava: avatarInt,
       });
 
-      // Générer un token de vérification d'email
       const { expires_at, token, token_hash } = await EmailVerificationModel.generateToken();
-
-      // Sauvegarder le token dans la base
       await EmailVerificationModel.saveToken(userId, expires_at, token_hash);
 
-      // Générer l'email de vérification via le service
       const emailContent = await MailersendService.generateEmailVerification(username, token);
-      const subject = 'Vérification de votre email';
-      // Envoyer l'email de vérification via le service
-      await MailersendService.sendEmail(email, emailContent, subject);
+      await MailersendService.sendEmail(email, emailContent, 'Vérification de votre email');
 
       res.status(200).json({
         success: true,
         message: 'Un email de vérification a été envoyé à votre adresse email',
       });
     } catch (error) {
-      console.error("Erreur lors de l'inscription:", error);
+      console.error('Registration error:', error);
       res.status(500).json({
         success: false,
         message: 'Une erreur est survenue. Veuillez réessayer plus tard.',
@@ -215,47 +181,37 @@ class UserController {
     }
   }
 
-  // Déconnexion
   async logout(req, res) {
     try {
-      // Check if user session exists
-      if (!req.session.user) {
-        return res.redirect('/login');
-      }
+      if (!req.session.user) return res.redirect('/login');
 
       try {
-        // Update last login time
         await userModel.updateLastLogin(req.session.user.id);
       } catch (err) {
-        console.error('Erreur lors de la mise à jour de la dernière connexion:', err);
-        // Continue with logout even if update fails
+        console.error('Failed to update last login:', err);
       }
 
-      // Destroy the session
       await req.session.destroy();
 
-      // Clear the session cookie (options must match session config so client removes it)
+      // Options must match session config so the client removes the cookie
       res.clearCookie('connect.sid', {
         path: '/',
         httpOnly: true,
         sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        secure: isProductionLike(),
       });
 
-      // Redirect to homepage
       res.redirect('/');
     } catch (error) {
-      console.error('Erreur lors de la déconnexion:', error);
+      console.error('Logout error:', error);
       setFlash(req, 'error', 'Une erreur est survenue. Veuillez réessayer plus tard.');
       res.redirect('/login');
     }
   }
 
-  // Tableau de bord (protégé)
   async dashboard(req, res) {
-    // Vérifier si l'utilisateur est connecté
     if (!req.session.user) {
-      console.error('session do not exist', req.session);
+      console.error('No active session', req.session);
       return res.redirect('/login');
     }
 
@@ -270,7 +226,7 @@ class UserController {
       (await learningModel.getNumWordsByLevelAllPackages(user.id, '1')) +
       (await learningModel.getNumWordsByLevelAllPackages(user.id, '2'));
     const packagesToReview = await learningModel.countWordsToReviewTodayByPackage(user.id);
-    // Update session utilisateur (sans stocker le mot de passe)
+
     try {
       user.streak = streak.streak;
       user.totalWords = totalWords;
@@ -279,42 +235,29 @@ class UserController {
       user.islearningWords = islearningWords;
       user.packagesToReview = packagesToReview;
     } catch (error) {
-      console.error('Erreur lors de la connexion:', error);
+      console.error('Dashboard data error:', error);
       setFlash(req, 'error', 'Une erreur est survenue. Veuillez réessayer plus tard.');
       return res.redirect('/login');
     }
 
-    res.render('dashboard', {
-      title: 'Tableau de bord',
-      user: req.session.user,
-    });
+    res.render('dashboard', { title: 'Tableau de bord', user: req.session.user });
   }
+
   async editPost(req, res) {
     try {
       const userId = req.session.user.id;
-      if (!userId) {
-        return res.redirect('/login');
-      }
+      if (!userId) return res.redirect('/login');
+
       const data = req.body;
       await userModel.updateUserInfo(userId, data);
 
-      // Update the user session data
-      if (data.username) {
-        req.session.user.username = data.username;
-      }
-      if (data.email) {
-        req.session.user.email = data.email;
-      }
-      if (data.ava) {
-        req.session.user.avatar = data.ava;
-      }
+      if (data.username) req.session.user.username = data.username;
+      if (data.email) req.session.user.email = data.email;
+      if (data.ava) req.session.user.avatar = data.ava;
 
-      res.json({
-        success: true,
-        message: 'Informations modifiées avec succès',
-      });
+      res.json({ success: true, message: 'Informations modifiées avec succès' });
     } catch (error) {
-      console.error('Erreur lors de la modification:', error);
+      console.error('Edit error:', error);
       res.status(500).json({
         success: false,
         message: 'Une erreur est survenue lors de la modification des informations',

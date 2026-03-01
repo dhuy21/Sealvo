@@ -1,15 +1,10 @@
-# E2E against production – chạy thủ công (sau deploy) hoặc theo lịch (smoke hàng ngày).
-# Không chạy mỗi push: CI chính (ci-cd.yml) chỉ làm lint + unit + integration.
-# Cách chạy: Actions → E2E Production → Run workflow.
+# On-demand / scheduled smoke test against production.
+# The main CI/CD pipeline already runs E2E after each deploy to main.
+# Use this for manual checks or daily cron (uncomment schedule below).
 name: E2E Production
 
 on:
   workflow_dispatch:
-    inputs:
-      skip_schedule_note:
-        description: 'Chạy thủ công (sau deploy hoặc khi cần smoke test)'
-        required: false
-  # Tùy chọn: smoke test production mỗi ngày lúc 6h UTC (bỏ comment để bật)
   # schedule:
   #   - cron: '0 6 * * *'
 
@@ -19,40 +14,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright browsers (Chromium)
-        run: npx playwright install chromium --with-deps
-
-      - name: Run E2E tests
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+      - name: Run E2E
         run: npm run test:e2e
         env:
-          # baseURL mặc định trong playwright.config.js đã là production;
-          # set rõ để dễ đổi sau này (staging, v.v.)
           BASE_URL: https://www.sealvo.it.com
-
-      - name: Upload report on failure
+      - name: Upload report
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-production
           path: playwright-report/
           retention-days: 7
-
-      - name: E2E summary
+      - name: Summary
+        if: always()
         run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "✅ E2E against production passed."
-          else
-            echo "❌ E2E failed. Xem artifact playwright-report để debug."
-          fi
+          echo "### E2E Production (manual) — ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
