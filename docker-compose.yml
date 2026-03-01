@@ -1,14 +1,10 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     container_name: web_vocab_app
     ports:
       - '${HOST_PORT}:${PORT}'
-    # Un seul fichier .env : Compose l’injecte entièrement dans le container (pas besoin de répéter dans environment).
-    env_file:
-      - .env
+    env_file: .env
     depends_on:
       db:
         condition: service_healthy
@@ -20,15 +16,11 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
-    # Host 3306 often in use (local MySQL); dùng biến MYSQLHOST_PORT để linh hoạt host port.
     ports:
       - '${MYSQLHOST_PORT}:${MYSQLPORT}'
     volumes:
       - db_data:/var/lib/mysql
-      # Schéma exécuté une seule fois au premier démarrage (volume vide). Fichier existant app/core/database.sql
       - ./app/core/database.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-    # Healthcheck: ping qua TCP 3306 pour ne passer qu'une fois le serveur MySQL réel à l'écoute
-    # (évite de marquer healthy pendant le "temporary server" du first-run, qui écoute en socket / port 0)
     healthcheck:
       test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -P 3306 -uroot -p${MYSQL_ROOT_PASSWORD}']
       interval: 5s

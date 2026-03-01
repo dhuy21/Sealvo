@@ -1,32 +1,26 @@
 /* global streakUpdated, updateUserStreak */
 document.addEventListener('DOMContentLoaded', function () {
-  // Vérifier le navigateur
   checkBrowser();
 
-  // Récupérer les mots depuis un attribut data de l'élément HTML
-  // ou depuis une variable globale définie dans le template
   let allWords = [];
-
-  // Essayer de récupérer les mots depuis un élément avec un attribut data
   const wordsContainer = document.getElementById('words-data');
   if (wordsContainer && wordsContainer.dataset.words) {
     try {
       allWords = JSON.parse(wordsContainer.dataset.words);
       console.log(allWords);
     } catch (e) {
-      console.error('Erreur lors du parsing des mots:', e);
+      console.error('Failed to parse words data:', e);
     }
   }
 
   let wordsFilteredByLevel = allWords;
   let wordsFilteredByVocab = allWords.filter((word) => word.dueToday);
   console.log(wordsFilteredByVocab);
-  let currentWords = [...wordsFilteredByVocab]; // Copie pour permettre le filtrage
+  let currentWords = [...wordsFilteredByVocab];
   let currentIndex = 0;
-  let progress = []; // Pour suivre les progrès (0: ne sait pas, 1: incertain, 2: sait)
+  let progress = []; // -1: unseen, 0: unknown, 1: uncertain, 2: known
   let sessionStartTime = new Date();
 
-  // Éléments DOM
   let flashcard = document.getElementById('flashcard');
   const currentCardEl = document.getElementById('current-card');
   const totalCardsEl = document.getElementById('total-cards');
@@ -52,28 +46,22 @@ document.addEventListener('DOMContentLoaded', function () {
   const modeRadios = document.querySelectorAll('input[name="mode"]');
   const vocabModeRadios = document.querySelectorAll('input[name="vocab-mode"]');
 
-  // Animation pour les boutons
   const animateButtonPress = (button) => {
     button.classList.add('button-press');
-    setTimeout(() => {
-      button.classList.remove('button-press');
-    }, 150);
+    setTimeout(() => button.classList.remove('button-press'), 150);
   };
 
-  // Ajouter des animations aux boutons
   document.querySelectorAll('button').forEach((btn) => {
     btn.addEventListener('mousedown', function () {
       animateButtonPress(this);
     });
   });
 
-  // Initialiser les progrès
   function initProgress() {
-    progress = new Array(currentWords.length).fill(-1); // -1 = non vu
+    progress = new Array(currentWords.length).fill(-1);
     updateProgressDisplay();
   }
 
-  // Mettre à jour l'affichage des progrès
   function updateProgressDisplay() {
     const seen = progress.filter((p) => p >= 0).length;
     const notKnown = progress.filter((p) => p === 0).length;
@@ -83,19 +71,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const progressPercent =
       currentWords.length > 0 ? Math.round((seen / currentWords.length) * 100) : 0;
 
-    // Mettre à jour la barre de progression avec animation
     progressBar.style.transition = 'width 0.7s cubic-bezier(0.19, 1, 0.22, 1)';
     progressBar.style.width = `${progressPercent}%`;
     progressText.textContent = `${progressPercent}%`;
 
-    // Mettre à jour les compteurs avec animation
     animateCounter(notKnownCountEl, notKnown);
     animateCounter(uncertainCountEl, uncertain);
     animateCounter(masteredCountEl, known);
     animateCounter(knownCountEl, known);
   }
 
-  // Animation pour les compteurs
   function animateCounter(element, targetValue) {
     const currentValue = parseInt(element.textContent);
     if (isNaN(currentValue) || currentValue === targetValue) {
@@ -104,27 +89,20 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     let startValue = currentValue;
-    const duration = 500; // ms
+    const duration = 500;
     const startTime = performance.now();
 
-    function updateCounter(timestamp) {
+    function tick(timestamp) {
       const elapsed = timestamp - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const value = Math.floor(startValue + (targetValue - startValue) * progress);
-
-      element.textContent = value;
-
-      if (progress < 1) {
-        requestAnimationFrame(updateCounter);
-      } else {
-        element.textContent = targetValue;
-      }
+      const t = Math.min(elapsed / duration, 1);
+      element.textContent = Math.floor(startValue + (targetValue - startValue) * t);
+      if (t < 1) requestAnimationFrame(tick);
+      else element.textContent = targetValue;
     }
 
-    requestAnimationFrame(updateCounter);
+    requestAnimationFrame(tick);
   }
 
-  // Mettre à jour l'affichage de la carte
   function updateCardDisplay() {
     if (currentWords.length === 0) {
       console.error('No words available to display');
@@ -134,8 +112,7 @@ document.addEventListener('DOMContentLoaded', function () {
               <h2 class="card-content">Aucun mot disponible</h2>
               <p class="card-prompt">Ajustez vos filtres ou ajoutez plus de mots</p>
             </div>
-          </div>
-        `;
+          </div>`;
       prevBtn.disabled = true;
       nextBtn.disabled = true;
       currentCardEl.textContent = '0';
@@ -151,37 +128,29 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       const mode = document.querySelector('input[name="mode"]:checked').value;
-      console.log(`Using mode: ${mode}`);
-
-      // Déterminer le contenu de la carte en fonction du mode
       let frontContent, backContent;
 
       if (mode === 'word-to-meaning') {
         frontContent = word.word;
         backContent = word.meaning;
-      } else if (mode === 'meaning-to-word') {
+      } else {
         frontContent = word.meaning;
         backContent = word.word;
       }
 
-      // Validation
       if (!frontContent || !backContent) {
-        console.error('Missing content for flashcard', {
+        console.error('Missing flashcard content', {
           front: frontContent,
           back: backContent,
           word,
         });
       }
 
-      // Mettre à jour la carte avec une animation
       flashcard.classList.add('updating');
-
-      // Add class for current mode
       flashcard.classList.remove('word-to-meaning-mode', 'meaning-to-word-mode');
       flashcard.classList.add(`${mode}-mode`);
 
       setTimeout(() => {
-        // Mettre à jour le contenu de la carte
         flashcard.innerHTML = `
             <div class="flashcard-inner">
               <div class="flashcard-front">
@@ -217,108 +186,69 @@ document.addEventListener('DOMContentLoaded', function () {
                     </button>
                 </div>
               </div>
-            </div>
-          `;
+            </div>`;
 
-        // Rétablir les écouteurs d'événements pour les nouveaux éléments
         setupCardListeners();
-
-        // Mettre à jour l'indice de carte courant avec animation
         animateCounter(currentCardEl, currentIndex + 1);
         totalCardsEl.textContent = currentWords.length;
-
-        // Mettre à jour les boutons de navigation
         prevBtn.disabled = currentIndex === 0;
         nextBtn.disabled = currentIndex === currentWords.length - 1;
-
-        // S'assurer que la carte est sur le côté question
         flashcard.classList.remove('flipped');
-
-        // Retirer la classe d'animation après mise à jour
-        setTimeout(() => {
-          flashcard.classList.remove('updating');
-        }, 50);
+        setTimeout(() => flashcard.classList.remove('updating'), 50);
       }, 150);
     } catch (e) {
-      console.error('Erreur lors de la mise à jour de la carte:', e);
+      console.error('Card update error:', e);
     }
   }
 
-  // Configurer les écouteurs d'événements pour les éléments de la carte
   function setupCardListeners() {
-    // Cliquer sur la carte pour la retourner
     const flashcardElement = document.getElementById('flashcard');
-
-    // Supprimer les anciens écouteurs d'événements (si possible)
+    // Replace element to clear old listeners
     const newFlashcard = flashcardElement.cloneNode(true);
     flashcardElement.parentNode.replaceChild(newFlashcard, flashcardElement);
 
-    // Ajouter le nouvel écouteur d'événements
     newFlashcard.addEventListener('click', function () {
       if (currentWords.length > 0) {
         this.classList.toggle('flipped');
-
-        // Jouer un son léger de retournement
         try {
           const flipSound = new Audio('/sounds/flip.mp3');
           flipSound.volume = 0.2;
           flipSound.play();
-        } catch (e) {
-          console.log('Son non disponible');
+        } catch (_) {
+          /* optional sound */
         }
       }
     });
 
-    // Mise à jour de la référence flashcard
     flashcard = newFlashcard;
 
-    // Bouton d'indice
     const hintBtn = document.getElementById('hint-button');
     const hintText = document.getElementById('hint-text');
 
     if (hintBtn && hintText) {
       hintBtn.addEventListener('click', function (e) {
-        e.stopPropagation(); // Empêcher la propagation au flashcard
+        e.stopPropagation();
 
         const word = currentWords[currentIndex];
         const mode = document.querySelector('input[name="mode"]:checked').value;
 
-        // Animation du bouton d'indice
         this.classList.add('pulse');
-        setTimeout(() => {
-          this.classList.remove('pulse');
-        }, 500);
+        setTimeout(() => this.classList.remove('pulse'), 500);
 
-        if (mode === 'word-to-meaning') {
-          // Donner un indice sur la signification
-          const meaning = word.meaning;
-          if (meaning.length > 2) {
-            hintText.textContent = `Commence par "${meaning.charAt(0)}${meaning.charAt(1)}..." et contient ${meaning.length} caractères`;
-          } else {
-            hintText.textContent = 'Indice non disponible pour ce mot';
-          }
-        } else {
-          // Donner un indice sur le mot
-          const targetWord = word.word;
-          if (targetWord.length > 2) {
-            hintText.textContent = `Commence par "${targetWord.charAt(0)}${targetWord.charAt(1)}..." et contient ${targetWord.length} caractères`;
-          } else {
-            hintText.textContent = 'Indice non disponible pour ce mot';
-          }
-        }
+        const target = mode === 'word-to-meaning' ? word.meaning : word.word;
+        hintText.textContent =
+          target.length > 2
+            ? `Commence par "${target.charAt(0)}${target.charAt(1)}..." et contient ${target.length} caractères`
+            : 'Indice non disponible pour ce mot';
 
-        // Animation d'apparition du texte d'indice
         hintText.style.opacity = '0';
         hintText.style.transform = 'translateY(-10px)';
         hintText.style.display = 'block';
 
-        // Clear hint after 5 seconds for meaning-to-word mode to prevent clutter
         if (mode === 'meaning-to-word') {
           setTimeout(() => {
             hintText.style.opacity = '0';
-            setTimeout(() => {
-              hintText.style.display = 'none';
-            }, 500);
+            setTimeout(() => (hintText.style.display = 'none'), 500);
           }, 5000);
         }
 
@@ -329,246 +259,170 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     }
 
-    // Bouton de prononciation
-    const pronunciationBtn = document.querySelectorAll('.pronunciation-btn');
-    if (pronunciationBtn) {
-      pronunciationBtn.forEach((btn) => {
-        btn.addEventListener('click', function (e) {
-          e.stopPropagation(); // Empêcher la propagation au flashcard
-
-          // Animation du bouton
-          this.classList.add('pulse');
-          setTimeout(() => {
-            this.classList.remove('pulse');
-          }, 500);
-
-          const text = this.getAttribute('data-text');
-          speakText(this, text);
-        });
+    const pronunciationBtns = document.querySelectorAll('.pronunciation-btn');
+    pronunciationBtns.forEach((btn) => {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        this.classList.add('pulse');
+        setTimeout(() => this.classList.remove('pulse'), 500);
+        speakText(this, this.getAttribute('data-text'));
       });
-    }
+    });
   }
 
-  // Fonction pour prononcer un texte avec Google Cloud TTS (support multi-langues)
   async function speakText(btn, text) {
+    const word = currentWords[currentIndex];
+    const oldHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> En cours';
+
     try {
-      const word = currentWords[currentIndex];
-      const language = word.language_code;
-
-      // Afficher un indicateur de chargement
-      btn.disabled = true;
-      const oldHtml = btn.innerHTML;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> En cours';
-
-      // Faire l'appel à l'API TTS
       const response = await fetch('/api/tts/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text: text, language: language }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, language: word.language_code }),
       });
 
-      if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-      // Traiter la réponse comme blob audio (plus efficace)
-      const audioBlob = await response.blob();
-
-      // Créer une URL blob pour l'audio (streaming efficace)
-      const audioUrl = URL.createObjectURL(audioBlob);
-
-      // Créer et jouer l'élément audio
+      const audioUrl = URL.createObjectURL(await response.blob());
       const audio = new Audio(audioUrl);
       audio.volume = 0.8;
 
-      // Gérer les événements audio
-      audio.onended = () => {
-        // Nettoyer l'URL blob pour éviter les fuites mémoire
+      const restore = () => {
         URL.revokeObjectURL(audioUrl);
-
-        // Restaurer les boutons
         btn.disabled = false;
         btn.innerHTML = oldHtml;
       };
 
+      audio.onended = restore;
       audio.onerror = () => {
-        console.error('Erreur lors de la lecture audio');
-        // Nettoyer l'URL blob
-        URL.revokeObjectURL(audioUrl);
-
-        // Restaurer les boutons en cas d'erreur
-        btn.disabled = false;
-        btn.innerHTML = oldHtml;
+        console.error('Audio playback error');
+        restore();
       };
 
-      // Jouer l'audio
       await audio.play();
     } catch (error) {
-      console.error("Erreur lors de la génération de l'audio:", error);
-
-      // Restaurer les boutons en cas d'erreur
+      console.error('TTS error:', error);
       btn.disabled = false;
       btn.innerHTML = oldHtml;
     }
   }
 
-  // Filtrer les mots en fonction des niveaux sélectionnés
   function filterWords() {
     const selectedLevels = [];
-    levelCheckboxes.forEach((checkbox) => {
-      if (checkbox.checked) {
-        selectedLevels.push(checkbox.value);
-      }
+    levelCheckboxes.forEach((cb) => {
+      if (cb.checked) selectedLevels.push(cb.value);
     });
 
-    // Make sure we have at least one level selected
     if (selectedLevels.length === 0 && levelCheckboxes.length > 0) {
-      // If no levels are selected, select the first one by default
       levelCheckboxes[0].checked = true;
       selectedLevels.push('x');
     }
-    console.log(selectedLevels);
-    // Mode normal
-    wordsFilteredByLevel = allWords.filter((word) => selectedLevels.includes(word.level));
 
-    //Intersect of 2 filters
+    wordsFilteredByLevel = allWords.filter((w) => selectedLevels.includes(w.level));
     const setWords = new Set(wordsFilteredByVocab);
-    currentWords = wordsFilteredByLevel.filter((word) => setWords.has(word));
+    currentWords = wordsFilteredByLevel.filter((w) => setWords.has(w));
 
-    console.log(`Filtered words: ${currentWords.length} words match selected levels`);
-
-    // Réinitialiser l'index si nécessaire
     currentIndex = 0;
-
-    // Réinitialiser les progrès
     initProgress();
-
-    // Mettre à jour l'affichage
     updateCardDisplay();
   }
 
-  //Filtrer le vocabulaire en fonction du mode ( aujourd'hui ou tous les mots)
   function filterVocab() {
     const vocabMode = document.querySelector('input[name="vocab-mode"]:checked').value;
+    wordsFilteredByVocab =
+      vocabMode === 'today-words' ? allWords.filter((w) => w.dueToday) : [...allWords];
 
-    if (vocabMode === 'today-words') {
-      wordsFilteredByVocab = allWords.filter((word) => word.dueToday);
-    } else {
-      wordsFilteredByVocab = [...allWords];
-    }
-
-    //Intersect of 2 filters
     const setWords = new Set(wordsFilteredByLevel);
-    currentWords = wordsFilteredByVocab.filter((word) => setWords.has(word));
+    currentWords = wordsFilteredByVocab.filter((w) => setWords.has(w));
 
-    console.log(`Filtered words: ${currentWords.length} words match selected levels`);
     currentIndex = 0;
-
     initProgress();
     updateCardDisplay();
   }
 
-  // Mélanger les mots
   function shuffleWords() {
     for (let i = currentWords.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [currentWords[i], currentWords[j]] = [currentWords[j], currentWords[i]];
     }
-
-    // Réinitialiser l'index et les progrès
     currentIndex = 0;
     initProgress();
 
-    // Animation de mélange
     document.querySelector('.flashcard-container').classList.add('shuffle-animation');
     setTimeout(() => {
       document.querySelector('.flashcard-container').classList.remove('shuffle-animation');
-      // Mettre à jour l'affichage
       updateCardDisplay();
     }, 600);
   }
 
-  // Mettre à jour le chronomètre de session
   function updateSessionTimer() {
-    const now = new Date();
-    const elapsedTime = Math.floor((now - sessionStartTime) / 1000);
-    const minutes = Math.floor(elapsedTime / 60)
+    const elapsed = Math.floor((new Date() - sessionStartTime) / 1000);
+    const mm = Math.floor(elapsed / 60)
       .toString()
       .padStart(2, '0');
-    const seconds = (elapsedTime % 60).toString().padStart(2, '0');
+    const ss = (elapsed % 60).toString().padStart(2, '0');
+    sessionTimeEl.textContent = `${mm}:${ss}`;
 
-    sessionTimeEl.textContent = `${minutes}:${seconds}`;
-
-    // Check if we've reached 5 minutes (300 seconds) and haven't updated streak yet
-    if (elapsedTime >= 300 && !streakUpdated) {
-      updateUserStreak();
-    }
+    // Trigger streak update after 5 minutes of study
+    if (elapsed >= 300 && !streakUpdated) updateUserStreak();
   }
 
-  // Sauvegarder les progrès dans le localStorage
   function saveProgress() {
     try {
-      const progressData = {
-        date: new Date().toISOString(),
-        progress: progress,
-        words: currentWords.map((w) => w.id),
-      };
-
-      localStorage.setItem('flashcards_progress', JSON.stringify(progressData));
-
-      // Animation de sauvegarde
+      localStorage.setItem(
+        'flashcards_progress',
+        JSON.stringify({
+          date: new Date().toISOString(),
+          progress,
+          words: currentWords.map((w) => w.id),
+        })
+      );
       saveBtn.classList.add('saving');
-      setTimeout(() => {
-        saveBtn.classList.remove('saving');
-      }, 500);
+      setTimeout(() => saveBtn.classList.remove('saving'), 500);
     } catch (e) {
-      console.error('Erreur lors de la sauvegarde des progrès', e);
+      console.error('Save progress error:', e);
     }
   }
 
-  // Charger les progrès depuis le localStorage
   function loadProgress() {
     try {
-      const savedData = localStorage.getItem('flashcards_progress');
-      if (savedData) {
-        const data = JSON.parse(savedData);
+      const saved = localStorage.getItem('flashcards_progress');
+      if (!saved) return;
+      const data = JSON.parse(saved);
+      const currentIds = currentWords.map((w) => w.id);
 
-        // Vérifier si les IDs des mots correspondent
-        const currentIds = currentWords.map((w) => w.id);
-        const savedIds = data.words;
-
-        // Si les ensembles de mots sont identiques, restaurer les progrès
-        if (
-          savedIds.length === currentIds.length &&
-          savedIds.every((id) => currentIds.includes(id))
-        ) {
-          progress = data.progress;
-
-          updateProgressDisplay();
-        }
+      if (
+        data.words.length === currentIds.length &&
+        data.words.every((id) => currentIds.includes(id))
+      ) {
+        progress = data.progress;
+        updateProgressDisplay();
       }
     } catch (e) {
-      console.error('Erreur lors du chargement des progrès', e);
+      console.error('Load progress error:', e);
     }
   }
 
   function checkBrowser() {
-    const userAgent = navigator.userAgent.toLowerCase();
-    console.log(userAgent);
-    const isChrome = userAgent.includes('chrome') && !userAgent.includes('edg');
-    const isSafari = userAgent.includes('safari') && !userAgent.includes('chrome');
-    const isEdge = userAgent.includes('edg');
-
-    if (!isChrome && !isSafari && !isEdge) {
-      showInstructions();
-      return false;
-    }
-    return true;
+    const ua = navigator.userAgent.toLowerCase();
+    const isChrome = ua.includes('chrome') && !ua.includes('edg');
+    const isSafari = ua.includes('safari') && !ua.includes('chrome');
+    const isEdge = ua.includes('edg');
+    if (!isChrome && !isSafari && !isEdge) showInstructions();
   }
 
   function showInstructions() {
+    const appBaseUrl =
+      (typeof window !== 'undefined' && window.APP_BASE_URL) || 'https://www.sealvo.it.com';
+    let siteLabel = 'sealvo.it.com';
+    try {
+      siteLabel = new URL(appBaseUrl).hostname;
+    } catch (_) {
+      /* keep default */
+    }
+
     const modal = document.createElement('div');
     modal.className = 'browser-modal';
     modal.innerHTML = `
@@ -584,59 +438,50 @@ document.addEventListener('DOMContentLoaded', function () {
                  <div class="modal-body">
                      <div class="recommended-browsers">
                          <div class="browser-option chrome">
-                             <div class="browser-icon">
-                                 <i class="fab fa-chrome"></i>
-                             </div>
+                             <div class="browser-icon"><i class="fab fa-chrome"></i></div>
                              <span>Chrome</span>
                          </div>
                          <div class="browser-option edge">
-                             <div class="browser-icon">
-                                 <i class="fab fa-edge"></i>
-                             </div>
+                             <div class="browser-icon"><i class="fab fa-edge"></i></div>
                              <span>Edge</span>
                          </div>
                          <div class="browser-option safari">
-                             <div class="browser-icon">
-                                 <i class="fab fa-safari"></i>
-                             </div>
+                             <div class="browser-icon"><i class="fab fa-safari"></i></div>
                              <span>Safari</span>
                          </div>
                      </div>
                      
-                     <div class="site-info">
-                         <div class="site-badge">
-                             <i class="fas fa-globe"></i>
-                             <span>sealvo.it.com</span>
-                             <button class="copy-btn" title="Copier l'URL">
-                                 <i class="fas fa-copy"></i>
-                             </button>
-                         </div>
-                     </div>
-                 </div>
-                 
-                 <div class="modal-actions">
-                     <button class="change-browser-btn primary-btn">
-                         <i class="fas fa-external-link-alt"></i>
-                         <span>Ouvrir dans Edge</span>
-                         <div class="btn-glow"></div>
-                     </button>
-                     <button class="continue-anyway-btn secondary-btn">
-                         <i class="fas fa-play"></i>
-                         Continuer quand même
-                     </button>
-                 </div>
-             </div>
-         `;
+                    <div class="site-info">
+                        <div class="site-badge">
+                            <i class="fas fa-globe"></i>
+                            <span class="site-badge-host">${siteLabel}</span>
+                            <button class="copy-btn" title="Copier l'URL">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button class="change-browser-btn primary-btn">
+                        <i class="fas fa-external-link-alt"></i>
+                        <span>Ouvrir dans Edge</span>
+                        <div class="btn-glow"></div>
+                    </button>
+                    <button class="continue-anyway-btn secondary-btn">
+                        <i class="fas fa-play"></i>
+                        Continuer quand même
+                    </button>
+                </div>
+            </div>`;
     document.body.appendChild(modal);
 
-    // Event listeners pour éviter CSP inline
     const changeBrowserBtn = modal.querySelector('.change-browser-btn');
     const continueBtn = modal.querySelector('.continue-anyway-btn');
     const copyBtn = modal.querySelector('.copy-btn');
 
-    // Copier l'URL
     copyBtn.addEventListener('click', () => {
-      navigator.clipboard.writeText('https://sealvo.it.com').then(() => {
+      navigator.clipboard.writeText(appBaseUrl).then(() => {
         copyBtn.innerHTML = '<i class="fas fa-check"></i>';
         copyBtn.style.background = '#10b981';
         setTimeout(() => {
@@ -646,10 +491,9 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     });
 
-    // Ouvrir dans Edge
     changeBrowserBtn.addEventListener('click', () => {
       const link = document.createElement('a');
-      link.href = 'microsoft-edge:https://sealvo.it.com';
+      link.href = `microsoft-edge:${appBaseUrl}`;
       link.click();
     });
 
@@ -659,10 +503,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // Navigation entre les cartes
+  // Navigation
   prevBtn.addEventListener('click', function () {
     if (currentIndex > 0) {
-      // Animation de glissement
       flashcard.classList.add('slide-right');
       setTimeout(() => {
         currentIndex--;
@@ -674,7 +517,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   nextBtn.addEventListener('click', function () {
     if (currentIndex < currentWords.length - 1) {
-      // Animation de glissement
       flashcard.classList.add('slide-left');
       setTimeout(() => {
         currentIndex++;
@@ -684,18 +526,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  // Boutons de connaissance
+  // Knowledge level buttons
   document.querySelectorAll('.knowledge-btn').forEach((btn) => {
     btn.addEventListener('click', function () {
       const level = parseInt(this.getAttribute('data-level'));
-
-      // Enregistrer le niveau de connaissance
       progress[currentIndex] = level;
-
-      // Mettre à jour l'affichage des progrès
       updateProgressDisplay();
 
-      // Animation de feedback en fonction du niveau
       let animationClass = 'correct-answer';
       if (level === 0) animationClass = 'wrong-answer';
       else if (level === 1) animationClass = 'uncertain-answer';
@@ -703,8 +540,6 @@ document.addEventListener('DOMContentLoaded', function () {
       flashcard.classList.add(animationClass);
       setTimeout(() => {
         flashcard.classList.remove(animationClass);
-
-        // Passer à la carte suivante s'il y en a une
         if (currentIndex < currentWords.length - 1) {
           flashcard.classList.add('slide-left');
           setTimeout(() => {
@@ -712,51 +547,28 @@ document.addEventListener('DOMContentLoaded', function () {
             updateCardDisplay();
             flashcard.classList.remove('slide-left');
           }, 200);
-        } else {
-          // C'était la dernière carte
         }
       }, 500);
     });
   });
 
-  // Filtres de niveau
-  levelCheckboxes.forEach((checkbox) => {
-    checkbox.addEventListener('change', filterWords);
-  });
+  levelCheckboxes.forEach((cb) => cb.addEventListener('change', filterWords));
+  vocabModeRadios.forEach((r) => r.addEventListener('change', filterVocab));
 
-  //filtrer les mots en fonction du vocabulaire
-  vocabModeRadios.forEach((radio) => {
-    radio.addEventListener('change', filterVocab);
-  });
-
-  // Changement de mode
   modeRadios.forEach((radio) => {
     radio.addEventListener('change', function () {
-      const mode = this.value;
-      console.log(`Switching to mode: ${mode}`);
-
-      // Animation de transition
       document.querySelector('.flashcard-container').classList.add('mode-change');
       setTimeout(() => {
         document.querySelector('.flashcard-container').classList.remove('mode-change');
-
-        // Just update the current card display without re-filtering words
         updateCardDisplay();
-
-        // Log current state for debugging
-        console.log(`After mode change to ${mode}: ${currentWords.length} words available`);
       }, 400);
     });
   });
 
-  // Mélanger les cartes
   shuffleBtn.addEventListener('click', shuffleWords);
 
-  // Réinitialiser les progrès
   resetBtn.addEventListener('click', function () {
-    // Demander confirmation
     if (confirm('Êtes-vous sûr de vouloir réinitialiser votre progression ?')) {
-      // Animation de réinitialisation
       document.querySelector('.progress-container').classList.add('reset-animation');
       setTimeout(() => {
         document.querySelector('.progress-container').classList.remove('reset-animation');
@@ -767,10 +579,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  // Sauvegarder les progrès
   saveBtn.addEventListener('click', saveProgress);
 
-  // Clavier: gauche/droite pour naviguer, espace pour retourner
+  // Keyboard shortcuts: arrows to navigate, space to flip, 1/2/3 for knowledge level
   document.addEventListener('keydown', function (e) {
     if (currentWords.length === 0) return;
 
@@ -780,166 +591,108 @@ document.addEventListener('DOMContentLoaded', function () {
       nextBtn.click();
     } else if (e.code === 'Space') {
       flashcard.classList.toggle('flipped');
-      e.preventDefault(); // Empêcher le défilement de la page
+      e.preventDefault();
     } else if (e.code === 'Digit1' || e.code === 'Numpad1') {
-      // Touche 1: Je ne sais pas
       document.querySelector('.knowledge-btn[data-level="0"]').click();
     } else if (e.code === 'Digit2' || e.code === 'Numpad2') {
-      // Touche 2: Incertain
       document.querySelector('.knowledge-btn[data-level="1"]').click();
     } else if (e.code === 'Digit3' || e.code === 'Numpad3') {
-      // Touche 3: Je sais
       document.querySelector('.knowledge-btn[data-level="2"]').click();
     }
   });
 
-  // Mettre à jour le chronomètre toutes les secondes
   setInterval(updateSessionTimer, 1000);
 
-  // Prévenir la fermeture accidentelle de la page
   window.addEventListener('beforeunload', function (e) {
-    // Si l'utilisateur a progressé sans sauvegarder
-    const hasUnsavedProgress = progress.some((p) => p !== -1);
-    if (hasUnsavedProgress) {
+    if (progress.some((p) => p !== -1)) {
       e.preventDefault();
       e.returnValue = 'Vous avez des progrès non sauvegardés. Êtes-vous sûr de vouloir quitter ?';
     }
   });
 
-  // Ajouter des styles pour les nouvelles animations
   const style = document.createElement('style');
   style.textContent = `
-      .button-press {
-        transform: scale(0.95);
-      }
-      
-      .pulse {
-        animation: pulse-animation 0.5s cubic-bezier(0.455, 0.03, 0.515, 0.955);
-      }
-      
+      .button-press { transform: scale(0.95); }
+      .pulse { animation: pulse-animation 0.5s cubic-bezier(0.455, 0.03, 0.515, 0.955); }
       @keyframes pulse-animation {
         0% { transform: scale(1); }
         50% { transform: scale(1.05); }
         100% { transform: scale(1); }
       }
-      
-      .updating {
-        opacity: 0.5;
-        transform: scale(0.98);
-        transition: all 0.15s ease;
-      }
-      
-      .slide-left {
-        animation: slide-left-anim 0.2s forwards;
-      }
-      
+      .updating { opacity: 0.5; transform: scale(0.98); transition: all 0.15s ease; }
+      .slide-left { animation: slide-left-anim 0.2s forwards; }
       @keyframes slide-left-anim {
         0% { transform: translateX(0); opacity: 1; }
         100% { transform: translateX(-50px); opacity: 0; }
       }
-      
-      .slide-right {
-        animation: slide-right-anim 0.2s forwards;
-      }
-      
+      .slide-right { animation: slide-right-anim 0.2s forwards; }
       @keyframes slide-right-anim {
         0% { transform: translateX(0); opacity: 1; }
         100% { transform: translateX(50px); opacity: 0; }
       }
-      
-      .shuffle-animation {
-        animation: shuffle-anim 0.6s ease;
-      }
-      
+      .shuffle-animation { animation: shuffle-anim 0.6s ease; }
       @keyframes shuffle-anim {
         0% { transform: translateY(0) rotate(0); }
         33% { transform: translateY(-15px) rotate(-2deg); }
         66% { transform: translateY(10px) rotate(2deg); }
         100% { transform: translateY(0) rotate(0); }
       }
-      
-      .mode-change {
-        animation: mode-change-anim 0.4s ease;
-      }
-      
+      .mode-change { animation: mode-change-anim 0.4s ease; }
       @keyframes mode-change-anim {
         0% { opacity: 1; transform: scale(1); }
         50% { opacity: 0.5; transform: scale(0.95); }
         100% { opacity: 1; transform: scale(1); }
       }
-      
-      .reset-animation {
-        animation: reset-anim 0.5s ease;
-      }
-      
+      .reset-animation { animation: reset-anim 0.5s ease; }
       @keyframes reset-anim {
         0% { transform: scale(1); }
         50% { transform: scale(0.95); }
         100% { transform: scale(1); }
       }
-      
-      .saving {
-        animation: saving-anim 0.5s ease;
-      }
-      
+      .saving { animation: saving-anim 0.5s ease; }
       @keyframes saving-anim {
         0% { transform: scale(1); }
         50% { transform: scale(0.95); background-position: right bottom; }
         100% { transform: scale(1); }
       }
-      
-      .wrong-answer {
-        animation: wrong-anim 0.5s ease;
-      }
-      
+      .wrong-answer { animation: wrong-anim 0.5s ease; }
       @keyframes wrong-anim {
         0%, 100% { transform: translateX(0); }
         20%, 60% { transform: translateX(-5px); }
         40%, 80% { transform: translateX(5px); }
       }
-      
-      .uncertain-answer {
-        animation: uncertain-anim 0.5s ease;
-      }
-      
+      .uncertain-answer { animation: uncertain-anim 0.5s ease; }
       @keyframes uncertain-anim {
         0% { transform: translateY(0); }
         50% { transform: translateY(-5px); }
         100% { transform: translateY(0); }
       }
-      
-      .correct-answer {
-        animation: correct-anim 0.5s ease;
-      }
-      
+      .correct-answer { animation: correct-anim 0.5s ease; }
       @keyframes correct-anim {
         0% { transform: scale(1); }
         50% { transform: scale(1.05); }
         100% { transform: scale(1); }
-      }
-    `;
+      }`;
   document.head.appendChild(style);
 
-  // Initialisation
   initProgress();
   updateCardDisplay();
-  loadProgress(); // Essayer de charger les progrès sauvegardés
+  loadProgress();
   setupCardListeners();
 
-  // Animation d'entrée initiale
+  // Staggered entrance animation
   document
     .querySelectorAll(
       '.stat-card, .flashcard-filters, .mode-selector, .flashcard-container, .progress-container, .flashcard-actions'
     )
-    .forEach((element, index) => {
-      element.style.opacity = '0';
-      element.style.transform = 'translateY(20px)';
-      element.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-      element.style.transitionDelay = `${index * 0.1}s`;
-
+    .forEach((el, i) => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(20px)';
+      el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      el.style.transitionDelay = `${i * 0.1}s`;
       setTimeout(() => {
-        element.style.opacity = '1';
-        element.style.transform = 'translateY(0)';
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
       }, 100);
     });
 });
