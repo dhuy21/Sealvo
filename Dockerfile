@@ -13,6 +13,12 @@ RUN npm ci --omit=dev
 # ============================================================
 FROM node:20-alpine AS runner
 
+# Remove package managers (npm, npx, yarn, corepack) from production image.
+# They are not needed at runtime and contain known vulnerabilities.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx \
+           /opt/yarn-* /usr/local/bin/yarn /usr/local/bin/yarnpkg \
+           /usr/local/lib/node_modules/corepack /usr/local/bin/corepack
+
 # Create non-root user for security
 RUN addgroup -g 1001 -S appgroup \
   && adduser -u 1001 -S appuser -G appgroup
