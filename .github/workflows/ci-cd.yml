@@ -124,20 +124,22 @@ jobs:
           cache-to: type=gha,mode=max
 
       # Trivy chỉ chạy khi image đã push vào GHCR (staging hoặc main).
-      # Lý do: khi push=false, image không có trong GHCR → Trivy không thể pull để scan.
-      # Auth GHCR cần thiết nếu package ở chế độ private.
+      # Tải binary trực tiếp từ GitHub Releases (CDN) thay vì dùng trivy-action
+      # vì action nội bộ clone repo aquasecurity/trivy bằng git → không ổn định.
       - name: Trivy vulnerability scan
         if: steps.meta.outputs.push == 'true'
-        uses: aquasecurity/trivy-action@0.34.1
-        with:
-          image-ref: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.meta.outputs.env_tag }}
-          format: table
-          exit-code: '0'
-          ignore-unfixed: true
-          severity: CRITICAL,HIGH
-        env:
-          TRIVY_USERNAME: ${{ github.actor }}
-          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TRIVY_VERSION="0.69.1"
+          wget -qO trivy.tar.gz "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          tar xzf trivy.tar.gz trivy
+          ./trivy image \
+            --username "${{ github.actor }}" \
+            --password "${{ secrets.GITHUB_TOKEN }}" \
+            --severity CRITICAL,HIGH \
+            --ignore-unfixed \
+            --exit-code 0 \
+            --format table \
+            "${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.meta.outputs.env_tag }}"
 
       - name: Build summary
         if: always()
