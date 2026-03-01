@@ -68,7 +68,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-      security-events: write
     env:
       REGISTRY: ghcr.io
     steps:
@@ -129,7 +128,7 @@ jobs:
       # Auth GHCR cần thiết nếu package ở chế độ private.
       - name: Trivy vulnerability scan
         if: steps.meta.outputs.push == 'true'
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.34.1
         with:
           image-ref: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.meta.outputs.env_tag }}
           format: table
