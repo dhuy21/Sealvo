@@ -154,7 +154,7 @@
 │   │   └── ...
 │   ├── 📊 core/         # Core
 │   │   ├── database.js # Connexion à la base de données
-│   │   ├── database.sql # Création des tables
+│   │   ├── database.sql # (Legacy) Schéma de référence ; init = migrations/001_initial.sql
 │   │   └── ...
 │   ├── 📊 models/         # Modèles de données
 │   │   ├── users.js        # Gestion utilisateurs
@@ -279,14 +279,13 @@ USER_GMAIL=
 <details>
 <summary>🗄️ <strong>Configuration Base de Données</strong></summary>
 
+Migrations et client DB : voir **[docs/DATABASE.md](../docs/DATABASE.md)** (schéma versionné, `npm run migrate`, connexion local/Railway).
+
 ```bash
--- Création automatique des tables par le fichier database.sql
-cd src/app/core
-mysql -u user_name -p < database.sql
+# Lancer les migrations (depuis src/)
+npm run migrate
 
-Or you can connect to your database mysql with your favorite tool and execute the file database.sql
-
--- Les tables sont créées automatiquement au démarrage
+# Les tables sont aussi créées au premier démarrage Docker (initdb.d = migrations/001_initial.sql)
 ```
 
 </details>

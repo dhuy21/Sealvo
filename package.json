@@ -15,6 +15,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",
+    "migrate": "node scripts/run-migrations.js",
     "prepare": "node -e \"require('fs').existsSync('.git')&&require('child_process').execSync('npx husky',{stdio:'inherit'})\""
   },
   "lint-staged": {
