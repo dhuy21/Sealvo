@@ -48,9 +48,8 @@ test.describe('Auth pages – extended', () => {
   test.describe('/registre extended', () => {
     test('avatar selector is present', async ({ page }) => {
       await page.goto('/registre');
-      // Avatar options (radio inputs or image buttons)
-      const avatarInputs = page.locator('input[name="avatar"]');
-      await expect(avatarInputs.first()).toBeVisible();
+      // Avatar radios are hidden; assert visible container (same as registre.spec.js)
+      await expect(page.locator('.avatar-selection, .avatars-container').first()).toBeVisible();
     });
   });
 });
