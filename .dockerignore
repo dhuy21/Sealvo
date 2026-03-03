@@ -28,6 +28,9 @@ docs
 .env.*
 !.env.example
 
+# Database backups (dump files never belong in any image)
+backups
+
 # CI/CD (not needed inside image)
 .github
 

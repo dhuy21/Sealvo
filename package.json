@@ -16,6 +16,9 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",
     "migrate": "node scripts/run-migrations.js",
+    "migrate:safe": "node scripts/backup-db.js && node scripts/run-migrations.js",
+    "backup:db": "node scripts/backup-db.js",
+    "restore:db": "node scripts/restore-db.js",
     "prepare": "node -e \"require('fs').existsSync('.git')&&require('child_process').execSync('npx husky',{stdio:'inherit'})\""
   },
   "lint-staged": {
@@ -28,6 +31,7 @@
     ]
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.0.0",
     "@aws-sdk/client-sesv2": "^3.0.0",
     "@google-cloud/text-to-speech": "^6.2.0",
     "@google/generative-ai": "^0.24.1",

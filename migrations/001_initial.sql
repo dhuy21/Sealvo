@@ -5,9 +5,6 @@
 SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
 SET time_zone = '+00:00';
 
--- Use the database (needed when run from Docker initdb.d; harmless when runner already connected to DB)
-USE web_db;
-
 -- Table to track which migrations have been applied (runner inserts after each file)
 CREATE TABLE IF NOT EXISTS schema_migrations (
   name VARCHAR(255) NOT NULL PRIMARY KEY,
