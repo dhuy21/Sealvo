@@ -39,4 +39,7 @@ yarn-error.log*
 test-results/
 playwright-report/
 blob-report/
-.playwright/ 
+.playwright/
+
+# Database backups (Phase 2 — contain sensitive data, do not commit)
+backups/

@@ -20,7 +20,7 @@ services:
       - '${MYSQLHOST_PORT}:${MYSQLPORT}'
     volumes:
       - db_data:/var/lib/mysql
-      - ./app/core/database.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./migrations/001_initial.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
       test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -P 3306 -uroot -p${MYSQL_ROOT_PASSWORD}']
       interval: 5s
