@@ -30,7 +30,12 @@ function isInsideDocker() {
 
 function containerRunning() {
   try {
-    return execSync(`docker ps -q -f name=^${CONTAINER}$`, { encoding: 'utf8' }).trim().length > 0;
+    return (
+      execSync(`docker ps -q -f name=^${CONTAINER}$`, {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim().length > 0
+    );
   } catch {
     return false;
   }

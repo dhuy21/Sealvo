@@ -29,15 +29,18 @@ const CONTAINER = 'web_vocab_db';
 const RETENTION = parseInt(process.env.BACKUP_RETENTION, 10) || 7;
 const BUCKET_PREFIX = 'backups';
 
-function getDumpFlags() {
+function getDumpFlags(useDocker) {
   const flags = ['--single-transaction', '--routines', '--triggers'];
   // --set-gtid-purged is MySQL-only; MariaDB's mysqldump (installed by
   // default-mysql-client on Debian) does not support it and will crash.
   try {
-    const help = execSync('mysqldump --help 2>&1', { encoding: 'utf8' });
+    const cmd = useDocker
+      ? `docker exec ${CONTAINER} mysqldump --help 2>&1`
+      : 'mysqldump --help 2>&1';
+    const help = execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
     if (help.includes('set-gtid-purged')) flags.push('--set-gtid-purged=OFF');
   } catch {
-    /* MariaDB or missing binary — skip the flag */
+    /* binary missing or MariaDB — skip the flag */
   }
   return flags;
 }
@@ -149,13 +152,14 @@ function backup(outPath) {
   const user = env('MYSQLUSER');
   const pass = env('MYSQL_ROOT_PASSWORD');
   const db = env('MYSQL_DATABASE');
-  const flags = getDumpFlags();
+  const useDocker = containerRunning();
+  const flags = getDumpFlags(useDocker);
   const spawnOpts = { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' };
   let result;
 
   console.log(`[backup] Dump flags: ${flags.join(' ')}`);
 
-  if (containerRunning()) {
+  if (useDocker) {
     console.log(`[backup] Using Docker container ${CONTAINER}`);
     result = spawnSync(
       'docker',
