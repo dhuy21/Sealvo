@@ -18,6 +18,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const net = require('net');
 const { execSync, spawnSync } = require('child_process');
 
 const envPath = path.join(__dirname, '..', '.env');
@@ -28,15 +29,18 @@ const CONTAINER = 'web_vocab_db';
 const RETENTION = parseInt(process.env.BACKUP_RETENTION, 10) || 7;
 const BUCKET_PREFIX = 'backups';
 
-function getDumpFlags() {
+function getDumpFlags(useDocker) {
   const flags = ['--single-transaction', '--routines', '--triggers'];
   // --set-gtid-purged is MySQL-only; MariaDB's mysqldump (installed by
   // default-mysql-client on Debian) does not support it and will crash.
   try {
-    const help = execSync('mysqldump --help 2>&1', { encoding: 'utf8' });
+    const cmd = useDocker
+      ? `docker exec ${CONTAINER} mysqldump --help 2>&1`
+      : 'mysqldump --help 2>&1';
+    const help = execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
     if (help.includes('set-gtid-purged')) flags.push('--set-gtid-purged=OFF');
   } catch {
-    /* MariaDB or missing binary — skip the flag */
+    /* binary missing or MariaDB — skip the flag */
   }
   return flags;
 }
@@ -90,11 +94,55 @@ function makeS3Client(cfg) {
   });
 }
 
+/* ── wait for MySQL (handles Serverless cold boot) ────────── */
+
+const WAIT_MAX_MS = parseInt(process.env.MYSQL_WAIT_TIMEOUT, 10) || 30000;
+const WAIT_INTERVAL_MS = 2000;
+
+function waitForMySQL(host, port) {
+  return new Promise((resolve, reject) => {
+    const deadline = Date.now() + WAIT_MAX_MS;
+    let attempt = 0;
+
+    function tryConnect() {
+      attempt++;
+      const sock = new net.Socket();
+      sock.setTimeout(WAIT_INTERVAL_MS);
+
+      sock.once('connect', () => {
+        sock.destroy();
+        resolve(attempt);
+      });
+      sock.once('error', () => {
+        sock.destroy();
+        if (Date.now() >= deadline)
+          return reject(new Error(`MySQL not reachable after ${WAIT_MAX_MS / 1000}s`));
+        setTimeout(tryConnect, WAIT_INTERVAL_MS);
+      });
+      sock.once('timeout', () => {
+        sock.destroy();
+        if (Date.now() >= deadline)
+          return reject(new Error(`MySQL not reachable after ${WAIT_MAX_MS / 1000}s`));
+        setTimeout(tryConnect, WAIT_INTERVAL_MS);
+      });
+
+      sock.connect(parseInt(port, 10), host);
+    }
+
+    tryConnect();
+  });
+}
+
 /* ── dump ─────────────────────────────────────────────────── */
 
 function containerRunning() {
   try {
-    return execSync(`docker ps -q -f name=^${CONTAINER}$`, { encoding: 'utf8' }).trim().length > 0;
+    return (
+      execSync(`docker ps -q -f name=^${CONTAINER}$`, {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim().length > 0
+    );
   } catch {
     return false;
   }
@@ -104,13 +152,14 @@ function backup(outPath) {
   const user = env('MYSQLUSER');
   const pass = env('MYSQL_ROOT_PASSWORD');
   const db = env('MYSQL_DATABASE');
-  const flags = getDumpFlags();
+  const useDocker = containerRunning();
+  const flags = getDumpFlags(useDocker);
   const spawnOpts = { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' };
   let result;
 
   console.log(`[backup] Dump flags: ${flags.join(' ')}`);
 
-  if (containerRunning()) {
+  if (useDocker) {
     console.log(`[backup] Using Docker container ${CONTAINER}`);
     result = spawnSync(
       'docker',
@@ -209,6 +258,15 @@ async function main() {
   if (!fs.existsSync(BACKUPS_DIR)) fs.mkdirSync(BACKUPS_DIR, { recursive: true });
 
   console.log('[backup] Starting...');
+
+  if (!containerRunning()) {
+    const host = env('MYSQLHOST');
+    const port = process.env.MYSQLPORT || '3306';
+    console.log(`[backup] Waiting for MySQL (${host}:${port})...`);
+    const attempts = await waitForMySQL(host, port);
+    console.log(`[backup] MySQL ready (${attempts} attempt${attempts > 1 ? 's' : ''})`);
+  }
+
   backup(outPath);
 
   const sizeKB = (fs.statSync(outPath).size / 1024).toFixed(1);
