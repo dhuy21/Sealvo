@@ -26,8 +26,20 @@ if (fs.existsSync(envPath)) require('dotenv').config({ path: envPath });
 const BACKUPS_DIR = path.join(__dirname, '..', 'backups');
 const CONTAINER = 'web_vocab_db';
 const RETENTION = parseInt(process.env.BACKUP_RETENTION, 10) || 7;
-const DUMP_FLAGS = ['--single-transaction', '--routines', '--triggers', '--set-gtid-purged=OFF'];
 const BUCKET_PREFIX = 'backups';
+
+function getDumpFlags() {
+  const flags = ['--single-transaction', '--routines', '--triggers'];
+  // --set-gtid-purged is MySQL-only; MariaDB's mysqldump (installed by
+  // default-mysql-client on Debian) does not support it and will crash.
+  try {
+    const help = execSync('mysqldump --help 2>&1', { encoding: 'utf8' });
+    if (help.includes('set-gtid-purged')) flags.push('--set-gtid-purged=OFF');
+  } catch {
+    /* MariaDB or missing binary — skip the flag */
+  }
+  return flags;
+}
 
 /* ── helpers ─────────────────────────────────────────────── */
 
@@ -92,21 +104,24 @@ function backup(outPath) {
   const user = env('MYSQLUSER');
   const pass = env('MYSQL_ROOT_PASSWORD');
   const db = env('MYSQL_DATABASE');
+  const flags = getDumpFlags();
   const spawnOpts = { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' };
   let result;
+
+  console.log(`[backup] Dump flags: ${flags.join(' ')}`);
 
   if (containerRunning()) {
     console.log(`[backup] Using Docker container ${CONTAINER}`);
     result = spawnSync(
       'docker',
-      ['exec', '-e', `MYSQL_PWD=${pass}`, CONTAINER, 'mysqldump', '-u', user, ...DUMP_FLAGS, db],
+      ['exec', '-e', `MYSQL_PWD=${pass}`, CONTAINER, 'mysqldump', '-u', user, ...flags, db],
       spawnOpts
     );
   } else {
     const host = env('MYSQLHOST');
     const port = process.env.MYSQLPORT || '3306';
     console.log(`[backup] Using direct connection (${host}:${port})`);
-    result = spawnSync('mysqldump', ['-h', host, '-P', port, '-u', user, ...DUMP_FLAGS, db], {
+    result = spawnSync('mysqldump', ['-h', host, '-P', port, '-u', user, ...flags, db], {
       ...spawnOpts,
       env: { ...process.env, MYSQL_PWD: pass },
     });
