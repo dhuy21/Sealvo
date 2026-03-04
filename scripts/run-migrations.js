@@ -6,6 +6,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const net = require('net');
 const { execSync } = require('child_process');
 const mysql = require('mysql2/promise');
 
@@ -14,6 +15,8 @@ if (fs.existsSync(envPath)) require('dotenv').config({ path: envPath });
 
 const MIGRATIONS_DIR = path.join(__dirname, '..', 'migrations');
 const CONTAINER = 'web_vocab_db';
+const WAIT_MAX_MS = parseInt(process.env.MYSQL_WAIT_TIMEOUT, 10) || 30000;
+const WAIT_INTERVAL_MS = 2000;
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -41,20 +44,47 @@ function containerRunning() {
   }
 }
 
+function waitForMySQL(host, port) {
+  return new Promise((resolve, reject) => {
+    const deadline = Date.now() + WAIT_MAX_MS;
+    let attempt = 0;
+    function tryConnect() {
+      attempt++;
+      const sock = new net.Socket();
+      sock.setTimeout(WAIT_INTERVAL_MS);
+      sock.once('connect', () => {
+        sock.destroy();
+        resolve(attempt);
+      });
+      sock.once('error', () => {
+        sock.destroy();
+        if (Date.now() >= deadline)
+          return reject(new Error(`MySQL not reachable after ${WAIT_MAX_MS / 1000}s`));
+        setTimeout(tryConnect, WAIT_INTERVAL_MS);
+      });
+      sock.once('timeout', () => {
+        sock.destroy();
+        if (Date.now() >= deadline)
+          return reject(new Error(`MySQL not reachable after ${WAIT_MAX_MS / 1000}s`));
+        setTimeout(tryConnect, WAIT_INTERVAL_MS);
+      });
+      sock.connect(parseInt(port, 10), host);
+    }
+    tryConnect();
+  });
+}
+
 function getConnectionConfig() {
-  // Case 1: inside Docker container — use env vars as-is (Docker DNS resolves service names)
   if (isInsideDocker()) {
     return { host: requireEnv('MYSQLHOST'), port: parseInt(process.env.MYSQLPORT || '3306', 10) };
   }
 
-  // Case 2: on host, Docker container running — use localhost + exposed port
   if (containerRunning()) {
     const port = parseInt(process.env.MYSQLHOST_PORT || process.env.MYSQLPORT || '3307', 10);
     console.log(`[migrate] Detected Docker container ${CONTAINER} — using 127.0.0.1:${port}`);
     return { host: '127.0.0.1', port };
   }
 
-  // Case 3: direct mode (production, Railway, no Docker)
   return { host: requireEnv('MYSQLHOST'), port: parseInt(process.env.MYSQLPORT || '3306', 10) };
 }
 
@@ -99,6 +129,16 @@ async function runMigrationFile(conn, filePath, fileName) {
 }
 
 async function main() {
+  console.log('[migrate] Starting...');
+
+  if (!containerRunning()) {
+    const host = requireEnv('MYSQLHOST');
+    const port = process.env.MYSQLPORT || '3306';
+    console.log(`[migrate] Waiting for MySQL (${host}:${port})...`);
+    const attempts = await waitForMySQL(host, port);
+    console.log(`[migrate] MySQL ready (${attempts} attempt${attempts > 1 ? 's' : ''})`);
+  }
+
   console.log('[migrate] Connecting to database...');
   const pool = await getPool();
   const conn = await pool.getConnection();
