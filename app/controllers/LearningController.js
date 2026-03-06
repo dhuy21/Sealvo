@@ -1,7 +1,14 @@
 const userModel = require('../models/users');
+const cache = require('../core/cache');
 
 class LearningController {
   async checkAndUpdateStreak(req, res) {
+    if (!req.session.user) {
+      return res.status(401).json({
+        updated: false,
+        message: 'Vous devez être connecté',
+      });
+    }
     const user_id = req.session.user.id;
     if (user_id) {
       try {
@@ -16,6 +23,10 @@ class LearningController {
 
           // Mettre à jour la date de mise à jour de la série
           await userModel.updateStreakUpdatedAt(user_id);
+
+          // Invalidate dashboard cache to reflect the new streak immediately
+          await cache.del(`dashboard:${user_id}`);
+
           res.status(200).json({
             updated: true,
             newStreak: currentStreak,
@@ -44,6 +55,9 @@ class LearningController {
 
             // Mettre à jour la date de mise à jour de la série
             await userModel.updateStreakUpdatedAt(user_id);
+
+            // Invalidate dashboard cache to reflect the new streak immediately
+            await cache.del(`dashboard:${user_id}`);
 
             res.status(200).json({
               updated: true,

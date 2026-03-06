@@ -2,6 +2,7 @@ const wordModel = require('../models/words');
 const learningModel = require('../models/learning');
 const geminiService = require('../services/gemini');
 const { setFlash } = require('../middleware/flash');
+const cache = require('../core/cache');
 
 class WordController {
   // Afficher la page de vocabulaire
@@ -203,7 +204,10 @@ class WordController {
         }
       }
 
-      // Rediriger avec un message de succès
+      if (successCount > 0) {
+        await cache.del(`dashboard:${req.session.user.id}`);
+      }
+
       res.status(200).json({
         success: true,
         message: `${successCount} mot(s) importé(s) avec succès. ${errChamps} erreur(s) de champs obligatoires. ${errExample} erreur(s) de generation d'exemples`,
@@ -230,8 +234,8 @@ class WordController {
       const package_id = req.query.package;
       const count = await wordModel.deleteAllWords(package_id);
 
-      // Rediriger avec un message de succès
       if (count) {
+        await cache.del(`dashboard:${req.session.user.id}`);
         res.status(200).json({
           success: true,
           message: `Le(s) mot(s) supprimé(s) avec succès`,
@@ -253,6 +257,13 @@ class WordController {
 
   async deleteWord(req, res) {
     try {
+      if (!req.session.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Vous devez être connecté pour supprimer un mot',
+        });
+      }
+
       const detail_id = req.params.id;
       const package_id = req.query.package;
       // Vérifier si le mot appartient à l'utilisateur
@@ -271,8 +282,8 @@ class WordController {
         });
       }
 
-      // Supprimer le mot
       await wordModel.deleteWord(detail_id, package_id);
+      await cache.del(`dashboard:${req.session.user.id}`);
 
       res.json({
         success: true,
@@ -453,8 +464,8 @@ class WordController {
       }
 
       await wordModel.updateWord(wordData, detail_id, package_id);
+      await cache.del(`dashboard:${req.session.user.id}`);
 
-      // Rediriger vers la page de vocabulaire avec un message de succès
       res.json({
         success: true,
         message:

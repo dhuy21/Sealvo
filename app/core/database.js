@@ -21,9 +21,7 @@ async function connect() {
       enableKeepAlive: true,
     });
 
-    // Test the connection
     const connection = await pool.getConnection();
-    console.log('Connecté à la base de données MySQL avec pool de connexions.');
     connection.release();
 
     return createConnectionWrapper(pool);

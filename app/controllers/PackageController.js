@@ -2,6 +2,8 @@ const packageModel = require('../models/packages');
 const wordModel = require('../models/words');
 const learningModel = require('../models/learning');
 const { setFlash } = require('../middleware/flash');
+const cache = require('../core/cache');
+const CACHE_TTL = require('../config/cache');
 
 class PackageController {
   async myPackages(req, res) {
@@ -11,10 +13,19 @@ class PackageController {
         setFlash(req, 'error', 'Vous devez être connecté pour accéder à cette page');
         return res.redirect('/login');
       }
-      // Récupérer les packages de l'utilisateur
-      const packages = await packageModel.findPackagesByUserId(req.session.user.id);
-      // Récupérer tous les packages publics
-      const publicPackages = await packageModel.findAllPublicPackages();
+      const userId = req.session.user.id;
+
+      let packages = await cache.get(`pkgs:user:${userId}`);
+      if (!packages) {
+        packages = await packageModel.findPackagesByUserId(userId);
+        await cache.set(`pkgs:user:${userId}`, packages, CACHE_TTL.PACKAGES_USER);
+      }
+
+      let publicPackages = await cache.get('pkgs:shared');
+      if (!publicPackages) {
+        publicPackages = await packageModel.findAllPublicPackages();
+        await cache.set('pkgs:shared', publicPackages, CACHE_TTL.PACKAGES_SHARED);
+      }
 
       res.render('myPackages', {
         title: 'Mes Packages',
@@ -46,12 +57,13 @@ class PackageController {
       packageData.user_id = req.session.user.id;
       const packageId = await packageModel.create(packageData);
 
-      // Si le package est créé en mode public, le désactiver automatiquement
       let message = 'Package créé avec succès';
       if (packageData.mode === 'public') {
         await packageModel.updateActivationPackage(packageId, false);
         message = 'Package créé avec succès. Il a été automatiquement désactivé car il est public.';
       }
+
+      await cache.del([`pkgs:user:${req.session.user.id}`, 'pkgs:shared']);
 
       res.json({
         success: true,
@@ -92,8 +104,13 @@ class PackageController {
           message: "Vous n'êtes pas autorisé à supprimer ce package",
         });
       }
-      // Supprimer le package
       await packageModel.deletePackage(packageId);
+      await cache.del([
+        `pkgs:user:${req.session.user.id}`,
+        'pkgs:shared',
+        `dashboard:${req.session.user.id}`,
+      ]);
+
       res.json({
         success: true,
         message: 'Package supprimé avec succès',
@@ -149,6 +166,8 @@ class PackageController {
         }
       }
 
+      await cache.del([`pkgs:user:${req.session.user.id}`, 'pkgs:shared']);
+
       res.json({
         success: true,
         message: message,
@@ -193,6 +212,13 @@ class PackageController {
       // Inverser le statut d'activation
       const newStatus = !myPackage.is_active;
       await packageModel.updateActivationPackage(packageId, newStatus);
+
+      // Activation toggle affects packagesToReview in dashboard
+      await cache.del([
+        `pkgs:user:${req.session.user.id}`,
+        'pkgs:shared',
+        `dashboard:${req.session.user.id}`,
+      ]);
 
       res.json({
         success: true,
@@ -245,6 +271,12 @@ class PackageController {
       for (const word of words) {
         await learningModel.stockWord(newPackage, word.detail_id, 'x');
       }
+      await cache.del([
+        `pkgs:user:${req.session.user.id}`,
+        'pkgs:shared',
+        `dashboard:${req.session.user.id}`,
+      ]);
+
       res.json({
         success: true,
         message: 'Package copié avec succès',

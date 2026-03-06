@@ -6,6 +6,7 @@ const multer = require('multer');
 const { PDFDocument } = require('pdf-lib');
 const geminiService = require('./gemini');
 const { setFlash } = require('../middleware/flash');
+const cache = require('../core/cache');
 
 // Configurer le stockage des fichiers uploadés
 const storage = multer.diskStorage({
@@ -217,6 +218,11 @@ class ImportFile {
             throw error;
           }
         }
+        // Invalidate dashboard cache if words were imported
+        if (successCount > 0) {
+          await cache.del(`dashboard:${req.session.user.id}`);
+        }
+
         // Supprimer le fichier temporaire
         fs.unlinkSync(filePath);
         // Rediriger avec un message de succès

@@ -5,39 +5,45 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const db = require('./app/core/database.js');
-const { getApp } = require('./appFactory');
+const redis = require('./app/core/redis.js');
 
-// Railway/Heroku inject PORT; local/docker use APP_PORT or 3000
-const appPort = process.env.PORT;
+// Railway injects PORT; .env provides fallback for local/docker.
+const appPort = parseInt(process.env.PORT || '3000', 10);
 const host = '0.0.0.0'; // required for container: accept connections from outside (e.g. Railway proxy)
 
 (async () => {
   try {
-    console.log('Tentative de connexion à la base de données...');
     global.dbConnection = await db.connect();
-    console.log('Base de données connectée avec succès');
+    console.log('[db] Connected.');
 
+    await redis.connect();
+
+    // Require AFTER Redis is connected so that modules like rateLimiter.js
+    // see isReady() = true and create their stores with RedisStore.
+    const { getApp } = require('./appFactory');
     const app = getApp();
     const server = app.listen(appPort, host);
     console.log(`App listening at http://${host}:${appPort}`);
 
     const gracefulShutdown = (signal) => {
       console.log(`${signal} received, shutting down gracefully...`);
-      server.close(() => {
+
+      // Force exit after 10s if connections don't close (keep-alive clients, SSE, etc.)
+      const forceExitTimer = setTimeout(() => {
+        console.error('[shutdown] Timeout reached — forcing exit.');
+        process.exit(1);
+      }, 10000);
+      forceExitTimer.unref(); // Don't keep process alive if everything else closes first
+
+      server.close(async () => {
         console.log('HTTP server closed.');
-        if (global.dbConnection && global.dbConnection.end) {
-          global.dbConnection
-            .end()
-            .then(() => {
-              console.log('Database pool closed.');
-              process.exit(0);
-            })
-            .catch((err) => {
-              console.error('Error closing database pool:', err);
-              process.exit(1);
-            });
-        } else {
+        try {
+          await redis.disconnect();
+          if (global.dbConnection && global.dbConnection.end) await global.dbConnection.end();
           process.exit(0);
+        } catch (err) {
+          console.error('Error during shutdown:', err);
+          process.exit(1);
         }
       });
     };

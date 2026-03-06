@@ -8,6 +8,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
 
   db:
     image: mysql:8.0
@@ -28,5 +30,21 @@ services:
       retries: 15
       start_period: 45s
 
+  redis:
+    image: redis:7-alpine
+    container_name: web_vocab_redis
+    restart: unless-stopped
+    # volatile-lru: only evict keys that have a TTL set (sessions) when memory is full.
+    # Never evicts sessions randomly — safer than the default (noeviction or allkeys-lru).
+    command: redis-server --maxmemory-policy volatile-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
 volumes:
   db_data:
+  redis_data:

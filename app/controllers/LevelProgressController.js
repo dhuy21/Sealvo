@@ -1,4 +1,5 @@
 const learningModel = require('../models/learning');
+const cache = require('../core/cache');
 
 class LevelProgressController {
   constructor() {
@@ -93,6 +94,9 @@ class LevelProgressController {
           // Reset progress for this level
           delete progress[currentLevel];
           await this.saveUserLevelProgress(req.session.user.id, progress);
+
+          // Invalidate dashboard cache since word levels changed
+          await cache.del(`dashboard:${req.session.user.id}`);
 
           return res.json({
             success: true,

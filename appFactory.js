@@ -5,6 +5,8 @@ const route = require('./app/routes');
 const { engine } = require('express-handlebars');
 const { escapeHelper } = require('./app/middleware/sanitization');
 const { initializeMiddleware } = require('./app/middleware');
+const { isReady: redisReady } = require('./app/core/redis');
+const { globalLimiter } = require('./app/middleware/rateLimiter');
 
 /**
  * Create and return the Express app (middleware + routes).
@@ -17,6 +19,18 @@ function getApp() {
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
   app.use(express.static(path.join(__dirname, 'public')));
+
+  const morganFormat =
+    process.env.NODE_ENV === 'production'
+      ? ':remote-addr :method :url :status :res[content-length] - :response-time ms'
+      : ':method :url :status :response-time ms';
+
+  app.use(
+    morgan(morganFormat, {
+      skip: (req) => req.path === '/health',
+    })
+  );
+  app.use(globalLimiter);
 
   initializeMiddleware(app);
 
@@ -55,13 +69,15 @@ function getApp() {
   app.set('view engine', 'hbs');
   app.set('views', path.join(__dirname, 'app/views'));
 
-  // Healthcheck pour Railway / load balancers (sans auth, léger)
+  // Healthcheck pour Railway / load balancers (sans auth, léger).
+  // DB est critique (503 si down). Redis est optionnel : l'app fonctionne en fallback MemoryStore.
   app.get('/health', (req, res) => {
-    res.status(200).json({ ok: true });
+    const dbOk = !!global.dbConnection;
+    const redisOk = redisReady();
+    res.status(dbOk ? 200 : 503).json({ ok: dbOk, db: dbOk, redis: redisOk });
   });
 
   route(app);
-  app.use(morgan('combined'));
 
   return app;
 }
