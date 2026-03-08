@@ -3,6 +3,7 @@ const learningModel = require('../models/learning');
 const geminiService = require('../services/gemini');
 const { setFlash } = require('../middleware/flash');
 const cache = require('../core/cache');
+const CACHE_TTL = require('../config/cache');
 
 class WordController {
   async monVocabs(req, res) {
@@ -12,12 +13,16 @@ class WordController {
         return res.redirect('/login');
       }
       const package_id = req.query.package;
-      const words = await wordModel.findWordsByPackageId(package_id);
+      let words = await cache.get(`words:${package_id}`);
+      if (!words) {
+        words = await wordModel.findWordsByPackageId(package_id);
+        await cache.set(`words:${package_id}`, words, CACHE_TTL.WORDS);
+      }
 
       const wordsByLevel = {};
       words.forEach((word) => {
         const level = word.level;
-        word.example = word.example.replace(/\*\*([^*]+)\*\*/g, '$1');
+        word.example = (word.example || '').replace(/\*\*([^*]+)\*\*/g, '$1');
         if (!wordsByLevel[level]) {
           wordsByLevel[level] = [];
         }
@@ -184,7 +189,7 @@ class WordController {
       }
 
       if (successCount > 0) {
-        await cache.del(`dashboard:${req.session.user.id}`);
+        await cache.del([`dashboard:${req.session.user.id}`, `words:${package_id}`]);
       }
 
       res.status(200).json({
@@ -213,7 +218,7 @@ class WordController {
       const count = await wordModel.deleteAllWords(package_id);
 
       if (count) {
-        await cache.del(`dashboard:${req.session.user.id}`);
+        await cache.del([`dashboard:${req.session.user.id}`, `words:${package_id}`]);
         res.status(200).json({
           success: true,
           message: `Le(s) mot(s) supprimé(s) avec succès`,
@@ -260,7 +265,7 @@ class WordController {
       }
 
       await wordModel.deleteWord(detail_id, package_id);
-      await cache.del(`dashboard:${req.session.user.id}`);
+      await cache.del([`dashboard:${req.session.user.id}`, `words:${package_id}`]);
 
       res.json({
         success: true,
@@ -292,7 +297,7 @@ class WordController {
         return res.redirect(`/monVocabs?package=${package_id}`);
       }
 
-      if (word.package_id !== package_id) {
+      if (word.package_id != package_id) {
         return res.status(403).render('error', {
           title: 'Accès refusé',
           user: req.session.user,
@@ -425,7 +430,7 @@ class WordController {
       }
 
       await wordModel.updateWord(wordData, detail_id, package_id);
-      await cache.del(`dashboard:${req.session.user.id}`);
+      await cache.del([`dashboard:${req.session.user.id}`, `words:${package_id}`]);
 
       res.json({
         success: true,
@@ -451,13 +456,16 @@ class WordController {
         return res.redirect('/login');
       }
 
-      const words = await wordModel.findWordsByPackageId(package_id);
+      let words = await cache.get(`words:${package_id}`);
+      if (!words) {
+        words = await wordModel.findWordsByPackageId(package_id);
+        await cache.set(`words:${package_id}`, words, CACHE_TTL.WORDS);
+      }
       const wordIdsToReview = await learningModel.findWordsTodayToLearn(package_id);
 
-      // Add dueToday flag to each word
       words.forEach((word) => {
         word.dueToday = wordIdsToReview.some((item) => item.detail_id === word.detail_id);
-        word.example = word.example.replace(/\*\*([^*]+)\*\*/g, '$1');
+        word.example = (word.example || '').replace(/\*\*([^*]+)\*\*/g, '$1');
       });
 
       res.render('learnVocabs', {

@@ -42,19 +42,9 @@ const sanitizationUtils = {
   sanitizeText: (text) => {
     if (!text || typeof text !== 'string') return '';
 
-    let clean = purify.sanitize(text, {
-      ALLOWED_TAGS: ['b', 'i', 'em', 'strong'],
+    const clean = purify.sanitize(text, {
+      ALLOWED_TAGS: [],
       ALLOWED_ATTR: [],
-    });
-
-    clean = clean.replace(/[<>'"&]/g, (match) => {
-      const entities = {
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        '&': '&amp;',
-      };
-      return entities[match];
     });
 
     return clean.trim();
@@ -63,9 +53,11 @@ const sanitizationUtils = {
   sanitizeObject: (obj, fields = {}) => {
     if (!obj || typeof obj !== 'object') return obj;
 
+    const SKIP_FIELDS = ['password', 'password2', 'currentPassword', 'newPassword'];
     const sanitized = { ...obj };
 
     for (const [key, value] of Object.entries(sanitized)) {
+      if (SKIP_FIELDS.includes(key)) continue;
       if (typeof value === 'string') {
         switch (fields[key] || 'text') {
           case 'username':

@@ -98,6 +98,7 @@ async function getPool() {
     database: requireEnv('MYSQL_DATABASE'),
     multipleStatements: true,
     connectionLimit: 1,
+    connectTimeout: 30000,
   });
 }
 

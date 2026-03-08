@@ -22,6 +22,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const validFileTypes = ['.xlsx', '.xls'];
     const ext = path.extname(file.originalname).toLowerCase();
@@ -187,9 +188,8 @@ class ImportFile {
           await wordModel.create(wordData, package_id);
           successCount++;
         }
-        // Invalidate dashboard cache if words were imported
         if (successCount > 0) {
-          await cache.del(`dashboard:${req.session.user.id}`);
+          await cache.del([`dashboard:${req.session.user.id}`, `words:${package_id}`]);
         }
 
         fs.unlinkSync(filePath);

@@ -103,6 +103,7 @@ class PackageController {
         `pkgs:user:${req.session.user.id}`,
         'pkgs:shared',
         `dashboard:${req.session.user.id}`,
+        `words:${packageId}`,
       ]);
 
       res.json({
@@ -254,6 +255,7 @@ class PackageController {
         `pkgs:user:${req.session.user.id}`,
         'pkgs:shared',
         `dashboard:${req.session.user.id}`,
+        `words:${newPackage}`,
       ]);
 
       res.json({

@@ -1,10 +1,8 @@
-const wordModel = require('../../models/words');
 const learningModel = require('../../models/learning');
 const levelGame = 'x';
 
 class VocabQuizController {
   constructor() {
-    // Bind all methods to maintain 'this' context
     this.getQuestionForVocabQuiz = this.getQuestionForVocabQuiz.bind(this);
     this.shuffleArray = this.shuffleArray.bind(this);
     this.getAvailableWordsCount = this.getAvailableWordsCount.bind(this);
@@ -18,12 +16,7 @@ class VocabQuizController {
       const package_id = req.query.package;
       const optionsCount = 6;
 
-      const detailWordsIds = await learningModel.findWordsByLevel(package_id, levelGame);
-      let words = [];
-      for (const detailWordId of detailWordsIds) {
-        const word = await wordModel.findById(detailWordId.detail_id);
-        words.push(word);
-      }
+      const words = await learningModel.findWordsWithDetailsByLevel(package_id, levelGame);
 
       if (words.length < optionsCount) {
         return res.status(404).json({

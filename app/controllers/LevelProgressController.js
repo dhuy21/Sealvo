@@ -1,5 +1,6 @@
 const learningModel = require('../models/learning');
 const cache = require('../core/cache');
+const CACHE_TTL = require('../config/cache');
 
 class LevelProgressController {
   constructor() {
@@ -81,8 +82,7 @@ class LevelProgressController {
           delete progress[currentLevel];
           await this.saveUserLevelProgress(req.session.user.id, progress);
 
-          // Invalidate dashboard cache since word levels changed
-          await cache.del(`dashboard:${req.session.user.id}`);
+          await cache.del([`dashboard:${req.session.user.id}`, `words:${package_id}`]);
 
           return res.json({
             success: true,
@@ -173,34 +173,13 @@ class LevelProgressController {
     }
   }
 
-  /**
-   * Helper method to get user's level progress from session
-   */
   async getUserLevelProgress(userId) {
-    const sessionKey = `level_progress_${userId}`;
-
-    if (!global.levelProgress) {
-      global.levelProgress = {};
-    }
-
-    if (!global.levelProgress[sessionKey]) {
-      global.levelProgress[sessionKey] = {};
-    }
-
-    return global.levelProgress[sessionKey];
+    const cached = await cache.get(`lvlprog:${userId}`);
+    return cached || {};
   }
 
-  /**
-   * Helper method to save user's level progress to session
-   */
   async saveUserLevelProgress(userId, progress) {
-    const sessionKey = `level_progress_${userId}`;
-
-    if (!global.levelProgress) {
-      global.levelProgress = {};
-    }
-
-    global.levelProgress[sessionKey] = progress;
+    await cache.set(`lvlprog:${userId}`, progress, CACHE_TTL.SESSION);
   }
 
   /**

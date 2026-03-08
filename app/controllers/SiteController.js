@@ -1,4 +1,5 @@
 const MailersendService = require('../services/mailersend');
+const { encode } = require('html-entities');
 
 class SiteController {
   index(req, res) {
@@ -33,10 +34,10 @@ class SiteController {
         });
       }
 
-      const feedbackContent = `<p>Type: ${type}</p>
-                         <p>Sujet: ${subject}</p>
-                         <p>Contenu: ${content}</p>
-                         <p>Email: ${email || 'Non fourni'}</p>
+      const feedbackContent = `<p>Type: ${encode(type)}</p>
+                         <p>Sujet: ${encode(subject)}</p>
+                         <p>Contenu: ${encode(content)}</p>
+                         <p>Email: ${encode(email || 'Non fourni')}</p>
                          <p>Date: ${new Date()}</p>`;
 
       const toEmail = process.env.USER_GMAIL;

@@ -11,10 +11,13 @@ describe('Cache TTL config', () => {
     'DASHBOARD',
     'PACKAGES_USER',
     'PACKAGES_SHARED',
+    'WORDS',
     'LEADERBOARD',
     'GAME_STATS',
+    'HIGH_SCORE',
     'TTS_VOICES',
     'TTS_AUDIO',
+    'SESSION',
   ];
 
   it('exports all required TTL keys', () => {

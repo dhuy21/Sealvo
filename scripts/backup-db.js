@@ -90,7 +90,7 @@ function makeS3Client(cfg) {
     region: cfg.region,
     endpoint: cfg.endpoint,
     credentials: { accessKeyId: cfg.accessKeyId, secretAccessKey: cfg.secretAccessKey },
-    forcePathStyle: false,
+    forcePathStyle: true,
   });
 }
 

@@ -157,6 +157,23 @@ class Learning {
     return rows;
   }
 
+  async findWordsWithDetailsByLevel(package_id, levelGame) {
+    const intervalDate = this.getInterval(levelGame);
+    const [rows] = await global.dbConnection.execute(
+      `SELECT wd.detail_id AS id, w.word, w.language_code, w.subject,
+              wd.type, wd.meaning, wd.synonyms, wd.antonyms,
+              wd.example, wd.grammar, wd.pronunciation,
+              ln.level, ln.package_id
+       FROM words w
+       JOIN word_details wd ON w.word_id = wd.word_id
+       JOIN learning ln ON wd.detail_id = ln.detail_id
+       WHERE ln.package_id = ? AND ln.level = ?
+         AND DATE_ADD(DATE(ln.date_memorized), INTERVAL ? DAY) <= CURDATE()`,
+      [package_id, levelGame, intervalDate]
+    );
+    return rows;
+  }
+
   async countWordsToReviewTodayByPackage(user_id) {
     const [rows] = await global.dbConnection.execute(
       `SELECT COUNT(*) AS num_words, p.package_id, p.package_name

@@ -60,7 +60,7 @@ describe('PackageController — cache invalidation', () => {
   });
 
   describe('deletePackagePost', () => {
-    it('invalidates user packages, shared packages, AND dashboard cache', async () => {
+    it('invalidates user packages, shared packages, dashboard, AND words cache', async () => {
       packageModel.findPackageById.mockResolvedValue({ user_id: 'u1' });
       packageModel.deletePackage.mockResolvedValue(undefined);
       const req = makeReq({ params: { id: '1' } });
@@ -68,7 +68,12 @@ describe('PackageController — cache invalidation', () => {
 
       await PackageController.deletePackagePost(req, res);
 
-      expect(cache.del).toHaveBeenCalledWith(['pkgs:user:u1', 'pkgs:shared', 'dashboard:u1']);
+      expect(cache.del).toHaveBeenCalledWith([
+        'pkgs:user:u1',
+        'pkgs:shared',
+        'dashboard:u1',
+        'words:1',
+      ]);
     });
   });
 
@@ -99,7 +104,7 @@ describe('PackageController — cache invalidation', () => {
   });
 
   describe('copyPackagePost', () => {
-    it('invalidates user packages, shared packages, AND dashboard', async () => {
+    it('invalidates user packages, shared packages, dashboard, AND new words cache', async () => {
       const wordModel = require('../../app/models/words');
       packageModel.findPackageById.mockResolvedValue({ mode: 'public', user_id: 'other' });
       packageModel.create.mockResolvedValue(99);
@@ -109,7 +114,12 @@ describe('PackageController — cache invalidation', () => {
 
       await PackageController.copyPackagePost(req, res);
 
-      expect(cache.del).toHaveBeenCalledWith(['pkgs:user:u1', 'pkgs:shared', 'dashboard:u1']);
+      expect(cache.del).toHaveBeenCalledWith([
+        'pkgs:user:u1',
+        'pkgs:shared',
+        'dashboard:u1',
+        'words:99',
+      ]);
     });
   });
 });
@@ -120,7 +130,7 @@ describe('WordController — cache invalidation', () => {
   const WordController = require('../../app/controllers/WordController');
 
   describe('deleteWord', () => {
-    it('invalidates dashboard cache after successful deletion', async () => {
+    it('invalidates dashboard AND words cache after successful deletion', async () => {
       wordModel.findUsersByWordId.mockResolvedValue({ package_id: '1' });
       wordModel.deleteWord.mockResolvedValue(undefined);
       const req = makeReq({ params: { id: '1' }, query: { package: '1' } });
@@ -128,19 +138,19 @@ describe('WordController — cache invalidation', () => {
 
       await WordController.deleteWord(req, res);
 
-      expect(cache.del).toHaveBeenCalledWith('dashboard:u1');
+      expect(cache.del).toHaveBeenCalledWith(['dashboard:u1', 'words:1']);
     });
   });
 
   describe('deleteAllWords', () => {
-    it('invalidates dashboard cache when words are deleted', async () => {
+    it('invalidates dashboard AND words cache when words are deleted', async () => {
       wordModel.deleteAllWords.mockResolvedValue(5);
       const req = makeReq({ query: { package: '1' } });
       const res = mockRes();
 
       await WordController.deleteAllWords(req, res);
 
-      expect(cache.del).toHaveBeenCalledWith('dashboard:u1');
+      expect(cache.del).toHaveBeenCalledWith(['dashboard:u1', 'words:1']);
     });
 
     it('does NOT invalidate cache when no words existed', async () => {
@@ -155,7 +165,7 @@ describe('WordController — cache invalidation', () => {
   });
 
   describe('editWordPost', () => {
-    it('invalidates dashboard cache after successful edit', async () => {
+    it('invalidates dashboard AND words cache after successful edit', async () => {
       const geminiService = require('../../app/services/gemini');
       wordModel.findById.mockResolvedValue({ package_id: '1' });
       wordModel.updateWord.mockResolvedValue(undefined);
@@ -177,7 +187,7 @@ describe('WordController — cache invalidation', () => {
 
       await WordController.editWordPost(req, res);
 
-      expect(cache.del).toHaveBeenCalledWith('dashboard:u1');
+      expect(cache.del).toHaveBeenCalledWith(['dashboard:u1', 'words:1']);
     });
   });
 });
@@ -199,8 +209,11 @@ describe('GameController — cache invalidation', () => {
 
       await GameController.saveScore(req, res);
 
-      // First: invalidate old cached data
-      expect(cache.del).toHaveBeenCalledWith(['gamestats:u1', 'lb:word_scramble']);
+      expect(cache.del).toHaveBeenCalledWith([
+        'gamestats:u1',
+        'lb:word_scramble',
+        'highscore:u1:word_scramble',
+      ]);
       // Then: re-cache fresh stats
       expect(cache.set).toHaveBeenCalledWith(
         'gamestats:u1',
@@ -262,5 +275,52 @@ describe('LearningController — cache invalidation', () => {
     await LearningController.checkAndUpdateStreak(req, res);
 
     expect(cache.del).not.toHaveBeenCalled();
+  });
+});
+
+// ── LevelProgressController — words cache invalidation ──────────
+describe('LevelProgressController — words cache invalidation on level-up', () => {
+  const learningModel = require('../../app/models/learning');
+  const LevelProgressController = require('../../app/controllers/LevelProgressController');
+
+  it('invalidates dashboard AND words cache when all games at a level are completed', async () => {
+    learningModel.findWordsTodayByLevel.mockResolvedValue([{ detail_id: 10 }, { detail_id: 20 }]);
+    learningModel.updateLevelWord.mockResolvedValue(undefined);
+
+    // Simulate: flash_match, vocab_quiz already completed; test_pronunciation triggers level-up
+    cache.get.mockResolvedValueOnce({
+      x: { flash_match: true, vocab_quiz: true },
+    });
+    cache.set.mockResolvedValue(true);
+
+    const req = makeReq({
+      body: { game_type: 'test_pronunciation', completed: true },
+      query: { package: '55' },
+    });
+    const res = mockRes();
+
+    await LevelProgressController.trackGameCompletion(req, res);
+
+    expect(cache.del).toHaveBeenCalledWith(['dashboard:u1', 'words:55']);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ level_completed: true, words_updated: 2 })
+    );
+  });
+
+  it('does NOT invalidate words cache when level is NOT yet completed', async () => {
+    // Only flash_match completed, vocab_quiz + test_pronunciation missing
+    cache.get.mockResolvedValueOnce({});
+    cache.set.mockResolvedValue(true);
+
+    const req = makeReq({
+      body: { game_type: 'flash_match', completed: true },
+      query: { package: '55' },
+    });
+    const res = mockRes();
+
+    await LevelProgressController.trackGameCompletion(req, res);
+
+    expect(cache.del).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ level_completed: false }));
   });
 });

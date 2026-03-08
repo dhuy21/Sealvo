@@ -1,10 +1,8 @@
 const learningModel = require('../../models/learning');
-const wordModel = require('../../models/words');
 const levelGame = '0';
 
 class PhraseCompletionController {
   constructor() {
-    // Bind all methods to maintain 'this' context
     this.getPhrasesForCompletion = this.getPhrasesForCompletion.bind(this);
     this.getAvailableWordsCount = this.getAvailableWordsCount.bind(this);
   }
@@ -18,10 +16,7 @@ class PhraseCompletionController {
       const package_id = req.query.package;
       const wordCount = await learningModel.countUserWordsByLevel(package_id, levelGame);
 
-      return res.json({
-        success: true,
-        count: wordCount,
-      });
+      return res.json({ success: true, count: wordCount });
     } catch (error) {
       console.error('Erreur lors du comptage des mots disponibles:', error);
       return res
@@ -37,12 +32,7 @@ class PhraseCompletionController {
       }
       const package_id = req.query.package;
 
-      const detailWordsIds = await learningModel.findWordsByLevel(package_id, levelGame);
-      let words = [];
-      for (const detailWordId of detailWordsIds) {
-        const word = await wordModel.findById(detailWordId.detail_id);
-        words.push(word);
-      }
+      const words = await learningModel.findWordsWithDetailsByLevel(package_id, levelGame);
 
       let phrases = [];
 
