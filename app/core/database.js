@@ -2,6 +2,9 @@ const mysql = require('mysql2/promise');
 
 let pool = null;
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 2000;
+
 async function connect() {
   try {
     pool = mysql.createPool({
@@ -12,7 +15,8 @@ async function connect() {
       port: process.env.MYSQLPORT,
       connectionLimit: 10,
       queueLimit: 0,
-      idleTimeout: 300000, // 5 minutes
+      connectTimeout: 30000,
+      idleTimeout: 300000,
       keepAliveInitialDelay: 0,
       enableKeepAlive: true,
     });
@@ -27,20 +31,49 @@ async function connect() {
   }
 }
 
+function isRetryable(err) {
+  const codes = ['ETIMEDOUT', 'ECONNREFUSED', 'ECONNRESET', 'EPIPE', 'PROTOCOL_CONNECTION_LOST'];
+  return codes.includes(err.code) || codes.includes(err?.cause?.code);
+}
+
+async function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function createConnectionWrapper(pool) {
-  return {
-    async execute(sql, params) {
+  async function executeWithRetry(sql, params) {
+    let lastErr;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       let connection;
       try {
         connection = await pool.getConnection();
         const result = await connection.execute(sql, params);
         return result;
+      } catch (err) {
+        lastErr = err;
+        if (attempt < MAX_RETRIES && isRetryable(err)) {
+          console.warn(
+            `[db] Query failed (attempt ${attempt}/${MAX_RETRIES}): ${err.code} — retrying in ${RETRY_DELAY_MS}ms...`
+          );
+          await sleep(RETRY_DELAY_MS);
+        } else {
+          throw err;
+        }
       } finally {
         if (connection) {
-          connection.release();
+          try {
+            connection.release();
+          } catch {
+            /* connection already released or destroyed */
+          }
         }
       }
-    },
+    }
+    throw lastErr;
+  }
+
+  return {
+    execute: executeWithRetry,
 
     async beginTransaction() {
       const connection = await pool.getConnection();
