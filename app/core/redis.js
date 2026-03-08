@@ -28,8 +28,8 @@ async function connect() {
     url,
     socket: {
       reconnectStrategy: (retries) => {
-        if (retries > 10) return new Error('[redis] Max reconnect attempts reached — giving up.');
-        return Math.min(retries * 200, 3000);
+        if (retries > 30) return new Error('[redis] Max reconnect attempts reached — giving up.');
+        return Math.min(retries * 500, 10000);
       },
     },
   })
@@ -43,6 +43,7 @@ async function connect() {
     })
     .on('end', () => {
       ready = false;
+      client = null;
     });
 
   try {

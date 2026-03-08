@@ -19,8 +19,11 @@ module.exports = {
   DASHBOARD: 300, // 5 min — invalidated on word/package/game writes
   PACKAGES_USER: 300, // 5 min — invalidated on package CRUD
   PACKAGES_SHARED: 600, // 10 min — public/protected packages, less frequent changes
+  WORDS: 300, // 5 min — invalidated on word CRUD; per-package word list
   LEADERBOARD: 120, // 2 min — global data from all users, accept some staleness
   GAME_STATS: 300, // 5 min — per-user, invalidated on score save
+  HIGH_SCORE: 300, // 5 min — per-user per-game, invalidated on score save
   TTS_VOICES: 21600, // 6h — Google adds new voices ~quarterly; no invalidation needed
   TTS_AUDIO: 86400, // 24h — deterministic: same text + language = same audio
+  SESSION: 10800, // 3h — aligned with session maxAge; level progress survives redeploys
 };

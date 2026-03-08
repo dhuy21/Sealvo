@@ -6,7 +6,6 @@ const sanitizationRoutes = {
     fields: {
       username: 'username',
       email: 'email',
-      password: 'text',
     },
   },
   googleAuth: {

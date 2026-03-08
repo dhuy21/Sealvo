@@ -71,7 +71,15 @@ class GameController {
         .toLowerCase()
         .replace(/^_/, '');
 
-      const highScore = await gameScoresModel.getHighScore(req.session.user.id, dbGameType);
+      const hsKey = `highscore:${req.session.user.id}:${dbGameType}`;
+      let hsWrapper = await cache.get(hsKey);
+      let highScore;
+      if (hsWrapper === null) {
+        highScore = await gameScoresModel.getHighScore(req.session.user.id, dbGameType);
+        await cache.set(hsKey, { v: highScore }, CACHE_TTL.HIGH_SCORE);
+      } else {
+        highScore = hsWrapper.v;
+      }
 
       let leaderboard = await cache.get(`lb:${dbGameType}`);
       if (!leaderboard) {
@@ -182,7 +190,11 @@ class GameController {
       const userId = req.session.user.id;
       const scoreId = await gameScoresModel.saveScore(userId, game_type, score, details || {});
 
-      await cache.del([`gamestats:${userId}`, `lb:${game_type}`]);
+      await cache.del([
+        `gamestats:${userId}`,
+        `lb:${game_type}`,
+        `highscore:${userId}:${game_type}`,
+      ]);
 
       const stats = await gameScoresModel.getUserGameStats(userId);
       await cache.set(`gamestats:${userId}`, stats, CACHE_TTL.GAME_STATS);

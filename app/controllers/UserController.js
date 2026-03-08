@@ -284,6 +284,7 @@ class UserController {
       if (data.email) req.session.user.email = data.email;
       if (data.ava) req.session.user.avatar = data.ava;
 
+      await cache.del(`dashboard:${userId}`);
       res.json({ success: true, message: 'Informations modifiées avec succès' });
     } catch (error) {
       console.error('Edit error:', error);

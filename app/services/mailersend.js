@@ -58,7 +58,7 @@ class MailersendService {
   }
 
   async generateEmailVerification(username, token) {
-    const verificationLink = `http://${process.env.DOMAIN}/auth/verify/${token}`;
+    const verificationLink = `${process.env.BASE_URL}auth/verify/${token}`;
     const templatePath = path.join(__dirname, '../views/mails/mailVerification.hbs');
     const template = handlebars.compile(fs.readFileSync(templatePath, 'utf8'));
     return template({ username, verificationLink });
@@ -100,7 +100,7 @@ class MailersendService {
   }
 
   async generateResetPasswordEmail(username, token) {
-    const resetPasswordLink = `http://${process.env.DOMAIN}/login/resetPassword?token=${token}`;
+    const resetPasswordLink = `${process.env.BASE_URL}login/resetPassword?token=${token}`;
     const templatePath = path.join(__dirname, '../views/mails/mailResetPassword.hbs');
     const template = handlebars.compile(fs.readFileSync(templatePath, 'utf8'));
     return template({ username, resetPasswordLink });
