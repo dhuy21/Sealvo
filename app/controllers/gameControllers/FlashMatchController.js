@@ -1,4 +1,3 @@
-const gameScoresModel = require('../../models/game_scores');
 const wordModel = require('../../models/words');
 const learningModel = require('../../models/learning');
 const levelGame = 'x';
@@ -11,18 +10,15 @@ class FlashMatchController {
 
   async getCardsForFlashMatch(req, res) {
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
       }
       const package_id = req.query.package;
-      // Déterminer le nombre de paires en fonction de la difficulté
-      let pairsCount = 15; // Par défaut
+      let pairsCount = 15;
 
-      const minPairsCount = 4; // Par défaut
-      const maxPairsCount = 15; // Par défaut
+      const minPairsCount = 4;
+      const maxPairsCount = 15;
 
-      // Récupérer tous les mots de l'utilisateur
       const detailWordsIds = await learningModel.findWordsByLevel(package_id, levelGame);
       let words = [];
       for (const detailWordId of detailWordsIds) {
@@ -40,21 +36,17 @@ class FlashMatchController {
         pairsCount = words.length;
       }
 
-      // Mélanger les mots et sélectionner le nombre de paires requis
       const shuffledWords = this.shuffleArray([...words]);
       const selectedWords = shuffledWords.slice(0, pairsCount);
 
-      // Créer les cartes
       const cards = [];
       selectedWords.forEach((word, index) => {
-        // Carte du mot
         cards.push({
           pairId: index,
           type: 'word',
           content: word.word,
         });
 
-        // Carte de la définition
         let meaning = '';
         if (word.type) {
           meaning += `${word.type} : `;

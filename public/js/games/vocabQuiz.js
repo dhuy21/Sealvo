@@ -14,11 +14,8 @@ document.addEventListener('DOMContentLoaded', function () {
   let score = 0;
   let correctAnswers = 0;
   let totalQuestions = 10;
-  let gameActive = false;
   let currentTime = 0;
   let startTime;
-  let timerInterval;
-  let optionsCount = 6; // Par défaut
   let availableWords = 0;
   const maxQuestions = 300;
 
@@ -51,14 +48,12 @@ document.addEventListener('DOMContentLoaded', function () {
   // Initialize modern lovely quiz effects
   initializeQuizEffects();
 
-  // Fonction pour initialiser les effets modernes et adorables du quiz
   function initializeQuizEffects() {
     createLovelyFloatingElements();
     initializeAudio();
     startModernBackgroundAnimation();
   }
 
-  // Fonction pour créer des éléments flottants adorables
   function createLovelyFloatingElements() {
     for (let i = 0; i < 6; i++) {
       const element = document.createElement('div');
@@ -76,22 +71,19 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour démarrer l'animation de fond moderne
   function startModernBackgroundAnimation() {
     const container = document.querySelector('.game-container');
     container.classList.add('enhanced-quiz-mode');
   }
 
-  // Fonction pour initialiser le contexte audio
   function initializeAudio() {
     try {
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    } catch (e) {
-      console.log('Web Audio API not supported');
+    } catch {
+      // Web Audio API not supported
     }
   }
 
-  // Fonction pour jouer un son de succès doux et moderne
   function playSuccessSound() {
     if (!audioContext) return;
 
@@ -120,7 +112,6 @@ document.addEventListener('DOMContentLoaded', function () {
     oscillator2.stop(audioContext.currentTime + 0.5);
   }
 
-  // Fonction pour jouer un son d'erreur doux
   function playErrorSound() {
     if (!audioContext) return;
 
@@ -140,7 +131,6 @@ document.addEventListener('DOMContentLoaded', function () {
     oscillator.stop(audioContext.currentTime + 0.5);
   }
 
-  // Fonction pour créer des particules adorables
   function createLovelyParticles(isCorrect = true) {
     const colors = isCorrect
       ? ['#ffb6c1', '#ffc0cb', '#dda0dd', '#98fb98']
@@ -195,7 +185,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour ajouter l'animation de nouvelle question moderne
   function addNewQuestionAnimation() {
     const quizWordContainer = document.querySelector('.quiz-word-container');
     quizWordContainer.classList.add('new-question');
@@ -209,7 +198,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 1800);
   }
 
-  // Fonction pour créer un effet de vague douce
   function createGentleWaveEffect(isCorrect = true) {
     const wave = document.createElement('div');
     wave.className = isCorrect ? 'lovely-success-wave' : 'lovely-error-wave';
@@ -252,7 +240,6 @@ document.addEventListener('DOMContentLoaded', function () {
     };
   }
 
-  // Fonction pour arrêter les effets
   function stopEffects() {
     activeGameScreen.classList.remove('quiz-active');
     document.querySelector('.game-container').classList.remove('enhanced-quiz-mode');
@@ -266,7 +253,6 @@ document.addEventListener('DOMContentLoaded', function () {
     animationParticles = [];
   }
 
-  // Fonction pour démarrer le jeu
   function startGame() {
     // Vérifier le nombre de mots disponibles
     fetch(`/games/vocabQuiz/available-words?package=${packageId}`, {
@@ -295,16 +281,12 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-  // Fonction pour initialiser le jeu après avoir vérifié les mots disponibles
   function initializeGame() {
-    // Réinitialiser les variables
     score = 0;
     correctAnswers = 0;
     currentQuestionIndex = 0;
-    gameActive = true;
     currentTime = 0;
     startTime = null;
-    timerInterval = null;
     // Show loader immediately when starting game
     quizWordDisplay.textContent = '';
     loader.removeAttribute('style');
@@ -316,25 +298,20 @@ document.addEventListener('DOMContentLoaded', function () {
     activeGameScreen.classList.add('quiz-active');
     document.querySelector('.game-container').classList.add('enhanced-quiz-mode');
 
-    // Mettre à jour l'affichage
     currentScoreDisplay.textContent = score;
     progressDisplay.textContent = `1/${totalQuestions}`;
 
-    // Charger la première question with shorter delay
     loadQuestions();
 
-    // Afficher l'écran de jeu actif
     preGameScreen.classList.remove('active');
     activeGameScreen.classList.add('active');
     postGameScreen.classList.remove('active');
   }
 
-  // Fonction pour charger la prochaine question
   function loadQuestions() {
     // Add modern lovely new question animation
     addNewQuestionAnimation();
 
-    // Réinitialiser l'état des boutons
     nextQuestionBtn.disabled = true;
     resultMessage.textContent = '';
     resultMessage.className = 'result-message';
@@ -372,9 +349,8 @@ document.addEventListener('DOMContentLoaded', function () {
         // Générer les options
         generateOptions(currentQuestion.options, currentQuestion.correctIndex);
 
-        // Démarrer le timer
         startTime = Date.now();
-        timerInterval = setInterval(updateTimer, 1000);
+        setInterval(updateTimer, 1000);
 
         // Mettre à jour la progression avec animation plus visible
         currentQuestionIndex++;
@@ -393,13 +369,11 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-  // Fonction pour mettre à jour le timer
   function updateTimer() {
     const elapsed = Math.floor((Date.now() - startTime) / 1000);
     currentTime = elapsed;
   }
 
-  // Fonction pour générer les options
   function generateOptions(options, correctIndex) {
     optionsContainer.innerHTML = '';
     let currentSelectedOptions = [];
@@ -431,7 +405,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // Fonction pour vérifier la réponse (ou les réponses)
   function checkAnswer(selectedIndexes, correctIndexes) {
     const options = document.querySelectorAll('.option-btn');
 
@@ -495,20 +468,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour passer à la question suivante
   function goToNextQuestion() {
     if (currentQuestionIndex < totalQuestions) {
       // Add modern lovely new question animation
       addNewQuestionAnimation();
 
-      // Réinitialiser l'état des boutons
       nextQuestionBtn.disabled = true;
       resultMessage.textContent = '';
       resultMessage.className = 'result-message';
 
       currentQuestion = questionWords[currentQuestionIndex];
 
-      // Mettre à jour l'affichage de la question avec animation plus visible
       quizWordDisplay.textContent = currentQuestion.word;
       quizWordDisplay.classList.add('revealing');
       setTimeout(() => {
@@ -530,10 +500,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour terminer le jeu
   function endGame() {
-    gameActive = false;
-
     // Stop effects
     stopEffects();
 
@@ -554,7 +521,6 @@ document.addEventListener('DOMContentLoaded', function () {
       }, 3000);
     }
 
-    // Mettre à jour l'écran de fin de jeu
     finalScoreDisplay.textContent = score;
     correctAnswersDisplay.textContent = correctAnswers;
 
@@ -570,7 +536,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Track level progress
     trackLevelProgress(isSuccessful);
 
-    // Enregistrer le score
     saveScore(score);
 
     // Afficher le message de progression de niveau
@@ -588,22 +553,16 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
-    // Afficher l'écran de fin de jeu
-    console.log('Switching to post game screen...');
     setTimeout(() => {
       if (activeGameScreen) activeGameScreen.classList.remove('active');
       if (postGameScreen) postGameScreen.classList.add('active');
-      console.log('Post game screen should now be visible');
 
       // Lancer l'animation confetti simple
       launchConfetti();
     }, 1000);
   }
 
-  // Fonction pour enregistrer le score
   function saveScore(score) {
-    // Simuler l'enregistrement du score
-    // Dans une vraie implémentation, vous feriez un appel fetch à votre API
     fetch('/games/score', {
       method: 'POST',
       headers: {
@@ -620,15 +579,12 @@ document.addEventListener('DOMContentLoaded', function () {
       }),
     })
       .then((response) => response.json())
-      .then((data) => {
-        console.log('Score enregistré avec succès:', data);
-      })
+      .then(() => {})
       .catch((error) => {
         console.error("Erreur lors de l'enregistrement du score:", error);
       });
   }
 
-  // Fonction pour suivre la progression de niveau
   function trackLevelProgress(isSuccessful) {
     fetch(`/level-progress/track?package=${packageId}`, {
       method: 'POST',
@@ -642,8 +598,6 @@ document.addEventListener('DOMContentLoaded', function () {
     })
       .then((response) => response.json())
       .then((data) => {
-        console.log('Progression de niveau mise à jour:', data);
-
         // If all games for this level are completed and words were updated
         if (data.level_completed && data.words_updated > 0) {
           // You could show a notification or modal here
@@ -663,7 +617,6 @@ document.addEventListener('DOMContentLoaded', function () {
           if (finishLevelBtn) {
             finishLevelBtn.addEventListener('click', function () {
               window.location.href = `/games?package=${packageId}`;
-              console.log('Finish level button clicked');
             });
           }
         }
@@ -673,7 +626,6 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-  // Fonction pour lancer l'animation confetti avec confetti.js.org
   function launchConfetti() {
     const duration = 15 * 1000,
       animationEnd = Date.now() + duration;
@@ -712,7 +664,6 @@ document.addEventListener('DOMContentLoaded', function () {
     })();
   }
 
-  // Événements
   if (startGameBtn) {
     startGameBtn.addEventListener('click', startGame);
   }
@@ -727,28 +678,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Fonction de test pour forcer l'affichage de l'écran de fin (pour débogage)
   window.testEndGame = function () {
-    console.log('Testing end game...');
     correctAnswers = totalQuestions;
     endGame();
   };
 
   window.testFailedGame = function () {
-    console.log('Testing failed game...');
     correctAnswers = 0;
     endGame();
   };
 
-  // Ajouter un raccourci clavier pour tester (Ctrl+Shift+E)
   document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.shiftKey && e.key === 'E') {
-      console.log('Test end game triggered by keyboard shortcut');
       window.testEndGame();
     }
   });
 
   document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.shiftKey && e.key === 'F') {
-      console.log('Test failed game triggered by keyboard shortcut');
       window.testFailedGame();
     }
   });

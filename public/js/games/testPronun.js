@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', function () {
   let completedWords = 0;
   let totalAccuracy = 0;
   let perfectPronunciations = 0;
-  let wordsList = [];
 
   // Variables pour la reconnaissance vocale (Web Speech API) - Améliorées
   let recognition = null;
@@ -28,7 +27,6 @@ document.addEventListener('DOMContentLoaded', function () {
   // Variables pour les animations sonores
   let soundWavesContainer = null;
   let audioVisualizerContainer = null;
-  let floatingSoundIconsContainer = null;
   let recordingWavesContainer = null;
 
   // Éléments DOM
@@ -46,7 +44,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const accuracyMeter = document.getElementById('accuracyMeter');
   const recognizedText = document.getElementById('recognizedText');
   const feedbackText = document.getElementById('feedbackText');
-  const wordListContainer = document.getElementById('wordList');
   const loader = document.getElementById('loader');
   const finalScoreDisplay = document.getElementById('final-score');
   const finalTimeDisplay = document.getElementById('final-time');
@@ -68,7 +65,6 @@ document.addEventListener('DOMContentLoaded', function () {
   // Initialiser la gestion des gestes utilisateur pour Safari iOS
   initializeUserGestureHandling();
 
-  // Fonction pour initialiser les animations de vagues sonores
   function initializeSoundWaveAnimations() {
     const gameContainer = document.querySelector('.game-container');
     const animationParent = gameContainer || document.body;
@@ -77,14 +73,12 @@ document.addEventListener('DOMContentLoaded', function () {
     createRecordingWaves(animationParent);
   }
 
-  // Fonction pour initialiser la gestion des gestes utilisateur (Safari iOS)
   function initializeUserGestureHandling() {
     // Détecter les gestes utilisateur pour Safari iOS
     const userGestureEvents = ['touchstart', 'touchend', 'mousedown', 'keydown', 'click'];
 
     function handleUserGesture() {
       userGestureReceived = true;
-      console.log('Geste utilisateur détecté pour Safari iOS');
 
       // Retirer les écouteurs après le premier geste
       userGestureEvents.forEach((event) => {
@@ -142,7 +136,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour vérifier et demander les permissions microphone (Safari iOS)
   async function checkMicrophonePermissions() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       console.warn('getUserMedia non supporté');
@@ -171,7 +164,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour créer les vagues sonores de fond
   function createSoundWaves(container) {
     soundWavesContainer = document.createElement('div');
     soundWavesContainer.className = 'sound-waves';
@@ -185,7 +177,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour créer le visualiseur audio
   function createAudioVisualizer(container) {
     audioVisualizerContainer = document.createElement('div');
     audioVisualizerContainer.className = 'audio-visualizer';
@@ -199,7 +190,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour créer les vagues d'enregistrement
   function createRecordingWaves(container) {
     recordingWavesContainer = document.createElement('div');
     recordingWavesContainer.className = 'recording-waves';
@@ -213,21 +203,18 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour activer les vagues d'enregistrement
   function activateRecordingWaves() {
     if (recordingWavesContainer) {
       recordingWavesContainer.classList.add('active');
     }
   }
 
-  // Fonction pour désactiver les vagues d'enregistrement
   function deactivateRecordingWaves() {
     if (recordingWavesContainer) {
       recordingWavesContainer.classList.remove('active');
     }
   }
 
-  // Fonction pour activer l'effet de parole sur l'affichage du mot
   function activateSpeakingEffect() {
     if (currentWordDisplay) {
       currentWordDisplay.parentElement.classList.add('speaking');
@@ -239,7 +226,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour intensifier les animations pendant l'enregistrement
   function intensifyAudioAnimations() {
     if (audioVisualizerContainer) {
       audioVisualizerContainer.style.opacity = '0.6';
@@ -258,7 +244,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour normaliser les animations
   function normalizeAudioAnimations() {
     if (audioVisualizerContainer) {
       audioVisualizerContainer.style.opacity = '0.3';
@@ -298,9 +283,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (timerDisplay) timerDisplay.textContent = formatTime(elapsedTime);
   }
 
-  // Fonction pour démarrer le jeu
   async function startGame() {
-    // Réinitialiser les variables
     currentWord = null;
 
     gameActive = true;
@@ -308,9 +291,7 @@ document.addEventListener('DOMContentLoaded', function () {
     completedWords = 0;
     totalAccuracy = 0;
     perfectPronunciations = 0;
-    wordsList = [];
 
-    // Mettre à jour l'affichage
     if (wordsCountDisplay) wordsCountDisplay.textContent = completedWords;
     if (timerDisplay) timerDisplay.textContent = '00:00';
     if (accuracyValueDisplay) accuracyValueDisplay.textContent = '0%';
@@ -334,8 +315,6 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
-    // Afficher l'écran de jeu actif
-    console.log('Switching to active game screen...');
     if (preGameScreen) {
       preGameScreen.classList.remove('active');
     }
@@ -346,18 +325,13 @@ document.addEventListener('DOMContentLoaded', function () {
       postGameScreen.classList.remove('active');
     }
 
-    // Charger le premier mot
     await loadNewWord();
-
-    // Démarrer le timer
     timerInterval = setInterval(updateTimer, 1000);
   }
 
-  // Fonction pour configurer la reconnaissance vocale (Web Speech API) - Améliorée
   function setupSpeechRecognition() {
     // Éviter la recréation multiple de l'instance
     if (isRecognitionInitialized && recognition) {
-      console.log('Reconnaissance vocale déjà initialisée');
       return;
     }
 
@@ -378,8 +352,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (recognition) {
       try {
         recognition.abort();
-      } catch (e) {
-        console.log("Nettoyage de l'ancienne instance");
+      } catch {
+        /* ignored */
       }
     }
 
@@ -395,7 +369,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Configuration spécifique pour Safari iOS
     if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-      console.log('Configuration pour Safari iOS détectée');
       recognition.continuous = false; // Obligatoire sur iOS
       recognition.interimResults = false; // Obligatoire sur iOS
       recognition.maxAlternatives = 1; // Limiter pour iOS
@@ -404,23 +377,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Configuration pour Chrome/Edge
     if (/Chrome|Edge/.test(navigator.userAgent)) {
-      console.log('Configuration pour Chrome/Edge détectée');
       recognition.continuous = false;
       recognition.interimResults = false;
     }
 
     // Configuration pour Firefox
     if (/Firefox/.test(navigator.userAgent)) {
-      console.log('Configuration pour Firefox détectée');
       recognition.continuous = false;
       recognition.interimResults = false;
     }
 
     // Événements de la reconnaissance vocale - Améliorés
     recognition.onstart = () => {
-      console.log('Reconnaissance vocale démarrée');
       isListening = true;
-      recognitionRetryCount = 0; // Réinitialiser le compteur de tentatives
+      recognitionRetryCount = 0;
 
       if (recordBtn) {
         recordBtn.classList.add('recording');
@@ -442,7 +412,6 @@ document.addEventListener('DOMContentLoaded', function () {
       const optimizations = getBrowserOptimizations();
       recognitionTimeout = setTimeout(() => {
         if (isListening) {
-          console.log('Timeout de reconnaissance - arrêt automatique');
           stopListening();
         }
       }, optimizations.timeout);
@@ -460,8 +429,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (results && results.length > 0) {
           const spokenText = results[0].transcript.toLowerCase().trim();
           const confidence = results[0].confidence || 0.5; // Fallback pour Safari
-
-          console.log('Texte reconnu:', spokenText, 'Confiance:', confidence);
 
           // Traiter le résultat
           processSpeechResult(spokenText, confidence);
@@ -497,7 +464,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // Gestion d'erreur améliorée avec retry automatique
       let errorMessage = 'Erreur de reconnaissance vocale';
-      let shouldRetry = false;
+      let shouldRetry;
 
       switch (event.error) {
         case 'no-speech':
@@ -538,7 +505,6 @@ document.addEventListener('DOMContentLoaded', function () {
       // Retry automatique pour certaines erreurs
       if (shouldRetry && recognitionRetryCount < maxRetries) {
         recognitionRetryCount++;
-        console.log(`Tentative ${recognitionRetryCount}/${maxRetries}`);
 
         setTimeout(() => {
           if (feedbackText) {
@@ -548,7 +514,7 @@ document.addEventListener('DOMContentLoaded', function () {
           startListening();
         }, 1000);
       } else {
-        recognitionRetryCount = 0; // Réinitialiser pour la prochaine fois
+        recognitionRetryCount = 0;
 
         // Si trop d'erreurs consécutives, réinitialiser complètement
         if (recognitionRetryCount >= maxRetries * 2) {
@@ -574,7 +540,6 @@ document.addEventListener('DOMContentLoaded', function () {
         recognitionTimeout = null;
       }
 
-      console.log('Reconnaissance vocale terminée');
       isListening = false;
 
       if (recordBtn) {
@@ -601,13 +566,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Marquer comme initialisée
     isRecognitionInitialized = true;
-    console.log('Reconnaissance vocale configurée avec succès');
   }
 
-  // Fonction pour réinitialiser la reconnaissance vocale (nouvelle)
   function resetSpeechRecognition() {
-    console.log('Réinitialisation de la reconnaissance vocale');
-
     // Arrêter l'enregistrement en cours
     if (isListening) {
       stopListening();
@@ -619,7 +580,6 @@ document.addEventListener('DOMContentLoaded', function () {
       recognitionTimeout = null;
     }
 
-    // Réinitialiser les variables
     isRecognitionInitialized = false;
     recognitionRetryCount = 0;
     isListening = false;
@@ -628,7 +588,6 @@ document.addEventListener('DOMContentLoaded', function () {
     setupSpeechRecognition();
   }
 
-  // Fonction pour optimiser selon le navigateur (nouvelle)
   function getBrowserOptimizations() {
     const userAgent = navigator.userAgent;
     const optimizations = {
@@ -654,16 +613,12 @@ document.addEventListener('DOMContentLoaded', function () {
     return optimizations;
   }
 
-  // Fonction pour gérer l'échec complet de la reconnaissance vocale (nouvelle)
   function handleCompleteSpeechFailure() {
-    console.log('Échec complet de la reconnaissance vocale - réinitialisation');
-
     if (feedbackText) {
       feedbackText.textContent = 'Problème avec le microphone. Réinitialisation...';
       setFeedbackTextColor('warning');
     }
 
-    // Réinitialiser complètement la reconnaissance
     setTimeout(() => {
       resetSpeechRecognition();
 
@@ -674,10 +629,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 2000);
   }
 
-  // Fonction pour jouer l'audio du mot (nouvelle)
   function playWordAudio(word) {
-    console.log('Lecture audio pour le mot:', word.word);
-
     // Activer l'effet de parole pendant la lecture audio
     activateSpeakingEffect();
 
@@ -685,12 +637,10 @@ document.addEventListener('DOMContentLoaded', function () {
     if (word.audio) {
       try {
         const audio = new Audio(word.audio);
-        audio.play().catch((error) => {
-          console.log("Erreur avec l'audio enregistré, utilisation de la synthèse vocale:", error);
+        audio.play().catch(() => {
           useTextToSpeech(word);
         });
-      } catch (error) {
-        console.log("Erreur avec l'audio enregistré, utilisation de la synthèse vocale:", error);
+      } catch {
         useTextToSpeech(word);
       }
     } else {
@@ -699,7 +649,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour utiliser la synthèse vocale (nouvelle)
   function useTextToSpeech(word) {
     if ('speechSynthesis' in window) {
       // Arrêter toute synthèse vocale en cours
@@ -723,7 +672,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // Événements pour le feedback
       utterance.onstart = () => {
-        console.log('Synthèse vocale démarrée');
         if (feedbackText) {
           feedbackText.textContent = 'Lecture en cours...';
           setFeedbackTextColor('info');
@@ -731,7 +679,6 @@ document.addEventListener('DOMContentLoaded', function () {
       };
 
       utterance.onend = () => {
-        console.log('Synthèse vocale terminée');
         if (feedbackText) {
           feedbackText.textContent = '';
           setFeedbackTextColor('neutral');
@@ -757,11 +704,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour charger un nouveau mot
   async function loadNewWord() {
     try {
       if (attemptCount > 5) {
-        console.log('Vocabulaire limité, acceptation du même mot après 5 tentatives');
         attemptCount = 0;
       }
 
@@ -781,7 +726,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
       words = data.words;
 
-      // Réinitialiser le compteur de tentatives
       attemptCount = 0;
       const randomIndex = Math.floor(Math.random() * words.length);
       currentIndex = randomIndex;
@@ -800,7 +744,6 @@ document.addEventListener('DOMContentLoaded', function () {
         playWordBtn.classList.remove('disabled');
       }
 
-      // Réinitialiser l'affichage de feedback
       if (accuracyMeter) {
         const meterFill = accuracyMeter.querySelector('.meter-fill');
         if (meterFill) meterFill.style.width = '0%';
@@ -824,7 +767,6 @@ document.addEventListener('DOMContentLoaded', function () {
         currentLanguage = currentWord.language_code;
         if (recognition) {
           recognition.lang = currentLanguage;
-          console.log('Langue mise à jour pour le nouveau mot:', currentLanguage);
         }
       }
     } catch (error) {
@@ -833,7 +775,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour démarrer la reconnaissance vocale (améliorée avec retry et gestion d'erreur)
   function startListening() {
     if (!recognition || !speechSupported) {
       console.error('Reconnaissance vocale non disponible');
@@ -882,7 +823,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     try {
-      // Réinitialiser les messages précédents
       if (recognizedText) recognizedText.textContent = '';
       if (feedbackText) {
         feedbackText.textContent = "Préparation de l'enregistrement...";
@@ -897,14 +837,12 @@ document.addEventListener('DOMContentLoaded', function () {
       ) {
         currentLanguage = currentWord.language_code;
         recognition.lang = currentLanguage;
-        console.log('Langue mise à jour:', currentLanguage);
       }
 
       // Démarrer la reconnaissance avec gestion d'erreur améliorée
       const startRecognition = () => {
         try {
           recognition.start();
-          console.log('Démarrage de la reconnaissance vocale');
         } catch (error) {
           console.error('Erreur lors du démarrage de la reconnaissance:', error);
           handleRecognitionError(error);
@@ -922,8 +860,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour gérer les erreurs de reconnaissance (nouvelle)
-  function handleRecognitionError(error) {
+  function handleRecognitionError(_error) {
     isListening = false;
 
     if (recordBtn) {
@@ -954,7 +891,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 3000);
   }
 
-  // Fonction pour arrêter la reconnaissance vocale (améliorée avec nettoyage)
   function stopListening() {
     if (!recognition || !isListening) return;
 
@@ -966,7 +902,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     try {
       recognition.stop();
-      console.log('Arrêt de la reconnaissance vocale');
 
       if (feedbackText) {
         feedbackText.textContent = "Arrêt de l'enregistrement...";
@@ -986,12 +921,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour traiter le résultat de la reconnaissance vocale
   function processSpeechResult(spokenText, confidence) {
     if (!currentWord) return;
 
     const targetWord = currentWord.word.toLowerCase().trim();
-    console.log('Comparaison:', { spoken: spokenText, target: targetWord });
 
     // Afficher le texte reconnu
     if (recognizedText) {
@@ -1001,11 +934,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // Calculer la précision basée sur la similarité et la confiance
     let accuracy = calculatePronunciationAccuracy(spokenText, targetWord, confidence);
 
-    console.log('Précision calculée:', accuracy);
     updateAccuracy(accuracy);
   }
 
-  // Fonction pour calculer la précision de la prononciation
   function calculatePronunciationAccuracy(spoken, target, confidence) {
     // Normaliser les textes
     const normalizedSpoken = spoken
@@ -1017,11 +948,8 @@ document.addEventListener('DOMContentLoaded', function () {
       .replace(/[^\w\s]/g, '')
       .trim();
 
-    console.log('Comparaison:', { spoken: normalizedSpoken, target: normalizedTarget });
-
     // Correspondance exacte - seule façon d'obtenir un score parfait
     if (normalizedSpoken === normalizedTarget) {
-      console.log('Correspondance exacte détectée');
       return Math.min(95 + confidence * 5, 100);
     }
 
@@ -1030,7 +958,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const targetContainsSpoken = normalizedTarget.includes(normalizedSpoken);
 
     if (spokenContainsTarget || targetContainsSpoken) {
-      console.log('Correspondance partielle détectée (mot contenu)');
       // Réduire le score pour les correspondances partielles
       const containmentScore = Math.min(75 + confidence * 15, 85);
       return Math.round(containmentScore);
@@ -1041,7 +968,6 @@ document.addEventListener('DOMContentLoaded', function () {
       normalizedSpoken,
       normalizedTarget
     );
-    console.log('Similarité Levenshtein:', levenshteinSimilarity);
 
     // Seuil strict pour la similarité
     if (levenshteinSimilarity < 0.6) {
@@ -1053,7 +979,6 @@ document.addEventListener('DOMContentLoaded', function () {
       const phoneticVariants = getPhoneticVariants(normalizedTarget);
       for (const variant of phoneticVariants) {
         if (normalizedSpoken === variant) {
-          console.log('Variante phonétique détectée:', variant);
           return Math.min(80 + confidence * 10, 90);
         }
       }
@@ -1097,11 +1022,9 @@ document.addEventListener('DOMContentLoaded', function () {
       finalAccuracy = Math.max(finalAccuracy, 5); // Score très bas pour mots complètement différents
     }
 
-    console.log('Score final calculé:', Math.round(finalAccuracy));
     return Math.round(finalAccuracy);
   }
 
-  // Fonction pour calculer la similarité de Levenshtein (plus précise)
   function calculateLevenshteinSimilarity(str1, str2) {
     if (str1 === str2) return 1.0;
     if (str1.length === 0 || str2.length === 0) return 0.0;
@@ -1137,7 +1060,6 @@ document.addEventListener('DOMContentLoaded', function () {
     return 1 - distance / maxLength;
   }
 
-  // Fonction pour obtenir des variantes phonétiques communes (plus restrictive)
   function getPhoneticVariants(word) {
     const variants = [word];
 
@@ -1168,7 +1090,6 @@ document.addEventListener('DOMContentLoaded', function () {
     return variants;
   }
 
-  // Fonction pour mettre à jour la précision
   function updateAccuracy(accuracy) {
     if (accuracyMeter) {
       const meterFill = accuracyMeter.querySelector('.meter-fill');
@@ -1180,7 +1101,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     if (feedbackText) {
-      let message = '';
+      let message;
       if (accuracy >= 90) {
         message = 'Excellent ! Prononciation parfaite !';
         perfectPronunciations++;
@@ -1209,7 +1130,6 @@ document.addEventListener('DOMContentLoaded', function () {
       }, 2000);
     } else {
       setTimeout(() => {
-        // Réinitialiser le compteur de tentatives
         attemptCount = 0;
         let randomIndex = Math.floor(Math.random() * words.length);
         while (currentIndex === randomIndex) {
@@ -1231,7 +1151,6 @@ document.addEventListener('DOMContentLoaded', function () {
           playWordBtn.classList.remove('disabled');
         }
 
-        // Réinitialiser l'affichage de feedback
         if (accuracyMeter) {
           const meterFill = accuracyMeter.querySelector('.meter-fill');
           if (meterFill) meterFill.style.width = '0%';
@@ -1255,29 +1174,24 @@ document.addEventListener('DOMContentLoaded', function () {
           currentLanguage = currentWord.language_code;
           if (recognition) {
             recognition.lang = currentLanguage;
-            console.log('Langue mise à jour pour le nouveau mot:', currentLanguage);
           }
         }
       }, 2000);
     }
   }
 
-  // Fonction pour terminer le jeu
   function endGame() {
-    console.log('Ending game...');
     gameActive = false;
     clearInterval(timerInterval);
 
     const finalTime = Date.now() - startTime;
     const averageAccuracy = completedWords > 0 ? totalAccuracy / completedWords : 0;
 
-    // Mettre à jour l'écran de fin de jeu
     if (finalScoreDisplay) finalScoreDisplay.textContent = Math.round(averageAccuracy);
     if (finalTimeDisplay) finalTimeDisplay.textContent = formatTime(finalTime);
     if (finalAccuracyDisplay) finalAccuracyDisplay.textContent = `${Math.round(averageAccuracy)}%`;
     if (perfectCountDisplay) perfectCountDisplay.textContent = perfectPronunciations;
 
-    // Enregistrer le score
     saveScore(Math.round(averageAccuracy));
 
     // Suivre la progression de niveau
@@ -1300,19 +1214,14 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
-    // Afficher l'écran de fin de jeu
-    console.log('Switching to post game screen...');
     setTimeout(() => {
       if (activeGameScreen) activeGameScreen.classList.remove('active');
       if (postGameScreen) postGameScreen.classList.add('active');
-      console.log('Post game screen should now be visible');
 
-      // Lancer l'animation confetti simple
       launchConfetti();
     }, 1000);
   }
 
-  // Fonction pour lancer l'animation confetti avec confetti.js.org
   function launchConfetti() {
     const duration = 15 * 1000;
     const animationEnd = Date.now() + duration;
@@ -1347,7 +1256,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 250);
   }
 
-  // Fonction pour enregistrer le score
   function saveScore(score) {
     fetch('/games/score', {
       method: 'POST',
@@ -1367,7 +1275,6 @@ document.addEventListener('DOMContentLoaded', function () {
     })
       .then((response) => response.json())
       .then((data) => {
-        console.log('Score enregistré avec succès:', data);
         if (data.isHighScore && highScoreMessage) {
           highScoreMessage.textContent = 'Nouveau meilleur score !';
           highScoreMessage.style.display = 'block';
@@ -1378,7 +1285,6 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-  // Fonction pour suivre la progression de niveau
   function trackLevelProgress(isSuccessful) {
     fetch(`/level-progress/track?package=${packageId}`, {
       method: 'POST',
@@ -1392,8 +1298,6 @@ document.addEventListener('DOMContentLoaded', function () {
     })
       .then((response) => response.json())
       .then((data) => {
-        console.log('Progression de niveau mise à jour:', data);
-
         if (data.level_completed && data.words_updated > 0) {
           showNotification(
             `Niveau terminé! ${data.words_updated} mots sont passés au niveau ${data.to_level}`,
@@ -1411,7 +1315,6 @@ document.addEventListener('DOMContentLoaded', function () {
           if (finishLevelBtn) {
             finishLevelBtn.addEventListener('click', function () {
               window.location.href = `/games?package=${packageId}`;
-              console.log('Finish level button clicked');
             });
           }
         }
@@ -1421,10 +1324,8 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-  // Événements
   if (startGameBtn) {
     startGameBtn.addEventListener('click', startGame);
-    console.log('Start game button event listener added');
   }
 
   if (playAgainBtn) {
@@ -1436,7 +1337,6 @@ document.addEventListener('DOMContentLoaded', function () {
       if (currentWord) {
         playWordAudio(currentWord);
       } else {
-        console.log('Aucun mot disponible pour la lecture');
         if (feedbackText) {
           feedbackText.textContent = 'Aucun mot disponible pour la lecture.';
           setFeedbackTextColor('warning');
@@ -1447,30 +1347,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Fonction de test pour forcer l'affichage de l'écran de fin (pour débogage)
   window.testEndGame = function () {
-    console.log('Testing end game...');
     totalAccuracy = 600;
     completedWords = 6;
     endGame();
   };
 
   window.testFailedGame = function () {
-    console.log('Testing failed game...');
     totalAccuracy = 0;
     completedWords = 0;
     endGame();
   };
 
-  // Ajouter un raccourci clavier pour tester (Ctrl+Shift+E)
   document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.shiftKey && e.key === 'E') {
-      console.log('Test end game triggered by keyboard shortcut');
       window.testEndGame();
     }
   });
 
   document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.shiftKey && e.key === 'F') {
-      console.log('Test failed game triggered by keyboard shortcut');
       window.testFailedGame();
     }
   });
@@ -1479,8 +1374,6 @@ document.addEventListener('DOMContentLoaded', function () {
     recordBtn.addEventListener('click', async () => {
       // Pour Safari iOS, vérifier les permissions au premier clic
       if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !microphonePermissionGranted) {
-        console.log('Premier clic sur Safari iOS - vérification des permissions');
-
         if (feedbackText) {
           feedbackText.textContent = 'Vérification des permissions microphone...';
           setFeedbackTextColor('info');

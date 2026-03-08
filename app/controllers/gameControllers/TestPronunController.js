@@ -1,4 +1,3 @@
-const gameScoresModel = require('../../models/game_scores');
 const wordModel = require('../../models/words');
 const learningModel = require('../../models/learning');
 const levelGame = 'x';
@@ -8,13 +7,11 @@ class TestPronunController {
     try {
       const package_id = req.query.package;
 
-      // Récupérer tous les mots de l'utilisateur
       const detailWordsIds = await learningModel.findWordsByLevel(package_id, levelGame);
       let words = [];
       for (const detailWordId of detailWordsIds) {
         let word = await wordModel.findById(detailWordId.detail_id);
 
-        // Construire une définition à partir des détails du mot
         let meaning = '';
         if (word.type) {
           meaning += `${word.type} : `;

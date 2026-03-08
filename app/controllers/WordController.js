@@ -2,24 +2,20 @@ const wordModel = require('../models/words');
 const learningModel = require('../models/learning');
 const geminiService = require('../services/gemini');
 const { setFlash } = require('../middleware/flash');
+const cache = require('../core/cache');
 
 class WordController {
-  // Afficher la page de vocabulaire
   async monVocabs(req, res) {
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         setFlash(req, 'error', 'Vous devez être connecté pour accéder à cette page');
         return res.redirect('/login');
       }
       const package_id = req.query.package;
-      // Récupérer tous les mots de l'utilisateur (flashMessage pour redirects injecté par middleware)
       const words = await wordModel.findWordsByPackageId(package_id);
 
-      // Grouper les mots par niveau
       const wordsByLevel = {};
       words.forEach((word) => {
-        // S'assurer que level est une clé valide (0, 1, 2, x)
         const level = word.level;
         word.example = word.example.replace(/\*\*([^*]+)\*\*/g, '$1');
         if (!wordsByLevel[level]) {
@@ -47,9 +43,7 @@ class WordController {
     }
   }
 
-  // Afficher le formulaire d'ajout de mot
   addWord(req, res) {
-    // Vérifier si l'utilisateur est connecté
     if (!req.session.user) {
       setFlash(req, 'error', 'Vous devez être connecté pour ajouter un mot');
       return res.redirect('/login');
@@ -63,9 +57,7 @@ class WordController {
     });
   }
 
-  // Traiter la soumission du formulaire d'ajout de mot(s)
   async addWordPost(req, res) {
-    // Vérifier si l'utilisateur est connecté
     if (!req.session.user) {
       setFlash(req, 'error', 'Vous devez être connecté pour ajouter un mot');
       return res.redirect('/login');
@@ -79,7 +71,6 @@ class WordController {
       let words_with_error_example = [];
 
       if (package_id) {
-        // Traitement de plusieurs mots
         const {
           words,
           language_codes,
@@ -94,9 +85,7 @@ class WordController {
           levels,
         } = req.body;
         const wordCount = words.length;
-        // Traiter chaque mot
         for (let i = 0; i < wordCount; i++) {
-          // Créer le mot dans la base de données
           const wordData = {
             id: i,
             word: words[i],
@@ -141,19 +130,16 @@ class WordController {
         try {
           const words_with_examples = await geminiService.generateExemple(words_no_example);
           if (Array.isArray(words_with_examples) && words_with_examples.length > 0) {
-            console.log('Examples generated successfully');
             wordsData = await geminiService.replaceExample(wordsData, words_with_examples);
           } else {
-            console.log('No examples were generated');
             errExample++;
           }
-        } catch (error) {
-          console.error('Error generating examples:', error);
+        } catch {
+          errExample++;
         }
       }
       // Corriger les exemples des mots avec des exemples en erreur
       if (words_with_error_example.length > 0) {
-        console.log('Correcting examples for words with error examples...');
         try {
           const words_with_correct_examples =
             await geminiService.modifyExample(words_with_error_example);
@@ -161,24 +147,20 @@ class WordController {
             Array.isArray(words_with_correct_examples) &&
             words_with_correct_examples.length > 0
           ) {
-            console.log('Examples corrected successfully');
             wordsData = await geminiService.replaceExample(wordsData, words_with_correct_examples);
           } else {
-            console.log('No examples were corrected');
             errExample++;
           }
-        } catch (error) {
-          console.error('❌ Error correcting examples:', error);
+        } catch {
+          errExample++;
         }
       }
 
-      // Ajouter chaque mot à la base de données
       let successCount = 0;
       let errChamps = 0;
 
       for (const wordData of wordsData) {
         try {
-          // Vérifier que les champs obligatoires sont présents
           if (
             !wordData.word ||
             !wordData.language_code ||
@@ -190,20 +172,21 @@ class WordController {
             continue;
           }
 
-          // Assurer que level est défini
           if (wordData.level === undefined || wordData.level === null) {
-            wordData.level = 'x'; // Niveau par défaut
+            wordData.level = 'x';
           }
 
           await wordModel.create(wordData, package_id);
           successCount++;
-        } catch (error) {
-          console.error(`Erreur lors de l'ajout du mot ${wordData.word}:`, error);
+        } catch {
           errChamps++;
         }
       }
 
-      // Rediriger avec un message de succès
+      if (successCount > 0) {
+        await cache.del(`dashboard:${req.session.user.id}`);
+      }
+
       res.status(200).json({
         success: true,
         message: `${successCount} mot(s) importé(s) avec succès. ${errChamps} erreur(s) de champs obligatoires. ${errExample} erreur(s) de generation d'exemples`,
@@ -222,7 +205,6 @@ class WordController {
 
   async deleteAllWords(req, res) {
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         setFlash(req, 'error', 'Vous devez être connecté pour effectuer cette action');
         return res.redirect('/login');
@@ -230,8 +212,8 @@ class WordController {
       const package_id = req.query.package;
       const count = await wordModel.deleteAllWords(package_id);
 
-      // Rediriger avec un message de succès
       if (count) {
+        await cache.del(`dashboard:${req.session.user.id}`);
         res.status(200).json({
           success: true,
           message: `Le(s) mot(s) supprimé(s) avec succès`,
@@ -253,9 +235,15 @@ class WordController {
 
   async deleteWord(req, res) {
     try {
+      if (!req.session.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Vous devez être connecté pour supprimer un mot',
+        });
+      }
+
       const detail_id = req.params.id;
       const package_id = req.query.package;
-      // Vérifier si le mot appartient à l'utilisateur
       const word = await wordModel.findUsersByWordId(detail_id);
       if (!word) {
         return res.status(404).json({
@@ -271,8 +259,8 @@ class WordController {
         });
       }
 
-      // Supprimer le mot
       await wordModel.deleteWord(detail_id, package_id);
+      await cache.del(`dashboard:${req.session.user.id}`);
 
       res.json({
         success: true,
@@ -287,11 +275,9 @@ class WordController {
     }
   }
 
-  // Afficher le formulaire d'édition de mot
   async editWord(req, res) {
     const package_id = req.query.package;
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         setFlash(req, 'error', 'Vous devez être connecté pour modifier un mot');
         return res.redirect('/login');
@@ -299,10 +285,8 @@ class WordController {
 
       const detail_id = req.params.id;
 
-      // Récupérer les informations du mot
       const word = await wordModel.findById(detail_id);
 
-      // Vérifier si le mot existe et appartient à l'utilisateur
       if (!word) {
         setFlash(req, 'error', 'Mot introuvable');
         return res.redirect(`/monVocabs?package=${package_id}`);
@@ -333,13 +317,11 @@ class WordController {
     const detail_id = req.params.id;
     const package_id = req.query.package;
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         setFlash(req, 'error', 'Vous devez être connecté pour effectuer cette action');
         return res.redirect('/login');
       }
 
-      // Vérifier si le mot appartient à l'utilisateur
       const wordCheck = await wordModel.findById(detail_id);
 
       if (!wordCheck) {
@@ -356,7 +338,6 @@ class WordController {
         });
       }
 
-      // Récupérer les données du formulaire
       const {
         word,
         language_code,
@@ -370,7 +351,6 @@ class WordController {
         level,
       } = req.body;
 
-      // Vérifier que les champs obligatoires sont présents
       if (!word || !language_code || !type || !meaning || !example) {
         return res.status(403).json({
           success: false,
@@ -381,14 +361,13 @@ class WordController {
       let words_no_example = [];
       let words_with_error_example = [];
 
-      // Mettre à jour le mot dans la base de données
       let wordData = {
         id: 0,
         word,
         language_code: language_code.replace(/\([^)]*\)/g, '').trim(),
         type,
         meaning,
-        pronunciation: pronunciation || '', // Valeur par défaut si vide
+        pronunciation: pronunciation || '',
         synonyms: synonyms || '',
         antonyms: antonyms || '',
         example,
@@ -416,24 +395,19 @@ class WordController {
       }
 
       let errExample = 0;
-      // Générer des exemples pour les mots sans exemples
       if (words_no_example.length > 0) {
         try {
           const words_with_examples = await geminiService.generateExemple(words_no_example);
           if (Array.isArray(words_with_examples) && words_with_examples.length > 0) {
-            console.log('✅ Examples generated successfully');
             wordData = await geminiService.replaceExample(wordData, words_with_examples);
           } else {
-            console.log('⚠️ No examples were generated');
             errExample++;
           }
-        } catch (error) {
-          console.error('❌ Error generating examples:', error);
+        } catch {
+          errExample++;
         }
       }
-      // Corriger les exemples des mots avec des exemples en erreur
       if (words_with_error_example.length > 0) {
-        console.log('Correcting examples for words with error examples...');
         try {
           const words_with_correct_examples =
             await geminiService.modifyExample(words_with_error_example);
@@ -441,20 +415,18 @@ class WordController {
             Array.isArray(words_with_correct_examples) &&
             words_with_correct_examples.length > 0
           ) {
-            console.log('✅ Examples corrected successfully');
             wordData = await geminiService.replaceExample(wordData, words_with_correct_examples);
           } else {
-            console.log('⚠️ No examples were corrected');
             errExample++;
           }
-        } catch (error) {
-          console.error('❌ Error correcting examples:', error);
+        } catch {
+          errExample++;
         }
       }
 
       await wordModel.updateWord(wordData, detail_id, package_id);
+      await cache.del(`dashboard:${req.session.user.id}`);
 
-      // Rediriger vers la page de vocabulaire avec un message de succès
       res.json({
         success: true,
         message:
@@ -474,13 +446,11 @@ class WordController {
   async learnVocabs(req, res) {
     const package_id = req.query.package;
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         setFlash(req, 'error', 'Vous devez être connecté pour apprendre des mots');
         return res.redirect('/login');
       }
 
-      // Récupérer les mots de l'utilisateur
       const words = await wordModel.findWordsByPackageId(package_id);
       const wordIdsToReview = await learningModel.findWordsTodayToLearn(package_id);
 

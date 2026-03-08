@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', function () {
   if (wordsContainer && wordsContainer.dataset.words) {
     try {
       allWords = JSON.parse(wordsContainer.dataset.words);
-      console.log(allWords);
     } catch (e) {
       console.error('Failed to parse words data:', e);
     }
@@ -15,7 +14,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   let wordsFilteredByLevel = allWords;
   let wordsFilteredByVocab = allWords.filter((word) => word.dueToday);
-  console.log(wordsFilteredByVocab);
   let currentWords = [...wordsFilteredByVocab];
   let currentIndex = 0;
   let progress = []; // -1: unseen, 0: unknown, 1: uncertain, 2: known
@@ -214,7 +212,7 @@ document.addEventListener('DOMContentLoaded', function () {
           const flipSound = new Audio('/sounds/flip.mp3');
           flipSound.volume = 0.2;
           flipSound.play();
-        } catch (_) {
+        } catch {
           /* optional sound */
         }
       }
@@ -419,7 +417,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let siteLabel = 'sealvo.it.com';
     try {
       siteLabel = new URL(appBaseUrl).hostname;
-    } catch (_) {
+    } catch {
       /* keep default */
     }
 

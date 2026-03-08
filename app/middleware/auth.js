@@ -1,10 +1,3 @@
-/**
- * Centralized authentication middleware
- *
- * isAuthenticated      – for page routes (redirects to /login with flash message)
- * isAuthenticatedAPI   – for API / fetch routes (returns 401 JSON)
- */
-
 const { setFlash } = require('./flash');
 
 const isAuthenticated = (req, res, next) => {

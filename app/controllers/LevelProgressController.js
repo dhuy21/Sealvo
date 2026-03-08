@@ -1,8 +1,8 @@
 const learningModel = require('../models/learning');
+const cache = require('../core/cache');
 
 class LevelProgressController {
   constructor() {
-    // Bind methods to maintain 'this' context
     this.trackGameCompletion = this.trackGameCompletion.bind(this);
     this.getLevelProgress = this.getLevelProgress.bind(this);
     this.resetLevelProgress = this.resetLevelProgress.bind(this);
@@ -13,7 +13,6 @@ class LevelProgressController {
    */
   async trackGameCompletion(req, res) {
     try {
-      // Verify authentication
       if (!req.session.user) {
         return res.status(401).json({ success: false, message: 'Vous devez être connecté' });
       }
@@ -24,7 +23,6 @@ class LevelProgressController {
         return res.status(400).json({ success: false, message: 'Paramètres manquants' });
       }
 
-      // Define which level each game is for
       const gameLevel = {
         flash_match: 'x',
         vocab_quiz: 'x',
@@ -35,7 +33,6 @@ class LevelProgressController {
         test_pronunciation: 'x',
       };
 
-      // Required games for each level
       const levelGames = {
         x: ['flash_match', 'vocab_quiz', 'test_pronunciation'],
         0: ['word_scramble', 'phrase_completion'],
@@ -43,7 +40,6 @@ class LevelProgressController {
         2: ['word_search'],
       };
 
-      // Get the level for this game
       const currentLevel = gameLevel[game_type];
       if (!currentLevel) {
         return res.status(400).json({
@@ -52,21 +48,16 @@ class LevelProgressController {
         });
       }
 
-      // If game is completed, update user's progress
       if (completed) {
-        // Get the current progress for this level
         const progress = await this.getUserLevelProgress(req.session.user.id);
 
-        // Mark this game as completed
         if (!progress[currentLevel]) {
           progress[currentLevel] = {};
         }
         progress[currentLevel][game_type] = true;
 
-        // Save the updated progress
         await this.saveUserLevelProgress(req.session.user.id, progress);
 
-        // Check if all required games for this level are completed
         const requiredGames = levelGames[currentLevel];
         let allCompleted = true;
 
@@ -77,22 +68,21 @@ class LevelProgressController {
           }
         }
 
-        // If all games for this level are completed, update all words at this level
         if (allCompleted) {
-          // Get all words of today at this level
           const package_id = req.query.package;
           const words = await learningModel.findWordsTodayByLevel(package_id, currentLevel);
 
-          // Update each word to the next level
           const updatedWords = [];
           for (const word of words) {
             await learningModel.updateLevelWord(package_id, word.detail_id, currentLevel);
             updatedWords.push(word.detail_id);
           }
 
-          // Reset progress for this level
           delete progress[currentLevel];
           await this.saveUserLevelProgress(req.session.user.id, progress);
+
+          // Invalidate dashboard cache since word levels changed
+          await cache.del(`dashboard:${req.session.user.id}`);
 
           return res.json({
             success: true,
@@ -130,7 +120,6 @@ class LevelProgressController {
    */
   async getLevelProgress(req, res) {
     try {
-      // Verify authentication
       if (!req.session.user) {
         return res.status(401).json({ success: false, message: 'Vous devez être connecté' });
       }
@@ -155,7 +144,6 @@ class LevelProgressController {
    */
   async resetLevelProgress(req, res) {
     try {
-      // Verify authentication
       if (!req.session.user) {
         return res.status(401).json({ success: false, message: 'Vous devez être connecté' });
       }
@@ -166,13 +154,10 @@ class LevelProgressController {
         return res.status(400).json({ success: false, message: 'Niveau manquant' });
       }
 
-      // Get current progress
       const progress = await this.getUserLevelProgress(req.session.user.id);
 
-      // Reset the specified level
       delete progress[level];
 
-      // Save updated progress
       await this.saveUserLevelProgress(req.session.user.id, progress);
 
       return res.json({
@@ -192,11 +177,8 @@ class LevelProgressController {
    * Helper method to get user's level progress from session
    */
   async getUserLevelProgress(userId) {
-    // In a real implementation, you would store this in a database
-    // For simplicity, we'll use the session
     const sessionKey = `level_progress_${userId}`;
 
-    // Check if we have progress data in the session
     if (!global.levelProgress) {
       global.levelProgress = {};
     }

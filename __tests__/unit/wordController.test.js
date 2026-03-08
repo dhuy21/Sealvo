@@ -9,6 +9,12 @@ const WordController = require('../../app/controllers/WordController');
 jest.mock('../../app/models/words');
 jest.mock('../../app/models/learning');
 jest.mock('../../app/services/gemini');
+jest.mock('../../app/core/cache', () => ({
+  get: jest.fn().mockResolvedValue(null),
+  set: jest.fn().mockResolvedValue(true),
+  del: jest.fn().mockResolvedValue(true),
+  invalidatePattern: jest.fn().mockResolvedValue(true),
+}));
 
 const mockRes = () => ({
   status: jest.fn().mockReturnThis(),
@@ -22,9 +28,23 @@ describe('WordController (unit)', () => {
 
   // ── deleteWord ──────────────────────────────────────────────
   describe('deleteWord', () => {
+    it('returns 401 when not authenticated', async () => {
+      const req = { params: { id: '1' }, query: { package: '1' }, session: {} };
+      const res = mockRes();
+
+      await WordController.deleteWord(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+    });
+
     it('returns 404 when word is not found', async () => {
       wordModel.findUsersByWordId.mockResolvedValue(null);
-      const req = { params: { id: '99' }, query: { package: '1' } };
+      const req = {
+        params: { id: '99' },
+        query: { package: '1' },
+        session: { user: { id: 'u1' } },
+      };
       const res = mockRes();
 
       await WordController.deleteWord(req, res);
@@ -35,7 +55,11 @@ describe('WordController (unit)', () => {
 
     it('returns 403 when word does not belong to the given package', async () => {
       wordModel.findUsersByWordId.mockResolvedValue({ package_id: 2 });
-      const req = { params: { id: '1' }, query: { package: '99' } };
+      const req = {
+        params: { id: '1' },
+        query: { package: '99' },
+        session: { user: { id: 'u1' } },
+      };
       const res = mockRes();
 
       await WordController.deleteWord(req, res);
@@ -47,7 +71,7 @@ describe('WordController (unit)', () => {
     it('deletes word and returns success when authorized', async () => {
       wordModel.findUsersByWordId.mockResolvedValue({ package_id: '1' });
       wordModel.deleteWord.mockResolvedValue(undefined);
-      const req = { params: { id: '1' }, query: { package: '1' } };
+      const req = { params: { id: '1' }, query: { package: '1' }, session: { user: { id: 'u1' } } };
       const res = mockRes();
 
       await WordController.deleteWord(req, res);
@@ -58,7 +82,7 @@ describe('WordController (unit)', () => {
 
     it('returns 500 when DB throws an error', async () => {
       wordModel.findUsersByWordId.mockRejectedValue(new Error('DB error'));
-      const req = { params: { id: '1' }, query: { package: '1' } };
+      const req = { params: { id: '1' }, query: { package: '1' }, session: { user: { id: 'u1' } } };
       const res = mockRes();
 
       await WordController.deleteWord(req, res);

@@ -1,4 +1,3 @@
-// Imports the Google Cloud client library
 const textToSpeech = require('@google-cloud/text-to-speech');
 
 // Client créé à la première utilisation (lazy) pour ne pas crasher au load si env manquant (ex: CI, tests).
@@ -49,53 +48,29 @@ function getClient() {
 }
 
 class GoogleCloudTTS {
-  async selectVoice(voicesList, languageCode) {
-    try {
-      const filteredVoices = voicesList.filter((voice) =>
-        voice.languageCodes.includes(languageCode)
-      );
-
-      const randomIndex = Math.floor(Math.random() * filteredVoices.length);
-      const selectedVoice = filteredVoices[randomIndex];
-      return selectedVoice;
-    } catch (error) {
-      console.error('❌ Error selecting voice:', error.message);
-      throw error;
-    }
+  /**
+   * Fetch all Wavenet voices available for a language from Google Cloud.
+   * Returns the filtered array (Wavenet only), not a single voice.
+   * Caller is responsible for caching and voice selection.
+   */
+  async fetchWavenetVoices(language) {
+    const client = getClient();
+    const [response] = await client.listVoices({ languageCode: language });
+    return response.voices.filter((voice) => voice.name.includes('Wavenet'));
   }
 
-  async getVoiceList(language) {
-    try {
-      const client = getClient();
-      const [response] = await client.listVoices({ languageCode: language });
-      const voicesList = response.voices;
-
-      const filteredVoices = voicesList.filter((voice) => voice.name.includes('Wavenet'));
-      const randomIndex = Math.floor(Math.random() * filteredVoices.length);
-      const selectedVoice = filteredVoices[randomIndex];
-
-      return selectedVoice;
-    } catch (error) {
-      console.error('❌ Error getting voice list:', error.message);
-      throw error;
-    }
-  }
-
-  async generateAudio(text, language, voiceName) {
-    try {
-      const client = getClient();
-      const request = {
-        input: { text: text },
-        voice: { languageCode: language, name: voiceName, ssmlGender: 'NEUTRAL' },
-        audioConfig: { audioEncoding: 'MP3' },
-      };
-
-      const [response] = await client.synthesizeSpeech(request);
-      return response.audioContent;
-    } catch (error) {
-      console.error('❌ Error generating audio:', error.message);
-      throw error;
-    }
+  /**
+   * Synthesize text to MP3 audio via Google Cloud TTS.
+   * Returns a Buffer containing the raw MP3 audio content.
+   */
+  async synthesize(text, language, voiceName) {
+    const client = getClient();
+    const [response] = await client.synthesizeSpeech({
+      input: { text },
+      voice: { languageCode: language, name: voiceName, ssmlGender: 'NEUTRAL' },
+      audioConfig: { audioEncoding: 'MP3' },
+    });
+    return response.audioContent;
   }
 }
 
