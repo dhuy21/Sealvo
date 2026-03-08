@@ -1,14 +1,3 @@
-/**
- * Rate-limiting middleware backed by Redis (shared across instances).
- *
- * This module is require()'d AFTER redis.connect() in app.js, so isReady()
- * correctly reflects the Redis connection state at creation time.
- *
- * If Redis is unavailable at startup → MemoryStore fallback (express-rate-limit default).
- * If Redis drops at runtime → safeLimiter catches the store error and allows the request
- * through instead of returning 500 (graceful degradation).
- */
-
 const rateLimit = require('express-rate-limit');
 const { RedisStore } = require('rate-limit-redis');
 const { getClient, isReady } = require('../core/redis');
@@ -21,12 +10,6 @@ function buildStore(prefix) {
   });
 }
 
-/**
- * Wraps an express-rate-limit middleware so that store errors (Redis down at
- * runtime) degrade gracefully: the request is allowed through instead of
- * receiving a 500. When rate-limited (429), the handler sends the response
- * directly and never calls next — so only store errors reach our callback.
- */
 function safeLimiter(limiter) {
   return (req, res, next) => {
     limiter(req, res, (err) => {

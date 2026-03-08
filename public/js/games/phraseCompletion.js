@@ -6,8 +6,6 @@ document.addEventListener('DOMContentLoaded', function () {
     return;
   }
 
-  console.log('PhraseCompletion script initialized');
-
   // Initialize literary background effects
   initializeStarryEffects();
 
@@ -57,14 +55,12 @@ document.addEventListener('DOMContentLoaded', function () {
   const activeGameScreen = document.querySelector('.active-game-screen');
   const postGameScreen = document.querySelector('.post-game-screen');
 
-  // Fonction pour initialiser les effets étoilés
   function initializeStarryEffects() {
     createStarryFocusRings();
     createFloatingCelestialElements();
     startStarryBackgroundAnimation();
   }
 
-  // Fonction pour créer les anneaux de focus étoilés
   function createStarryFocusRings() {
     for (let i = 0; i < 4; i++) {
       const ring = document.createElement('div');
@@ -74,7 +70,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour créer des éléments flottants célestes
   function createFloatingCelestialElements() {
     for (let i = 0; i < 10; i++) {
       const element = document.createElement('div');
@@ -92,7 +87,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour démarrer l'animation de fond étoilé
   function startStarryBackgroundAnimation() {
     const container = document.querySelector('.game-container');
     container.classList.add('enhanced-starry-mode');
@@ -101,7 +95,6 @@ document.addEventListener('DOMContentLoaded', function () {
     startRandomFallingStars();
   }
 
-  // Fonction pour créer des étoiles qui tombent aléatoirement
   function startRandomFallingStars() {
     // Créer plusieurs étoiles à la fois
     function createMultipleStars() {
@@ -198,7 +191,6 @@ document.addEventListener('DOMContentLoaded', function () {
     scheduleNextStarGroup();
   }
 
-  // Fonction pour créer un effet de machine à écrire
   function createTypewriterEffect(element, text, speed = 50) {
     element.textContent = '';
     let i = 0;
@@ -213,7 +205,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }, speed);
   }
 
-  // Fonction pour créer des particules d'étoiles
   function createStarParticles(isCorrect = true) {
     const colors = isCorrect
       ? ['#93c5fd', '#c4b5fd', '#fbbf24', '#34d399']
@@ -271,7 +262,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour créer un effet de constellation qui se forme
   function createConstellationEffect(isCorrect = true) {
     const constellation = document.createElement('div');
     constellation.className = isCorrect ? 'constellation-success' : 'constellation-error';
@@ -330,7 +320,6 @@ document.addEventListener('DOMContentLoaded', function () {
     };
   }
 
-  // Fonction pour démarrer le jeu
   async function startGame() {
     try {
       // Vérifier le nombre de mots disponibles
@@ -362,9 +351,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour initialiser le jeu après avoir vérifié les mots disponibles
   async function initializeGame() {
-    // Réinitialiser les variables
     score = 0;
     timer = 200 + 4 * totalQuestions;
     correctAnswers = 0;
@@ -376,43 +363,31 @@ document.addEventListener('DOMContentLoaded', function () {
     phraseDisplay.textContent = '';
     loader.removeAttribute('style');
 
-    // Mettre à jour l'affichage
     scoreDisplay.textContent = score;
     questionCountDisplay.textContent = `${currentQuestionIndex}/${totalQuestions}`;
 
     nextPhraseBtn.children[1].innerHTML = '<i class="fas fa-play"></i>';
 
-    console.log('Starting game, loading first phrase');
-
-    // Afficher l'écran de jeu actif
     preGameScreen.classList.remove('active');
     activeGameScreen.classList.add('active');
     postGameScreen.classList.remove('active');
 
-    // Focus sur l'input
     wordInput.focus();
 
-    // Charger la première phrase
     await loadNewPhrase();
 
-    // Démarrer le timer
-    console.log('Starting timer');
     timerDisplay.textContent = timer;
     timerInterval = setInterval(updateTimer, 1000);
   }
 
-  // Fonction pour charger une nouvelle phrase
   async function loadNewPhrase() {
     // Guard to prevent multiple simultaneous calls
     if (isLoadingPhrase) {
-      console.log('Already loading a phrase, ignoring duplicate call');
       return;
     }
 
     isLoadingPhrase = true;
-    console.log('loadNewPhrase - starting request');
 
-    // Réinitialiser l'état de la question
     wordInput.value = '';
     wordInput.classList.remove('correct', 'incorrect');
     wordInput.removeAttribute('disabled');
@@ -456,19 +431,15 @@ document.addEventListener('DOMContentLoaded', function () {
       loader.setAttribute('style', 'display: none;');
       createTypewriterEffect(phraseDisplay, formattedPhrase, 30);
 
-      // Focus sur l'input
       wordInput.focus();
       isLoadingPhrase = false;
-      console.log('Phrase loaded');
     } catch (error) {
       console.error('Erreur lors du chargement de la phrase:', error);
       isLoadingPhrase = false;
     }
   }
 
-  // Fonction pour vérifier la réponse
   function checkAnswer() {
-    console.log('checkAnswer');
     if (!gameActive || !currentPhrase) return;
 
     const userInputs = wordInput.value.trim().split(';');
@@ -529,7 +500,6 @@ document.addEventListener('DOMContentLoaded', function () {
       const totalPoints = basePoints + timeBonus + streakBonus - attemptsPenalty;
       score += totalPoints;
 
-      // Mettre à jour l'affichage
       scoreDisplay.textContent = score;
 
       // Effets littéraires pour réponse correcte
@@ -586,7 +556,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour passer à la phrase suivante
   function goToNextPhrase() {
     // Si c'est la dernière question, terminer le jeu
     if (currentQuestionIndex >= totalQuestions) {
@@ -595,7 +564,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Sinon, charger une nouvelle phrase
-    // Réinitialiser l'état de la question
     wordInput.value = '';
     wordInput.classList.remove('correct', 'incorrect');
     wordInput.removeAttribute('disabled');
@@ -619,11 +587,9 @@ document.addEventListener('DOMContentLoaded', function () {
     phraseDisplay.innerHTML = '';
     createTypewriterEffect(phraseDisplay, formattedPhrase, 30);
 
-    // Focus sur l'input
     wordInput.focus();
   }
 
-  // Fonction pour mettre à jour le timer
   function updateTimer() {
     timer--;
     timerDisplay.textContent = timer;
@@ -638,21 +604,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour terminer le jeu
   function endGame() {
     gameActive = false;
     clearInterval(timerInterval);
 
-    // Calculer les statistiques
     const accuracy =
       currentQuestionIndex > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
-
-    // Calculer le temps moyen par question
-    const avgTime =
-      timePerQuestion.length > 0
-        ? Math.round((timePerQuestion.reduce((a, b) => a + b, 0) / timePerQuestion.length) * 10) /
-          10
-        : 0;
 
     // Mettre à jour l'écran de fin de jeu
     finalScoreDisplay.textContent = score;
@@ -661,7 +618,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Check if game was completed successfully
     const minAccuracy = 80; // 80% accuracy
-    console.log('Accuracy:', accuracy);
     const isSuccessful = accuracy >= minAccuracy;
 
     // Track level progress
@@ -685,19 +641,15 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
-    // Afficher l'écran de fin de jeu
-    console.log('Switching to post game screen...');
     setTimeout(() => {
       if (activeGameScreen) activeGameScreen.classList.remove('active');
       if (postGameScreen) postGameScreen.classList.add('active');
-      console.log('Post game screen should now be visible');
 
       // Lancer l'animation confetti simple
       launchConfetti();
     }, 1000);
   }
 
-  // Fonction pour lancer l'animation confetti avec confetti.js.org
   function launchConfetti() {
     const duration = 15 * 1000;
     const animationEnd = Date.now() + duration;
@@ -740,7 +692,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 2000);
   }
 
-  // Fonction pour enregistrer le score
   function saveScore(score) {
     fetch('/games/score', {
       method: 'POST',
@@ -766,15 +717,12 @@ document.addEventListener('DOMContentLoaded', function () {
       }),
     })
       .then((response) => response.json())
-      .then((data) => {
-        console.log('Score enregistré avec succès:', data);
-      })
+      .then(() => {})
       .catch((error) => {
         console.error("Erreur lors de l'enregistrement du score:", error);
       });
   }
 
-  // Fonction pour suivre la progression de niveau
   function trackLevelProgress(isSuccessful) {
     fetch(`/level-progress/track?package=${package_id}`, {
       method: 'POST',
@@ -788,8 +736,6 @@ document.addEventListener('DOMContentLoaded', function () {
     })
       .then((response) => response.json())
       .then((data) => {
-        console.log('Progression de niveau mise à jour:', data);
-
         // If all games for this level are completed and words were updated
         if (data.level_completed && data.words_updated > 0) {
           // You could show a notification or modal here
@@ -809,7 +755,6 @@ document.addEventListener('DOMContentLoaded', function () {
           if (finishLevelBtn) {
             finishLevelBtn.addEventListener('click', function () {
               window.location.href = `/games?package=${package_id}`;
-              console.log('Finish level button clicked');
             });
           }
         }
@@ -819,7 +764,6 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-  // Événements
   if (startGameBtn) {
     startGameBtn.addEventListener('click', async () => {
       await startGame();
@@ -848,27 +792,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Fonction de test pour forcer l'affichage de l'écran de fin (pour débogage)
   window.testEndGame = function () {
-    console.log('Testing end game...');
     correctAnswers = totalQuestions;
     endGame();
   };
 
   window.testFailedGame = function () {
-    console.log('Testing failed game...');
     correctAnswers = 0;
     endGame();
   };
 
-  // Ajouter un raccourci clavier pour tester (Ctrl+Shift+E)
   document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.shiftKey && e.key === 'E') {
-      console.log('Test end game triggered by keyboard shortcut');
       window.testEndGame();
     }
   });
   document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.shiftKey && e.key === 'F') {
-      console.log('Test failed game triggered by keyboard shortcut');
       window.testFailedGame();
     }
   });

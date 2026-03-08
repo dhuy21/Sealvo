@@ -19,7 +19,6 @@ document.querySelectorAll('.edit-btn').forEach((button) => {
 });
 
 document.getElementById('changePasswordBtn').addEventListener('click', function () {
-  // Send a POST request to change the password
   fetch('/dashboard/changePassword', {
     method: 'POST',
     headers: {
@@ -40,7 +39,6 @@ document.getElementById('changePasswordBtn').addEventListener('click', function 
 });
 
 document.getElementById('reminderBtn').addEventListener('click', function () {
-  // Send a POST request to change the password
   fetch('/api/testEmail', {
     method: 'POST',
     headers: {
@@ -71,21 +69,16 @@ document.querySelectorAll('.task-card').forEach((card) => {
  * Initialize the dashboard components
  */
 function initDashboard() {
-  console.log('Dashboard initialized');
-
-  // Show welcome message with typewriter effect
   const welcomeElement = document.querySelector('.dashboard-welcome');
   if (welcomeElement) {
     const username = welcomeElement.getAttribute('data-user');
 
-    // First, render the HTML structure
     welcomeElement.innerHTML = `
             <i class="fas fa-hand-sparkles" style="color: #FFCC70; margin-right: 0.5rem;"></i>
             Bienvenue <span style="font-weight: 700; color: var(--primary-color);">${username}</span>, 
-            <span class="typing-text"></span>
-        `;
+            <span class="typing-text">        </span>
+    `;
 
-    // Then animate only the text part
     const textToType = 'voici le résumé de votre progression en vocabulaire.';
     const typingElement = welcomeElement.querySelector('.typing-text');
     let i = 0;
@@ -115,14 +108,12 @@ function initMouseTracker() {
     tracker.style.left = `${e.clientX}px`;
     tracker.style.top = `${e.clientY}px`;
 
-    // Hide the tracker when not moving
     clearTimeout(window.mouseTimer);
     window.mouseTimer = setTimeout(() => {
       tracker.style.opacity = '0';
     }, 1000);
   });
 
-  // Hide tracker when leaving the window
   document.addEventListener('mouseleave', () => {
     tracker.style.opacity = '0';
   });
@@ -143,14 +134,12 @@ function initProgressBars() {
       streakDays = streakDays % maxStreakDays;
     }
 
-    // Update fire text
     const fireStreakText = document.getElementById('fireStreakText');
     if (fireStreakText) {
       fireStreakText.textContent = parseInt(streakDaysForfire);
     }
 
     const targetWidth = Math.min((streakDays / maxStreakDays) * 100, 100);
-    // Use Intersection Observer to trigger animation when visible
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -168,7 +157,6 @@ function initProgressBars() {
     observer.observe(bar);
   });
 
-  // Update progress text
   const progressPercentage = document.getElementById('progress-percentage');
   if (progressPercentage) {
     const progressBar = document.querySelector('.progress-bar-fill');
@@ -198,7 +186,6 @@ function initActionCards() {
   const actionCards = document.querySelectorAll('.action-card');
 
   actionCards.forEach((card) => {
-    // Tilt effect on mouse move
     card.addEventListener('mousemove', (e) => {
       const cardRect = card.getBoundingClientRect();
       const cardCenterX = cardRect.left + cardRect.width / 2;
@@ -213,7 +200,6 @@ function initActionCards() {
       card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
     });
 
-    // Reset transform on mouse leave
     card.addEventListener('mouseleave', () => {
       card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
       setTimeout(() => {
@@ -246,19 +232,16 @@ function initStreakAnimation() {
  */
 function addClickEffects() {
   document.addEventListener('click', function (e) {
-    // Create wave effect
     const wave = document.createElement('div');
     wave.className = 'wave-effect';
     wave.style.left = `${e.clientX}px`;
     wave.style.top = `${e.clientY}px`;
     document.body.appendChild(wave);
 
-    // Remove after animation completes
     setTimeout(() => {
       document.body.removeChild(wave);
     }, 1000);
 
-    // Add pulse animation to buttons
     if (e.target.closest('button, .dashboard-btn')) {
       const button = e.target.closest('button, .dashboard-btn');
       button.classList.add('pulse-animation');
@@ -288,41 +271,6 @@ function addClickEffects() {
 }
 
 /**
- * Update statistics counters with animation
- */
-function animateCounter(element, target) {
-  const duration = 1500;
-  const frameDuration = 1000 / 60;
-  const totalFrames = Math.round(duration / frameDuration);
-  let frame = 0;
-  const counter = { count: 0 };
-
-  const animate = () => {
-    frame++;
-    const progress = frame / totalFrames;
-    const currentCount = Math.round(counter.count);
-
-    if (progress < 1) {
-      counter.count = target * easeOutQuad(progress);
-      element.textContent = currentCount;
-      requestAnimationFrame(animate);
-    } else {
-      counter.count = target;
-      element.textContent = target;
-    }
-  };
-
-  requestAnimationFrame(animate);
-}
-
-/**
- * Easing function
- */
-function easeOutQuad(x) {
-  return 1 - (1 - x) * (1 - x);
-}
-
-/**
  * Initialize edit buttons for profile information
  */
 function initProfileEdit() {
@@ -333,7 +281,6 @@ function initProfileEdit() {
 
 function handleEditClick(e) {
   e.preventDefault();
-  const infoRow = this.closest('.info-row');
   const info = this.closest('.info-value');
   const displaySpan =
     info.querySelector('.username-display') || info.querySelector('.email-display');
@@ -345,7 +292,6 @@ function handleEditClick(e) {
   // Store the original HTML to restore it on cancel
   info.dataset.originalHtml = info.innerHTML;
 
-  // Replace content with edit form
   info.innerHTML = `<input type="text" class="edit-input" value="${originalValue}">
     <button class="save-btn" title="Valider">
         <i class="fas fa-check"></i>
@@ -355,7 +301,6 @@ function handleEditClick(e) {
     </button>
     `;
 
-  // Focus the input field
   const input = info.querySelector('.edit-input');
   input.focus();
   input.setSelectionRange(0, input.value.length);
@@ -366,7 +311,6 @@ function handleEditClick(e) {
   saveBtn.addEventListener('click', handleSaveClick);
   cancelBtn.addEventListener('click', handleCancelClick);
 
-  // Add keyboard events
   input.addEventListener('keydown', function (e) {
     if (e.key === 'Enter') {
       saveBtn.click();
@@ -414,7 +358,6 @@ function handleSaveClick(e) {
       .then((response) => response.json())
       .then((data) => {
         if (data.success) {
-          // Get the original HTML and replace the content inside the span
           if (info.dataset.originalHtml) {
             const originalHtml = info.dataset.originalHtml;
             const updatedHtml = originalHtml.replace(
@@ -423,7 +366,6 @@ function handleSaveClick(e) {
             );
             info.innerHTML = updatedHtml;
 
-            // Reattach event listener to the edit button
             const editBtn = info.querySelector('.edit-btn');
             if (editBtn) {
               editBtn.addEventListener('click', handleEditClick);
@@ -438,16 +380,13 @@ function handleSaveClick(e) {
               }
             }
 
-            // Remove the original HTML data attribute
             delete info.dataset.originalHtml;
           }
         } else {
           alert('Erreur lors de la modification: ' + data.message);
-          // Restore original HTML on error
           if (info.dataset.originalHtml) {
             info.innerHTML = info.dataset.originalHtml;
 
-            // Reattach event listener to the edit button
             const editBtn = info.querySelector('.edit-btn');
             if (editBtn) {
               editBtn.addEventListener('click', handleEditClick);
@@ -459,11 +398,9 @@ function handleSaveClick(e) {
       })
       .catch((error) => {
         console.error('Erreur lors de la modification:', error);
-        // Restore original HTML on error
         if (info.dataset.originalHtml) {
           info.innerHTML = info.dataset.originalHtml;
 
-          // Reattach event listener to the edit button
           const editBtn = info.querySelector('.edit-btn');
           if (editBtn) {
             editBtn.addEventListener('click', handleEditClick);
@@ -473,11 +410,9 @@ function handleSaveClick(e) {
         }
       });
   } else {
-    // If no change, just restore the original HTML
     if (info.dataset.originalHtml) {
       info.innerHTML = info.dataset.originalHtml;
 
-      // Reattach event listener to the edit button
       const editBtn = info.querySelector('.edit-btn');
       if (editBtn) {
         editBtn.addEventListener('click', handleEditClick);
@@ -492,17 +427,14 @@ function handleCancelClick(e) {
   e.preventDefault();
   const info = this.closest('.info-value');
 
-  // Restore the original HTML content
   if (info.dataset.originalHtml) {
     info.innerHTML = info.dataset.originalHtml;
 
-    // Reattach event listener to the edit button
     const editBtn = info.querySelector('.edit-btn');
     if (editBtn) {
       editBtn.addEventListener('click', handleEditClick);
     }
 
-    // Remove the original HTML data attribute
     delete info.dataset.originalHtml;
   }
 }
@@ -520,7 +452,6 @@ function initAvatarEdit() {
 
   let selectedAvatar = null;
 
-  // Open modal when edit button is clicked
   if (avatarEditBtn) {
     avatarEditBtn.addEventListener('click', function () {
       // Make modal visible but transparent
@@ -534,7 +465,6 @@ function initAvatarEdit() {
       // Fix body scrolling
       document.body.style.overflow = 'hidden';
 
-      // Find currently selected avatar
       document.querySelectorAll('.avatar-option').forEach((option) => {
         if (option.querySelector('.avatar-selected')) {
           selectedAvatar = option.getAttribute('data-avatar');
@@ -544,59 +474,48 @@ function initAvatarEdit() {
     });
   }
 
-  // Close modal when X is clicked
   if (closeBtn) {
     closeBtn.addEventListener('click', closeAvatarModal);
   }
 
-  // Close modal when clicking outside
   window.addEventListener('click', function (event) {
     if (event.target === avatarModal) {
       closeAvatarModal();
     }
   });
 
-  // Handle escape key
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && avatarModal.style.display === 'block') {
       closeAvatarModal();
     }
   });
 
-  // Close modal function
   function closeAvatarModal() {
     avatarModal.style.opacity = '0';
 
-    // Re-enable body scrolling
     document.body.style.overflow = '';
 
-    // Wait for opacity transition to complete before hiding the modal
     setTimeout(() => {
       avatarModal.style.display = 'none';
     }, 300);
   }
 
-  // Handle avatar selection
   avatarOptions.forEach((option) => {
     option.addEventListener('click', function () {
-      // Add visual feedback
       option.classList.add('pulse-animation');
       setTimeout(() => {
         option.classList.remove('pulse-animation');
       }, 300);
 
-      // Remove selected class and checkmark from all options
       avatarOptions.forEach((opt) => {
         opt.classList.remove('selected');
         const checkmark = opt.querySelector('.avatar-selected');
         if (checkmark) checkmark.remove();
       });
 
-      // Add selected class to clicked option
       this.classList.add('selected');
       selectedAvatar = this.getAttribute('data-avatar');
 
-      // Add checkmark to selected option
       const checkmark = document.createElement('div');
       checkmark.className = 'avatar-selected';
       checkmark.innerHTML = '<i class="fas fa-check"></i>';
@@ -604,16 +523,12 @@ function initAvatarEdit() {
     });
   });
 
-  // Save avatar changes
   if (saveBtn) {
     saveBtn.addEventListener('click', function () {
       if (!selectedAvatar) return;
 
-      // Show loading state
       saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
       saveBtn.disabled = true;
-
-      console.log('Saving avatar:', selectedAvatar);
 
       fetch('/dashboard/edit', {
         method: 'POST',
@@ -622,15 +537,9 @@ function initAvatarEdit() {
         },
         body: JSON.stringify({ ava: selectedAvatar }),
       })
-        .then((response) => {
-          console.log('Response status:', response.status);
-          return response.json();
-        })
+        .then((response) => response.json())
         .then((data) => {
-          console.log('Server response:', data);
-
           if (data.success) {
-            // Update avatar in the UI with a nice transition
             const avatarImg = document.querySelector('.user-avatar-dashboard');
             if (avatarImg) {
               avatarImg.style.opacity = '0';
@@ -640,10 +549,7 @@ function initAvatarEdit() {
               }, 300);
             }
 
-            // Close the modal
             closeAvatarModal();
-
-            // Show success message
             showNotification(data.message, 'success');
 
             // Reload the page after a short delay to ensure session data is refreshed
@@ -654,7 +560,6 @@ function initAvatarEdit() {
             showNotification(data.message, 'error');
           }
 
-          // Reset button
           saveBtn.innerHTML = 'Enregistrer';
           saveBtn.disabled = false;
         })
@@ -662,14 +567,12 @@ function initAvatarEdit() {
           console.error("Erreur lors de la modification de l'avatar:", error);
           showNotification("Erreur lors de la modification de l'avatar", 'error');
 
-          // Reset button
           saveBtn.innerHTML = 'Enregistrer';
           saveBtn.disabled = false;
         });
     });
   }
 
-  // Cancel avatar changes
   if (cancelBtn) {
     cancelBtn.addEventListener('click', closeAvatarModal);
   }
@@ -679,7 +582,6 @@ function initAvatarEdit() {
  * Show a notification message
  */
 function showNotification(message, type = 'info') {
-  // Create notification element if it doesn't exist
   let notification = document.getElementById('notification');
   if (!notification) {
     notification = document.createElement('div');
@@ -687,8 +589,7 @@ function showNotification(message, type = 'info') {
     document.body.appendChild(notification);
   }
 
-  // Set icon based on type
-  let icon = '';
+  let icon;
   if (type === 'success') {
     icon = '<i class="fas fa-check-circle"></i>';
   } else if (type === 'error') {
@@ -697,11 +598,9 @@ function showNotification(message, type = 'info') {
     icon = '<i class="fas fa-info-circle"></i>';
   }
 
-  // Set content and type
   notification.innerHTML = icon + message;
   notification.className = type;
 
-  // Show and hide notification
   setTimeout(() => {
     notification.classList.add('show');
   }, 10);

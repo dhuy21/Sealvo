@@ -1,14 +1,10 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-require('dotenv').config();
 
-// API key - idéalement depuis .env file
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 class GeminiService {
-  //Replace the example of the words with the new example
   async replaceExample(words, words_need_replace_example) {
     if (words_need_replace_example.length === 1) {
-      //check if  words_need_replace_example aren't iterable
       words.example = words_need_replace_example[0].example;
     } else {
       for (const word of words) {
@@ -21,11 +17,9 @@ class GeminiService {
     }
     return words;
   }
-  //Modify the example of the words with examples in error format
+
   async modifyExample(words) {
     try {
-      console.log('Modify examples for words with examples in error format...');
-
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
 
@@ -56,33 +50,23 @@ class GeminiService {
       const response = await result.response;
       const text = response.text();
 
-      // Try to parse the JSON response
       try {
-        const parsedResponse = JSON.parse(text);
-        console.log('✅ Successfully parsed JSON response');
-        return parsedResponse;
-      } catch (parseError) {
-        // Remove markdown backticks and extract JSON
+        return JSON.parse(text);
+      } catch {
         const cleanText = text.replace(/```json|```/g, '').trim();
         try {
-          const extractedJson = JSON.parse(cleanText);
-          return extractedJson;
-        } catch (extractError) {
-          console.error('❌ Failed to parse extracted JSON:', extractError.message);
+          return JSON.parse(cleanText);
+        } catch {
           return [];
         }
       }
-    } catch (error) {
-      console.error('❌ Batch Error:', error.message);
+    } catch {
       return [];
     }
   }
 
-  //Generate examples for words without examples
   async generateExemple(words) {
     try {
-      console.log('Generating examples for words without examples...');
-
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
@@ -111,24 +95,17 @@ class GeminiService {
       const response = await result.response;
       const text = response.text();
 
-      // Try to parse the JSON response
       try {
-        const parsedResponse = JSON.parse(text);
-        console.log('✅ Successfully parsed JSON response');
-        return parsedResponse;
-      } catch (parseError) {
-        // Remove markdown backticks and extract JSON
+        return JSON.parse(text);
+      } catch {
         const cleanText = text.replace(/```json|```/g, '').trim();
         try {
-          const extractedJson = JSON.parse(cleanText);
-          return extractedJson;
-        } catch (extractError) {
-          console.error('❌ Failed to parse extracted JSON:', extractError.message);
+          return JSON.parse(cleanText);
+        } catch {
           return [];
         }
       }
-    } catch (error) {
-      console.error('❌ Batch Error:', error.message);
+    } catch {
       return [];
     }
   }

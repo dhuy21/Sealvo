@@ -9,7 +9,6 @@ const authRouter = require('./auth/auth');
 const newUserDashboard = require('./user/dashboard');
 const newUserPackages = require('./package/package');
 const levelProgressRouter = require('./level_progress');
-// Import controllers
 const LearningController = require('../controllers/LearningController');
 const { isAuthenticatedAPI } = require('../middleware/auth');
 
@@ -24,11 +23,7 @@ function route(app) {
   app.use('/api', apiRouter);
   app.use('/auth', authRouter);
   app.use('/level-progress', levelProgressRouter);
-
-  // Streak update route
   app.post('/update-streak', isAuthenticatedAPI, LearningController.checkAndUpdateStreak);
-
-  // All site routes including /feedback are handled here
   app.use('/', siteRouter);
 }
 

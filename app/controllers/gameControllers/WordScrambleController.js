@@ -13,15 +13,12 @@ class WordScrambleController {
     try {
       const package_id = req.query.package;
 
-      // Récupérer tous les mots de l'utilisateur
       const detailWordsIds = await learningModel.findWordsByLevel(package_id, levelGame);
       let words = [];
       for (const detailWordId of detailWordsIds) {
         let word = await wordModel.findById(detailWordId.detail_id);
-        // Mélanger les lettres du mot
         const scrambledWord = this.scrambleWord(word.word);
 
-        // Construire une définition à partir des détails du mot
         let meaning = '';
         if (word.type) {
           meaning += `${word.type} : `;
@@ -47,11 +44,9 @@ class WordScrambleController {
     }
   }
 
-  // Méthodes utilitaires
-  // Mélanger les lettres d'un mot
   scrambleWord(word) {
     const letters = word.split('');
-    let scrambled = '';
+    let scrambled;
 
     // S'assurer que le mot mélangé est différent de l'original
     do {

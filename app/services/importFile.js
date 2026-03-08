@@ -3,16 +3,13 @@ const fs = require('fs');
 const path = require('path');
 const xlsx = require('xlsx');
 const multer = require('multer');
-const { PDFDocument } = require('pdf-lib');
 const geminiService = require('./gemini');
 const { setFlash } = require('../middleware/flash');
 const cache = require('../core/cache');
 
-// Configurer le stockage des fichiers uploadés
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(__dirname, '../uploads');
-    // Créer le dossier s'il n'existe pas
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
@@ -36,7 +33,6 @@ const upload = multer({
   },
 }).single('file');
 
-// Fonction pour traiter les fichiers Excel/CSV
 const processExcelFile = async (filePath) => {
   try {
     const workbook = xlsx.readFile(filePath);
@@ -44,7 +40,6 @@ const processExcelFile = async (filePath) => {
     const worksheet = workbook.Sheets[sheetName];
     const data = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
 
-    //On juste prendre les rows qui ont un mot
     const rowsWithWord = data.filter(
       (row) =>
         row[0] !== undefined &&
@@ -57,12 +52,10 @@ const processExcelFile = async (filePath) => {
     // Ignorer l'en-tête si présent
     const startRow = data[0][0] === 'Mot' || data[0][0] === 'Word' ? 1 : 0;
 
-    // Convertir les données en objets de mots
     const words = [];
     for (let i = startRow; i < rowsWithWord.length; i++) {
       const row = rowsWithWord[i];
       if (row[0] !== '' && row[1] !== '' && row[3] !== '' && row[5] !== '' && row[10] !== '') {
-        // Au moins les champs obligatoires
         words.push({
           id: i,
           word: row[0],
@@ -90,7 +83,6 @@ const processExcelFile = async (filePath) => {
 
 class ImportFile {
   async importWords(req, res) {
-    // Vérifier si l'utilisateur est connecté
     if (!req.session.user) {
       setFlash(req, 'error', 'Vous devez être connecté pour importer des mots');
       return res.redirect('/login');
@@ -115,9 +107,7 @@ class ImportFile {
         const package_id = req.query.package;
 
         let errExample = 0;
-        // Traiter le fichier selon son type
         if (['.xlsx', '.xls'].includes(fileExt)) {
-          // Traiter les fichiers Excel
           words = await processExcelFile(filePath);
         }
 
@@ -145,21 +135,14 @@ class ImportFile {
               });
             }
           } catch (error) {
-            console.error(`Erreur lors de l'ajout du mot ${word.word}:`, error);
             throw new Error('Erreur lors de la vérification des mots', { cause: error });
           }
         }
 
         if (words_no_example.length > 0) {
-          if (process.env.NODE_ENV !== 'production') {
-            console.log('[Import] Generating examples for words without examples...');
-          }
           try {
             const words_with_examples = await geminiService.generateExemple(words_no_example);
             if (Array.isArray(words_with_examples) && words_with_examples.length > 0) {
-              if (process.env.NODE_ENV !== 'production') {
-                console.log('[Import] Examples generated successfully');
-              }
               words = await geminiService.replaceExample(words, words_with_examples);
             }
           } catch (err) {
@@ -168,9 +151,6 @@ class ImportFile {
         }
 
         if (words_with_error_example.length > 0) {
-          if (process.env.NODE_ENV !== 'production') {
-            console.log('[Import] Correcting examples for words with invalid format...');
-          }
           try {
             const words_with_correct_examples =
               await geminiService.modifyExample(words_with_error_example);
@@ -178,9 +158,6 @@ class ImportFile {
               Array.isArray(words_with_correct_examples) &&
               words_with_correct_examples.length > 0
             ) {
-              if (process.env.NODE_ENV !== 'production') {
-                console.log('[Import] Examples corrected successfully');
-              }
               words = await geminiService.replaceExample(words, words_with_correct_examples);
             }
           } catch (err) {
@@ -188,50 +165,39 @@ class ImportFile {
           }
         }
 
-        // Ajouter chaque mot à la base de données
         let successCount = 0;
         let errChamps = 0;
 
         for (const wordData of words) {
-          try {
-            // Vérifier que les champs obligatoires sont présents
-            if (
-              !wordData.word ||
-              !wordData.language_code ||
-              !wordData.subject ||
-              !wordData.type ||
-              !wordData.meaning
-            ) {
-              errChamps++;
-              continue;
-            }
-
-            // Assurer que level est défini
-            if (wordData.level === undefined || wordData.level === null) {
-              wordData.level = 'x'; // Niveau par défaut
-            }
-
-            await wordModel.create(wordData, package_id);
-            successCount++;
-          } catch (error) {
-            console.error(`Erreur lors de l'ajout du mot ${wordData.word}:`, error);
-            throw error;
+          if (
+            !wordData.word ||
+            !wordData.language_code ||
+            !wordData.subject ||
+            !wordData.type ||
+            !wordData.meaning
+          ) {
+            errChamps++;
+            continue;
           }
+
+          if (wordData.level === undefined || wordData.level === null) {
+            wordData.level = 'x';
+          }
+
+          await wordModel.create(wordData, package_id);
+          successCount++;
         }
         // Invalidate dashboard cache if words were imported
         if (successCount > 0) {
           await cache.del(`dashboard:${req.session.user.id}`);
         }
 
-        // Supprimer le fichier temporaire
         fs.unlinkSync(filePath);
-        // Rediriger avec un message de succès
         res.status(200).json({
           success: true,
           message: `${successCount} mot(s) importé(s) avec succès. ${errChamps} erreur(s) de champs obligatoires. ${errExample} erreur(s) de generation d'exemples`,
         });
       } catch (error) {
-        // Supprimer le fichier temporaire si il existe
         if (req.file && req.file.path) {
           try {
             fs.unlinkSync(req.file.path);

@@ -250,7 +250,6 @@ class UserController {
 
   async dashboard(req, res) {
     if (!req.session.user) {
-      console.error('No active session', req.session);
       return res.redirect('/login');
     }
 

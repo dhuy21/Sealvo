@@ -1,5 +1,4 @@
 const gameScoresModel = require('../../models/game_scores');
-const wordModel = require('../../models/words');
 const learningModel = require('../../models/learning');
 const { setFlash } = require('../../middleware/flash');
 const cache = require('../../core/cache');
@@ -11,7 +10,6 @@ class GameController {
    */
   async index(req, res) {
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         setFlash(req, 'error', 'Vous devez être connecté pour accéder aux jeux');
         return res.redirect('/login');
@@ -46,7 +44,6 @@ class GameController {
   async showGame(req, res) {
     const package_id = req.query.package;
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         setFlash(req, 'error', 'Vous devez être connecté pour accéder aux jeux');
         return res.redirect('/login');
@@ -54,7 +51,6 @@ class GameController {
 
       const gameType = req.params.gameType;
 
-      // Vérifier si le type de jeu est valide
       const validGames = [
         'wordScramble',
         'flashMatch',
@@ -83,7 +79,6 @@ class GameController {
         await cache.set(`lb:${dbGameType}`, leaderboard, CACHE_TTL.LEADERBOARD);
       }
 
-      // Nombre de mots dans le vocabulaire de l'utilisateur
       const levelGame = {
         flashMatch: 'x',
         vocabQuiz: 'x',
@@ -105,7 +100,6 @@ class GameController {
         // Continue with word count as 0
       }
 
-      // Vérifier si l'utilisateur a suffisamment de mots pour jouer
       let minWordsRequired = 5;
       if (gameType === 'flashMatch') minWordsRequired = 6;
 
@@ -117,7 +111,6 @@ class GameController {
         errorMessage = `Aujourd'hui, vous n'avez pas de mots à apprendre pour niveau ${levelGame[gameType]}. Si vous voulez jouer à ce jeu, veuillez ajouter des mots à votre vocabulaire.`;
       }
 
-      // Récupérer le titre et la description du jeu
       const gameTitles = {
         wordScramble: 'Mots Mélangés',
         flashMatch: 'Memory Match',
@@ -165,7 +158,6 @@ class GameController {
    */
   async saveScore(req, res) {
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         return res
           .status(401)
@@ -174,7 +166,6 @@ class GameController {
 
       const { game_type, score, details } = req.body;
 
-      // Vérifier si le type de jeu est valide
       const validGames = [
         'word_scramble',
         'flash_match',

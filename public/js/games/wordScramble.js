@@ -54,9 +54,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const activeGameScreen = document.querySelector('.active-game-screen');
   const postGameScreen = document.querySelector('.post-game-screen');
 
-  // Fonction pour démarrer le jeu
   async function startGame() {
-    // Réinitialiser les variables
     score = 0;
     correctAnswers = 0;
     totalAttempts = 0;
@@ -70,30 +68,22 @@ document.addEventListener('DOMContentLoaded', function () {
     timerDisplay.textContent = timer;
     loader.removeAttribute('style');
 
-    // Afficher l'écran de jeu actif
     preGameScreen.classList.remove('active');
     activeGameScreen.classList.add('active');
     postGameScreen.classList.remove('active');
 
-    // Focus sur l'input
     wordInput.focus();
 
-    // Charger le premier mot
     await loadNextWord();
 
-    // Démarrer le timer
     timer = 110 + words.length * 9;
-    console.log('Timer set to:', timer);
     timerDisplay.textContent = timer;
     currentScoreDisplay.textContent = score;
     timerInterval = setInterval(updateTimer, 1000);
   }
 
-  // Fonction pour charger le prochain mot
   async function loadNextWord() {
     try {
-      // Simuler une requête à l'API pour obtenir un mot
-      // Dans une vraie implémentation, vous feriez un appel fetch à votre API
       const response = await fetch(`/games/wordScramble/words?package=${packageId}`, {
         method: 'GET',
         headers: {
@@ -128,14 +118,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // Stocker le mot correct pour vérification ultérieure
       currentWord = selectedWord.word;
-
-      console.log('finished');
     } catch (error) {
       console.error('Erreur lors du chargement du mot:', error);
     }
   }
 
-  // Fonction pour vérifier la réponse
   function checkAnswer() {
     if (!gameActive || !currentWord) return;
 
@@ -162,7 +149,6 @@ document.addEventListener('DOMContentLoaded', function () {
     skipWordBtn.disabled = false;
   }
 
-  // Fonction pour passer un mot
   function goToNextWord() {
     if (!gameActive) return;
 
@@ -170,7 +156,6 @@ document.addEventListener('DOMContentLoaded', function () {
     totalAttempts++;
     wordsPlayed++;
 
-    // Charger le prochain mot après un court délai
     let randomIndex = Math.floor(Math.random() * words.length);
 
     while (randomIndex === currentIndex) {
@@ -191,7 +176,6 @@ document.addEventListener('DOMContentLoaded', function () {
     skipWordBtn.disabled = true;
   }
 
-  // Fonction pour mettre à jour le timer
   function updateTimer() {
     timer--;
     timerDisplay.textContent = timer;
@@ -206,12 +190,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour terminer le jeu
   function endGame() {
     gameActive = false;
     clearInterval(timerInterval);
 
-    // Mettre à jour l'écran de fin de jeu
     finalScoreDisplay.textContent = score;
     wordsFoundDisplay.textContent = correctAnswers;
 
@@ -240,22 +222,17 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
-    // Enregistrer le score
     saveScore(score);
 
-    // Afficher l'écran de fin de jeu
-    console.log('Switching to post game screen...');
     setTimeout(() => {
       if (activeGameScreen) activeGameScreen.classList.remove('active');
       if (postGameScreen) postGameScreen.classList.add('active');
-      console.log('Post game screen should now be visible');
 
       // Lancer l'animation confetti simple
       launchConfetti();
     }, 1000);
   }
 
-  // Fonction pour lancer l'animation confetti avec confetti.js.org
   function launchConfetti() {
     const end = Date.now() + 15 * 1000;
 
@@ -285,10 +262,7 @@ document.addEventListener('DOMContentLoaded', function () {
     })();
   }
 
-  // Fonction pour enregistrer le score
   function saveScore(score) {
-    // Simuler l'enregistrement du score
-    // Dans une vraie implémentation, vous feriez un appel fetch à votre API
     fetch('/games/score', {
       method: 'POST',
       headers: {
@@ -305,15 +279,12 @@ document.addEventListener('DOMContentLoaded', function () {
       }),
     })
       .then((response) => response.json())
-      .then((data) => {
-        console.log('Score enregistré avec succès:', data);
-      })
+      .then((_data) => {})
       .catch((error) => {
         console.error("Erreur lors de l'enregistrement du score:", error);
       });
   }
 
-  // Fonction pour suivre la progression de niveau
   function trackLevelProgress(isSuccessful) {
     fetch(`/level-progress/track?package=${packageId}`, {
       method: 'POST',
@@ -327,8 +298,6 @@ document.addEventListener('DOMContentLoaded', function () {
     })
       .then((response) => response.json())
       .then((data) => {
-        console.log('Progression de niveau mise à jour:', data);
-
         // If all games for this level are completed and words were updated
         if (data.level_completed && data.words_updated > 0) {
           // You could show a notification or modal here
@@ -348,7 +317,6 @@ document.addEventListener('DOMContentLoaded', function () {
           if (finishLevelBtn) {
             finishLevelBtn.addEventListener('click', function () {
               window.location.href = `/games?package=${packageId}`;
-              console.log('Finish level button clicked');
             });
           }
         }
@@ -358,7 +326,6 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-  // Événements
   if (startGameBtn) {
     startGameBtn.addEventListener('click', async () => await startGame());
   }
@@ -385,28 +352,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Fonction de test pour forcer l'affichage de l'écran de fin (pour débogage)
   window.testEndGame = function () {
-    console.log('Testing end game...');
     correctAnswers = totalAttempts;
     endGame();
   };
 
   window.testFailedGame = function () {
-    console.log('Testing failed game...');
     correctAnswers = 0;
     endGame();
   };
 
-  // Ajouter un raccourci clavier pour tester (Ctrl+Shift+E)
   document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.shiftKey && e.key === 'E') {
-      console.log('Test end game triggered by keyboard shortcut');
       window.testEndGame();
     }
   });
 
   document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.shiftKey && e.key === 'F') {
-      console.log('Test failed game triggered by keyboard shortcut');
       window.testFailedGame();
     }
   });
@@ -434,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Animation loop with performance throttling
-    function animateBackground(currentTime) {
+    function animateBackground(_currentTime) {
       // Continuous animation loop for smooth effects
       requestAnimationFrame(animateBackground);
     }

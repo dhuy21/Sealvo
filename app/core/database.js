@@ -4,19 +4,15 @@ let pool = null;
 
 async function connect() {
   try {
-    // Create connection pool instead of single connection
     pool = mysql.createPool({
       host: process.env.MYSQLHOST,
       user: process.env.MYSQLUSER,
       password: process.env.MYSQL_ROOT_PASSWORD,
       database: process.env.MYSQL_DATABASE,
       port: process.env.MYSQLPORT,
-      // Connection pool settings
       connectionLimit: 10,
       queueLimit: 0,
-      // Connection timeout and cleanup
       idleTimeout: 300000, // 5 minutes
-      // Prevent connection timeout issues
       keepAliveInitialDelay: 0,
       enableKeepAlive: true,
     });
@@ -31,8 +27,6 @@ async function connect() {
   }
 }
 
-// Create a wrapper that provides the same interface as a single connection
-// but uses the pool and handles connection errors
 function createConnectionWrapper(pool) {
   return {
     async execute(sql, params) {
@@ -41,10 +35,6 @@ function createConnectionWrapper(pool) {
         connection = await pool.getConnection();
         const result = await connection.execute(sql, params);
         return result;
-      } catch (error) {
-        console.error('Database execution error:', error.message);
-        // If it's a connection error, the pool will automatically handle reconnection
-        throw error;
       } finally {
         if (connection) {
           connection.release();
@@ -70,7 +60,6 @@ function createConnectionWrapper(pool) {
       };
     },
 
-    // Add method to gracefully close the pool
     async end() {
       if (pool) {
         await pool.end();
@@ -81,7 +70,6 @@ function createConnectionWrapper(pool) {
   };
 }
 
-// Export both the connect function and a method to get the current pool
 module.exports = {
   connect,
   getPool: () => pool,

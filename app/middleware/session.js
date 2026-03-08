@@ -21,7 +21,6 @@ const userSessionMiddleware = (req, res, next) => {
 };
 
 const initializeSession = (app) => {
-  // buildStore() is called here — after redis.connect() in app.js — so getClient() is valid.
   const redisClient = getClient();
   let store;
 

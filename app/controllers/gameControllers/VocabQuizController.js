@@ -1,11 +1,10 @@
-const gameScoresModel = require('../../models/game_scores');
 const wordModel = require('../../models/words');
 const learningModel = require('../../models/learning');
 const levelGame = 'x';
+
 class VocabQuizController {
   constructor() {
     // Bind all methods to maintain 'this' context
-
     this.getQuestionForVocabQuiz = this.getQuestionForVocabQuiz.bind(this);
     this.shuffleArray = this.shuffleArray.bind(this);
     this.getAvailableWordsCount = this.getAvailableWordsCount.bind(this);
@@ -13,14 +12,12 @@ class VocabQuizController {
 
   async getQuestionForVocabQuiz(req, res) {
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
       }
       const package_id = req.query.package;
       const optionsCount = 6;
 
-      // Récupérer tous les mots de package selon le niveau de jeu
       const detailWordsIds = await learningModel.findWordsByLevel(package_id, levelGame);
       let words = [];
       for (const detailWordId of detailWordsIds) {
@@ -34,27 +31,20 @@ class VocabQuizController {
         });
       }
 
-      // Mélanger les mots
       let questionWords = [];
 
       for (let i = 0; i < words.length; i++) {
         let correctMeaning = [];
 
         const shuffledWords = this.shuffleArray([...words]);
-        // Sélectionner un mot pour la question
         questionWords[i] = shuffledWords[0];
-
-        // Initialiser correctIndex comme un array
         questionWords[i].correctIndex = [];
-
-        // Sélectionner des mots pour les options incorrectes (copie des objets)
         questionWords[i].incorrectOptions = shuffledWords.slice(1, optionsCount).map((word) => ({
           id: word.id,
           word: word.word,
           type: word.type,
           meaning: word.meaning,
         }));
-        // Ajouter l'option correcte
         if (questionWords[i].type) {
           correctMeaning[0] = `${questionWords[i].type} : `;
           correctMeaning[0] += questionWords[i].meaning;
@@ -78,10 +68,8 @@ class VocabQuizController {
           }
         });
 
-        // Mélanger les options
         questionWords[i].options = this.shuffleArray(questionWords[i].options);
 
-        // Trouver l'index de la bonne réponse dans les options mélangées
         for (let j = 0; j < correctMeaning.length; j++) {
           questionWords[i].correctIndex.push(
             questionWords[i].options.findIndex((option) => option === correctMeaning[j])
@@ -110,12 +98,10 @@ class VocabQuizController {
 
   async getAvailableWordsCount(req, res) {
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
       }
 
-      // Compter le nombre de mots disponibles pour ce niveau
       const package_id = req.query.package;
       const wordCount = await learningModel.countUserWordsByLevel(package_id, levelGame);
 

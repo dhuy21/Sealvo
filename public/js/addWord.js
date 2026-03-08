@@ -71,21 +71,18 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    // Validation de la taille
     if (!validateFileSize(file)) {
       e.target.value = '';
       resetFileDisplay();
       return;
     }
 
-    // Validation du type
     if (!validateFileType(file)) {
       e.target.value = '';
       resetFileDisplay();
       return;
     }
 
-    // Afficher le nom du fichier
     displayFileName(file.name);
   }
 
@@ -128,7 +125,6 @@ document.addEventListener('DOMContentLoaded', function () {
     fileNameDisplay.style.color = '#6a11cb';
     fileNameDisplay.style.fontWeight = '600';
 
-    // Animation d'apparition
     fileNameDisplay.style.opacity = '0';
     fileNameDisplay.style.transform = 'translateY(-10px)';
 
@@ -159,11 +155,9 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    // État de chargement
     showLoader();
     setImportButtonLoading(true);
 
-    // Préparer et envoyer les données
     const formData = new FormData(importForm);
 
     try {
@@ -245,17 +239,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!target) return;
 
-    // Bouton de suppression
     if (target.classList.contains('btn-remove')) {
       handleRemoveCard(e);
     }
 
-    // Bouton de collapse/expand
     if (target.classList.contains('btn-collapse')) {
       handleCollapseCard(e);
     }
 
-    // Bouton de duplication
     if (target.classList.contains('btn-duplicate')) {
       handleDuplicateCard(e);
     }
@@ -267,12 +258,10 @@ document.addEventListener('DOMContentLoaded', function () {
   function handleCardInput(e) {
     const target = e.target;
 
-    // Mise à jour du titre de la carte
     if (target.name === 'words[]') {
       updateCardTitle(e);
     }
 
-    // Validation en temps réel
     if (target.required || target.hasAttribute('required')) {
       handleFieldInput.call(target);
     }
@@ -284,7 +273,6 @@ document.addEventListener('DOMContentLoaded', function () {
   function handleCardBlur(e) {
     const target = e.target;
 
-    // Validation lors de la perte de focus
     if (
       target.required ||
       target.hasAttribute('required') ||
@@ -560,13 +548,11 @@ document.addEventListener('DOMContentLoaded', function () {
   async function handleMultiWordFormSubmit(e) {
     e.preventDefault();
 
-    // Validation du formulaire
     if (!validateMultiWordForm()) {
       return;
     }
 
     setSubmitButtonLoading(true);
-    // Envoyer les données
     const formData = new FormData(multiWordForm);
 
     try {
@@ -591,7 +577,6 @@ document.addEventListener('DOMContentLoaded', function () {
       console.error('Erreur:', error);
       showNotification(error.message || "Erreur lors de l'enregistrement", 'error');
     } finally {
-      // Réactiver le bouton en cas d'erreur
       setSubmitButtonLoading(false);
     }
   }

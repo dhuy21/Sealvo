@@ -8,7 +8,6 @@ const CACHE_TTL = require('../config/cache');
 class PackageController {
   async myPackages(req, res) {
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         setFlash(req, 'error', 'Vous devez être connecté pour accéder à cette page');
         return res.redirect('/login');
@@ -45,14 +44,12 @@ class PackageController {
 
   async createPackagePost(req, res) {
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         return res.status(401).json({
           success: false,
           message: 'Vous devez être connecté pour accéder à cette page',
         });
       }
-      // Récupérer les informations du package
       const packageData = req.body;
       packageData.user_id = req.session.user.id;
       const packageId = await packageModel.create(packageData);
@@ -81,16 +78,13 @@ class PackageController {
 
   async deletePackagePost(req, res) {
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         return res.status(401).json({
           success: false,
           message: 'Vous devez être connecté pour accéder à cette page',
         });
       }
-      // Récupérer l'id du package
       const packageId = req.params.id;
-      // Vérifier si le package appartient à l'utilisateur
       const myPackage = await packageModel.findPackageById(packageId);
       if (!myPackage) {
         return res.status(404).json({
@@ -126,16 +120,13 @@ class PackageController {
 
   async editPackagePost(req, res) {
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         return res.status(401).json({
           success: false,
           message: 'Vous devez être connecté pour accéder à cette page',
         });
       }
-      // Récupérer l'id du package
       const packageId = req.params.id;
-      // Vérifier si le package appartient à l'utilisateur
       const myPackage = await packageModel.findPackageById(packageId);
       if (!myPackage) {
         return res.status(404).json({
@@ -149,11 +140,9 @@ class PackageController {
           message: "Vous n'êtes pas autorisé à modifier ce package",
         });
       }
-      // Modifier le package
       const packageData = req.body;
       await packageModel.updateInfoPackage(packageData, packageId);
 
-      // Mettre à jour le mode si fourni
       let message = 'Package modifié avec succès';
       if (packageData.mode) {
         await packageModel.updateModePackage(packageId, packageData.mode);
@@ -183,7 +172,6 @@ class PackageController {
 
   async toggleActivationPost(req, res) {
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         return res.status(401).json({
           success: false,
@@ -193,7 +181,6 @@ class PackageController {
 
       const packageId = req.params.id;
 
-      // Vérifier si le package appartient à l'utilisateur
       const myPackage = await packageModel.findPackageById(packageId);
       if (!myPackage) {
         return res.status(404).json({
@@ -209,7 +196,6 @@ class PackageController {
         });
       }
 
-      // Inverser le statut d'activation
       const newStatus = !myPackage.is_active;
       await packageModel.updateActivationPackage(packageId, newStatus);
 
@@ -236,16 +222,13 @@ class PackageController {
 
   async copyPackagePost(req, res) {
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         return res.status(401).json({
           success: false,
           message: 'Vous devez être connecté pour accéder à cette page',
         });
       }
-      // Récupérer l'id du package
       const packageId = req.params.id;
-      // Vérifier si le package appartient à l'utilisateur
       const myPackage = await packageModel.findPackageById(packageId);
       if (!myPackage) {
         return res.status(404).json({
@@ -253,7 +236,6 @@ class PackageController {
           message: 'Package non trouvé',
         });
       }
-      // Vérifier si le package est public
       if (myPackage.mode !== 'public') {
         return res.status(403).json({
           success: false,
@@ -263,11 +245,8 @@ class PackageController {
       myPackage.user_id = req.session.user.id;
       myPackage.is_active = true;
       myPackage.mode = 'private';
-      // Créer le package
       const newPackage = await packageModel.create(myPackage);
-      // Récupérer les mots du package
       const words = await wordModel.findWordsByPackageId(packageId);
-      // Créer les mots du package
       for (const word of words) {
         await learningModel.stockWord(newPackage, word.detail_id, 'x');
       }

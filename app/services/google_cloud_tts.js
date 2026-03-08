@@ -1,4 +1,3 @@
-// Imports the Google Cloud client library
 const textToSpeech = require('@google-cloud/text-to-speech');
 
 // Client créé à la première utilisation (lazy) pour ne pas crasher au load si env manquant (ex: CI, tests).

@@ -1,26 +1,7 @@
-/**
- * cache.js — Cache-Aside wrapper over the centralized Redis client.
- *
- * Every operation degrades gracefully: if Redis is down the call returns
- * null / false and the caller falls through to the database.
- *
- * Key convention:
- *   cache:dashboard:<userId>        – per-user dashboard stats
- *   cache:pkgs:user:<userId>        – per-user packages list
- *   cache:pkgs:shared               – community packages (public + protected)
- *   cache:lb:<gameType>             – leaderboard per game type
- *   cache:gamestats:<userId>        – per-user game stats
- *   cache:tts:voices:<lang>         – Wavenet voice list per language (6h)
- *   cache:tts:audio:<lang>:<hash>   – generated MP3 audio as base64 (24h)
- */
-
 const { getClient, isReady } = require('./redis');
 
 const PREFIX = 'cache:';
 
-/**
- * GET a cached value. Returns the parsed object, or null on miss / error.
- */
 async function get(key) {
   if (!isReady()) return null;
   try {
@@ -31,9 +12,6 @@ async function get(key) {
   }
 }
 
-/**
- * SET a value with a TTL (seconds). Returns true on success, false otherwise.
- */
 async function set(key, value, ttlSeconds) {
   if (!isReady()) return false;
   try {
@@ -44,9 +22,6 @@ async function set(key, value, ttlSeconds) {
   }
 }
 
-/**
- * DEL one or more exact keys. Accepts a string or an array.
- */
 async function del(keys) {
   if (!isReady()) return false;
   try {
@@ -59,10 +34,6 @@ async function del(keys) {
   }
 }
 
-/**
- * Delete all keys matching a pattern (e.g. "dashboard:*").
- * Uses SCAN (non-blocking) instead of KEYS (blocks Redis).
- */
 async function invalidatePattern(pattern) {
   if (!isReady()) return false;
   try {
