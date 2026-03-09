@@ -23,8 +23,8 @@ RUN mkdir -p app/uploads && chown -R appuser:appgroup /app
 USER appuser
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
   CMD node -e "const p=process.env.PORT||3000;require('http').get('http://127.0.0.1:'+p+'/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
 
 ENV NODE_ENV=production
-CMD ["node", "app.js"]
+CMD ["sh", "-c", "node scripts/run-migrations.js && exec node app.js"]

@@ -12,7 +12,6 @@ class GoogleAuthController {
     this.redirectURI = `http://${process.env.DOMAIN}/auth/google/callback`;
   }
 
-  // Retourner l'URL de vérification Google
   getAuthUrl(req, res) {
     const url = 'https://accounts.google.com/o/oauth2/v2/auth';
     const params = new URLSearchParams({
@@ -24,22 +23,18 @@ class GoogleAuthController {
       prompt: 'consent',
     });
 
-    // Rediriger vers l'URL de vérification Google
     res.redirect(`${url}?${params.toString()}`);
   }
 
-  // Handle callback from Google
   async handleCallback(req, res) {
     try {
       const code = req.query.code;
 
       if (!code) {
-        const { setFlash } = require('../../middleware/flash');
         setFlash(req, 'error', 'No code provided');
         return res.redirect('/login');
       }
 
-      // Échanger le code pour obtenir un jeton
       const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', {
         code,
         client_id: this.clientID,
@@ -50,24 +45,18 @@ class GoogleAuthController {
 
       const { access_token } = tokenResponse.data;
 
-      // Récupérer les informations de l'utilisateur de Google
       const userResponse = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
         headers: { Authorization: `Bearer ${access_token}` },
       });
 
       const profileData = userResponse.data;
 
-      // Vérifier si l'utilisateur existe déjà dans la base de données
       const user = await User.findByEmail(profileData.email);
 
       let userInfo;
       if (user) {
         userInfo = await User.findById(user.id);
       } else {
-        // Créer un nouvel utilisateur
-        console.log('Creating new user from Google profile');
-
-        // Créer les données de l'utilisateur nouveau
         const userData = {
           email: profileData.email,
           username: profileData.name,
@@ -75,9 +64,7 @@ class GoogleAuthController {
           ava: 1,
         };
 
-        // Créer un nouvel utilisateur
         const newUserId = await User.create(userData);
-        // Prendre les informations de l'utilisateur nouvellement créé
         userInfo = await User.findById(newUserId);
       }
 
@@ -94,7 +81,7 @@ class GoogleAuthController {
         id: userInfo.id,
         username: userInfo.username,
         streak: userInfo.streak,
-        last_login: userInfo.last_login, //convertir en date dd/mm/yyyy
+        last_login: userInfo.last_login,
         created_at: userInfo.created_at,
         email: userInfo.email,
         avatar: userInfo.ava,
@@ -104,7 +91,6 @@ class GoogleAuthController {
         islearningWords,
       };
 
-      // Rediriger vers le tableau de bord
       res.redirect('/dashboard');
     } catch (error) {
       console.error('Google authentication error:', error);

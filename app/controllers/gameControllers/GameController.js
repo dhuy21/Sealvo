@@ -1,7 +1,8 @@
 const gameScoresModel = require('../../models/game_scores');
-const wordModel = require('../../models/words');
 const learningModel = require('../../models/learning');
 const { setFlash } = require('../../middleware/flash');
+const cache = require('../../core/cache');
+const CACHE_TTL = require('../../config/cache');
 
 class GameController {
   /**
@@ -9,14 +10,17 @@ class GameController {
    */
   async index(req, res) {
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         setFlash(req, 'error', 'Vous devez être connecté pour accéder aux jeux');
         return res.redirect('/login');
       }
 
-      // Récupérer les statistiques de jeu de l'utilisateur (flashMessage injecté par middleware)
-      const stats = await gameScoresModel.getUserGameStats(req.session.user.id);
+      const userId = req.session.user.id;
+      let stats = await cache.get(`gamestats:${userId}`);
+      if (!stats) {
+        stats = await gameScoresModel.getUserGameStats(userId);
+        await cache.set(`gamestats:${userId}`, stats, CACHE_TTL.GAME_STATS);
+      }
       return res.render('games/index', {
         title: 'Jeux éducatifs',
         user: req.session.user,
@@ -40,7 +44,6 @@ class GameController {
   async showGame(req, res) {
     const package_id = req.query.package;
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         setFlash(req, 'error', 'Vous devez être connecté pour accéder aux jeux');
         return res.redirect('/login');
@@ -48,7 +51,6 @@ class GameController {
 
       const gameType = req.params.gameType;
 
-      // Vérifier si le type de jeu est valide
       const validGames = [
         'wordScramble',
         'flashMatch',
@@ -69,13 +71,22 @@ class GameController {
         .toLowerCase()
         .replace(/^_/, '');
 
-      // Récupérer le meilleur score de l'utilisateur pour ce jeu
-      const highScore = await gameScoresModel.getHighScore(req.session.user.id, dbGameType);
+      const hsKey = `highscore:${req.session.user.id}:${dbGameType}`;
+      let hsWrapper = await cache.get(hsKey);
+      let highScore;
+      if (hsWrapper === null) {
+        highScore = await gameScoresModel.getHighScore(req.session.user.id, dbGameType);
+        await cache.set(hsKey, { v: highScore }, CACHE_TTL.HIGH_SCORE);
+      } else {
+        highScore = hsWrapper.v;
+      }
 
-      // Récupérer le classement pour ce jeu
-      const leaderboard = await gameScoresModel.getLeaderboard(dbGameType, 5);
+      let leaderboard = await cache.get(`lb:${dbGameType}`);
+      if (!leaderboard) {
+        leaderboard = await gameScoresModel.getLeaderboard(dbGameType, 5);
+        await cache.set(`lb:${dbGameType}`, leaderboard, CACHE_TTL.LEADERBOARD);
+      }
 
-      // Nombre de mots dans le vocabulaire de l'utilisateur
       const levelGame = {
         flashMatch: 'x',
         vocabQuiz: 'x',
@@ -97,7 +108,6 @@ class GameController {
         // Continue with word count as 0
       }
 
-      // Vérifier si l'utilisateur a suffisamment de mots pour jouer
       let minWordsRequired = 5;
       if (gameType === 'flashMatch') minWordsRequired = 6;
 
@@ -109,7 +119,6 @@ class GameController {
         errorMessage = `Aujourd'hui, vous n'avez pas de mots à apprendre pour niveau ${levelGame[gameType]}. Si vous voulez jouer à ce jeu, veuillez ajouter des mots à votre vocabulaire.`;
       }
 
-      // Récupérer le titre et la description du jeu
       const gameTitles = {
         wordScramble: 'Mots Mélangés',
         flashMatch: 'Memory Match',
@@ -157,7 +166,6 @@ class GameController {
    */
   async saveScore(req, res) {
     try {
-      // Vérifier si l'utilisateur est connecté
       if (!req.session.user) {
         return res
           .status(401)
@@ -166,7 +174,6 @@ class GameController {
 
       const { game_type, score, details } = req.body;
 
-      // Vérifier si le type de jeu est valide
       const validGames = [
         'word_scramble',
         'flash_match',
@@ -180,16 +187,17 @@ class GameController {
         return res.status(400).json({ error: 'Type de jeu invalide' });
       }
 
-      // Enregistrer le score
-      const scoreId = await gameScoresModel.saveScore(
-        req.session.user.id,
-        game_type,
-        score,
-        details || {}
-      );
+      const userId = req.session.user.id;
+      const scoreId = await gameScoresModel.saveScore(userId, game_type, score, details || {});
 
-      // Récupérer les statistiques mises à jour
-      const stats = await gameScoresModel.getUserGameStats(req.session.user.id);
+      await cache.del([
+        `gamestats:${userId}`,
+        `lb:${game_type}`,
+        `highscore:${userId}:${game_type}`,
+      ]);
+
+      const stats = await gameScoresModel.getUserGameStats(userId);
+      await cache.set(`gamestats:${userId}`, stats, CACHE_TTL.GAME_STATS);
 
       return res.json({
         success: true,

@@ -2,19 +2,15 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../../controllers/UserController');
 const resetPasswordController = require('../../controllers/authControllers/ResetPasswordController');
+const { loginLimiter, forgotPasswordLimiter } = require('../../middleware/rateLimiter');
 
-// Route pour afficher la page de connexion
 router.get('/', userController.login);
+router.post('/', loginLimiter, userController.loginPost);
 
-// Route pour traiter la soumission du formulaire de connexion
-router.post('/', userController.loginPost);
-
-// Route pour oublier le mot de passe
 router.get('/forgotPassword', resetPasswordController.forgotPassword);
-router.post('/forgotPassword', resetPasswordController.forgotPasswordPost);
+router.post('/forgotPassword', forgotPasswordLimiter, resetPasswordController.forgotPasswordPost);
 
-// Route pour réinitialiser le mot de passe
 router.get('/resetPassword', resetPasswordController.resetPassword);
-router.post('/resetPassword', resetPasswordController.resetPasswordPost);
+router.post('/resetPassword', loginLimiter, resetPasswordController.resetPasswordPost);
 
 module.exports = router;

@@ -9,8 +9,6 @@ document.addEventListener('DOMContentLoaded', function () {
   // Variables du jeu
   let currentWord = null;
   let words = [];
-  let previousWordId = null; // Stocke l'ID du mot précédent au lieu du mot entier
-  let attemptCount = 0; // Compteur pour éviter les boucles infinies
   let currentIndex = 0;
   let score = 0;
   let timer = 150;
@@ -55,7 +53,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const preGameScreen = document.querySelector('.pre-game-screen');
   const activeGameScreen = document.querySelector('.active-game-screen');
   const postGameScreen = document.querySelector('.post-game-screen');
-  const gameContainer = document.querySelector('.game-container');
 
   // Initialize background animations
   initializeBackgroundAnimations();
@@ -101,22 +98,19 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour initialiser les animations de fond
   function initializeBackgroundAnimations() {
     createParticleSystem();
     createSpeedLines();
   }
 
-  // Fonction pour initialiser le contexte audio
   function initializeAudio() {
     try {
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    } catch (e) {
-      console.log('Web Audio API not supported');
+    } catch {
+      // Web Audio API not supported
     }
   }
 
-  // Fonction pour créer le système de particules
   function createParticleSystem() {
     const particlesContainer = document.createElement('div');
     particlesContainer.className = 'particles';
@@ -163,7 +157,6 @@ document.addEventListener('DOMContentLoaded', function () {
     window.createParticle = createParticle;
   }
 
-  // Fonction pour créer les lignes de vitesse
   function createSpeedLines() {
     if (!activeGameScreen) {
       return;
@@ -208,7 +201,6 @@ document.addEventListener('DOMContentLoaded', function () {
     window.createSpeedLine = createSpeedLine;
   }
 
-  // Fonction pour créer un effet de ripple
   function createRippleEffect(element, isCorrect = true) {
     const ripple = document.createElement('div');
     ripple.className = isCorrect ? 'correct-ripple' : 'incorrect-ripple';
@@ -222,7 +214,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 600);
   }
 
-  // Fonction pour ajouter l'animation énergétique au conteneur de mot
   function addWordEnergyAnimation() {
     const wordContainer = document.querySelector('.word-container');
     wordContainer.classList.add('energetic');
@@ -231,7 +222,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 500);
   }
 
-  // Fonction pour l'animation de célébration de série
   function celebrateStreak() {
     streakDisplay.parentElement.classList.add('streak-celebration');
     setTimeout(() => {
@@ -239,7 +229,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 800);
   }
 
-  // Fonction pour arrêter les animations
   function stopAnimations() {
     if (clockTickInterval) {
       clearInterval(clockTickInterval);
@@ -250,9 +239,7 @@ document.addEventListener('DOMContentLoaded', function () {
     activeGameScreen.classList.remove('game-active');
   }
 
-  // Fonction pour démarrer le jeu
   function startGame() {
-    // Réinitialiser les variables
     score = 0;
     timer = 0;
     wordsTyped = 0;
@@ -262,38 +249,23 @@ document.addEventListener('DOMContentLoaded', function () {
     gameActive = true;
     loader.removeAttribute('style');
 
-    // Mettre à jour l'affichage
     scoreDisplay.textContent = score;
     timerDisplay.textContent = timer;
     streakDisplay.textContent = streak;
 
-    // Start energetic animations
     activeGameScreen.classList.add('game-active');
-
-    // Charger le premier mot
     loadNewWord();
 
-    // Afficher l'écran de jeu actif
     preGameScreen.classList.remove('active');
     activeGameScreen.classList.add('active');
     postGameScreen.classList.remove('active');
-
-    // Focus sur l'input
     wordInput.focus();
     wordInput.value = '';
   }
 
-  // Fonction pour charger un nouveau mot
   function loadNewWord() {
-    // Add energy animation when loading new word
     addWordEnergyAnimation();
 
-    // Réinitialiser le compteur de tentatives si c'est un nouveau chargement (pas une répétition)
-    if (attemptCount === 0) {
-      console.log("Chargement d'un nouveau mot...");
-    }
-
-    // Simuler une requête à l'API pour obtenir un mot
     fetch(`/games/speedVocab/words?package=${packageId}`, {
       method: 'GET',
       headers: {
@@ -309,12 +281,9 @@ document.addEventListener('DOMContentLoaded', function () {
         words = data.words;
 
         timer = 100 + words.length * 6;
-        // Démarrer le timer
         timerDisplay.classList.remove('warning');
         timerInterval = setInterval(updateTimer, 1000);
 
-        // Initialiser le compteur de tentatives
-        attemptCount = 0; //
         const randomIndex = Math.floor(Math.random() * words.length);
         currentIndex = randomIndex;
 
@@ -337,7 +306,6 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-  // Fonction pour vérifier la saisie de l'utilisateur
   function checkInput() {
     if (!gameActive || !currentWord) return;
 
@@ -389,10 +357,6 @@ document.addEventListener('DOMContentLoaded', function () {
       // Add energy animation when loading new word
       addWordEnergyAnimation();
 
-      // Réinitialiser le compteur de tentatives si c'est un nouveau chargement (pas une répétition)
-      if (attemptCount === 0) {
-        console.log("Chargement d'un nouveau mot...");
-      }
       // Vérifier si le nouveau mot est le même que le précédent
       let randomIndex = Math.floor(Math.random() * words.length);
 
@@ -438,10 +402,6 @@ document.addEventListener('DOMContentLoaded', function () {
         // Add energy animation when loading new word
         addWordEnergyAnimation();
 
-        // Réinitialiser le compteur de tentatives si c'est un nouveau chargement (pas une répétition)
-        if (attemptCount === 0) {
-          console.log("Chargement d'un nouveau mot...");
-        }
         // Vérifier si le nouveau mot est le même que le précédent
         let randomIndex = Math.floor(Math.random() * words.length);
 
@@ -466,7 +426,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour mettre à jour le timer
   function updateTimer() {
     timer--;
     timerDisplay.textContent = timer;
@@ -491,7 +450,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour terminer le jeu
   function endGame() {
     gameActive = false;
     clearInterval(timerInterval);
@@ -499,7 +457,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Stop all animations
     stopAnimations();
 
-    // Calculer les statistiques
     const accuracy = wordsTyped > 0 ? Math.round((correctWords / wordsTyped) * 100) : 0;
     const wpm = Math.round((correctWords / 60) * 60); // Mots par minute (60 secondes au total)
 
@@ -530,12 +487,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // Save score anyway
     saveScore(score);
 
-    // Afficher l'écran de fin de jeu
-    console.log('Switching to post game screen...');
     setTimeout(() => {
       if (activeGameScreen) activeGameScreen.classList.remove('active');
       if (postGameScreen) postGameScreen.classList.add('active');
-      console.log('Post game screen should now be visible');
 
       // Track level progress
       trackLevelProgress(isSuccessful);
@@ -545,7 +499,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 1000);
   }
 
-  // Fonction pour lancer l'animation confetti avec confetti.js.org
   function launchConfetti() {
     const duration = 15 * 1000;
     const animationEnd = Date.now() + duration;
@@ -586,9 +539,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 600);
   }
 
-  // Fonction pour enregistrer le score
   function saveScore(score) {
-    // Envoyer le score au serveur
     fetch('/games/score', {
       method: 'POST',
       headers: {
@@ -607,15 +558,12 @@ document.addEventListener('DOMContentLoaded', function () {
       }),
     })
       .then((response) => response.json())
-      .then((data) => {
-        console.log('Score enregistré avec succès:', data);
-      })
+      .then(() => {})
       .catch((error) => {
         console.error("Erreur lors de l'enregistrement du score:", error);
       });
   }
 
-  // Fonction pour suivre la progression de niveau
   function trackLevelProgress(isSuccessful) {
     fetch(`/level-progress/track?package=${packageId}`, {
       method: 'POST',
@@ -629,8 +577,6 @@ document.addEventListener('DOMContentLoaded', function () {
     })
       .then((response) => response.json())
       .then((data) => {
-        console.log('Progression de niveau mise à jour:', data);
-
         // If all games for this level are completed and words were updated
         if (data.level_completed && data.words_updated > 0) {
           // You could show a notification or modal here
@@ -649,7 +595,6 @@ document.addEventListener('DOMContentLoaded', function () {
           if (finishLevelBtn) {
             finishLevelBtn.addEventListener('click', function () {
               window.location.href = `/games?package=${packageId}`;
-              console.log('Finish level button clicked');
             });
           }
         }
@@ -659,27 +604,6 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-  // Fonction pour créer le son de tick
-  function playTickSound() {
-    if (!audioContext) return;
-
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-
-    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
-
-    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.1);
-  }
-
-  // Fonction pour créer le son de succès
   function playSuccessSound() {
     if (!audioContext) return;
 
@@ -700,7 +624,6 @@ document.addEventListener('DOMContentLoaded', function () {
     oscillator.stop(audioContext.currentTime + 0.3);
   }
 
-  // Fonction pour créer le son d'échec
   function playErrorSound() {
     if (!audioContext) return;
 
@@ -721,7 +644,6 @@ document.addEventListener('DOMContentLoaded', function () {
     oscillator.stop(audioContext.currentTime + 0.6);
   }
 
-  // Fonction pour mettre à jour le niveau d'intensité
   function updateIntensity() {
     if (timer > 100) {
       intensityLevel = 1;
@@ -752,7 +674,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour créer un effet d'écran secoué
   function createScreenShake(intensity = 1) {
     const gameContainer = document.querySelector('.game-container');
     gameContainer.style.animation = `screenShake 0.5s ease-in-out`;
@@ -778,7 +699,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Événements
   if (startGameBtn) {
     startGameBtn.addEventListener('click', startGame);
   }
@@ -800,28 +720,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Fonction de test pour forcer l'affichage de l'écran de fin (pour débogage)
   window.testEndGame = function () {
-    console.log('Testing end game...');
     correctWords = wordsTyped;
     endGame();
   };
 
   window.testFailedGame = function () {
-    console.log('Testing failed game...');
     correctWords = 0;
     endGame();
   };
 
-  // Ajouter un raccourci clavier pour tester (Ctrl+Shift+E)
   document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.shiftKey && e.key === 'E') {
-      console.log('Test end game triggered by keyboard shortcut');
       window.testEndGame();
     }
   });
 
   document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.shiftKey && e.key === 'F') {
-      console.log('Test failed game triggered by keyboard shortcut');
       window.testFailedGame();
     }
   });

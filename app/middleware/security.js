@@ -1,17 +1,11 @@
 const helmet = require('helmet');
 const crypto = require('crypto');
 
-/**
- * Generate CSP nonce for each request
- */
 const nonceMiddleware = (req, res, next) => {
   res.locals.nonce = crypto.randomBytes(16).toString('base64');
   next();
 };
 
-/**
- * Content Security Policy configuration
- */
 const cspConfig = {
   contentSecurityPolicy: {
     directives: {
@@ -75,15 +69,8 @@ const cspConfig = {
   xssFilter: true,
 };
 
-/**
- * Initialize all security middleware
- * @param {Express} app - Express application instance
- */
 const initializeSecurity = (app) => {
-  // Generate nonce for each request
   app.use(nonceMiddleware);
-
-  // Apply security headers with CSP
   app.use(helmet(cspConfig));
 };
 

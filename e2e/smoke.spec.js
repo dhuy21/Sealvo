@@ -64,7 +64,10 @@ test.describe('Public pages – smoke', () => {
   test('GET /health returns 200', async ({ request }) => {
     const res = await request.get('/health');
     expect(res.ok()).toBeTruthy();
-    expect(await res.json()).toEqual({ ok: true });
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.db).toBe(true);
+    expect(body).toHaveProperty('redis');
   });
 
   test('unknown route returns 404', async ({ page }) => {

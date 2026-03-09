@@ -10,13 +10,12 @@ let streakUpdated = false;
 const STREAK_UPDATE_TIME = 30 * 60 * 1000; // 30 minutes in milliseconds
 
 document.addEventListener('DOMContentLoaded', function () {
-  // Initialize animations and interactions
   initWordCards();
   animateCounters();
   setupScrollEffects();
   initStaggeredAnimations();
   addMouseFollowEffect();
-  setupStreakUpdate(); // Start the streak update timer
+  setupStreakUpdate();
 });
 
 /**
@@ -41,7 +40,6 @@ function animateCounters() {
         const currentValue = parseInt(currentText.replace(/\D/g, '')) || 0;
 
         if (currentValue < target) {
-          // Enhanced easing function for smoother counting
           animateValueWithEasing(counter, currentValue, target, 2000);
         }
 
@@ -63,8 +61,6 @@ function animateValueWithEasing(element, start, end, duration) {
   const step = (timestamp) => {
     if (!startTimestamp) startTimestamp = timestamp;
     const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-
-    // Cubic easing function for smoother animation
     const easeProgress = cubicEaseOut(progress);
     const current = Math.floor(start + (end - start) * easeProgress);
 
@@ -94,7 +90,6 @@ function initWordCards() {
   const wordCards = document.querySelectorAll('.word-card');
 
   wordCards.forEach((card) => {
-    // Add perspective to parent for better 3D effect
     if (card.parentElement) {
       card.parentElement.style.perspective = '1000px';
     }
@@ -347,18 +342,6 @@ function addMouseFollowEffect() {
   animateGlow();
 }
 
-// Helper for applying class to elements with delay
-function applyWithDelay(elements, className, baseDelay = 100, increment = 100) {
-  elements.forEach((element, index) => {
-    setTimeout(
-      () => {
-        element.classList.add(className);
-      },
-      baseDelay + index * increment
-    );
-  });
-}
-
 // Function to update streak after 5 minutes
 function setupStreakUpdate() {
   // Clear any existing timeout
@@ -400,7 +383,6 @@ function updateUserStreak() {
  * Show a notification message
  */
 function showNotification(message, type = 'info') {
-  // Create notification element if it doesn't exist
   let notification = document.getElementById('notification');
   if (!notification) {
     notification = document.createElement('div');
@@ -408,8 +390,7 @@ function showNotification(message, type = 'info') {
     document.body.appendChild(notification);
   }
 
-  // Set icon based on type
-  let icon = '';
+  let icon;
   if (type === 'success') {
     icon = '<i class="fas fa-check-circle"></i>';
   } else if (type === 'error') {
@@ -422,7 +403,6 @@ function showNotification(message, type = 'info') {
   notification.innerHTML = icon + message;
   notification.className = type;
 
-  // Show and hide notification
   setTimeout(() => {
     notification.classList.add('show');
   }, 10);

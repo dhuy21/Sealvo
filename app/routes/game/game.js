@@ -8,10 +8,13 @@ const phraseCompletionRoutes = require('./phrase_completion');
 const wordSearchRoutes = require('./word_search');
 const testPronunRoutes = require('./test_pronun');
 const gameController = require('../../controllers/gameControllers/GameController');
-const { isAuthenticated } = require('../../middleware/auth');
+const { isAuthenticated, isAuthenticatedAPI } = require('../../middleware/auth');
 
 // Page d'accueil des jeux
 router.get('/', isAuthenticated, gameController.index);
+
+// Save game score (called by frontend after each game)
+router.post('/score', isAuthenticatedAPI, gameController.saveScore);
 
 // Route pour afficher un jeu spécifique directement depuis GameController
 router.get('/:gameType', isAuthenticated, gameController.showGame);

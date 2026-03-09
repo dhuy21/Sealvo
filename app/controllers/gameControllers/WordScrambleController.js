@@ -1,10 +1,8 @@
-const wordModel = require('../../models/words');
 const learningModel = require('../../models/learning');
 const levelGame = '0';
 
 class WordScrambleController {
   constructor() {
-    // Bind all methods to maintain 'this' context
     this.getRandomWordsForScramble = this.getRandomWordsForScramble.bind(this);
     this.scrambleWord = this.scrambleWord.bind(this);
   }
@@ -13,32 +11,14 @@ class WordScrambleController {
     try {
       const package_id = req.query.package;
 
-      // Récupérer tous les mots de l'utilisateur
-      const detailWordsIds = await learningModel.findWordsByLevel(package_id, levelGame);
-      let words = [];
-      for (const detailWordId of detailWordsIds) {
-        let word = await wordModel.findById(detailWordId.detail_id);
-        // Mélanger les lettres du mot
-        const scrambledWord = this.scrambleWord(word.word);
-
-        // Construire une définition à partir des détails du mot
-        let meaning = '';
-        if (word.type) {
-          meaning += `${word.type} : `;
-        }
-        meaning += word.meaning;
-
-        words.push({
-          word: word.word,
-          scrambled: scrambledWord,
-          meaning: meaning,
-        });
-      }
+      const rawWords = await learningModel.findWordsWithDetailsByLevel(package_id, levelGame);
+      let words = rawWords.map((w) => {
+        let meaning = w.type ? `${w.type} : ${w.meaning}` : w.meaning;
+        return { word: w.word, scrambled: this.scrambleWord(w.word), meaning };
+      });
       words = this.shuffleArray(words);
 
-      return res.json({
-        words: words,
-      });
+      return res.json({ words });
     } catch (error) {
       console.error("Erreur lors de la récupération d'un mot aléatoire:", error);
       return res
@@ -47,11 +27,9 @@ class WordScrambleController {
     }
   }
 
-  // Méthodes utilitaires
-  // Mélanger les lettres d'un mot
   scrambleWord(word) {
     const letters = word.split('');
-    let scrambled = '';
+    let scrambled;
 
     // S'assurer que le mot mélangé est différent de l'original
     do {

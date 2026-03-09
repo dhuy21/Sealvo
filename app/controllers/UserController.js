@@ -6,6 +6,38 @@ const EmailVerificationModel = require('../models/email_verification');
 const MailersendService = require('../services/mailersend');
 const { setFlash } = require('../middleware/flash');
 const { isProductionLike } = require('../config/environment');
+const cache = require('../core/cache');
+const CACHE_TTL = require('../config/cache');
+
+async function fetchDashboardStats(userId) {
+  const cacheKey = `dashboard:${userId}`;
+  const cached = await cache.get(cacheKey);
+  if (cached) return cached;
+
+  const [streak, totalWords, learnedWords, newWords, p0, p1, p2, packagesToReview] =
+    await Promise.all([
+      userModel.getStreakById(userId),
+      wordModel.countUserWords(userId),
+      learningModel.getNumWordsByLevelAllPackages(userId, 'v'),
+      learningModel.getNumWordsByLevelAllPackages(userId, 'x'),
+      learningModel.getNumWordsByLevelAllPackages(userId, '0'),
+      learningModel.getNumWordsByLevelAllPackages(userId, '1'),
+      learningModel.getNumWordsByLevelAllPackages(userId, '2'),
+      learningModel.countWordsToReviewTodayByPackage(userId),
+    ]);
+
+  const stats = {
+    streak: streak?.streak ?? 0,
+    totalWords,
+    learnedWords,
+    newWords,
+    islearningWords: p0 + p1 + p2,
+    packagesToReview,
+  };
+
+  await cache.set(cacheKey, stats, CACHE_TTL.DASHBOARD);
+  return stats;
+}
 
 class UserController {
   login(req, res) {
@@ -49,48 +81,55 @@ class UserController {
         });
       }
 
-      const totalWords = await wordModel.countUserWords(user.id);
-      const learnedWords = await learningModel.getNumWordsByLevelAllPackages(user.id, 'v');
-      const newWords = await learningModel.getNumWordsByLevelAllPackages(user.id, 'x');
-      const islearningWords =
-        (await learningModel.getNumWordsByLevelAllPackages(user.id, '0')) +
-        (await learningModel.getNumWordsByLevelAllPackages(user.id, '1')) +
-        (await learningModel.getNumWordsByLevelAllPackages(user.id, '2'));
-      const packagesToReview = await learningModel.countWordsToReviewTodayByPackage(user.id);
+      const stats = await fetchDashboardStats(user.id);
 
-      try {
-        req.session.user = {
-          id: user.id,
-          username: user.username,
-          streak: user.streak,
-          last_login: new Intl.DateTimeFormat('fr-FR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-          }).format(user.last_login),
-          created_at: new Intl.DateTimeFormat('fr-FR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-          }).format(user.created_at),
-          email: user.email,
-          avatar: user.ava,
-          totalWords,
-          learnedWords,
-          newWords,
-          islearningWords,
-          packagesToReview,
-          notifications: '🏅 Beginner',
-        };
-      } catch (error) {
-        console.error('Session creation error:', error);
-        res.status(500).json({
-          success: false,
-          message: 'Une erreur est survenue. Veuillez réessayer plus tard.',
+      const userData = {
+        id: user.id,
+        username: user.username,
+        streak: stats.streak,
+        last_login: new Intl.DateTimeFormat('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        }).format(user.last_login),
+        created_at: new Intl.DateTimeFormat('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        }).format(user.created_at),
+        email: user.email,
+        avatar: user.ava,
+        totalWords: stats.totalWords,
+        learnedWords: stats.learnedWords,
+        newWords: stats.newWords,
+        islearningWords: stats.islearningWords,
+        packagesToReview: stats.packagesToReview,
+        notifications: '🏅 Beginner',
+      };
+
+      // Prevent session fixation: generate a new session ID before elevating privileges.
+      req.session.regenerate((regenErr) => {
+        if (regenErr) {
+          console.error('Session regeneration error:', regenErr);
+          return res.status(500).json({
+            success: false,
+            message: 'Une erreur est survenue. Veuillez réessayer plus tard.',
+          });
+        }
+
+        req.session.user = userData;
+
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error('Session save error:', saveErr);
+            return res.status(500).json({
+              success: false,
+              message: 'Une erreur est survenue. Veuillez réessayer plus tard.',
+            });
+          }
+          res.status(200).json({ redirect: '/dashboard' });
         });
-      }
-
-      res.status(200).json({ redirect: '/dashboard' });
+      });
     } catch (error) {
       console.error('Login error:', error);
       res.status(500).json({
@@ -194,7 +233,7 @@ class UserController {
       await req.session.destroy();
 
       // Options must match session config so the client removes the cookie
-      res.clearCookie('connect.sid', {
+      res.clearCookie('__sid', {
         path: '/',
         httpOnly: true,
         sameSite: 'lax',
@@ -211,36 +250,26 @@ class UserController {
 
   async dashboard(req, res) {
     if (!req.session.user) {
-      console.error('No active session', req.session);
       return res.redirect('/login');
     }
 
-    const user = req.session.user;
-    const streak = await userModel.getStreakById(user.id);
-
-    const totalWords = await wordModel.countUserWords(user.id);
-    const learnedWords = await learningModel.getNumWordsByLevelAllPackages(user.id, 'v');
-    const newWords = await learningModel.getNumWordsByLevelAllPackages(user.id, 'x');
-    const islearningWords =
-      (await learningModel.getNumWordsByLevelAllPackages(user.id, '0')) +
-      (await learningModel.getNumWordsByLevelAllPackages(user.id, '1')) +
-      (await learningModel.getNumWordsByLevelAllPackages(user.id, '2'));
-    const packagesToReview = await learningModel.countWordsToReviewTodayByPackage(user.id);
-
     try {
-      user.streak = streak.streak;
-      user.totalWords = totalWords;
-      user.learnedWords = learnedWords;
-      user.newWords = newWords;
-      user.islearningWords = islearningWords;
-      user.packagesToReview = packagesToReview;
+      const user = req.session.user;
+      const stats = await fetchDashboardStats(user.id);
+
+      user.streak = stats.streak;
+      user.totalWords = stats.totalWords;
+      user.learnedWords = stats.learnedWords;
+      user.newWords = stats.newWords;
+      user.islearningWords = stats.islearningWords;
+      user.packagesToReview = stats.packagesToReview;
+
+      res.render('dashboard', { title: 'Tableau de bord', user });
     } catch (error) {
       console.error('Dashboard data error:', error);
       setFlash(req, 'error', 'Une erreur est survenue. Veuillez réessayer plus tard.');
       return res.redirect('/login');
     }
-
-    res.render('dashboard', { title: 'Tableau de bord', user: req.session.user });
   }
 
   async editPost(req, res) {
@@ -255,6 +284,7 @@ class UserController {
       if (data.email) req.session.user.email = data.email;
       if (data.ava) req.session.user.avatar = data.ava;
 
+      await cache.del(`dashboard:${userId}`);
       res.json({ success: true, message: 'Informations modifiées avec succès' });
     } catch (error) {
       console.error('Edit error:', error);

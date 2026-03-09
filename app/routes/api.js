@@ -1,16 +1,30 @@
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 
 const reminderController = require('../controllers/apiControllers/ReminderController');
 const ttsController = require('../controllers/apiControllers/TTSController');
+const { ttsLimiter, emailLimiter } = require('../middleware/rateLimiter');
+const { isAuthenticatedAPI } = require('../middleware/auth');
 
-// Route pour envoyer un message de rappel
-router.post('/reminder', reminderController.reminder);
+const requireCronSecret = (req, res, next) => {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) {
+    console.error('[api/reminder] CRON_SECRET is not set — endpoint disabled.');
+    return res.status(503).json({ success: false, message: 'Service not configured.' });
+  }
+  const providedSecret = req.headers['x-cron-secret'] || '';
+  if (
+    providedSecret.length !== secret.length ||
+    !crypto.timingSafeEqual(Buffer.from(providedSecret), Buffer.from(secret))
+  ) {
+    return res.status(403).json({ success: false, message: 'Forbidden.' });
+  }
+  next();
+};
 
-// Route pour envoyer un email de test
-router.post('/testEmail', reminderController.testEmail);
-
-// Route pour générer de l'audio avec TTS
-router.post('/tts/generate', ttsController.generateAudio);
+router.post('/reminder', requireCronSecret, emailLimiter, reminderController.reminder);
+router.post('/testEmail', isAuthenticatedAPI, emailLimiter, reminderController.testEmail);
+router.post('/tts/generate', isAuthenticatedAPI, ttsLimiter, ttsController.generateAudio);
 
 module.exports = router;

@@ -27,8 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const loader = document.getElementById('loader');
   const trackLevelMessage = document.getElementById('track-level-message');
   const sidebarToggle = document.getElementById('sidebar-toggle');
-  const sidebarOverlay = document.getElementById('sidebar-overlay');
-  const gameBoard = document.querySelector('.game-board');
   const playAgainContainer = document.getElementById('play-again-container');
 
   // Letter explosion background variables
@@ -43,7 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let score = 0;
   let timer = 0;
   let gameTimer = null;
-  let startTime = 0;
   let attempts = 0;
   let selectedCells = [];
   let gameActive = false;
@@ -55,8 +52,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Screen rotation notification state
   let rotationNotification = null;
   let isLandscapeMode = false;
-  // Récupération du high score en sécurisant l'accès à gameContainer
-  let highScore = gameContainer && gameContainer.dataset ? gameContainer.dataset.highScore || 0 : 0;
 
   // Direction des mots (horizontal, vertical, diagonal)
   const directions = [
@@ -113,8 +108,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function startBackgroundLetterAnimations() {
-    console.log('Starting background letter animations...');
-
     // Clear any existing intervals
     letterAnimationIntervals.forEach((interval) => clearInterval(interval));
     letterAnimationIntervals = [];
@@ -122,7 +115,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // More frequent letter bursts for automatic effect
     const burstInterval = setInterval(
       () => {
-        console.log('Creating letter burst...');
         createRandomLetterBurst();
       },
       1500 + Math.random() * 2000
@@ -131,7 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add exploding letters at random intervals
     const explodingInterval = setInterval(
       () => {
-        console.log('Creating exploding letters...');
         createRandomExplodingLetters();
       },
       2000 + Math.random() * 3000
@@ -140,7 +131,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add spiral letters occasionally
     const spiralInterval = setInterval(
       () => {
-        console.log('Creating spiral letters...');
         createRandomSpiralLetters();
       },
       4000 + Math.random() * 4000
@@ -379,23 +369,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function cleanupLetterAnimations() {
-    // Clear all intervals
-    letterAnimationIntervals.forEach((interval) => clearInterval(interval));
-    letterAnimationIntervals = [];
-
-    // Remove background container
-    if (letterExplosionBackground && letterExplosionBackground.parentNode) {
-      letterExplosionBackground.parentNode.removeChild(letterExplosionBackground);
-      letterExplosionBackground = null;
-    }
-
-    // Remove letter explosion mode from game container
-    if (gameContainer) {
-      gameContainer.classList.remove('letter-explosion-mode');
-    }
-  }
-
   // Screen Rotation Notification Functions
   function checkScreenOrientation() {
     const screenWidth = window.innerWidth;
@@ -486,7 +459,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Sidebar Management Functions
   function toggleSidebar() {
     sidebarOpen = !sidebarOpen;
-    const wordListContainer = document.querySelector('.word-list-container');
 
     if (sidebarOpen) {
       openSidebar();
@@ -609,7 +581,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Add touch event listeners for iOS Safari
       nextBtn.addEventListener(
         'touchstart',
-        (e) => {
+        (_e) => {
           nextBtn.classList.add('touch-active');
         },
         { passive: true }
@@ -631,7 +603,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       nextBtn.addEventListener(
         'touchcancel',
-        (e) => {
+        (_e) => {
           nextBtn.classList.remove('touch-active');
         },
         { passive: true }
@@ -652,7 +624,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add touch event listeners for iOS Safari
         btn.addEventListener(
           'touchstart',
-          (e) => {
+          (_e) => {
             btn.classList.add('touch-active');
           },
           { passive: true }
@@ -674,7 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         btn.addEventListener(
           'touchcancel',
-          (e) => {
+          (_e) => {
             btn.classList.remove('touch-active');
           },
           { passive: true }
@@ -714,7 +686,6 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       // Check screen orientation before starting
       if (!checkScreenOrientation()) {
-        console.log('Game cannot start: device not in landscape mode');
         return;
       }
 
@@ -740,13 +711,11 @@ document.addEventListener('DOMContentLoaded', () => {
       foundWords = [];
       selectedCells = [];
       attempts = 0;
-      startTime = Date.now();
       scoreDisplay.textContent = score;
       wordsFoundDisplay.textContent = `0/0`;
       timerDisplay.textContent = timer;
       loader.removeAttribute('style');
 
-      // Charger les mots depuis le serveur
       const response = await fetch(`/games/wordSearch/words?package=${packageId}`);
       const data = await response.json();
 
@@ -757,17 +726,14 @@ document.addEventListener('DOMContentLoaded', () => {
       words = data.words;
       gridSize = data.gridSize;
 
-      // Mettre à jour l'affichage
       scoreDisplay.textContent = score;
       wordsFoundDisplay.textContent = `${foundWords.length}/${words.length}`;
       timer = 300 + words.length * 13;
 
       loader.setAttribute('style', 'display: none;');
-      // Générer la grille et afficher la liste des mots
       generateGrid();
       displayWordList();
 
-      // Démarrer le timer
       timerDisplay.textContent = timer;
       gameTimer = setInterval(() => {
         timer--;
@@ -780,10 +746,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       console.error('Erreur lors du démarrage du jeu:', error);
     }
-  }
-
-  function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   // Générer la grille de lettres
@@ -1092,7 +1054,6 @@ document.addEventListener('DOMContentLoaded', () => {
       attempts++;
     }
 
-    // Réinitialiser la sélection pour le prochain mot
     selectedCells = [];
     isSelecting = false;
   }
@@ -1391,10 +1352,6 @@ document.addEventListener('DOMContentLoaded', () => {
     clearInterval(gameTimer);
     gameActive = false;
 
-    // Calculer le temps écoulé
-    const endTime = Date.now();
-    const gameTime = Math.floor((endTime - startTime) / 1000);
-
     // Calculer le score final
     const finalScore = score;
     finalScoreDisplay.textContent = finalScore;
@@ -1408,7 +1365,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (accuracyDisplay) accuracyDisplay.textContent = `${accuracy}%`;
 
     finalWordsFoundDisplay.textContent = foundWords.length;
-    console.log(finalWordsFoundDisplay.textContent);
 
     // Check if game was completed successfully
     const minWordsFound = Math.ceil(words.length * 0.7); // 70% of words found
@@ -1432,22 +1388,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Sauvegarder le score
     saveScore(totalScore);
 
-    // Afficher l'écran de fin
-    console.log('Switching to post game screen...');
     setTimeout(() => {
       if (activeGameScreen) activeGameScreen.classList.remove('active');
       if (postGameScreen) postGameScreen.classList.add('active');
-      console.log('Post game screen should now be visible');
 
       // Lancer l'animation confetti simple
       launchConfetti();
     }, 1000);
   }
 
-  // Fonction pour lancer l'animation confetti avec confetti.js.org
   function launchConfetti() {
     const duration = 15 * 1000;
     const animationEnd = Date.now() + duration;
@@ -1482,7 +1433,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 250);
   }
 
-  // Fonction pour suivre la progression de niveau
   function trackLevelProgress(isSuccessful) {
     fetch(`/level-progress/track?package=${packageId}`, {
       method: 'POST',
@@ -1496,8 +1446,6 @@ document.addEventListener('DOMContentLoaded', () => {
     })
       .then((response) => response.json())
       .then((data) => {
-        console.log('Progression de niveau mise à jour:', data);
-
         // If all games for this level are completed and words were updated
         if (data.level_completed && data.words_updated > 0) {
           // You could show a notification or modal here
@@ -1517,7 +1465,6 @@ document.addEventListener('DOMContentLoaded', () => {
           if (finishLevelBtn) {
             finishLevelBtn.addEventListener('click', function () {
               window.location.href = `/games?package=${packageId}`;
-              console.log('Finish level button clicked');
             });
           }
         }
@@ -1543,48 +1490,36 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!response.ok) {
         throw new Error(data.error || 'Erreur lors de la sauvegarde du score');
       }
-
-      // Mettre à jour le high score local
-      if (data.isHighScore) {
-        highScore = score;
-      }
     } catch (error) {
       console.error('Erreur lors de la sauvegarde du score:', error);
     }
   }
 
-  // Initialiser le jeu
   init();
 
-  // Événements pour rejouer
   if (playAgainBtn) {
     playAgainBtn.addEventListener('click', startGame);
   }
 
   // Fonction de test pour forcer l'affichage de l'écran de fin (pour débogage)
   window.testEndGame = function () {
-    console.log('Testing end game...');
     foundWords = words;
     endGame();
   };
 
   window.testFailedGame = function () {
-    console.log('Testing failed game...');
     foundWords = [];
     endGame();
   };
 
-  // Ajouter un raccourci clavier pour tester (Ctrl+Shift+E)
   document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.shiftKey && e.key === 'E') {
-      console.log('Test end game triggered by keyboard shortcut');
       window.testEndGame();
     }
   });
 
   document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.shiftKey && e.key === 'F') {
-      console.log('Test failed game triggered by keyboard shortcut');
       window.testFailedGame();
     }
   });

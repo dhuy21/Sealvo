@@ -2,28 +2,26 @@ const mysql = require('mysql2/promise');
 
 let pool = null;
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 2000;
+
 async function connect() {
   try {
-    // Create connection pool instead of single connection
     pool = mysql.createPool({
       host: process.env.MYSQLHOST,
       user: process.env.MYSQLUSER,
       password: process.env.MYSQL_ROOT_PASSWORD,
       database: process.env.MYSQL_DATABASE,
       port: process.env.MYSQLPORT,
-      // Connection pool settings
       connectionLimit: 10,
       queueLimit: 0,
-      // Connection timeout and cleanup
-      idleTimeout: 300000, // 5 minutes
-      // Prevent connection timeout issues
+      connectTimeout: 30000,
+      idleTimeout: 300000,
       keepAliveInitialDelay: 0,
       enableKeepAlive: true,
     });
 
-    // Test the connection
     const connection = await pool.getConnection();
-    console.log('Connecté à la base de données MySQL avec pool de connexions.');
     connection.release();
 
     return createConnectionWrapper(pool);
@@ -33,26 +31,49 @@ async function connect() {
   }
 }
 
-// Create a wrapper that provides the same interface as a single connection
-// but uses the pool and handles connection errors
+function isRetryable(err) {
+  const codes = ['ETIMEDOUT', 'ECONNREFUSED', 'ECONNRESET', 'EPIPE', 'PROTOCOL_CONNECTION_LOST'];
+  return codes.includes(err.code) || codes.includes(err?.cause?.code);
+}
+
+async function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function createConnectionWrapper(pool) {
-  return {
-    async execute(sql, params) {
+  async function executeWithRetry(sql, params) {
+    let lastErr;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       let connection;
       try {
         connection = await pool.getConnection();
         const result = await connection.execute(sql, params);
         return result;
-      } catch (error) {
-        console.error('Database execution error:', error.message);
-        // If it's a connection error, the pool will automatically handle reconnection
-        throw error;
+      } catch (err) {
+        lastErr = err;
+        if (attempt < MAX_RETRIES && isRetryable(err)) {
+          console.warn(
+            `[db] Query failed (attempt ${attempt}/${MAX_RETRIES}): ${err.code} — retrying in ${RETRY_DELAY_MS}ms...`
+          );
+          await sleep(RETRY_DELAY_MS);
+        } else {
+          throw err;
+        }
       } finally {
         if (connection) {
-          connection.release();
+          try {
+            connection.release();
+          } catch {
+            /* connection already released or destroyed */
+          }
         }
       }
-    },
+    }
+    throw lastErr;
+  }
+
+  return {
+    execute: executeWithRetry,
 
     async beginTransaction() {
       const connection = await pool.getConnection();
@@ -72,7 +93,6 @@ function createConnectionWrapper(pool) {
       };
     },
 
-    // Add method to gracefully close the pool
     async end() {
       if (pool) {
         await pool.end();
@@ -83,7 +103,6 @@ function createConnectionWrapper(pool) {
   };
 }
 
-// Export both the connect function and a method to get the current pool
 module.exports = {
   connect,
   getPool: () => pool,

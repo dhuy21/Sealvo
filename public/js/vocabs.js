@@ -14,19 +14,14 @@ if (!packageId) {
   );
 }
 document.addEventListener('DOMContentLoaded', function () {
-  // Initialize search functionality
   initSearch();
-
-  // Check initial screen orientation
   checkScreenOrientation();
 
-  // Add orientation change event listeners
   window.addEventListener('resize', handleOrientationChange);
   window.addEventListener('orientationchange', handleOrientationChange);
 
-  // Add iOS Safari specific orientation detection
+  // iOS Safari: check orientation on touch events (passive for scroll performance)
   if (isTouchDevice) {
-    // Check orientation on touch events
     document.addEventListener(
       'touchstart',
       () => {
@@ -36,49 +31,38 @@ document.addEventListener('DOMContentLoaded', function () {
     );
   }
 
-  // Window resize listener
   window.addEventListener('resize', checkScreenSize);
-
-  // Initial screen size check
   checkScreenSize();
 
-  // 3D button hover effect enhancement
   const buttons = document.querySelectorAll(
     '.add-word-btn, .learn-btn, .btn-danger, .home-cta .btn, .no-words .btn'
   );
   buttons.forEach((button) => {
-    // Add subtle mouse movement effect on hover
     button.addEventListener('mousemove', function (e) {
       const rect = button.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
-      // Calculate rotations (very slight)
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
 
-      // Limit the rotation to a tiny angle (0.5 degrees max)
       const rotateY = ((x - centerX) / centerX) * 0.5;
       const rotateX = -((y - centerY) / centerY) * 0.5;
 
-      // Apply subtle rotation
       button.style.transform = `translate(0, 0.25em) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
     });
 
-    // Reset on mouse leave
     button.addEventListener('mouseleave', function () {
       button.style.transform = '';
     });
   });
 
-  // Apply data attributes to level containers for styling
   document.querySelectorAll('.level-container').forEach((container) => {
     const levelText = container.querySelector('.level-header span').textContent;
     const level = levelText.replace('Niveau ', '').trim();
     container.setAttribute('data-level', level);
   });
 
-  // Attach event listeners to edit and delete buttons
   document.querySelectorAll('.delete-btn').forEach((button) => {
     button.addEventListener('click', handleDeleteClick);
   });
@@ -89,7 +73,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   document.getElementById('deleteAllBtn').addEventListener('click', handleDeleteAllClick);
 
-  // Ajouter des styles pour les inputs d'édition et animations
   const style = document.createElement('style');
   style.textContent = `
         .edit-input {
@@ -195,16 +178,13 @@ function checkScreenOrientation() {
   if (screenWidth <= 1280) {
     // Check if device is in landscape mode
     isLandscapeMode = screenWidth > screenHeight;
-    console.log('isLandscapeMode', isLandscapeMode);
     if (!isLandscapeMode) {
       // Show rotation notification
       showRotationNotification();
-      console.log('showRotationNotification');
       return false;
     } else {
       // Hide rotation notification if it exists
       hideRotationNotification();
-      console.log('hideRotationNotification');
       return true;
     }
   } else {
@@ -256,8 +236,6 @@ function hideRotationNotification() {
 }
 
 function checkScreenSize() {
-  const isSmallScreen = window.innerWidth <= 1300;
-
   // Also check orientation when screen size changes
   checkScreenOrientation();
 }
@@ -275,10 +253,8 @@ function handleDeleteClick(e) {
   const detailId = this.getAttribute('data-id');
   this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
-  // Add visual feedback
   const row = this.closest('tr');
 
-  console.log('Deleting word with ID:', detailId, 'Package ID:', packageId);
   fetch(`/monVocabs/delete/${detailId}?package=${packageId}`, {
     method: 'POST',
     headers: {
@@ -292,24 +268,19 @@ function handleDeleteClick(e) {
         return;
       }
       if (data.success) {
-        // Supprimer la ligne du tableau avec animation améliorée
         if (row) {
-          // Trouver le niveau du mot
           const levelContainer = row.closest('.level-container');
 
-          // Animer la suppression avec un effet de glissement
           row.classList.add('row-deleted');
 
           setTimeout(() => {
             row.remove();
 
-            // Mettre à jour le compteur de mots pour ce niveau
             if (levelContainer) {
               const badge = levelContainer.querySelector('.level-badge');
               const tbody = levelContainer.querySelector('tbody');
               const count = tbody.querySelectorAll('tr').length;
 
-              // Animer le changement de nombre
               badge.style.transform = 'scale(1.2)';
               badge.style.transition = 'transform 0.3s ease';
 
@@ -318,7 +289,6 @@ function handleDeleteClick(e) {
                 badge.style.transform = 'scale(1)';
               }, 300);
 
-              // Si plus de mots dans ce niveau, masquer le conteneur avec animation
               if (count === 0) {
                 levelContainer.style.transition = 'all 0.5s ease';
                 levelContainer.style.opacity = '0';
@@ -329,12 +299,10 @@ function handleDeleteClick(e) {
                 }, 500);
               }
 
-              // Vérifier s'il reste des niveaux visibles
               const visibleLevels = Array.from(
                 document.querySelectorAll('.level-container')
               ).filter((container) => container.style.display !== 'none');
 
-              // S'il n'y a plus de mots, afficher le message "aucun mot"
               if (visibleLevels.length === 0) {
                 const noWordsDiv = document.createElement('div');
                 noWordsDiv.className = 'no-words';
@@ -375,8 +343,7 @@ function handleDeleteClick(e) {
         showNotification(data.message || 'Erreur lors de la suppression du mot', 'error');
       }
     })
-    .catch((error) => {
-      console.log('Error:', error);
+    .catch((_error) => {
       // Restaurer le bouton de suppression
       this.innerHTML = '<i class="fas fa-trash"></i>';
       showNotification('Une erreur est survenue lors de la suppression du mot', 'error');
@@ -686,9 +653,7 @@ function saveWordPost() {
         showNotification(data.message || 'Erreur lors de la modification du mot', 'error');
       }
     })
-    .catch((error) => {
-      console.log('Error:', error);
-
+    .catch((_error) => {
       // Réactiver le bouton en cas d'erreur
       this.innerHTML = '<i class="fas fa-check"></i>';
       this.disabled = false;
@@ -796,8 +761,6 @@ function executeDeleteAll(modal) {
   // Disable cancel button during deletion
   const cancelBtn = modal.querySelector('.cancel-delete-btn');
   cancelBtn.disabled = true;
-
-  console.log('Deleting all words for package:', packageId);
 
   fetch(`/monVocabs/deleteAll?package=${packageId}`, {
     method: 'POST',
@@ -917,7 +880,7 @@ function showNotification(message, type) {
   }
 
   // Set icon based on type
-  let icon = '';
+  let icon;
   if (type === 'success') {
     icon = '<i class="fas fa-check-circle"></i>';
   } else if (type === 'error') {

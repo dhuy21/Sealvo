@@ -1,15 +1,11 @@
 const { sanitizeInput } = require('./sanitization');
 
-/**
- * Route-specific sanitization configurations
- */
 const sanitizationRoutes = {
   registration: {
     path: '/registre',
     fields: {
       username: 'username',
       email: 'email',
-      password: 'text',
     },
   },
   googleAuth: {
@@ -34,9 +30,6 @@ const sanitizationRoutes = {
   },
 };
 
-/**
- * General POST sanitization middleware
- */
 const generalSanitizationMiddleware = (req, res, next) => {
   if (req.method === 'POST' && req.body) {
     const sanitizer = sanitizeInput();
@@ -46,17 +39,10 @@ const generalSanitizationMiddleware = (req, res, next) => {
   }
 };
 
-/**
- * Initialize input sanitization middleware
- * @param {Express} app - Express application instance
- */
 const initializeInputSanitization = (app) => {
-  // Apply route-specific sanitization
-  Object.entries(sanitizationRoutes).forEach(([name, config]) => {
+  Object.entries(sanitizationRoutes).forEach(([_name, config]) => {
     app.use(config.path, sanitizeInput(config.fields));
   });
-
-  // Apply general sanitization for all POST routes
   app.use(generalSanitizationMiddleware);
 };
 

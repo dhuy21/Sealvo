@@ -126,13 +126,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
       gameContainer.appendChild(bubble);
     }
-
-    console.log('Optimized animated bubbles created successfully!');
   }
 
-  // Fonction pour démarrer le jeu
   function startGame() {
-    // Réinitialiser les variables
     cards = [];
     selectedCards = [];
     matchedPairs = 0;
@@ -141,21 +137,17 @@ document.addEventListener('DOMContentLoaded', function () {
     gameBoard.innerHTML = '';
     loader.removeAttribute('style');
 
-    // Mettre à jour l'affichage
     movesCount.textContent = moves;
     pairsCount.textContent = `0/${totalPairs}`;
     timerDisplay.textContent = '00:00';
 
-    // Charger les cartes
     loadCards();
 
-    // Afficher l'écran de jeu actif
     preGameScreen.classList.remove('active');
     activeGameScreen.classList.add('active');
     postGameScreen.classList.remove('active');
   }
 
-  // Fonction pour charger les cartes
   function loadCards() {
     // Faire la requête API pour obtenir les cartes
     fetch(`/games/flashMatch/cards?package=${packageId}`, {
@@ -172,8 +164,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return response.json();
       })
       .then((data) => {
-        console.log('Données reçues:', data);
-
         if (data.error) {
           console.error(data.error);
           return;
@@ -192,7 +182,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         createGameBoard(data.cards);
 
-        // Démarrer le timer
         startTime = Date.now();
         timerInterval = setInterval(updateTimer, 1000);
       })
@@ -201,7 +190,6 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-  // Fonction pour créer le plateau de jeu
   function createGameBoard(cardData) {
     // Mélanger les cartes
     const shuffledCards = shuffleArray([...cardData]);
@@ -263,7 +251,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour retourner une carte
   function flipCard(cardElement, cardData, index) {
     // Vérifier si le jeu est actif et si la carte n'est pas déjà retournée ou appariée
     if (!gameActive || cards[index].flipped || cards[index].matched) {
@@ -297,7 +284,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Fonction pour vérifier si les cartes forment une paire
   function checkMatch() {
     const card1 = selectedCards[0];
     const card2 = selectedCards[1];
@@ -317,7 +303,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // Vérifier si toutes les paires ont été trouvées
       if (matchedPairs === totalPairs) {
-        console.log('All pairs matched! Ending game...');
         endGame();
       }
     } else {
@@ -328,15 +313,11 @@ document.addEventListener('DOMContentLoaded', function () {
       // Retourner les cartes
       cards[card1.index].element.classList.remove('flipped');
       cards[card2.index].element.classList.remove('flipped');
-
-      console.log('No match found');
     }
 
-    // Réinitialiser les cartes sélectionnées
     selectedCards = [];
   }
 
-  // Fonction pour mettre à jour le timer
   function updateTimer() {
     const elapsed = Math.floor((Date.now() - startTime) / 1000);
     currentTime = elapsed;
@@ -347,13 +328,10 @@ document.addEventListener('DOMContentLoaded', function () {
     timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }
 
-  // Fonction pour terminer le jeu
   function endGame() {
-    console.log('Ending game...');
     gameActive = false;
     clearInterval(timerInterval);
 
-    // Mettre à jour l'écran de fin de jeu
     if (finalScore) finalScore.textContent = matchedPairs;
 
     const minutes = Math.floor(currentTime / 60);
@@ -367,19 +345,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const successThreshold = Math.ceil(totalPairs * 0.8); // 80% success rate
     const isSuccessful = matchedPairs >= successThreshold;
 
-    console.log(
-      'Game completion status:',
-      isSuccessful,
-      'Matched pairs:',
-      matchedPairs,
-      'Threshold:',
-      successThreshold
-    );
-
-    // Track level progress
     trackLevelProgress(isSuccessful);
 
-    // Enregistrer le score
     saveScore(matchedPairs);
 
     // Afficher le message de progression de niveau
@@ -397,21 +364,16 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
-    // Afficher l'écran de fin de jeu
-    console.log('Switching to post game screen...');
     setTimeout(() => {
       if (activeGameScreen) activeGameScreen.classList.remove('active');
       if (postGameScreen) postGameScreen.classList.add('active');
-      console.log('Post game screen should now be visible');
 
       // Lancer l'animation confetti simple
       launchConfetti();
     }, 1000);
   }
 
-  // Fonction pour enregistrer le score
   function saveScore(matchedPairs) {
-    console.log('Saving score:', matchedPairs);
     fetch('/games/score', {
       method: 'POST',
       headers: {
@@ -428,15 +390,12 @@ document.addEventListener('DOMContentLoaded', function () {
       }),
     })
       .then((response) => response.json())
-      .then((data) => {
-        console.log('Score enregistré avec succès:', data);
-      })
+      .then(() => {})
       .catch((error) => {
         console.error("Erreur lors de l'enregistrement du score:", error);
       });
   }
 
-  // Fonction pour mélanger un tableau
   function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -445,7 +404,6 @@ document.addEventListener('DOMContentLoaded', function () {
     return array;
   }
 
-  // Fonction pour suivre la progression de niveau
   function trackLevelProgress(isSuccessful) {
     fetch(`/level-progress/track?package=${packageId}`, {
       method: 'POST',
@@ -459,8 +417,6 @@ document.addEventListener('DOMContentLoaded', function () {
     })
       .then((response) => response.json())
       .then((data) => {
-        console.log('Progression de niveau mise à jour:', data);
-
         // If all games for this level are completed and words were updated
         if (data.level_completed && data.words_updated > 0) {
           // You could show a notification or modal here
@@ -480,7 +436,6 @@ document.addEventListener('DOMContentLoaded', function () {
           if (finishLevelBtn) {
             finishLevelBtn.addEventListener('click', function () {
               window.location.href = `/games?package=${packageId}`;
-              console.log('Finish level button clicked');
             });
           }
         }
@@ -490,7 +445,6 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-  // Événements
   if (startGameBtn) {
     startGameBtn.addEventListener('click', startGame);
   }
@@ -499,7 +453,6 @@ document.addEventListener('DOMContentLoaded', function () {
     playAgainBtn.addEventListener('click', startGame);
   }
 
-  // Fonction pour lancer l'animation confetti avec confetti.js.org
   function launchConfetti() {
     const duration = 15 * 1000;
     const animationEnd = Date.now() + duration;
@@ -536,15 +489,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Fonction de test pour forcer l'affichage de l'écran de fin (pour débogage)
   window.testEndGame = function () {
-    console.log('Testing end game...');
     matchedPairs = totalPairs;
     endGame();
   };
 
-  // Ajouter un raccourci clavier pour tester (Ctrl+Shift+E)
   document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.shiftKey && e.key === 'E') {
-      console.log('Test end game triggered by keyboard shortcut');
       window.testEndGame();
     }
   });

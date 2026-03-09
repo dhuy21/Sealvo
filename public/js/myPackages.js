@@ -4,7 +4,6 @@
  */
 
 document.addEventListener('DOMContentLoaded', function () {
-  // Vérifier si nous sommes sur la page My Packages
   if (!document.querySelector('.packages-container')) {
     return;
   }
@@ -50,9 +49,7 @@ document.addEventListener('DOMContentLoaded', function () {
     addAnimations();
   }
 
-  // Charger les données des packages depuis le DOM
   function loadPackagesData() {
-    // Charger les packages de l'utilisateur
     const packageCards = document.querySelectorAll('#packagesGrid .package-card');
     allPackages = [];
 
@@ -67,7 +64,6 @@ document.addEventListener('DOMContentLoaded', function () {
       allPackages.push(packageData);
     });
 
-    // Charger les packages publics
     const publicPackageCards = document.querySelectorAll('#publicPackagesGrid .package-card');
     allPublicPackages = [];
 
@@ -177,13 +173,11 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    // Animation de recherche
     searchInput.parentElement.classList.add('searching');
     setTimeout(() => {
       searchInput.parentElement.classList.remove('searching');
     }, 600);
 
-    // Afficher le bouton clear
     showClearButton();
 
     // Filtrer selon la vue actuelle
@@ -194,7 +188,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Effacer la recherche
   function clearSearch() {
     searchInput.value = '';
     hideClearButton();
@@ -775,7 +768,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Set icon based on type
-    let icon = '';
+    let icon;
     if (type === 'success') {
       icon = '<i class="fas fa-check-circle"></i>';
     } else if (type === 'error') {

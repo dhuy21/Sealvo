@@ -8,6 +8,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
 
   db:
     image: mysql:8.0
@@ -20,7 +22,7 @@ services:
       - '${MYSQLHOST_PORT}:${MYSQLPORT}'
     volumes:
       - db_data:/var/lib/mysql
-      - ./app/core/database.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./migrations/001_initial.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
       test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -P 3306 -uroot -p${MYSQL_ROOT_PASSWORD}']
       interval: 5s
@@ -28,5 +30,21 @@ services:
       retries: 15
       start_period: 45s
 
+  redis:
+    image: redis:7-alpine
+    container_name: web_vocab_redis
+    restart: unless-stopped
+    # volatile-lru: only evict keys that have a TTL set (sessions) when memory is full.
+    # Never evicts sessions randomly — safer than the default (noeviction or allkeys-lru).
+    command: redis-server --maxmemory-policy volatile-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
 volumes:
   db_data:
+  redis_data:
