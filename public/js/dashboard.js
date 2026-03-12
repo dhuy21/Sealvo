@@ -578,34 +578,4 @@ function initAvatarEdit() {
   }
 }
 
-/**
- * Show a notification message
- */
-function showNotification(message, type = 'info') {
-  let notification = document.getElementById('notification');
-  if (!notification) {
-    notification = document.createElement('div');
-    notification.id = 'notification';
-    document.body.appendChild(notification);
-  }
-
-  let icon;
-  if (type === 'success') {
-    icon = '<i class="fas fa-check-circle"></i>';
-  } else if (type === 'error') {
-    icon = '<i class="fas fa-exclamation-circle"></i>';
-  } else {
-    icon = '<i class="fas fa-info-circle"></i>';
-  }
-
-  notification.innerHTML = icon + message;
-  notification.className = type;
-
-  setTimeout(() => {
-    notification.classList.add('show');
-  }, 10);
-
-  setTimeout(() => {
-    notification.classList.remove('show');
-  }, 3000);
-}
+/* global showNotification */

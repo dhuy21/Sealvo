@@ -1,6 +1,7 @@
 const userModel = require('../../models/users');
 const resetPasswordModel = require('../../models/resetPass');
 const MailersendService = require('../../services/mailersend');
+const emailQueue = require('../../queues/emailQueue');
 const bcrypt = require('bcryptjs');
 
 class ResetPasswordController {
@@ -28,7 +29,7 @@ class ResetPasswordController {
       const emailContent = await MailersendService.generateResetPasswordEmail(user.username, token);
       const subject = 'Réinitialisation de mot de passe';
 
-      const emailSent = await MailersendService.sendEmail(email, emailContent, subject);
+      const emailSent = await emailQueue.enqueue({ to: email, content: emailContent, subject });
 
       if (!emailSent) {
         return res.status(400).json({
@@ -70,7 +71,7 @@ class ResetPasswordController {
       await resetPasswordModel.saveResetPasswordToken(email, token, expiresAt);
       const emailContent = await MailersendService.generateResetPasswordEmail(user.username, token);
       const subject = 'Réinitialisation de mot de passe';
-      const emailSent = await MailersendService.sendEmail(email, emailContent, subject);
+      const emailSent = await emailQueue.enqueue({ to: email, content: emailContent, subject });
 
       if (!emailSent) {
         return res.json({

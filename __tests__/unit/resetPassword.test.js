@@ -5,11 +5,13 @@
 const userModel = require('../../app/models/users');
 const resetPasswordModel = require('../../app/models/resetPass');
 const MailersendService = require('../../app/services/mailersend');
+const emailQueue = require('../../app/queues/emailQueue');
 const ResetPasswordController = require('../../app/controllers/authControllers/ResetPasswordController');
 
 jest.mock('../../app/models/users');
 jest.mock('../../app/models/resetPass');
 jest.mock('../../app/services/mailersend');
+jest.mock('../../app/queues/emailQueue');
 
 const mockRes = () => ({
   status: jest.fn().mockReturnThis(),
@@ -43,7 +45,7 @@ describe('ResetPasswordController (unit)', () => {
       });
       resetPasswordModel.saveResetPasswordToken.mockResolvedValue(undefined);
       MailersendService.generateResetPasswordEmail.mockResolvedValue('<html>reset</html>');
-      MailersendService.sendEmail.mockResolvedValue(true);
+      emailQueue.enqueue.mockResolvedValue(true);
 
       const req = { body: { email: 'alice@example.com' } };
       const res = mockRes();
@@ -56,7 +58,11 @@ describe('ResetPasswordController (unit)', () => {
         'tok123',
         expect.any(Date)
       );
-      expect(MailersendService.sendEmail).toHaveBeenCalled();
+      expect(emailQueue.enqueue).toHaveBeenCalledWith({
+        to: 'alice@example.com',
+        content: '<html>reset</html>',
+        subject: 'Réinitialisation de mot de passe',
+      });
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     });
@@ -69,7 +75,7 @@ describe('ResetPasswordController (unit)', () => {
       });
       resetPasswordModel.saveResetPasswordToken.mockResolvedValue(undefined);
       MailersendService.generateResetPasswordEmail.mockResolvedValue('<html>reset</html>');
-      MailersendService.sendEmail.mockResolvedValue(false); // send fails
+      emailQueue.enqueue.mockResolvedValue(false);
 
       const req = { body: { email: 'alice@example.com' } };
       const res = mockRes();

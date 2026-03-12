@@ -1,5 +1,6 @@
-/* global streakUpdated, updateUserStreak */
+/* global showNotification */
 document.addEventListener('DOMContentLoaded', function () {
+  var streakRecorded = false;
   checkBrowser();
 
   let allWords = [];
@@ -16,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
   let wordsFilteredByVocab = allWords.filter((word) => word.dueToday);
   let currentWords = [...wordsFilteredByVocab];
   let currentIndex = 0;
-  let progress = []; // -1: unseen, 0: unknown, 1: uncertain, 2: known
+  let progress = []; // -1: unseen, 0: à revoir, 2: appris
   let sessionStartTime = new Date();
 
   let flashcard = document.getElementById('flashcard');
@@ -28,7 +29,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const progressText = document.getElementById('progress-text');
   const shuffleBtn = document.getElementById('shuffle-cards');
   const resetBtn = document.getElementById('reset-progress');
-  const saveBtn = document.getElementById('save-progress');
   const sessionTimeEl = document.getElementById('session-time');
   const knownCountEl = document.getElementById('known-count');
   const notKnownCountEl = document.getElementById('not-known-count');
@@ -61,22 +61,24 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function updateProgressDisplay() {
-    const seen = progress.filter((p) => p >= 0).length;
-    const notKnown = progress.filter((p) => p === 0).length;
-    const uncertain = progress.filter((p) => p === 1).length;
+    const toReview = progress.filter((p) => p === 0).length;
+    const remaining = progress.filter((p) => p !== 2).length;
     const known = progress.filter((p) => p === 2).length;
 
     const progressPercent =
-      currentWords.length > 0 ? Math.round((seen / currentWords.length) * 100) : 0;
+      currentWords.length > 0 ? Math.round((known / currentWords.length) * 100) : 0;
 
     progressBar.style.transition = 'width 0.7s cubic-bezier(0.19, 1, 0.22, 1)';
     progressBar.style.width = `${progressPercent}%`;
     progressText.textContent = `${progressPercent}%`;
 
-    animateCounter(notKnownCountEl, notKnown);
-    animateCounter(uncertainCountEl, uncertain);
+    animateCounter(notKnownCountEl, toReview);
+    animateCounter(uncertainCountEl, remaining);
     animateCounter(masteredCountEl, known);
     animateCounter(knownCountEl, known);
+
+    renderRemainingWords();
+    saveProgress();
   }
 
   function animateCounter(element, targetValue) {
@@ -208,13 +210,6 @@ document.addEventListener('DOMContentLoaded', function () {
     newFlashcard.addEventListener('click', function () {
       if (currentWords.length > 0) {
         this.classList.toggle('flipped');
-        try {
-          const flipSound = new Audio('/sounds/flip.mp3');
-          flipSound.volume = 0.2;
-          flipSound.play();
-        } catch {
-          /* optional sound */
-        }
       }
     });
 
@@ -362,9 +357,6 @@ document.addEventListener('DOMContentLoaded', function () {
       .padStart(2, '0');
     const ss = (elapsed % 60).toString().padStart(2, '0');
     sessionTimeEl.textContent = `${mm}:${ss}`;
-
-    // Trigger streak update after 5 minutes of study
-    if (elapsed >= 300 && !streakUpdated) updateUserStreak();
   }
 
   function saveProgress() {
@@ -377,8 +369,6 @@ document.addEventListener('DOMContentLoaded', function () {
           words: currentWords.map((w) => w.id),
         })
       );
-      saveBtn.classList.add('saving');
-      setTimeout(() => saveBtn.classList.remove('saving'), 500);
     } catch (e) {
       console.error('Save progress error:', e);
     }
@@ -531,9 +521,18 @@ document.addEventListener('DOMContentLoaded', function () {
       progress[currentIndex] = level;
       updateProgressDisplay();
 
-      let animationClass = 'correct-answer';
-      if (level === 0) animationClass = 'wrong-answer';
-      else if (level === 1) animationClass = 'uncertain-answer';
+      if (
+        !streakRecorded &&
+        currentWords.length > 0 &&
+        progress.every(function (p) {
+          return p === 2;
+        })
+      ) {
+        streakRecorded = true;
+        recordStreak();
+      }
+
+      const animationClass = level === 0 ? 'wrong-answer' : 'correct-answer';
 
       flashcard.classList.add(animationClass);
       setTimeout(() => {
@@ -577,9 +576,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  saveBtn.addEventListener('click', saveProgress);
-
-  // Keyboard shortcuts: arrows to navigate, space to flip, 1/2/3 for knowledge level
+  // Keyboard shortcuts: arrows to navigate, space to flip, 1/2 for knowledge level
   document.addEventListener('keydown', function (e) {
     if (currentWords.length === 0) return;
 
@@ -593,8 +590,6 @@ document.addEventListener('DOMContentLoaded', function () {
     } else if (e.code === 'Digit1' || e.code === 'Numpad1') {
       document.querySelector('.knowledge-btn[data-level="0"]').click();
     } else if (e.code === 'Digit2' || e.code === 'Numpad2') {
-      document.querySelector('.knowledge-btn[data-level="1"]').click();
-    } else if (e.code === 'Digit3' || e.code === 'Numpad3') {
       document.querySelector('.knowledge-btn[data-level="2"]').click();
     }
   });
@@ -608,70 +603,73 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  const style = document.createElement('style');
-  style.textContent = `
-      .button-press { transform: scale(0.95); }
-      .pulse { animation: pulse-animation 0.5s cubic-bezier(0.455, 0.03, 0.515, 0.955); }
-      @keyframes pulse-animation {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
+  function renderRemainingWords() {
+    var container = document.getElementById('remaining-words');
+    if (!container) return;
+
+    var items = [];
+    for (var i = 0; i < currentWords.length; i++) {
+      if (progress[i] === 0) {
+        items.push({ index: i, word: currentWords[i].word });
       }
-      .updating { opacity: 0.5; transform: scale(0.98); transition: all 0.15s ease; }
-      .slide-left { animation: slide-left-anim 0.2s forwards; }
-      @keyframes slide-left-anim {
-        0% { transform: translateX(0); opacity: 1; }
-        100% { transform: translateX(-50px); opacity: 0; }
-      }
-      .slide-right { animation: slide-right-anim 0.2s forwards; }
-      @keyframes slide-right-anim {
-        0% { transform: translateX(0); opacity: 1; }
-        100% { transform: translateX(50px); opacity: 0; }
-      }
-      .shuffle-animation { animation: shuffle-anim 0.6s ease; }
-      @keyframes shuffle-anim {
-        0% { transform: translateY(0) rotate(0); }
-        33% { transform: translateY(-15px) rotate(-2deg); }
-        66% { transform: translateY(10px) rotate(2deg); }
-        100% { transform: translateY(0) rotate(0); }
-      }
-      .mode-change { animation: mode-change-anim 0.4s ease; }
-      @keyframes mode-change-anim {
-        0% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.5; transform: scale(0.95); }
-        100% { opacity: 1; transform: scale(1); }
-      }
-      .reset-animation { animation: reset-anim 0.5s ease; }
-      @keyframes reset-anim {
-        0% { transform: scale(1); }
-        50% { transform: scale(0.95); }
-        100% { transform: scale(1); }
-      }
-      .saving { animation: saving-anim 0.5s ease; }
-      @keyframes saving-anim {
-        0% { transform: scale(1); }
-        50% { transform: scale(0.95); background-position: right bottom; }
-        100% { transform: scale(1); }
-      }
-      .wrong-answer { animation: wrong-anim 0.5s ease; }
-      @keyframes wrong-anim {
-        0%, 100% { transform: translateX(0); }
-        20%, 60% { transform: translateX(-5px); }
-        40%, 80% { transform: translateX(5px); }
-      }
-      .uncertain-answer { animation: uncertain-anim 0.5s ease; }
-      @keyframes uncertain-anim {
-        0% { transform: translateY(0); }
-        50% { transform: translateY(-5px); }
-        100% { transform: translateY(0); }
-      }
-      .correct-answer { animation: correct-anim 0.5s ease; }
-      @keyframes correct-anim {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
-      }`;
-  document.head.appendChild(style);
+    }
+
+    if (items.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+
+    container.innerHTML =
+      '<h4>À revoir (' +
+      items.length +
+      ')</h4><div class="word-chips">' +
+      items
+        .map(function (item) {
+          return (
+            '<span class="word-chip chip-review" data-jump="' +
+            item.index +
+            '">' +
+            item.word +
+            '</span>'
+          );
+        })
+        .join('') +
+      '</div>';
+
+    container.querySelectorAll('.word-chip').forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        currentIndex = parseInt(this.getAttribute('data-jump'));
+        updateCardDisplay();
+      });
+    });
+  }
+
+  function recordStreak() {
+    var known = progress.filter(function (p) {
+      return p === 2;
+    }).length;
+    var total = currentWords.length;
+    var summary = known + '/' + total + ' mots maîtrisés';
+
+    fetch('/update-streak', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (data) {
+        if (data.updated) {
+          showNotification(
+            '🔥 Série de ' + data.newStreak + ' jour(s) !\n' + summary,
+            'success',
+            6000
+          );
+        } else {
+          showNotification('Session terminée ! ' + summary, 'success', 5000);
+        }
+      })
+      .catch(function () {
+        showNotification('Session terminée ! ' + summary, 'success', 5000);
+      });
+  }
 
   initProgress();
   updateCardDisplay();

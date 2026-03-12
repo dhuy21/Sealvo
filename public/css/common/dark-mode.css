@@ -668,3 +668,19 @@ body[data-theme='dark'] {
 [data-theme='dark'] .hint-btn::before {
   animation: darkLightbulbGlow 2s infinite ease-in-out !important;
 }
+
+/* Remaining words panel - dark mode */
+[data-theme='dark'] .remaining-words h4 {
+  color: #a0aec0 !important;
+}
+
+[data-theme='dark'] .word-chip.chip-review {
+  background: rgba(231, 76, 60, 0.2);
+  color: #f87171 !important;
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+[data-theme='dark'] .word-chip.chip-review:hover {
+  background: #e74c3c;
+  color: #fff !important;
+}

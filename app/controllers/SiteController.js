@@ -1,4 +1,4 @@
-const MailersendService = require('../services/mailersend');
+const emailQueue = require('../queues/emailQueue');
 const { encode } = require('html-entities');
 
 class SiteController {
@@ -42,7 +42,11 @@ class SiteController {
 
       const toEmail = process.env.USER_GMAIL;
       const subjectMail = 'Nouveau feedback pour votre site';
-      const emailSent = await MailersendService.sendEmail(toEmail, feedbackContent, subjectMail);
+      const emailSent = await emailQueue.enqueue({
+        to: toEmail,
+        content: feedbackContent,
+        subject: subjectMail,
+      });
 
       if (!emailSent) {
         return res.status(400).json({
