@@ -18,10 +18,10 @@ const mockConnection = {
 beforeEach(() => {
   jest.clearAllMocks();
   jest.resetModules();
-  process.env.RABBITMQ_HOST = 'localhost';
-  process.env.RABBITMQ_PORT = '5672';
-  process.env.RABBITMQ_USER = 'guest';
-  process.env.RABBITMQ_PASS = 'guest';
+  process.env.RABBITMQ_DEFAULT_HOST = 'localhost';
+  process.env.RABBITMQ_DEFAULT_PORT = '5672';
+  process.env.RABBITMQ_DEFAULT_USER = 'guest';
+  process.env.RABBITMQ_DEFAULT_PASS = 'guest';
   delete process.env.RABBITMQ_URL;
   amqp = require('amqplib');
   amqp.connect.mockResolvedValue(mockConnection);
@@ -29,10 +29,10 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  delete process.env.RABBITMQ_HOST;
-  delete process.env.RABBITMQ_PORT;
-  delete process.env.RABBITMQ_USER;
-  delete process.env.RABBITMQ_PASS;
+  delete process.env.RABBITMQ_DEFAULT_HOST;
+  delete process.env.RABBITMQ_DEFAULT_PORT;
+  delete process.env.RABBITMQ_DEFAULT_USER;
+  delete process.env.RABBITMQ_DEFAULT_PASS;
 });
 
 describe('rabbitmq (unit)', () => {
@@ -52,7 +52,7 @@ describe('rabbitmq (unit)', () => {
     });
 
     it('skips connection when no host is configured', async () => {
-      delete process.env.RABBITMQ_HOST;
+      delete process.env.RABBITMQ_DEFAULT_HOST;
       await rabbitmq.connect();
       expect(amqp.connect).not.toHaveBeenCalled();
       expect(rabbitmq.isReady()).toBe(false);
