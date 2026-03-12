@@ -156,16 +156,12 @@
 
       <div class='knowledge-buttons'>
         <button class='knowledge-btn' data-level='0'>
-          <i class='fas fa-times'></i>
-          Je ne sais pas
-        </button>
-        <button class='knowledge-btn' data-level='1'>
-          <i class='fas fa-question'></i>
-          Incertain
+          <i class='fas fa-redo'></i>
+          À revoir
         </button>
         <button class='knowledge-btn' data-level='2'>
           <i class='fas fa-check'></i>
-          Je sais
+          Appris
         </button>
       </div>
     </div>
@@ -180,11 +176,11 @@
       </div>
       <div class='progress-stats'>
         <div class='progress-stat'>
-          <span class='stat-icon red'><i class='fas fa-times'></i></span>
+          <span class='stat-icon red'><i class='fas fa-redo'></i></span>
           <span id='not-known-count'>0</span>
         </div>
         <div class='progress-stat'>
-          <span class='stat-icon orange'><i class='fas fa-question'></i></span>
+          <span class='stat-icon'><i class='fas fa-minus-circle'></i></span>
           <span id='uncertain-count'>0</span>
         </div>
         <div class='progress-stat'>
@@ -192,6 +188,7 @@
           <span id='mastered-count'>0</span>
         </div>
       </div>
+      <div id='remaining-words' class='remaining-words'></div>
     </div>
 
     <div class='flashcard-actions'>
@@ -202,10 +199,6 @@
       <button id='reset-progress' class='action-btn'>
         <i class='fas fa-redo'></i>
         Recommencer
-      </button>
-      <button id='save-progress' class='action-btn'>
-        <i class='fas fa-save'></i>
-        Sauvegarder
       </button>
       <a href='/games/flashMatch?package={{package_id}}' class='action-btn game-btn'>
         <i class='fas fa-gamepad'></i>

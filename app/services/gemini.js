@@ -4,16 +4,10 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 class GeminiService {
   async replaceExample(words, words_need_replace_example) {
-    if (words_need_replace_example.length === 1) {
-      words.example = words_need_replace_example[0].example;
-    } else {
-      for (const word of words) {
-        for (const word_need_replace_example of words_need_replace_example) {
-          if (word.id === word_need_replace_example.id) {
-            word.example = word_need_replace_example.example;
-          }
-        }
-      }
+    const items = Array.isArray(words) ? words : [words];
+    for (const word of items) {
+      const found = words_need_replace_example.find((w) => w.id == word.id);
+      if (found) word.example = found.example;
     }
     return words;
   }

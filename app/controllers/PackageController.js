@@ -261,7 +261,7 @@ class PackageController {
       res.json({
         success: true,
         message: 'Package copié avec succès',
-        packageId: newPackage.package_id,
+        packageId: newPackage,
       });
     } catch (error) {
       console.error('Erreur lors de la copie du package:', error);

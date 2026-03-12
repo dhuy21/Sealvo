@@ -35,6 +35,7 @@
     "@aws-sdk/client-sesv2": "^3.0.0",
     "@google-cloud/text-to-speech": "^6.2.0",
     "@google/generative-ai": "^0.24.1",
+    "amqplib": "^0.10.9",
     "axios": "^1.12.0",
     "bcryptjs": "^3.0.2",
     "connect-redis": "^9.0.0",

@@ -1,3 +1,4 @@
+/* global showNotification */
 document.addEventListener('DOMContentLoaded', function () {
   // Éléments DOM - Import de fichiers
   const fileInput = document.getElementById('vocab-file');
@@ -54,6 +55,62 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function initGlobalEventHandlers() {
     initBeforeUnloadHandler();
+  }
+
+  // ========================================
+  // JOB TRACKING (SSE)
+  // ========================================
+
+  function watchJob(jobId) {
+    return new Promise((resolve, reject) => {
+      const source = new EventSource(`/api/jobs/${jobId}/stream`);
+      let lastStatus = null;
+
+      source.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          lastStatus = data.status;
+
+          if (data.status === 'processing' && data.progress) {
+            const { current, total, phase } = data.progress;
+            if (phase === 'parsing') {
+              showNotification('Préparation des données...', 'info', 0);
+            } else if (phase === 'gemini') {
+              showNotification('Analyse IA en cours...', 'info', 0);
+            } else if (phase === 'saving') {
+              const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+              showNotification(`Enregistrement... ${pct}%`, 'info', 0);
+            }
+          }
+
+          if (data.status === 'completed') {
+            source.close();
+            const r = data.result || {};
+            resolve({
+              success: true,
+              message: `${r.imported || 0} mot(s) importé(s). ${r.errors || 0} erreur(s).`,
+            });
+          } else if (data.status === 'failed') {
+            source.close();
+            reject(new Error(data.error || 'Le traitement a échoué'));
+          } else if (data.status === 'stream_unavailable') {
+            source.close();
+            resolve({
+              success: true,
+              message: 'Traitement en cours. Veuillez rafraîchir la page pour voir le résultat.',
+            });
+          }
+        } catch {
+          /* ignore parse errors */
+        }
+      };
+
+      source.onerror = () => {
+        source.close();
+        if (lastStatus === 'completed' || lastStatus === 'failed') return;
+        reject(new Error('Connexion au serveur perdue'));
+      };
+    });
   }
 
   // ========================================
@@ -165,20 +222,31 @@ document.addEventListener('DOMContentLoaded', function () {
         method: 'POST',
         body: formData,
       });
-      if (!response.ok) {
-        throw new Error(response.statusText);
+      var result;
+      try {
+        result = await response.json();
+      } catch {
+        throw new Error('Erreur serveur. Veuillez réessayer.');
       }
-      const result = await response.json();
+      if (!result.success) throw new Error(result.message);
 
-      if (result.success) {
-        showNotification(result.message, 'success');
-        resetImportForm();
+      if (result.async && result.jobId) {
+        if (window.JobWatcher) window.JobWatcher.addJob(result.jobId);
+        showNotification('Traitement en cours...', 'info');
+        const final = await watchJob(result.jobId);
+        if (window.JobWatcher) window.JobWatcher.removeJob(result.jobId);
+        showNotification(final.message, 'success');
       } else {
-        throw new Error(result.message);
+        showNotification(result.message, 'success');
       }
+      resetImportForm();
     } catch (error) {
       console.error('Erreur:', error);
-      showNotification('Une erreur est survenue. Veuillez réessayer plus tard.', 'error');
+      showNotification(
+        error.message || 'Une erreur est survenue. Veuillez réessayer plus tard.',
+        'error',
+        10000
+      );
     } finally {
       hideLoader();
       setImportButtonLoading(false);
@@ -561,21 +629,27 @@ document.addEventListener('DOMContentLoaded', function () {
         body: formData,
       });
 
-      if (!response.ok) {
-        throw new Error('Erreur réseau: ' + response.statusText);
+      var result;
+      try {
+        result = await response.json();
+      } catch {
+        throw new Error('Erreur serveur. Veuillez réessayer.');
       }
+      if (!result.success) throw new Error(result.message || "Erreur lors de l'enregistrement");
 
-      const result = await response.json();
-
-      if (result.success) {
-        showNotification(result.message || 'Mots enregistrés avec succès !', 'success');
-        resetMultiWordForm();
+      if (result.async && result.jobId) {
+        if (window.JobWatcher) window.JobWatcher.addJob(result.jobId);
+        showNotification('Traitement en cours...', 'info');
+        const final = await watchJob(result.jobId);
+        if (window.JobWatcher) window.JobWatcher.removeJob(result.jobId);
+        showNotification(final.message || 'Mots enregistrés avec succès !', 'success');
       } else {
-        throw new Error(result.message || "Erreur lors de l'enregistrement");
+        showNotification(result.message || 'Mots enregistrés avec succès !', 'success');
       }
+      resetMultiWordForm();
     } catch (error) {
       console.error('Erreur:', error);
-      showNotification(error.message || "Erreur lors de l'enregistrement", 'error');
+      showNotification(error.message || "Erreur lors de l'enregistrement", 'error', 10000);
     } finally {
       setSubmitButtonLoading(false);
     }
@@ -796,43 +870,7 @@ document.addEventListener('DOMContentLoaded', function () {
     card.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  /**
-   * Affiche une notification
-   */
-  function showNotification(message, type = 'info') {
-    let notification = document.getElementById('notification');
-
-    if (!notification) {
-      notification = document.createElement('div');
-      notification.id = 'notification';
-      document.body.appendChild(notification);
-    }
-
-    const icon = getNotificationIcon(type);
-    notification.innerHTML = icon + ' ' + message;
-    notification.className = type;
-
-    setTimeout(() => {
-      notification.classList.add('show');
-    }, 10);
-
-    setTimeout(() => {
-      notification.classList.remove('show');
-    }, 4000);
-  }
-
-  /**
-   * Retourne l'icône appropriée pour le type de notification
-   */
-  function getNotificationIcon(type) {
-    const icons = {
-      success: '<i class="fas fa-check-circle"></i>',
-      error: '<i class="fas fa-exclamation-circle"></i>',
-      info: '<i class="fas fa-info-circle"></i>',
-    };
-
-    return icons[type] || icons.info;
-  }
+  /* showNotification is provided globally by home.js */
 
   /**
    * Vérifie s'il y a des données non sauvegardées

@@ -89,4 +89,15 @@ async function disconnect() {
   }
 }
 
-module.exports = { connect, getClient, isReady, disconnect };
+async function createSubscriber() {
+  if (!client) return null;
+  try {
+    const sub = client.duplicate();
+    await sub.connect();
+    return sub;
+  } catch {
+    return null;
+  }
+}
+
+module.exports = { connect, getClient, isReady, disconnect, createSubscriber };

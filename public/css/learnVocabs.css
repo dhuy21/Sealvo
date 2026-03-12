@@ -2453,6 +2453,114 @@ input[name='mode'][value='meaning-to-word']:checked ~ .flashcard-container .card
   }
 }
 
+/* Review panel */
+.review-panel {
+  background: white;
+  border-radius: var(--card-radius);
+  padding: 25px;
+  margin: 20px 0;
+  box-shadow: var(--card-shadow);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+.review-header h3 {
+  font-size: 1.1rem;
+  color: #333;
+  margin: 0 0 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.review-badge {
+  background: var(--bg-gradient);
+  color: white;
+  font-size: 0.8rem;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+.review-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.review-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+}
+.review-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+.review-item.to-review {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #dc2626;
+}
+.review-item.difficult {
+  border-color: #fdba74;
+  background: #fff7ed;
+  color: #ea580c;
+}
+.review-item.unseen {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+}
+.review-status {
+  font-size: 0.75rem;
+}
+.review-num {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  margin-left: auto;
+}
+.review-done {
+  color: #10b981;
+  font-weight: 600;
+  font-size: 1rem;
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+[data-theme='dark'] .review-panel {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.05);
+}
+[data-theme='dark'] .review-header h3 {
+  color: #e2e8f0;
+}
+[data-theme='dark'] .review-item {
+  border-color: #334155;
+  background: #0f172a;
+}
+[data-theme='dark'] .review-item.unseen {
+  color: #94a3b8;
+  background: #0f172a;
+  border-color: #334155;
+}
+[data-theme='dark'] .review-item.to-review {
+  color: #f87171;
+  background: #1c1111;
+  border-color: #7f1d1d;
+}
+[data-theme='dark'] .review-item.difficult {
+  color: #fb923c;
+  background: #1c1510;
+  border-color: #7c2d12;
+}
+
 /* Écrans 360px (Samsung Galaxy S series, petits Android) */
 @media (max-width: 365px) {
   .flashcard-container {
@@ -2617,4 +2725,217 @@ input[name='mode'][value='meaning-to-word']:checked ~ .flashcard-container .card
     height: 25%;
     gap: 5px;
   }
+}
+
+/* ==============================
+   Animations
+   ============================== */
+
+.button-press {
+  transform: scale(0.95);
+}
+
+.pulse {
+  animation: pulse-animation 0.5s cubic-bezier(0.455, 0.03, 0.515, 0.955);
+}
+
+@keyframes pulse-animation {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.updating {
+  opacity: 0.5;
+  transform: scale(0.98);
+  transition: all 0.15s ease;
+}
+
+.slide-left {
+  animation: slide-left-anim 0.2s forwards;
+}
+
+@keyframes slide-left-anim {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-50px);
+    opacity: 0;
+  }
+}
+
+.slide-right {
+  animation: slide-right-anim 0.2s forwards;
+}
+
+@keyframes slide-right-anim {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(50px);
+    opacity: 0;
+  }
+}
+
+.shuffle-animation {
+  animation: shuffle-anim 0.6s ease;
+}
+
+@keyframes shuffle-anim {
+  0% {
+    transform: translateY(0) rotate(0);
+  }
+  33% {
+    transform: translateY(-15px) rotate(-2deg);
+  }
+  66% {
+    transform: translateY(10px) rotate(2deg);
+  }
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+}
+
+.mode-change {
+  animation: mode-change-anim 0.4s ease;
+}
+
+@keyframes mode-change-anim {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.reset-animation {
+  animation: reset-anim 0.5s ease;
+}
+
+@keyframes reset-anim {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.saving {
+  animation: saving-anim 0.5s ease;
+}
+
+@keyframes saving-anim {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+    background-position: right bottom;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.wrong-answer {
+  animation: wrong-anim 0.5s ease;
+}
+
+@keyframes wrong-anim {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-5px);
+  }
+  40%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+.correct-answer {
+  animation: correct-anim 0.5s ease;
+}
+
+@keyframes correct-anim {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ==============================
+   Remaining words panel
+   ============================== */
+
+.remaining-words {
+  margin-top: 15px;
+}
+
+.remaining-words h4 {
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  color: #666;
+}
+
+.word-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.word-chip {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  background: #e8ecf1;
+  color: #333;
+  transition: all 0.2s ease;
+}
+
+.word-chip:hover {
+  background: #4158d0;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.word-chip.chip-review {
+  background: #fde8e8;
+  color: #c0392b;
+  border: 1px solid #f5c6cb;
+}
+
+.word-chip.chip-review:hover {
+  background: #e74c3c;
+  color: #fff;
 }

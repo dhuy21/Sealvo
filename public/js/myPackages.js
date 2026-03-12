@@ -1,3 +1,4 @@
+/* global showNotification */
 /**
  * My Packages - JavaScript Interactions
  * Gestion des packages de vocabulaire
@@ -757,39 +758,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 150);
   }
 
-  // Afficher une notification
-  function showNotification(message, type = 'info') {
-    // Create notification element if it doesn't exist
-    let notification = document.getElementById('notification');
-    if (!notification) {
-      notification = document.createElement('div');
-      notification.id = 'notification';
-      document.body.appendChild(notification);
-    }
-
-    // Set icon based on type
-    let icon;
-    if (type === 'success') {
-      icon = '<i class="fas fa-check-circle"></i>';
-    } else if (type === 'error') {
-      icon = '<i class="fas fa-exclamation-circle"></i>';
-    } else {
-      icon = '<i class="fas fa-info-circle"></i>';
-    }
-
-    // Set content and type
-    notification.innerHTML = icon + message;
-    notification.className = type;
-
-    // Show and hide notification
-    setTimeout(() => {
-      notification.classList.add('show');
-    }, 10);
-
-    setTimeout(() => {
-      notification.classList.remove('show');
-    }, 3000);
-  }
+  /* showNotification is provided globally by home.js */
 
   // Ajouter des animations d'entrée
   function addAnimations() {

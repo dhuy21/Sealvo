@@ -6,6 +6,7 @@ const { engine } = require('express-handlebars');
 const { escapeHelper } = require('./app/middleware/sanitization');
 const { initializeMiddleware } = require('./app/middleware');
 const { isReady: redisReady } = require('./app/core/redis');
+const { isReady: rabbitmqReady } = require('./app/core/rabbitmq');
 const { globalLimiter } = require('./app/middleware/rateLimiter');
 
 /**
@@ -19,6 +20,11 @@ function getApp() {
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
   app.use(express.static(path.join(__dirname, 'public')));
+
+  app.use((req, res, next) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    next();
+  });
 
   const morganFormat =
     process.env.NODE_ENV === 'production'
@@ -74,7 +80,8 @@ function getApp() {
   app.get('/health', (req, res) => {
     const dbOk = !!global.dbConnection;
     const redisOk = redisReady();
-    res.status(dbOk ? 200 : 503).json({ ok: dbOk, db: dbOk, redis: redisOk });
+    const rmqOk = rabbitmqReady();
+    res.status(dbOk ? 200 : 503).json({ ok: dbOk, db: dbOk, redis: redisOk, rabbitmq: rmqOk });
   });
 
   route(app);

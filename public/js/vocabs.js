@@ -72,101 +72,6 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   document.getElementById('deleteAllBtn').addEventListener('click', handleDeleteAllClick);
-
-  const style = document.createElement('style');
-  style.textContent = `
-        .edit-input {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.2s ease;
-        }
-        
-        .edit-input:focus {
-            border-color: #2575fc;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(37, 117, 252, 0.15);
-        }
-        
-        .save-btn, .cancel-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 6px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-        }
-        
-        .save-btn {
-            color: #28a745;
-        }
-        
-        .cancel-btn {
-            color: #dc3545;
-        }
-        
-        .save-btn:hover {
-            background-color: rgba(40, 167, 69, 0.1);
-            transform: translateY(-2px);
-        }
-        
-        .cancel-btn:hover {
-            background-color: rgba(220, 53, 69, 0.1);
-            transform: translateY(-2px);
-        }
-        
-        .alert {
-            padding: 16px 24px;
-            border-radius: 12px;
-            margin-bottom: 25px;
-            animation: fadeIn 0.4s ease;
-        }
-        
-        .alert-success {
-            background-color: #d4edda;
-            border-left: 4px solid #28a745;
-            color: #155724;
-        }
-        
-        .alert-error {
-            background-color: #f8d7da;
-            border-left: 4px solid #dc3545;
-            color: #721c24;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes pulseEffect {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        
-        .pulse-animation {
-            animation: pulseEffect 2s infinite;
-        }
-        
-        .row-highlight {
-            background-color: rgba(37, 117, 252, 0.05);
-            transition: background-color 0.5s ease;
-        }
-        
-        .row-deleted {
-            animation: rowDeletedAnimation 0.8s ease forwards;
-        }
-        
-        @keyframes rowDeletedAnimation {
-            0% { opacity: 1; transform: translateX(0); }
-            20% { opacity: 1; transform: translateX(-10px); }
-            100% { opacity: 0; transform: translateX(30px); height: 0; margin: 0; padding: 0; }
-        }
-    `;
-  document.head.appendChild(style);
 });
 
 // Screen Rotation Notification Functions
@@ -870,38 +775,7 @@ function showNoWordsMessage() {
   }, 50);
 }
 
-function showNotification(message, type) {
-  // Create notification element if it doesn't exist
-  let notification = document.getElementById('notification');
-  if (!notification) {
-    notification = document.createElement('div');
-    notification.id = 'notification';
-    document.body.appendChild(notification);
-  }
-
-  // Set icon based on type
-  let icon;
-  if (type === 'success') {
-    icon = '<i class="fas fa-check-circle"></i>';
-  } else if (type === 'error') {
-    icon = '<i class="fas fa-exclamation-circle"></i>';
-  } else {
-    icon = '<i class="fas fa-info-circle"></i>';
-  }
-
-  // Set content and type
-  notification.innerHTML = icon + message;
-  notification.className = type;
-
-  // Show and hide notification
-  setTimeout(() => {
-    notification.classList.add('show');
-  }, 10);
-
-  setTimeout(() => {
-    notification.classList.remove('show');
-  }, 3000);
-}
+/* global showNotification */
 
 // Client-side search functionality
 function initSearch() {

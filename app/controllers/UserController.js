@@ -4,6 +4,7 @@ const wordModel = require('../models/words');
 const learningModel = require('../models/learning');
 const EmailVerificationModel = require('../models/email_verification');
 const MailersendService = require('../services/mailersend');
+const emailQueue = require('../queues/emailQueue');
 const { setFlash } = require('../middleware/flash');
 const { isProductionLike } = require('../config/environment');
 const cache = require('../core/cache');
@@ -205,7 +206,18 @@ class UserController {
       await EmailVerificationModel.saveToken(userId, expires_at, token_hash);
 
       const emailContent = await MailersendService.generateEmailVerification(username, token);
-      await MailersendService.sendEmail(email, emailContent, 'Vérification de votre email');
+      const emailSent = await emailQueue.enqueue({
+        to: email,
+        content: emailContent,
+        subject: 'Vérification de votre email',
+      });
+
+      if (!emailSent) {
+        return res.status(500).json({
+          success: false,
+          message: "Une erreur est survenue lors de l'envoi de l'email de vérification.",
+        });
+      }
 
       res.status(200).json({
         success: true,
