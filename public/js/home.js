@@ -175,59 +175,44 @@ function smoothScrollWithEasing(distance, duration) {
 }
 
 /**
- * Adds subtle mouse-follow effect to enhance interactivity
+ * Adds subtle mouse-follow glow across the entire homepage (position: fixed).
+ * Only activates when .hero-section exists (i.e. on the home page).
  */
 function addMouseFollowEffect() {
-  const heroSection = document.querySelector('.hero-section');
-  if (!heroSection) return;
+  if (!document.querySelector('.hero-section')) return;
 
-  // Create a subtle following glow
   const glow = document.createElement('div');
   glow.classList.add('mouse-glow');
-  glow.style.cssText = `
-        position: absolute;
-        width: 300px;
-        height: 300px;
-        background: radial-gradient(circle, rgba(106, 17, 203, 0.1), rgba(37, 117, 252, 0.05), transparent 70%);
-        border-radius: 50%;
-        pointer-events: none;
-        transform: translate(-50%, -50%);
-        z-index: 0;
-        opacity: 0;
-        transition: opacity 0.5s ease;
-    `;
+  glow.style.cssText =
+    'position:fixed;width:300px;height:300px;' +
+    'background:radial-gradient(circle,rgba(106,17,203,0.1),rgba(37,117,252,0.05),transparent 70%);' +
+    'border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);' +
+    'z-index:0;opacity:0;transition:opacity 0.5s ease;';
 
-  heroSection.appendChild(glow);
+  document.body.appendChild(glow);
 
-  // Smooth follow with lerping for fluid motion
   let mouseX = 0;
   let mouseY = 0;
   let glowX = 0;
   let glowY = 0;
 
-  heroSection.addEventListener('mousemove', (e) => {
-    const rect = heroSection.getBoundingClientRect();
-    mouseX = e.clientX - rect.left;
-    mouseY = e.clientY - rect.top;
-
+  document.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
     if (glow.style.opacity === '0') {
       glow.style.opacity = '1';
     }
   });
 
-  heroSection.addEventListener('mouseleave', () => {
+  document.addEventListener('mouseleave', () => {
     glow.style.opacity = '0';
   });
 
-  // Use requestAnimationFrame for smooth animation
   function animateGlow() {
-    // Lerp for smooth movement
     glowX += (mouseX - glowX) * 0.1;
     glowY += (mouseY - glowY) * 0.1;
-
-    glow.style.left = `${glowX}px`;
-    glow.style.top = `${glowY}px`;
-
+    glow.style.left = glowX + 'px';
+    glow.style.top = glowY + 'px';
     requestAnimationFrame(animateGlow);
   }
 

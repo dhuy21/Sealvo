@@ -6,18 +6,18 @@ let ready = false;
 
 function buildUrl() {
   if (process.env.RABBITMQ_URL) return process.env.RABBITMQ_URL;
-  const host = process.env.RABBITMQ_HOST;
+  const host = process.env.RABBITMQ_DEFAULT_HOST;
   if (!host) return null;
-  const port = process.env.RABBITMQ_PORT || '5672';
-  const user = process.env.RABBITMQ_USER || 'guest';
-  const pass = process.env.RABBITMQ_PASS || 'guest';
+  const port = process.env.RABBITMQ_DEFAULT_PORT || '5672';
+  const user = process.env.RABBITMQ_DEFAULT_USER || 'guest';
+  const pass = process.env.RABBITMQ_DEFAULT_PASS || 'guest';
   return `amqp://${user}:${pass}@${host}:${port}`;
 }
 
 async function connect() {
   const url = buildUrl();
   if (!url) {
-    console.warn('[rabbitmq] No RABBITMQ_HOST or RABBITMQ_URL — skipping.');
+    console.warn('[rabbitmq] No RABBITMQ_DEFAULT_HOST or RABBITMQ_URL — skipping.');
     return;
   }
 
