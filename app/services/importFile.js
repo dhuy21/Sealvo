@@ -75,14 +75,12 @@ class ImportFile {
               userId,
             });
             if (published) {
-              return res
-                .status(202)
-                .json({
-                  success: true,
-                  jobId: job.id,
-                  async: true,
-                  message: 'Import en cours de traitement.',
-                });
+              return res.status(202).json({
+                success: true,
+                jobId: job.id,
+                async: true,
+                message: 'Import en cours de traitement.',
+              });
             }
             jobTracker.remove(job.id).catch(() => {});
           }
