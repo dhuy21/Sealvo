@@ -6,10 +6,12 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const db = require('./app/core/database.js');
 const redis = require('./app/core/redis.js');
+const rabbitmq = require('./app/core/rabbitmq.js');
+const emailQueue = require('./app/queues/emailQueue.js');
+const importQueue = require('./app/queues/importQueue.js');
 
-// Railway injects PORT; .env provides fallback for local/docker.
 const appPort = parseInt(process.env.PORT || '3000', 10);
-const host = '0.0.0.0'; // required for container: accept connections from outside (e.g. Railway proxy)
+const host = '0.0.0.0';
 
 (async () => {
   try {
@@ -18,8 +20,23 @@ const host = '0.0.0.0'; // required for container: accept connections from outsi
 
     await redis.connect();
 
-    // Require AFTER Redis is connected so that modules like rateLimiter.js
-    // see isReady() = true and create their stores with RedisStore.
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      await rabbitmq.connect();
+      if (rabbitmq.isReady()) break;
+      if (attempt < 5) {
+        const delay = Math.min(2000 * attempt, 10000);
+        console.warn(`[rabbitmq] Not ready (attempt ${attempt}/5) — retrying in ${delay}ms...`);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+
+    if (rabbitmq.isReady()) {
+      await emailQueue.setupTopology();
+      await importQueue.setupTopology();
+    } else {
+      console.warn('[rabbitmq] Unavailable — app starts in fallback mode (sync emails).');
+    }
+
     const { getApp } = require('./appFactory');
     const app = getApp();
     const server = app.listen(appPort, host);
@@ -28,16 +45,16 @@ const host = '0.0.0.0'; // required for container: accept connections from outsi
     const gracefulShutdown = (signal) => {
       console.log(`${signal} received, shutting down gracefully...`);
 
-      // Force exit after 10s if connections don't close (keep-alive clients, SSE, etc.)
       const forceExitTimer = setTimeout(() => {
         console.error('[shutdown] Timeout reached — forcing exit.');
         process.exit(1);
       }, 10000);
-      forceExitTimer.unref(); // Don't keep process alive if everything else closes first
+      forceExitTimer.unref();
 
       server.close(async () => {
         console.log('HTTP server closed.');
         try {
+          await rabbitmq.disconnect();
           await redis.disconnect();
           if (global.dbConnection && global.dbConnection.end) await global.dbConnection.end();
           process.exit(0);

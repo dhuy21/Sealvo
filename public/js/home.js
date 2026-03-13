@@ -4,84 +4,11 @@
  * Enhanced for maximum fluidity and smoothness
  */
 
-// Streak update variables
-let streakUpdateTimeout = null;
-let streakUpdated = false;
-const STREAK_UPDATE_TIME = 30 * 60 * 1000; // 30 minutes in milliseconds
-
 document.addEventListener('DOMContentLoaded', function () {
   initWordCards();
-  animateCounters();
   setupScrollEffects();
-  initStaggeredAnimations();
   addMouseFollowEffect();
-  setupStreakUpdate();
 });
-
-/**
- * Animates number counters when they come into view
- * Enhanced with smoother counting animation
- */
-function animateCounters() {
-  const counters = document.querySelectorAll('.counter-number');
-  if (!counters.length) return;
-
-  const options = {
-    threshold: 0.2,
-    rootMargin: '-50px',
-  };
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        const counter = entry.target;
-        const target = parseInt(counter.getAttribute('data-count'));
-        const currentText = counter.textContent;
-        const currentValue = parseInt(currentText.replace(/\D/g, '')) || 0;
-
-        if (currentValue < target) {
-          animateValueWithEasing(counter, currentValue, target, 2000);
-        }
-
-        observer.unobserve(counter);
-      }
-    });
-  }, options);
-
-  counters.forEach((counter) => {
-    observer.observe(counter);
-  });
-}
-
-/**
- * Animates a value with easing for fluid counting
- */
-function animateValueWithEasing(element, start, end, duration) {
-  let startTimestamp = null;
-  const step = (timestamp) => {
-    if (!startTimestamp) startTimestamp = timestamp;
-    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-    const easeProgress = cubicEaseOut(progress);
-    const current = Math.floor(start + (end - start) * easeProgress);
-
-    element.textContent = current + '+';
-
-    if (progress < 1) {
-      window.requestAnimationFrame(step);
-    } else {
-      element.textContent = end + '+';
-    }
-  };
-
-  window.requestAnimationFrame(step);
-}
-
-/**
- * Cubic ease out function for smoother animations
- */
-function cubicEaseOut(t) {
-  return 1 - Math.pow(1 - t, 3);
-}
 
 /**
  * Sets up the interactive word cards with fluid rotations
@@ -248,166 +175,46 @@ function smoothScrollWithEasing(distance, duration) {
 }
 
 /**
- * Enhanced parallax effect with smoother motion
- */
-
-/**
- * Initialize staggered animations for list items
- */
-function initStaggeredAnimations() {
-  // Add staggered animation to features section
-  const featureCards = document.querySelectorAll('.feature-card');
-  const featureGrid = document.querySelector('.feature-grid');
-
-  if (featureGrid && featureCards.length) {
-    featureGrid.classList.add('stagger-children');
-
-    // Add animation classes to children
-    featureCards.forEach((card, index) => {
-      card.style.transitionDelay = `${0.1 + index * 0.1}s`;
-    });
-  }
-
-  // Add staggered animation to testimonials
-  const testimonials = document.querySelectorAll('.testimonial');
-  const testimonialContainer = document.querySelector('.testimonial-carousel');
-
-  if (testimonialContainer && testimonials.length) {
-    testimonialContainer.classList.add('stagger-children');
-
-    // Add animation classes to children
-    testimonials.forEach((testimonial, index) => {
-      testimonial.style.transitionDelay = `${0.2 + index * 0.15}s`;
-    });
-  }
-}
-
-/**
- * Adds subtle mouse-follow effect to enhance interactivity
+ * Adds subtle mouse-follow glow across the entire homepage (position: fixed).
+ * Only activates when .hero-section exists (i.e. on the home page).
  */
 function addMouseFollowEffect() {
-  const heroSection = document.querySelector('.hero-banner');
-  if (!heroSection) return;
+  if (!document.querySelector('.hero-section')) return;
 
-  // Create a subtle following glow
   const glow = document.createElement('div');
   glow.classList.add('mouse-glow');
-  glow.style.cssText = `
-        position: absolute;
-        width: 300px;
-        height: 300px;
-        background: radial-gradient(circle, rgba(106, 17, 203, 0.1), rgba(37, 117, 252, 0.05), transparent 70%);
-        border-radius: 50%;
-        pointer-events: none;
-        transform: translate(-50%, -50%);
-        z-index: 0;
-        opacity: 0;
-        transition: opacity 0.5s ease;
-    `;
+  glow.style.cssText =
+    'position:fixed;width:300px;height:300px;' +
+    'background:radial-gradient(circle,rgba(106,17,203,0.1),rgba(37,117,252,0.05),transparent 70%);' +
+    'border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);' +
+    'z-index:0;opacity:0;transition:opacity 0.5s ease;';
 
-  heroSection.appendChild(glow);
+  document.body.appendChild(glow);
 
-  // Smooth follow with lerping for fluid motion
   let mouseX = 0;
   let mouseY = 0;
   let glowX = 0;
   let glowY = 0;
 
-  heroSection.addEventListener('mousemove', (e) => {
-    const rect = heroSection.getBoundingClientRect();
-    mouseX = e.clientX - rect.left;
-    mouseY = e.clientY - rect.top;
-
+  document.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
     if (glow.style.opacity === '0') {
       glow.style.opacity = '1';
     }
   });
 
-  heroSection.addEventListener('mouseleave', () => {
+  document.addEventListener('mouseleave', () => {
     glow.style.opacity = '0';
   });
 
-  // Use requestAnimationFrame for smooth animation
   function animateGlow() {
-    // Lerp for smooth movement
     glowX += (mouseX - glowX) * 0.1;
     glowY += (mouseY - glowY) * 0.1;
-
-    glow.style.left = `${glowX}px`;
-    glow.style.top = `${glowY}px`;
-
+    glow.style.left = glowX + 'px';
+    glow.style.top = glowY + 'px';
     requestAnimationFrame(animateGlow);
   }
 
   animateGlow();
-}
-
-// Function to update streak after 5 minutes
-function setupStreakUpdate() {
-  // Clear any existing timeout
-  if (streakUpdateTimeout) {
-    clearTimeout(streakUpdateTimeout);
-  }
-
-  // Set a new timeout for 5 minutes
-  streakUpdateTimeout = setTimeout(() => {
-    // Only update once per session
-    if (!streakUpdated) {
-      updateUserStreak();
-    }
-  }, STREAK_UPDATE_TIME);
-}
-
-// Function to call the API to update streak
-function updateUserStreak() {
-  fetch('/update-streak', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.updated) {
-        streakUpdated = true;
-        //Notify in the page that the streak has been updated
-        showNotification(`🔥 Série de ${data.newStreak} jours! Continuez comme ça!`, 'success');
-      }
-    })
-    .catch((error) => {
-      console.error('Error updating streak:', error);
-    });
-}
-
-/**
- * Show a notification message
- */
-function showNotification(message, type = 'info') {
-  let notification = document.getElementById('notification');
-  if (!notification) {
-    notification = document.createElement('div');
-    notification.id = 'notification';
-    document.body.appendChild(notification);
-  }
-
-  let icon;
-  if (type === 'success') {
-    icon = '<i class="fas fa-check-circle"></i>';
-  } else if (type === 'error') {
-    icon = '<i class="fas fa-exclamation-circle"></i>';
-  } else {
-    icon = '<i class="fas fa-info-circle"></i>';
-  }
-
-  // Set content and type
-  notification.innerHTML = icon + message;
-  notification.className = type;
-
-  setTimeout(() => {
-    notification.classList.add('show');
-  }, 10);
-
-  setTimeout(() => {
-    notification.classList.remove('show');
-  }, 3000);
 }

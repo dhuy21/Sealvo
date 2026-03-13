@@ -1,10 +1,10 @@
 /**
- * Unit tests: LearningController.checkAndUpdateStreak (mock userModel)
+ * Unit tests: LearningController.checkAndUpdateStreak (mock streakService)
  */
-const userModel = require('../../app/models/users');
+const streakService = require('../../app/services/streakService');
 const LearningController = require('../../app/controllers/LearningController');
 
-jest.mock('../../app/models/users');
+jest.mock('../../app/services/streakService');
 
 describe('LearningController (unit)', () => {
   beforeEach(() => {
@@ -12,21 +12,15 @@ describe('LearningController (unit)', () => {
   });
 
   describe('checkAndUpdateStreak', () => {
-    it('updates streak and returns 200 when streak_updated_at is null', async () => {
-      userModel.getDateUpdatedStreak.mockResolvedValue(null);
-      userModel.getStreakById.mockResolvedValue({ streak: 2 });
-      userModel.updateStreak.mockResolvedValue(undefined);
-      userModel.updateStreakUpdatedAt.mockResolvedValue(undefined);
+    it('returns updated: true with new streak when service updates', async () => {
+      streakService.recordActivity.mockResolvedValue({ updated: true, streak: 3 });
 
       const req = { session: { user: { id: 1 } } };
       const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
       await LearningController.checkAndUpdateStreak(req, res);
 
-      expect(userModel.getDateUpdatedStreak).toHaveBeenCalledWith(1);
-      expect(userModel.getStreakById).toHaveBeenCalledWith(1);
-      expect(userModel.updateStreak).toHaveBeenCalledWith(1, 3);
-      expect(userModel.updateStreakUpdatedAt).toHaveBeenCalledWith(1);
+      expect(streakService.recordActivity).toHaveBeenCalledWith(1);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
         updated: true,
@@ -35,29 +29,34 @@ describe('LearningController (unit)', () => {
       });
     });
 
-    it('returns updated: false and reason when already updated today', async () => {
-      const today = new Date();
-      userModel.getDateUpdatedStreak.mockResolvedValue({
-        streak_updated_at: today.toISOString(),
-      });
-      userModel.getStreakById.mockResolvedValue({ streak: 5 });
+    it('returns updated: false with reason when already counted today', async () => {
+      streakService.recordActivity.mockResolvedValue({ updated: false, streak: 5 });
 
       const req = { session: { user: { id: 1 } } };
       const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
       await LearningController.checkAndUpdateStreak(req, res);
 
-      expect(userModel.updateStreak).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
         updated: false,
-        currentStreak: 5,
+        newStreak: 5,
         reason: "Déjà mis à jour aujourd'hui",
       });
     });
 
-    it('returns 500 when userModel throws', async () => {
-      userModel.getDateUpdatedStreak.mockRejectedValue(new Error('DB error'));
+    it('returns 401 when user is not authenticated', async () => {
+      const req = { session: {} };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+      await LearningController.checkAndUpdateStreak(req, res);
+
+      expect(streakService.recordActivity).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(401);
+    });
+
+    it('returns 500 when service throws', async () => {
+      streakService.recordActivity.mockRejectedValue(new Error('DB error'));
 
       const req = { session: { user: { id: 1 } } };
       const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
@@ -67,7 +66,7 @@ describe('LearningController (unit)', () => {
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
         updated: false,
-        message: expect.stringMatching(/erreur|streak/i),
+        message: expect.stringMatching(/erreur|série/i),
       });
     });
   });

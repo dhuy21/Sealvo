@@ -682,21 +682,6 @@ document.addEventListener('DOMContentLoaded', function () {
     setTimeout(() => {
       gameContainer.style.animation = '';
     }, 500 * intensity);
-
-    // Add CSS for screen shake if not exists
-    if (!document.getElementById('screen-shake-style')) {
-      const style = document.createElement('style');
-      style.id = 'screen-shake-style';
-      style.textContent = `
-                @keyframes screenShake {
-                    0%, 100% { transform: translateX(0); }
-                    25% { transform: translateX(-2px) translateY(1px); }
-                    50% { transform: translateX(2px) translateY(-1px); }
-                    75% { transform: translateX(-1px) translateY(2px); }
-                }
-            `;
-      document.head.appendChild(style);
-    }
   }
 
   if (startGameBtn) {

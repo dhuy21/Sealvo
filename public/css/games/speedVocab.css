@@ -2453,3 +2453,20 @@
     font-size: 0.8rem;
   }
 }
+
+/* Screen shake animation */
+@keyframes screenShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px) translateY(1px);
+  }
+  50% {
+    transform: translateX(2px) translateY(-1px);
+  }
+  75% {
+    transform: translateX(-1px) translateY(2px);
+  }
+}

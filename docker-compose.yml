@@ -5,10 +5,14 @@ services:
     ports:
       - '${HOST_PORT}:${PORT}'
     env_file: .env
+    volumes:
+      - uploads_data:/app/app/uploads
     depends_on:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   db:
@@ -34,8 +38,6 @@ services:
     image: redis:7-alpine
     container_name: web_vocab_redis
     restart: unless-stopped
-    # volatile-lru: only evict keys that have a TTL set (sessions) when memory is full.
-    # Never evicts sessions randomly — safer than the default (noeviction or allkeys-lru).
     command: redis-server --maxmemory-policy volatile-lru
     volumes:
       - redis_data:/data
@@ -45,6 +47,47 @@ services:
       timeout: 3s
       retries: 5
 
+  worker:
+    build: .
+    command: ['node', 'worker.js']
+    env_file: .env
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'pgrep -f "node worker.js" || exit 1']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    volumes:
+      - uploads_data:/app/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: web_vocab_rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+    ports:
+      - '15672:15672'
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'check_port_connectivity']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
 volumes:
   db_data:
   redis_data:
+  rabbitmq_data:
+  uploads_data:

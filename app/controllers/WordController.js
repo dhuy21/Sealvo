@@ -1,9 +1,17 @@
 const wordModel = require('../models/words');
 const learningModel = require('../models/learning');
-const geminiService = require('../services/gemini');
 const { setFlash } = require('../middleware/flash');
 const cache = require('../core/cache');
 const CACHE_TTL = require('../config/cache');
+const rabbitmq = require('../core/rabbitmq');
+const jobTracker = require('../core/jobTracker');
+const importQueue = require('../queues/importQueue');
+const {
+  validateWords,
+  formatValidationErrors,
+  processWords,
+  enrichSingleWord,
+} = require('../services/wordProcessingService');
 
 class WordController {
   async monVocabs(req, res) {
@@ -72,8 +80,6 @@ class WordController {
 
     try {
       let wordsData = [];
-      let words_no_example = [];
-      let words_with_error_example = [];
 
       if (package_id) {
         const {
@@ -91,7 +97,7 @@ class WordController {
         } = req.body;
         const wordCount = words.length;
         for (let i = 0; i < wordCount; i++) {
-          const wordData = {
+          wordsData.push({
             id: i,
             word: words[i],
             language_code: language_codes[i].replace(/\([^)]*\)/g, '').trim(),
@@ -104,106 +110,52 @@ class WordController {
             example: examples[i],
             grammar: grammars[i] || '',
             level: levels[i],
-          };
-
-          if (wordData.example === '') {
-            words_no_example.push({
-              id: wordData.id,
-              word: wordData.word,
-              language_code: wordData.language_code,
-              meaning: wordData.meaning,
-              type: wordData.type,
-            });
-          } else if (wordData.example !== '') {
-            words_with_error_example.push({
-              id: wordData.id,
-              word: wordData.word,
-              language_code: wordData.language_code,
-              meaning: wordData.meaning,
-              type: wordData.type,
-              example: wordData.example,
-            });
-          }
-
-          wordsData.push(wordData);
+          });
         }
       }
 
-      let errExample = 0;
-      // Générer des exemples pour les mots sans exemples
-      if (words_no_example.length > 0) {
-        try {
-          const words_with_examples = await geminiService.generateExemple(words_no_example);
-          if (Array.isArray(words_with_examples) && words_with_examples.length > 0) {
-            wordsData = await geminiService.replaceExample(wordsData, words_with_examples);
-          } else {
-            errExample++;
-          }
-        } catch {
-          errExample++;
-        }
-      }
-      // Corriger les exemples des mots avec des exemples en erreur
-      if (words_with_error_example.length > 0) {
-        try {
-          const words_with_correct_examples =
-            await geminiService.modifyExample(words_with_error_example);
-          if (
-            Array.isArray(words_with_correct_examples) &&
-            words_with_correct_examples.length > 0
-          ) {
-            wordsData = await geminiService.replaceExample(wordsData, words_with_correct_examples);
-          } else {
-            errExample++;
-          }
-        } catch {
-          errExample++;
-        }
+      const validationErrors = validateWords(wordsData);
+      if (validationErrors.length > 0) {
+        return res
+          .status(400)
+          .json({ success: false, message: formatValidationErrors(validationErrors) });
       }
 
-      let successCount = 0;
-      let errChamps = 0;
-
-      for (const wordData of wordsData) {
-        try {
-          if (
-            !wordData.word ||
-            !wordData.language_code ||
-            !wordData.subject ||
-            !wordData.type ||
-            !wordData.meaning
-          ) {
-            errChamps++;
-            continue;
+      const BULK_THRESHOLD = 3;
+      if (wordsData.length >= BULK_THRESHOLD && rabbitmq.isReady()) {
+        const job = await jobTracker.create('addWords', {
+          packageId: package_id,
+          userId: req.session.user.id,
+          wordCount: wordsData.length,
+        });
+        if (job) {
+          const published = importQueue.publish({
+            jobId: job.id,
+            wordsData,
+            packageId: package_id,
+            userId: req.session.user.id,
+          });
+          if (published) {
+            return res
+              .status(202)
+              .json({ success: true, jobId: job.id, async: true, message: 'Traitement en cours.' });
           }
-
-          if (wordData.level === undefined || wordData.level === null) {
-            wordData.level = 'x';
-          }
-
-          await wordModel.create(wordData, package_id);
-          successCount++;
-        } catch {
-          errChamps++;
+          jobTracker.remove(job.id).catch(() => {});
         }
       }
 
-      if (successCount > 0) {
-        await cache.del([`dashboard:${req.session.user.id}`, `words:${package_id}`]);
-      }
+      const result = await processWords(wordsData, package_id, req.session.user.id);
 
       res.status(200).json({
         success: true,
-        message: `${successCount} mot(s) importé(s) avec succès. ${errChamps} erreur(s) de champs obligatoires. ${errExample} erreur(s) de generation d'exemples`,
+        async: false,
+        message: `${result.successCount} mot(s) importé(s) avec succès. ${result.errChamps} erreur(s) de champs obligatoires.`,
       });
     } catch (error) {
       console.error("Erreur lors de l'ajout du mot:", error);
-      res.render('addWord', {
-        title: 'Ajouter un mot',
-        package_id: package_id,
-        user: req.session.user,
-        error: "Une erreur est survenue lors de l'ajout du mot",
-        formData: req.body,
+      res.status(500).json({
+        success: false,
+        message: "Une erreur est survenue lors de l'ajout du mot",
       });
     }
   }
@@ -363,9 +315,6 @@ class WordController {
         });
       }
 
-      let words_no_example = [];
-      let words_with_error_example = [];
-
       let wordData = {
         id: 0,
         word,
@@ -380,65 +329,12 @@ class WordController {
         level,
       };
 
-      if (wordData.example === '') {
-        words_no_example.push({
-          id: wordData.id,
-          word: wordData.word,
-          language_code: wordData.language_code,
-          meaning: wordData.meaning,
-          type: wordData.type,
-        });
-      } else if (wordData.example !== '') {
-        words_with_error_example.push({
-          id: wordData.id,
-          word: wordData.word,
-          language_code: wordData.language_code,
-          meaning: wordData.meaning,
-          type: wordData.type,
-          example: wordData.example,
-        });
-      }
-
-      let errExample = 0;
-      if (words_no_example.length > 0) {
-        try {
-          const words_with_examples = await geminiService.generateExemple(words_no_example);
-          if (Array.isArray(words_with_examples) && words_with_examples.length > 0) {
-            wordData = await geminiService.replaceExample(wordData, words_with_examples);
-          } else {
-            errExample++;
-          }
-        } catch {
-          errExample++;
-        }
-      }
-      if (words_with_error_example.length > 0) {
-        try {
-          const words_with_correct_examples =
-            await geminiService.modifyExample(words_with_error_example);
-          if (
-            Array.isArray(words_with_correct_examples) &&
-            words_with_correct_examples.length > 0
-          ) {
-            wordData = await geminiService.replaceExample(wordData, words_with_correct_examples);
-          } else {
-            errExample++;
-          }
-        } catch {
-          errExample++;
-        }
-      }
+      wordData = await enrichSingleWord(wordData);
 
       await wordModel.updateWord(wordData, detail_id, package_id);
       await cache.del([`dashboard:${req.session.user.id}`, `words:${package_id}`]);
 
-      res.json({
-        success: true,
-        message:
-          errExample > 0
-            ? `Mot modifié avec succès. ${errExample} erreur(s) de génération d'exemples.`
-            : 'Mot modifié avec succès',
-      });
+      res.json({ success: true, message: 'Mot modifié avec succès' });
     } catch (error) {
       console.error('Erreur lors de la modification du mot:', error);
       res.status(500).json({
