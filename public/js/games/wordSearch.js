@@ -716,12 +716,18 @@ document.addEventListener('DOMContentLoaded', () => {
       timerDisplay.textContent = timer;
       loader.removeAttribute('style');
 
-      const response = await fetch(`/games/wordSearch/words?package=${packageId}`);
-      const data = await response.json();
+      const response = await fetch(`/games/wordSearch/words?package=${packageId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erreur lors du chargement des mots');
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.message || 'Erreur lors du chargement des mots');
       }
+      const data = await response.json();
 
       words = data.words;
       gridSize = data.gridSize;
@@ -1475,24 +1481,27 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Sauvegarder le score sur le serveur
-  async function saveScore(score) {
-    try {
-      const response = await fetch('/games/wordSearch/saveScore', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+  async function saveScore(totalScore) {
+    fetch('/games/score', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        game_type: 'word_search',
+        score: totalScore,
+        details: {
+          words_found: foundWords.length,
+          total_words: words.length,
+          accuracy: attempts > 0 ? Math.round((foundWords.length / attempts) * 100) : 0,
+          attempts: attempts,
         },
-        body: JSON.stringify({ score }),
+      }),
+    })
+      .then(() => {})
+      .catch((error) => {
+        console.error("Erreur lors de l'enregistrement du score:", error);
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Erreur lors de la sauvegarde du score');
-      }
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde du score:', error);
-    }
   }
 
   init();

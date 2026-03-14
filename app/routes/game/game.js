@@ -9,15 +9,25 @@ const wordSearchRoutes = require('./word_search');
 const testPronunRoutes = require('./test_pronun');
 const gameController = require('../../controllers/gameControllers/GameController');
 const { isAuthenticated, isAuthenticatedAPI } = require('../../middleware/auth');
+const asyncHandler = require('../../middleware/asyncHandler');
+const { validate } = require('../../validation/validate');
+const { saveScoreSchema, showGameSchema } = require('../../validation/schemas/game.schema');
 
-// Page d'accueil des jeux
-router.get('/', isAuthenticated, gameController.index);
+router.get('/', isAuthenticated, asyncHandler(gameController.index));
 
-// Save game score (called by frontend after each game)
-router.post('/score', isAuthenticatedAPI, gameController.saveScore);
+router.post(
+  '/score',
+  isAuthenticatedAPI,
+  validate(saveScoreSchema),
+  asyncHandler(gameController.saveScore)
+);
 
-// Route pour afficher un jeu spécifique directement depuis GameController
-router.get('/:gameType', isAuthenticated, gameController.showGame);
+router.get(
+  '/:gameType',
+  isAuthenticated,
+  validate(showGameSchema),
+  asyncHandler(gameController.showGame)
+);
 
 // Routes spécifiques aux jeux individuels (auth gérée dans chaque sub-router)
 router.use('/wordScramble', wordScrambleRoutes);

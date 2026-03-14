@@ -716,13 +716,13 @@ document.addEventListener('DOMContentLoaded', function () {
           'Content-Type': 'application/json',
         },
       });
-      const data = await response.json();
-
-      if (data.error) {
-        console.error(data.error);
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        console.error(errData.message || `Erreur HTTP: ${response.status}`);
         alert('Une erreur est survenue lors du chargement du mot.');
         return;
       }
+      const data = await response.json();
 
       words = data.words;
 

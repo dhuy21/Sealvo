@@ -1,5 +1,6 @@
 const jobTracker = require('../../app/core/jobTracker');
 const redis = require('../../app/core/redis');
+const { NotFoundError, ForbiddenError } = require('../../app/errors/AppError');
 
 jest.mock('../../app/core/jobTracker');
 jest.mock('../../app/core/redis');
@@ -53,26 +54,22 @@ describe('JobController (unit)', () => {
   });
 
   describe('getJob', () => {
-    it('returns 404 when job does not exist', async () => {
+    it('throws NotFoundError when job does not exist', async () => {
       jobTracker.get.mockResolvedValue(null);
       const res = mockRes();
-      await jobController.getJob(mockReq('j1', 1), res);
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+      await expect(jobController.getJob(mockReq('j1', 1), res)).rejects.toThrow(NotFoundError);
     });
 
-    it('returns 403 when userId does not match (ownership check)', async () => {
+    it('throws ForbiddenError when userId does not match (ownership check)', async () => {
       jobTracker.get.mockResolvedValue({ id: 'j1', meta: { userId: 99 } });
       const res = mockRes();
-      await jobController.getJob(mockReq('j1', 1), res);
-      expect(res.status).toHaveBeenCalledWith(403);
+      await expect(jobController.getJob(mockReq('j1', 1), res)).rejects.toThrow(ForbiddenError);
     });
 
-    it('returns 403 when job has no meta.userId (deny-by-default)', async () => {
+    it('throws ForbiddenError when job has no meta.userId (deny-by-default)', async () => {
       jobTracker.get.mockResolvedValue({ id: 'j1', meta: {} });
       const res = mockRes();
-      await jobController.getJob(mockReq('j1', 1), res);
-      expect(res.status).toHaveBeenCalledWith(403);
+      await expect(jobController.getJob(mockReq('j1', 1), res)).rejects.toThrow(ForbiddenError);
     });
 
     it('returns job data when ownership matches', async () => {

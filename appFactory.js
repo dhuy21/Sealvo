@@ -8,6 +8,8 @@ const { initializeMiddleware } = require('./app/middleware');
 const { isReady: redisReady } = require('./app/core/redis');
 const { isReady: rabbitmqReady } = require('./app/core/rabbitmq');
 const { globalLimiter } = require('./app/middleware/rateLimiter');
+const notFoundHandler = require('./app/middleware/notFoundHandler');
+const errorHandler = require('./app/middleware/errorHandler');
 
 /**
  * Create and return the Express app (middleware + routes).
@@ -85,6 +87,9 @@ function getApp() {
   });
 
   route(app);
+
+  app.use(notFoundHandler);
+  app.use(errorHandler);
 
   return app;
 }

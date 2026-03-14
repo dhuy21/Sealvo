@@ -49,16 +49,23 @@ describe('Auth flow (integration)', () => {
 
   // ── Reset password submission ───────────────────────────────
   describe('POST /login/resetPassword', () => {
-    it('returns 400 when passwords do not match', async () => {
+    it('returns 400 with validation details when passwords do not match', async () => {
       const res = await request(app).post('/login/resetPassword').send({
         token: 'tok',
-        password: 'pass1',
-        confirm_password: 'pass2',
+        password: 'pass1!longer',
+        confirm_password: 'pass2!different',
       });
 
       expect(res.status).toBe(400);
       expect(res.body).toHaveProperty('success', false);
-      expect(res.body.message).toMatch(/correspondent pas/i);
+      expect(res.body.details).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'confirm_password',
+            message: expect.stringMatching(/correspondent/),
+          }),
+        ])
+      );
     });
 
     it('returns 400 when token is not found in DB', async () => {

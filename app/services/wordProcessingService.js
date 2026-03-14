@@ -208,4 +208,7 @@ module.exports = {
   enrichSingleWord,
   saveWords,
   processWords,
+  VALID_LANGS,
+  VALID_TYPES,
+  VALID_LEVELS,
 };

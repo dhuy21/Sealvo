@@ -2,8 +2,15 @@ const express = require('express');
 const router = express.Router();
 const wordScrambleController = require('../../controllers/gameControllers/WordScrambleController');
 const { isAuthenticatedAPI } = require('../../middleware/auth');
+const asyncHandler = require('../../middleware/asyncHandler');
+const { validate } = require('../../validation/validate');
+const { packageQuerySchema } = require('../../validation/schemas/game.schema');
 
-// Routes pour le jeu Word Scramble
-router.get('/words', isAuthenticatedAPI, wordScrambleController.getRandomWordsForScramble);
+router.get(
+  '/words',
+  isAuthenticatedAPI,
+  validate(packageQuerySchema),
+  asyncHandler(wordScrambleController.getRandomWordsForScramble)
+);
 
 module.exports = router;

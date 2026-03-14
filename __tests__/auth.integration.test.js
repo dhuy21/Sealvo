@@ -50,11 +50,16 @@ describe('Auth routes (integration)', () => {
   });
 
   describe('POST /login', () => {
-    it('returns 400 when username and password are missing', async () => {
+    it('returns 400 with validation details when fields are missing', async () => {
       const res = await request(app).post('/login').send({});
       expect(res.status).toBe(400);
       expect(res.body).toHaveProperty('success', false);
-      expect(res.body.message).toMatch(/champs|remplir/i);
+      expect(res.body.details).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ field: 'username' }),
+          expect.objectContaining({ field: 'password' }),
+        ])
+      );
     });
 
     it('returns 400 when user does not exist (mock DB returns no row)', async () => {
@@ -68,14 +73,20 @@ describe('Auth routes (integration)', () => {
   });
 
   describe('POST /registre', () => {
-    it('returns 400 when required fields are missing', async () => {
+    it('returns 400 with validation details when required fields are missing', async () => {
       const res = await request(app).post('/registre').send({});
       expect(res.status).toBe(400);
       expect(res.body).toHaveProperty('success', false);
-      expect(res.body.message).toMatch(/champs|remplir/i);
+      expect(res.body.details).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ field: 'username' }),
+          expect.objectContaining({ field: 'email' }),
+          expect.objectContaining({ field: 'password' }),
+        ])
+      );
     });
 
-    it('returns 400 when passwords do not match', async () => {
+    it('returns 400 with validation details when passwords do not match', async () => {
       const res = await request(app).post('/registre').send({
         username: 'newuser',
         email: 'new@example.com',
@@ -84,10 +95,17 @@ describe('Auth routes (integration)', () => {
       });
       expect(res.status).toBe(400);
       expect(res.body).toHaveProperty('success', false);
-      expect(res.body.message).toMatch(/mots de passe|correspondent/i);
+      expect(res.body.details).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'password2',
+            message: expect.stringMatching(/correspondent/),
+          }),
+        ])
+      );
     });
 
-    it('returns 400 when password is too short', async () => {
+    it('returns 400 with validation details when password is too short', async () => {
       const res = await request(app).post('/registre').send({
         username: 'newuser',
         email: 'new@example.com',
@@ -96,7 +114,14 @@ describe('Auth routes (integration)', () => {
       });
       expect(res.status).toBe(400);
       expect(res.body).toHaveProperty('success', false);
-      expect(res.body.message).toMatch(/6 caractères|au moins/i);
+      expect(res.body.details).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'password',
+            message: expect.stringMatching(/6 caractères/),
+          }),
+        ])
+      );
     });
   });
 

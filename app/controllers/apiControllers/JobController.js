@@ -1,5 +1,6 @@
 const jobTracker = require('../../core/jobTracker');
 const redis = require('../../core/redis');
+const { NotFoundError, ForbiddenError } = require('../../errors/AppError');
 
 class JobController {
   async getActiveJobs(req, res) {
@@ -9,9 +10,9 @@ class JobController {
 
   async getJob(req, res) {
     const job = await jobTracker.get(req.params.id);
-    if (!job) return res.status(404).json({ success: false, message: 'Job not found.' });
+    if (!job) throw new NotFoundError('Job not found.');
     if (!job.meta?.userId || job.meta.userId !== req.session.user?.id) {
-      return res.status(403).json({ success: false, message: 'Forbidden.' });
+      throw new ForbiddenError('Forbidden.');
     }
     res.json({ success: true, job });
   }

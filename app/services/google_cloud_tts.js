@@ -1,7 +1,10 @@
 const textToSpeech = require('@google-cloud/text-to-speech');
+const { withTimeout, withRetry, CircuitBreaker } = require('../core/resilience');
 
 // Client créé à la première utilisation (lazy) pour ne pas crasher au load si env manquant (ex: CI, tests).
 let _client = null;
+
+const ttsBreaker = new CircuitBreaker({ name: 'google-tts', threshold: 5, resetTimeout: 30000 });
 
 /** Default URIs used when building credentials from GOOGLE_TTS_* env vars. */
 const DEFAULT_AUTH_URI = 'https://accounts.google.com/o/oauth2/auth';
@@ -55,8 +58,19 @@ class GoogleCloudTTS {
    */
   async fetchWavenetVoices(language) {
     const client = getClient();
-    const [response] = await client.listVoices({ languageCode: language });
-    return response.voices.filter((voice) => voice.name.includes('Wavenet'));
+    return ttsBreaker.execute(() =>
+      withRetry(
+        () =>
+          withTimeout(
+            () =>
+              client
+                .listVoices({ languageCode: language })
+                .then(([r]) => r.voices.filter((v) => v.name.includes('Wavenet'))),
+            8000
+          ),
+        { retries: 2, delay: 500 }
+      )
+    );
   }
 
   /**
@@ -65,12 +79,18 @@ class GoogleCloudTTS {
    */
   async synthesize(text, language, voiceName) {
     const client = getClient();
-    const [response] = await client.synthesizeSpeech({
+    const request = {
       input: { text },
       voice: { languageCode: language, name: voiceName, ssmlGender: 'NEUTRAL' },
       audioConfig: { audioEncoding: 'MP3' },
-    });
-    return response.audioContent;
+    };
+    return ttsBreaker.execute(() =>
+      withRetry(
+        () =>
+          withTimeout(() => client.synthesizeSpeech(request).then(([r]) => r.audioContent), 5000),
+        { retries: 2, delay: 500 }
+      )
+    );
   }
 }
 

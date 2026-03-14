@@ -98,11 +98,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
       const data = await response.json();
 
-      if (data.error) {
-        console.error(data.error);
-        return;
-      }
-
       words = data.words;
 
       const randomIndex = Math.floor(Math.random() * words.length);

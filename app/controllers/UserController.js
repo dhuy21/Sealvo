@@ -6,6 +6,7 @@ const EmailVerificationModel = require('../models/email_verification');
 const MailersendService = require('../services/mailersend');
 const emailQueue = require('../queues/emailQueue');
 const { setFlash } = require('../middleware/flash');
+const { ValidationError, AppError } = require('../errors/AppError');
 const { isProductionLike } = require('../config/environment');
 const cache = require('../core/cache');
 const CACHE_TTL = require('../config/cache');
@@ -46,98 +47,71 @@ class UserController {
   }
 
   async loginPost(req, res) {
-    try {
-      const { username, password } = req.body;
+    const { username, password } = req.body;
 
-      if (!username || !password) {
-        return res.status(400).json({
+    const user = await userModel.findByUsername(username);
+    if (!user) {
+      throw new ValidationError("Nom d'utilisateur ou mot de passe incorrect");
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      throw new ValidationError("Nom d'utilisateur ou mot de passe incorrect");
+    }
+
+    if (!user.is_verified) {
+      throw new ValidationError("Votre compte n'est pas vérifié");
+    }
+
+    const stats = await fetchDashboardStats(user.id);
+
+    const userData = {
+      id: user.id,
+      username: user.username,
+      streak: stats.streak,
+      last_login: new Intl.DateTimeFormat('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      }).format(user.last_login),
+      created_at: new Intl.DateTimeFormat('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      }).format(user.created_at),
+      email: user.email,
+      avatar: user.ava,
+      totalWords: stats.totalWords,
+      learnedWords: stats.learnedWords,
+      newWords: stats.newWords,
+      islearningWords: stats.islearningWords,
+      packagesToReview: stats.packagesToReview,
+      notifications: '🏅 Beginner',
+    };
+
+    // Prevent session fixation: generate a new session ID before elevating privileges.
+    req.session.regenerate((regenErr) => {
+      if (regenErr) {
+        console.error('Session regeneration error:', regenErr);
+        return res.status(500).json({
           success: false,
-          message: 'Veuillez remplir tous les champs',
+          message: 'Une erreur est survenue. Veuillez réessayer plus tard.',
         });
       }
 
-      const user = await userModel.findByUsername(username);
+      req.session.user = userData;
 
-      if (!user) {
-        return res.status(400).json({
-          success: false,
-          message: "Nom d'utilisateur ou mot de passe incorrect",
-        });
-      }
-
-      const isMatch = await bcrypt.compare(password, user.password);
-      const isVerified = user.is_verified;
-
-      if (!isMatch) {
-        return res.status(400).json({
-          success: false,
-          message: "Nom d'utilisateur ou mot de passe incorrect",
-        });
-      }
-
-      if (!isVerified) {
-        return res.status(400).json({
-          success: false,
-          message: "Votre compte n'est pas vérifié",
-        });
-      }
-
-      const stats = await fetchDashboardStats(user.id);
-
-      const userData = {
-        id: user.id,
-        username: user.username,
-        streak: stats.streak,
-        last_login: new Intl.DateTimeFormat('fr-FR', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-        }).format(user.last_login),
-        created_at: new Intl.DateTimeFormat('fr-FR', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-        }).format(user.created_at),
-        email: user.email,
-        avatar: user.ava,
-        totalWords: stats.totalWords,
-        learnedWords: stats.learnedWords,
-        newWords: stats.newWords,
-        islearningWords: stats.islearningWords,
-        packagesToReview: stats.packagesToReview,
-        notifications: '🏅 Beginner',
-      };
-
-      // Prevent session fixation: generate a new session ID before elevating privileges.
-      req.session.regenerate((regenErr) => {
-        if (regenErr) {
-          console.error('Session regeneration error:', regenErr);
+      req.session.save((saveErr) => {
+        if (saveErr) {
+          console.error('Session save error:', saveErr);
           return res.status(500).json({
             success: false,
             message: 'Une erreur est survenue. Veuillez réessayer plus tard.',
           });
         }
-
-        req.session.user = userData;
-
-        req.session.save((saveErr) => {
-          if (saveErr) {
-            console.error('Session save error:', saveErr);
-            return res.status(500).json({
-              success: false,
-              message: 'Une erreur est survenue. Veuillez réessayer plus tard.',
-            });
-          }
-          res.status(200).json({ redirect: '/dashboard' });
-        });
+        res.status(200).json({ redirect: '/dashboard' });
       });
-    } catch (error) {
-      console.error('Login error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Une erreur est survenue. Veuillez réessayer plus tard.',
-      });
-    }
+    });
   }
 
   registre(req, res) {
@@ -146,90 +120,49 @@ class UserController {
   }
 
   async registrePost(req, res) {
-    try {
-      const { username, email, password, password2, avatar } = req.body;
+    const { username, email, password, avatar } = req.body;
 
-      if (!username || !email || !password || !password2) {
-        return res.status(400).json({
-          success: false,
-          message: 'Veuillez remplir tous les champs',
-        });
-      }
-
-      if (password !== password2) {
-        return res.status(400).json({
-          success: false,
-          message: 'Les mots de passe ne correspondent pas',
-        });
-      }
-
-      if (password.length < 6) {
-        return res.status(400).json({
-          success: false,
-          message: 'Le mot de passe doit contenir au moins 6 caractères',
-        });
-      }
-
-      const existingUserName = await userModel.findByUsername(username);
-      if (existingUserName) {
-        return res.status(400).json({
-          success: false,
-          message: "Ce nom d'utilisateur est déjà utilisé",
-        });
-      }
-
-      const existingEmail = await userModel.findByEmail(email);
-      if (existingEmail) {
-        return res.status(400).json({
-          success: false,
-          message: 'Cette adresse email est déjà utilisée',
-        });
-      }
-
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-
-      let avatarInt = 1;
-      if (avatar) {
-        const avatarNum = parseInt(avatar.replace(/\D/g, ''));
-        if (avatarNum >= 1 && avatarNum <= 11) avatarInt = avatarNum;
-      }
-
-      const userId = await userModel.create({
-        username,
-        email,
-        password: hashedPassword,
-        ava: avatarInt,
-      });
-
-      const { expires_at, token, token_hash } = await EmailVerificationModel.generateToken();
-      await EmailVerificationModel.saveToken(userId, expires_at, token_hash);
-
-      const emailContent = await MailersendService.generateEmailVerification(username, token);
-      const emailSent = await emailQueue.enqueue({
-        to: email,
-        content: emailContent,
-        subject: 'Vérification de votre email',
-      });
-
-      if (!emailSent) {
-        return res.status(500).json({
-          success: false,
-          message: "Une erreur est survenue lors de l'envoi de l'email de vérification.",
-        });
-      }
-
-      res.status(200).json({
-        success: true,
-        message: 'Un email de vérification a été envoyé à votre adresse email',
-      });
-    } catch (error) {
-      console.error('Registration error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Une erreur est survenue. Veuillez réessayer plus tard.',
-      });
+    const existingUserName = await userModel.findByUsername(username);
+    if (existingUserName) {
+      throw new ValidationError("Ce nom d'utilisateur est déjà utilisé");
     }
+
+    const existingEmail = await userModel.findByEmail(email);
+    if (existingEmail) {
+      throw new ValidationError('Cette adresse email est déjà utilisée');
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const userId = await userModel.create({
+      username,
+      email,
+      password: hashedPassword,
+      ava: avatar || 1,
+    });
+
+    const { expires_at, token, token_hash } = await EmailVerificationModel.generateToken();
+    await EmailVerificationModel.saveToken(userId, expires_at, token_hash);
+
+    const emailContent = await MailersendService.generateEmailVerification(username, token);
+    const emailSent = await emailQueue.enqueue({
+      to: email,
+      content: emailContent,
+      subject: 'Vérification de votre email',
+    });
+
+    if (!emailSent) {
+      throw new AppError(
+        "Une erreur est survenue lors de l'envoi de l'email de vérification.",
+        500
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Un email de vérification a été envoyé à votre adresse email',
+    });
   }
 
   async logout(req, res) {
@@ -285,26 +218,18 @@ class UserController {
   }
 
   async editPost(req, res) {
-    try {
-      const userId = req.session.user.id;
-      if (!userId) return res.redirect('/login');
+    const userId = req.session.user.id;
+    if (!userId) return res.redirect('/login');
 
-      const data = req.body;
-      await userModel.updateUserInfo(userId, data);
+    const data = req.body;
+    await userModel.updateUserInfo(userId, data);
 
-      if (data.username) req.session.user.username = data.username;
-      if (data.email) req.session.user.email = data.email;
-      if (data.ava) req.session.user.avatar = data.ava;
+    if (data.username) req.session.user.username = data.username;
+    if (data.email) req.session.user.email = data.email;
+    if (data.ava) req.session.user.avatar = data.ava;
 
-      await cache.del(`dashboard:${userId}`);
-      res.json({ success: true, message: 'Informations modifiées avec succès' });
-    } catch (error) {
-      console.error('Edit error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Une erreur est survenue lors de la modification des informations',
-      });
-    }
+    await cache.del(`dashboard:${userId}`);
+    res.json({ success: true, message: 'Informations modifiées avec succès' });
   }
 }
 

@@ -7,6 +7,7 @@ const resetPasswordModel = require('../../app/models/resetPass');
 const MailersendService = require('../../app/services/mailersend');
 const emailQueue = require('../../app/queues/emailQueue');
 const ResetPasswordController = require('../../app/controllers/authControllers/ResetPasswordController');
+const { ValidationError, AppError } = require('../../app/errors/AppError');
 
 jest.mock('../../app/models/users');
 jest.mock('../../app/models/resetPass');
@@ -23,16 +24,13 @@ describe('ResetPasswordController (unit)', () => {
 
   // ── forgotPasswordPost ──────────────────────────────────────
   describe('forgotPasswordPost', () => {
-    it('returns 400 when the email is not registered', async () => {
+    it('throws ValidationError when the email is not registered', async () => {
       userModel.findByEmail.mockResolvedValue(null);
       const req = { body: { email: 'nobody@example.com' } };
       const res = mockRes();
 
-      await ResetPasswordController.forgotPasswordPost(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: false, message: expect.stringMatching(/email/i) })
+      await expect(ResetPasswordController.forgotPasswordPost(req, res)).rejects.toThrow(
+        ValidationError
       );
       expect(resetPasswordModel.createResetPasswordToken).not.toHaveBeenCalled();
     });
@@ -67,7 +65,7 @@ describe('ResetPasswordController (unit)', () => {
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     });
 
-    it('returns 400 when the email service fails to send', async () => {
+    it('throws AppError when the email service fails to send', async () => {
       userModel.findByEmail.mockResolvedValue({ username: 'alice' });
       resetPasswordModel.createResetPasswordToken.mockResolvedValue({
         token: 'tok',
@@ -80,44 +78,24 @@ describe('ResetPasswordController (unit)', () => {
       const req = { body: { email: 'alice@example.com' } };
       const res = mockRes();
 
-      await ResetPasswordController.forgotPasswordPost(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+      await expect(ResetPasswordController.forgotPasswordPost(req, res)).rejects.toThrow(AppError);
     });
   });
 
   // ── resetPasswordPost ───────────────────────────────────────
+  // Password mismatch is now validated by resetPasswordSchema middleware (Phase 3).
   describe('resetPasswordPost', () => {
-    it('returns 400 when passwords do not match', async () => {
-      const req = {
-        body: { token: 'tok', password: 'aaa', confirm_password: 'bbb' },
-      };
-      const res = mockRes();
-
-      await ResetPasswordController.resetPasswordPost(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ message: expect.stringMatching(/correspondent pas/i) })
-      );
-      expect(resetPasswordModel.findByToken).not.toHaveBeenCalled();
-    });
-
-    it('returns 400 when token does not exist', async () => {
+    it('throws ValidationError when token does not exist', async () => {
       resetPasswordModel.findByToken.mockResolvedValue(null);
       const req = { body: { token: 'unknown', password: 'Pass1!', confirm_password: 'Pass1!' } };
       const res = mockRes();
 
-      await ResetPasswordController.resetPasswordPost(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ message: expect.stringMatching(/valide/i) })
+      await expect(ResetPasswordController.resetPasswordPost(req, res)).rejects.toThrow(
+        ValidationError
       );
     });
 
-    it('returns 400 when token has already been used', async () => {
+    it('throws ValidationError when token has already been used', async () => {
       resetPasswordModel.findByToken.mockResolvedValue({
         used: true,
         expires_at: new Date(Date.now() + 3600000),
@@ -126,28 +104,22 @@ describe('ResetPasswordController (unit)', () => {
       const req = { body: { token: 'used', password: 'Pass1!', confirm_password: 'Pass1!' } };
       const res = mockRes();
 
-      await ResetPasswordController.resetPasswordPost(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ message: expect.stringMatching(/déjà été utilisé/i) })
+      await expect(ResetPasswordController.resetPasswordPost(req, res)).rejects.toThrow(
+        ValidationError
       );
     });
 
-    it('returns 400 when token has expired', async () => {
+    it('throws ValidationError when token has expired', async () => {
       resetPasswordModel.findByToken.mockResolvedValue({
         used: false,
-        expires_at: new Date(Date.now() - 3600000), // 1h in the past
+        expires_at: new Date(Date.now() - 3600000),
         email: 'u@e.com',
       });
       const req = { body: { token: 'expired', password: 'Pass1!', confirm_password: 'Pass1!' } };
       const res = mockRes();
 
-      await ResetPasswordController.resetPasswordPost(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ message: expect.stringMatching(/expiré/i) })
+      await expect(ResetPasswordController.resetPasswordPost(req, res)).rejects.toThrow(
+        ValidationError
       );
     });
 
@@ -169,7 +141,7 @@ describe('ResetPasswordController (unit)', () => {
 
       expect(userModel.updatePassword).toHaveBeenCalledWith(
         'alice@example.com',
-        expect.any(String) // bcrypt hash
+        expect.any(String)
       );
       expect(resetPasswordModel.markTokenAsUsed).toHaveBeenCalledWith('valid');
       expect(res.status).toHaveBeenCalledWith(200);

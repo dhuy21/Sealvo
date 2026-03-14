@@ -2,10 +2,22 @@ const express = require('express');
 const router = express.Router();
 const levelProgressController = require('../controllers/LevelProgressController');
 const { isAuthenticatedAPI } = require('../middleware/auth');
+const asyncHandler = require('../middleware/asyncHandler');
+const { validate } = require('../validation/validate');
+const { trackGameSchema, resetLevelSchema } = require('../validation/schemas/game.schema');
 
-// Routes pour le suivi de la progression de niveau
-router.post('/track', isAuthenticatedAPI, levelProgressController.trackGameCompletion);
-router.get('/status', isAuthenticatedAPI, levelProgressController.getLevelProgress);
-router.post('/reset', isAuthenticatedAPI, levelProgressController.resetLevelProgress);
+router.post(
+  '/track',
+  isAuthenticatedAPI,
+  validate(trackGameSchema),
+  asyncHandler(levelProgressController.trackGameCompletion)
+);
+router.get('/status', isAuthenticatedAPI, asyncHandler(levelProgressController.getLevelProgress));
+router.post(
+  '/reset',
+  isAuthenticatedAPI,
+  validate(resetLevelSchema),
+  asyncHandler(levelProgressController.resetLevelProgress)
+);
 
 module.exports = router;

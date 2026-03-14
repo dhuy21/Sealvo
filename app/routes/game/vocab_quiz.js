@@ -2,11 +2,22 @@ const express = require('express');
 const router = express.Router();
 const vocabQuizController = require('../../controllers/gameControllers/VocabQuizController');
 const { isAuthenticatedAPI } = require('../../middleware/auth');
+const asyncHandler = require('../../middleware/asyncHandler');
+const { validate } = require('../../validation/validate');
+const { packageQuerySchema } = require('../../validation/schemas/game.schema');
 
-// Routes pour le jeu Vocab Quiz
-router.get('/questions', isAuthenticatedAPI, vocabQuizController.getQuestionForVocabQuiz);
+router.get(
+  '/questions',
+  isAuthenticatedAPI,
+  validate(packageQuerySchema),
+  asyncHandler(vocabQuizController.getQuestionForVocabQuiz)
+);
 
-// Route pour obtenir le nombre de mots disponibles
-router.get('/available-words', isAuthenticatedAPI, vocabQuizController.getAvailableWordsCount);
+router.get(
+  '/available-words',
+  isAuthenticatedAPI,
+  validate(packageQuerySchema),
+  asyncHandler(vocabQuizController.getAvailableWordsCount)
+);
 
 module.exports = router;

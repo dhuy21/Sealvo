@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
 const { SESv2Client, SendEmailCommand } = require('@aws-sdk/client-sesv2');
+const { withTimeout, withRetry } = require('../core/resilience');
 
 const sesClient = new SESv2Client({
   region: process.env.AWS_REGION,
@@ -34,12 +35,20 @@ class MailersendService {
       const { to, intercepted, original } = this._resolveRecipient(user_email);
       const resolvedSubject = intercepted ? `[STAGING → ${original}] ${subject}` : subject;
 
-      const result = await transporter.sendMail({
-        from: process.env.AWS_SES_FROM,
-        to,
-        subject: resolvedSubject,
-        html: content,
-      });
+      const result = await withRetry(
+        () =>
+          withTimeout(
+            () =>
+              transporter.sendMail({
+                from: process.env.AWS_SES_FROM,
+                to,
+                subject: resolvedSubject,
+                html: content,
+              }),
+            10000
+          ),
+        { retries: 2, delay: 1000 }
+      );
 
       if (result?.messageId) {
         if (intercepted) {

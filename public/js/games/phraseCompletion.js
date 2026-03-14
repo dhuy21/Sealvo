@@ -332,12 +332,12 @@ document.addEventListener('DOMContentLoaded', function () {
           },
         }
       );
-      const data = await response.json();
-
-      if (data.error) {
-        console.error(data.error);
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        console.error(errData.message || `Erreur HTTP: ${response.status}`);
         return;
       }
+      const data = await response.json();
 
       // Mettre à jour le nombre total de questions en fonction des mots disponibles
       availableWords = data.count;
@@ -408,12 +408,13 @@ document.addEventListener('DOMContentLoaded', function () {
           'Content-Type': 'application/json',
         },
       });
-      const data = await response.json();
-      if (data.error) {
-        console.error(data.error);
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        console.error(errData.message || `Erreur HTTP: ${response.status}`);
         isLoadingPhrase = false;
         return;
       }
+      const data = await response.json();
 
       for (let i = 0; i < totalQuestions; i++) {
         phrases[i] = data.phrases[i % data.phrases.length];

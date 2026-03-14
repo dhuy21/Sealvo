@@ -166,10 +166,17 @@ function handleDeleteClick(e) {
       'Content-Type': 'application/json',
     },
   })
-    .then((response) => response.json())
+    .then((response) => {
+      if (!response.ok) {
+        return response
+          .json()
+          .catch(() => ({ success: false, message: 'Une erreur est survenue' }));
+      }
+      return response.json();
+    })
     .then((data) => {
-      if (data.error) {
-        showNotification(data.error, 'error');
+      if (data.success === false) {
+        showNotification(data.message || 'Une erreur est survenue', 'error');
         return;
       }
       if (data.success) {
