@@ -24,6 +24,12 @@ process.env.GOOGLE_TTS_PRIVATE_KEY =
 
 const VOICES = [{ name: 'fr-FR-Wavenet-A', languageCodes: ['fr-FR'] }];
 
+function grpcError(msg, code) {
+  const e = new Error(msg);
+  e.code = code;
+  return e;
+}
+
 let googleCloudTTS;
 
 beforeAll(() => {
@@ -42,7 +48,7 @@ beforeEach(() => {
 describe('GoogleCloudTTS — retry', () => {
   it('synthesize retries on transient gRPC error and succeeds', async () => {
     mockSynthesizeSpeech
-      .mockRejectedValueOnce(new Error('14 UNAVAILABLE'))
+      .mockRejectedValueOnce(grpcError('14 UNAVAILABLE', 14))
       .mockResolvedValueOnce([{ audioContent: Buffer.from('mp3-data') }]);
 
     const result = await googleCloudTTS.synthesize('bonjour', 'fr-FR', 'fr-FR-Wavenet-A');
@@ -53,7 +59,7 @@ describe('GoogleCloudTTS — retry', () => {
 
   it('fetchWavenetVoices retries on transient gRPC error and succeeds', async () => {
     mockListVoices
-      .mockRejectedValueOnce(new Error('DEADLINE_EXCEEDED'))
+      .mockRejectedValueOnce(grpcError('DEADLINE_EXCEEDED', 4))
       .mockResolvedValueOnce([{ voices: VOICES }]);
 
     const result = await googleCloudTTS.fetchWavenetVoices('fr-FR');
@@ -63,14 +69,35 @@ describe('GoogleCloudTTS — retry', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Smart retry — non-transient errors skip retry (Phase 5)
+// ---------------------------------------------------------------------------
+describe('GoogleCloudTTS — smart retry (Phase 5)', () => {
+  it('does NOT retry on non-transient gRPC error (UNAUTHENTICATED = code 16)', async () => {
+    mockSynthesizeSpeech.mockRejectedValue(grpcError('UNAUTHENTICATED', 16));
+
+    await expect(googleCloudTTS.synthesize('test', 'fr-FR', 'fr-FR-Wavenet-A')).rejects.toThrow(
+      'UNAUTHENTICATED'
+    );
+    expect(mockSynthesizeSpeech).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT retry on INVALID_ARGUMENT (code 3)', async () => {
+    mockListVoices.mockRejectedValue(grpcError('INVALID_ARGUMENT', 3));
+
+    await expect(googleCloudTTS.fetchWavenetVoices('invalid')).rejects.toThrow('INVALID_ARGUMENT');
+    expect(mockListVoices).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Error propagation — proves errors surface after retry exhaustion
 // ---------------------------------------------------------------------------
 describe('GoogleCloudTTS — error propagation after retries', () => {
   it('throws after all 3 attempts fail (1 initial + 2 retries)', async () => {
     mockSynthesizeSpeech
-      .mockRejectedValueOnce(new Error('UNAVAILABLE'))
-      .mockRejectedValueOnce(new Error('UNAVAILABLE'))
-      .mockRejectedValueOnce(new Error('FINAL_ERROR'));
+      .mockRejectedValueOnce(grpcError('UNAVAILABLE', 14))
+      .mockRejectedValueOnce(grpcError('UNAVAILABLE', 14))
+      .mockRejectedValueOnce(grpcError('FINAL_ERROR', 13));
 
     await expect(googleCloudTTS.synthesize('test', 'fr-FR', 'fr-FR-Wavenet-A')).rejects.toThrow(
       'FINAL_ERROR'
@@ -90,7 +117,7 @@ describe('GoogleCloudTTS — circuit breaker', () => {
       });
     });
 
-    mockSynthesizeSpeech.mockRejectedValue(new Error('UNAVAILABLE'));
+    mockSynthesizeSpeech.mockRejectedValue(grpcError('UNAVAILABLE', 14));
     for (let i = 0; i < 5; i++) {
       await freshTTS.synthesize('test', 'fr-FR', 'fr-FR-Wavenet-A').catch(() => {});
     }

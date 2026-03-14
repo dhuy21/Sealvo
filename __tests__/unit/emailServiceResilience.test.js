@@ -40,13 +40,19 @@ afterEach(() => {
   console.error.mockRestore();
 });
 
+function netError(msg, code) {
+  const e = new Error(msg);
+  e.code = code;
+  return e;
+}
+
 // ---------------------------------------------------------------------------
 // Retry behavior
 // ---------------------------------------------------------------------------
 describe('MailersendService — retry', () => {
   it('retries on transient SES failure and succeeds', async () => {
     mockSendMail
-      .mockRejectedValueOnce(new Error('Throttling'))
+      .mockRejectedValueOnce(netError('Throttling', 'ECONNRESET'))
       .mockResolvedValueOnce({ messageId: 'msg-123' });
 
     const result = await mailersend.sendEmail('user@test.com', '<p>Hello</p>');
@@ -56,8 +62,8 @@ describe('MailersendService — retry', () => {
 
   it('retries up to 3 attempts total (1 + 2 retries)', async () => {
     mockSendMail
-      .mockRejectedValueOnce(new Error('Throttling'))
-      .mockRejectedValueOnce(new Error('Throttling'))
+      .mockRejectedValueOnce(netError('Throttling', 'ETIMEDOUT'))
+      .mockRejectedValueOnce(netError('Throttling', 'ETIMEDOUT'))
       .mockResolvedValueOnce({ messageId: 'msg-456' });
 
     const result = await mailersend.sendEmail('user@test.com', '<p>Hello</p>');
@@ -67,11 +73,24 @@ describe('MailersendService — retry', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Smart retry — non-transient errors skip retry (Phase 5)
+// ---------------------------------------------------------------------------
+describe('MailersendService — smart retry (Phase 5)', () => {
+  it('does NOT retry on non-transient error (no network code) — fails immediately to false', async () => {
+    mockSendMail.mockRejectedValue(new Error('MessageRejected: Email address not verified'));
+
+    const result = await mailersend.sendEmail('bad@test.com', '<p>Hello</p>');
+    expect(result).toBe(false);
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Graceful degradation
 // ---------------------------------------------------------------------------
 describe('MailersendService — graceful degradation', () => {
   it('returns false when all retries fail (no crash)', async () => {
-    mockSendMail.mockRejectedValue(new Error('SES_UNAVAILABLE'));
+    mockSendMail.mockRejectedValue(netError('SES_UNAVAILABLE', 'ECONNREFUSED'));
 
     const result = await mailersend.sendEmail('user@test.com', '<p>Hello</p>');
     expect(result).toBe(false);
@@ -79,7 +98,7 @@ describe('MailersendService — graceful degradation', () => {
   });
 
   it('logs the error on failure', async () => {
-    mockSendMail.mockRejectedValue(new Error('CONNECTION_REFUSED'));
+    mockSendMail.mockRejectedValue(netError('CONNECTION_REFUSED', 'ECONNREFUSED'));
 
     await mailersend.sendEmail('user@test.com', '<p>Hello</p>');
     expect(console.error).toHaveBeenCalledWith(

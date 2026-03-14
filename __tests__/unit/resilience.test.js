@@ -4,6 +4,7 @@ const {
   CircuitBreaker,
   TimeoutError,
   CircuitOpenError,
+  isTransientError,
 } = require('../../app/core/resilience');
 
 // ---------------------------------------------------------------------------
@@ -139,6 +140,120 @@ describe('CircuitBreaker', () => {
     await breaker.execute(() => Promise.resolve('ok'));
     expect(breaker.failureCount).toBe(0);
     expect(breaker.getState()).toBe('CLOSED');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isTransientError
+// ---------------------------------------------------------------------------
+describe('isTransientError', () => {
+  it('returns true for TimeoutError', () => {
+    expect(isTransientError(new TimeoutError(5000))).toBe(true);
+  });
+
+  it('returns true for transient gRPC codes (4, 8, 13, 14)', () => {
+    for (const code of [4, 8, 13, 14]) {
+      const err = new Error('gRPC fail');
+      err.code = code;
+      expect(isTransientError(err)).toBe(true);
+    }
+  });
+
+  it('returns false for non-transient gRPC codes (3=INVALID, 7=PERMISSION, 16=UNAUTHENTICATED)', () => {
+    for (const code of [3, 7, 16]) {
+      const err = new Error('gRPC fail');
+      err.code = code;
+      expect(isTransientError(err)).toBe(false);
+    }
+  });
+
+  it('returns true for HTTP 429 and 5xx', () => {
+    for (const status of [429, 500, 502, 503, 504]) {
+      const err = new Error('HTTP fail');
+      err.status = status;
+      expect(isTransientError(err)).toBe(true);
+    }
+  });
+
+  it('returns false for HTTP 400/401/403/404', () => {
+    for (const status of [400, 401, 403, 404]) {
+      const err = new Error('HTTP fail');
+      err.status = status;
+      expect(isTransientError(err)).toBe(false);
+    }
+  });
+
+  it('returns true for Node.js network errors', () => {
+    for (const code of [
+      'ECONNRESET',
+      'ECONNREFUSED',
+      'ETIMEDOUT',
+      'EPIPE',
+      'EAI_AGAIN',
+      'ENOTFOUND',
+    ]) {
+      const err = new Error('net fail');
+      err.code = code;
+      expect(isTransientError(err)).toBe(true);
+    }
+  });
+
+  it('returns false for plain Error without structured properties', () => {
+    expect(isTransientError(new Error('unknown'))).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// withRetry — shouldRetry predicate
+// ---------------------------------------------------------------------------
+describe('withRetry — shouldRetry', () => {
+  it('skips retry when shouldRetry returns false', async () => {
+    const fn = jest.fn().mockRejectedValue(new Error('non-transient'));
+    const shouldRetry = jest.fn().mockReturnValue(false);
+
+    await expect(withRetry(fn, { retries: 3, delay: 10, shouldRetry })).rejects.toThrow(
+      'non-transient'
+    );
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(shouldRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries when shouldRetry returns true', async () => {
+    const fn = jest.fn().mockRejectedValueOnce(new Error('transient')).mockResolvedValue('ok');
+    const shouldRetry = jest.fn().mockReturnValue(true);
+
+    const result = await withRetry(fn, { retries: 2, delay: 10, shouldRetry });
+    expect(result).toBe('ok');
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it('retries everything when shouldRetry is not provided (backward compat)', async () => {
+    const fn = jest
+      .fn()
+      .mockRejectedValueOnce(new Error('e1'))
+      .mockRejectedValueOnce(new Error('e2'))
+      .mockResolvedValue('ok');
+
+    const result = await withRetry(fn, { retries: 2, delay: 10 });
+    expect(result).toBe('ok');
+    expect(fn).toHaveBeenCalledTimes(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CircuitBreaker — registry
+// ---------------------------------------------------------------------------
+describe('CircuitBreaker — registry', () => {
+  it('automatically registers instances by name', () => {
+    const b = new CircuitBreaker({ name: 'reg-test-1', threshold: 3, resetTimeout: 100 });
+    expect(CircuitBreaker.getAll().get('reg-test-1')).toBe(b);
+  });
+
+  it('getAll returns a Map of all created breakers', () => {
+    new CircuitBreaker({ name: 'reg-test-2', threshold: 3, resetTimeout: 100 });
+    const all = CircuitBreaker.getAll();
+    expect(all).toBeInstanceOf(Map);
+    expect(all.has('reg-test-2')).toBe(true);
   });
 });
 

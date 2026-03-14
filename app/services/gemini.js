@@ -1,9 +1,14 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { withTimeout, withRetry, CircuitBreaker } = require('../core/resilience');
+const { withTimeout, withRetry, CircuitBreaker, isTransientError } = require('../core/resilience');
+const cfg = require('../config/resilience').gemini;
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-const geminiBreaker = new CircuitBreaker({ name: 'gemini', threshold: 5, resetTimeout: 60000 });
+const geminiBreaker = new CircuitBreaker({
+  name: 'gemini',
+  threshold: cfg.breakerThreshold,
+  resetTimeout: cfg.breakerResetTimeout,
+});
 
 class GeminiService {
   async replaceExample(words, words_need_replace_example) {
@@ -44,9 +49,10 @@ class GeminiService {
             ${JSON.stringify(words, null, 2)}`;
 
       const result = await geminiBreaker.execute(() =>
-        withRetry(() => withTimeout(() => model.generateContent(batchPrompt), 15000), {
-          retries: 1,
-          delay: 2000,
+        withRetry(() => withTimeout(() => model.generateContent(batchPrompt), cfg.modifyTimeout), {
+          retries: cfg.retries,
+          delay: cfg.retryDelay,
+          shouldRetry: isTransientError,
         })
       );
       const response = await result.response;
@@ -94,10 +100,14 @@ class GeminiService {
             ${JSON.stringify(words, null, 2)}`;
 
       const result = await geminiBreaker.execute(() =>
-        withRetry(() => withTimeout(() => model.generateContent(batchPrompt), 30000), {
-          retries: 1,
-          delay: 2000,
-        })
+        withRetry(
+          () => withTimeout(() => model.generateContent(batchPrompt), cfg.generateTimeout),
+          {
+            retries: cfg.retries,
+            delay: cfg.retryDelay,
+            shouldRetry: isTransientError,
+          }
+        )
       );
       const response = await result.response;
       const text = response.text();

@@ -226,40 +226,63 @@ describe('errorHandler — HTML branch', () => {
   });
 });
 
-// --------------- resilience errors (Phase 4) ---------------
+// --------------- infrastructure errors (Phase 5 — contrat HTTP) ---------------
 
-describe('errorHandler — resilience errors', () => {
+describe('errorHandler — infrastructure errors', () => {
   const { TimeoutError, CircuitOpenError } = require('../../app/core/resilience');
   const jsonReq = mockReq({ path: '/api/test' });
   const next = jest.fn();
 
-  it('TimeoutError → 500 (non-operational, hidden from client)', () => {
+  it('TimeoutError → 504 Gateway Timeout', () => {
     const res = mockRes();
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
     errorHandler(new TimeoutError(5000), jsonReq, res, next);
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.body.message).toBe('Une erreur interne est survenue. Veuillez réessayer plus tard.');
-    expect(res.body.message).not.toContain('timeout');
+    expect(res.status).toHaveBeenCalledWith(504);
+    expect(res.body.message).toBe('Le service externe ne répond pas. Veuillez réessayer.');
     spy.mockRestore();
   });
 
-  it('CircuitOpenError → 500 (non-operational, hidden from client)', () => {
+  it('CircuitOpenError → 503 Service Unavailable', () => {
     const res = mockRes();
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
     errorHandler(new CircuitOpenError('google-tts'), jsonReq, res, next);
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.body.message).toBe('Une erreur interne est survenue. Veuillez réessayer plus tard.');
-    expect(res.body.message).not.toContain('Circuit');
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(res.body.message).toBe(
+      'Service temporairement indisponible. Veuillez réessayer dans quelques instants.'
+    );
     spy.mockRestore();
   });
 
-  it('console.error logs the real resilience error for debugging', () => {
+  it('logs infrastructure errors with err.name context', () => {
     const res = mockRes();
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
     const err = new CircuitOpenError('gemini');
     errorHandler(err, jsonReq, res, next);
-    expect(spy).toHaveBeenCalledWith('[ErrorHandler] Unexpected error:', err);
+    expect(spy).toHaveBeenCalledWith(
+      '[ErrorHandler] Infrastructure error (CircuitOpenError):',
+      err.message
+    );
     spy.mockRestore();
+  });
+
+  it('hides internal details from client (no circuit name in response)', () => {
+    const res = mockRes();
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    errorHandler(new CircuitOpenError('google-tts'), jsonReq, res, next);
+    expect(res.body.message).not.toContain('google-tts');
+    expect(res.body.message).not.toContain('Circuit');
+    spy.mockRestore();
+  });
+
+  it('includes stack in development mode', () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'development';
+    const res = mockRes();
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    errorHandler(new TimeoutError(5000), jsonReq, res, next);
+    expect(res.body.stack).toBeDefined();
+    spy.mockRestore();
+    process.env.NODE_ENV = prev;
   });
 });
 

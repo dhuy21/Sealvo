@@ -1,4 +1,7 @@
+const crypto = require('crypto');
 const rabbitmq = require('../core/rabbitmq');
+const cache = require('../core/cache');
+const { isReady: redisReady } = require('../core/redis');
 const MailersendService = require('../services/mailersend');
 
 const EXCHANGE = 'email.direct';
@@ -9,6 +12,7 @@ const FAILED_QUEUE = 'email.failed';
 const ROUTING_KEY = 'email';
 const RETRY_TTL = 10_000;
 const MAX_RETRIES = 2;
+const DEDUP_TTL = 86_400;
 
 async function setupTopology() {
   const ch = rabbitmq.getChannel();
@@ -45,6 +49,7 @@ function publish(payload) {
   ch.publish(EXCHANGE, ROUTING_KEY, Buffer.from(JSON.stringify(payload)), {
     persistent: true,
     contentType: 'application/json',
+    messageId: crypto.randomUUID(),
   });
   return true;
 }
@@ -69,6 +74,15 @@ async function startConsumer() {
 
   await ch.consume(QUEUE, async (msg) => {
     if (!msg) return;
+
+    const dedupId = msg.properties.messageId;
+    if (dedupId && redisReady()) {
+      const isNew = await cache.setNX(`email:dedup:${dedupId}`, 1, DEDUP_TTL);
+      if (!isNew) {
+        console.warn(`[emailQueue] Duplicate detected (${dedupId}) — skipping.`);
+        return ch.ack(msg);
+      }
+    }
 
     let payload;
     try {

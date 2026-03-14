@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
 const { SESv2Client, SendEmailCommand } = require('@aws-sdk/client-sesv2');
-const { withTimeout, withRetry } = require('../core/resilience');
+const { withTimeout, withRetry, isTransientError } = require('../core/resilience');
+const cfg = require('../config/resilience').email;
 
 const sesClient = new SESv2Client({
   region: process.env.AWS_REGION,
@@ -45,9 +46,9 @@ class MailersendService {
                 subject: resolvedSubject,
                 html: content,
               }),
-            10000
+            cfg.timeout
           ),
-        { retries: 2, delay: 1000 }
+        { retries: cfg.retries, delay: cfg.retryDelay, shouldRetry: isTransientError }
       );
 
       if (result?.messageId) {

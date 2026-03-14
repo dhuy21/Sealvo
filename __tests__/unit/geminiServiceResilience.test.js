@@ -31,6 +31,12 @@ beforeEach(() => {
 
 const WORDS = [{ id: 1, word: 'bonjour', meaning: 'hello', type: 'noun', language_code: 'fr' }];
 
+function httpError(msg, status) {
+  const e = new Error(msg);
+  e.status = status;
+  return e;
+}
+
 function mockSuccessResponse(data) {
   return {
     response: {
@@ -46,7 +52,7 @@ describe('GeminiService — retry + graceful degradation', () => {
   it('modifyExample retries on transient failure and succeeds', async () => {
     const expected = [{ id: 1, example: '**Bonjour** tout le monde.' }];
     mockGenerateContent
-      .mockRejectedValueOnce(new Error('503 Service Unavailable'))
+      .mockRejectedValueOnce(httpError('503 Service Unavailable', 503))
       .mockResolvedValueOnce(mockSuccessResponse(expected));
 
     const result = await geminiService.modifyExample(WORDS);
@@ -57,7 +63,7 @@ describe('GeminiService — retry + graceful degradation', () => {
   it('generateExemple retries on transient failure and succeeds', async () => {
     const expected = [{ id: 1, example: 'Dire **bonjour** est poli.' }];
     mockGenerateContent
-      .mockRejectedValueOnce(new Error('RESOURCE_EXHAUSTED'))
+      .mockRejectedValueOnce(httpError('RESOURCE_EXHAUSTED', 503))
       .mockResolvedValueOnce(mockSuccessResponse(expected));
 
     const result = await geminiService.generateExemple(WORDS);
@@ -66,17 +72,38 @@ describe('GeminiService — retry + graceful degradation', () => {
   });
 
   it('returns [] when all retries fail (modifyExample)', async () => {
-    mockGenerateContent.mockRejectedValue(new Error('API DOWN'));
+    mockGenerateContent.mockRejectedValue(httpError('API DOWN', 500));
 
     const result = await geminiService.modifyExample(WORDS);
     expect(result).toEqual([]);
   });
 
   it('returns [] when all retries fail (generateExemple)', async () => {
-    mockGenerateContent.mockRejectedValue(new Error('API DOWN'));
+    mockGenerateContent.mockRejectedValue(httpError('API DOWN', 500));
 
     const result = await geminiService.generateExemple(WORDS);
     expect(result).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Smart retry — non-transient errors skip retry (Phase 5)
+// ---------------------------------------------------------------------------
+describe('GeminiService — smart retry (Phase 5)', () => {
+  it('does NOT retry on 403 Forbidden (API key invalid) — fails immediately to []', async () => {
+    mockGenerateContent.mockRejectedValue(httpError('Forbidden', 403));
+
+    const result = await geminiService.modifyExample(WORDS);
+    expect(result).toEqual([]);
+    expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT retry on 400 Bad Request — fails immediately to []', async () => {
+    mockGenerateContent.mockRejectedValue(httpError('Bad Request', 400));
+
+    const result = await geminiService.generateExemple(WORDS);
+    expect(result).toEqual([]);
+    expect(mockGenerateContent).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -91,7 +118,7 @@ describe('GeminiService — circuit breaker fallback', () => {
       });
     });
 
-    mockGenerateContent.mockRejectedValue(new Error('UNAVAILABLE'));
+    mockGenerateContent.mockRejectedValue(httpError('UNAVAILABLE', 503));
     for (let i = 0; i < 5; i++) {
       await freshGemini.modifyExample(WORDS);
     }
