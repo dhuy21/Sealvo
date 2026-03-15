@@ -18,8 +18,12 @@ class ResetPasswordController {
     const user = await userModel.findByEmail(email);
     if (!user) throw new ValidationError("Cet email n'existe pas");
 
-    const { token, expiresAt } = await resetPasswordModel.createResetPasswordToken();
-    await resetPasswordModel.saveResetPasswordToken(email, token, expiresAt);
+    const { token } = resetPasswordModel.createResetPasswordToken();
+    const saved = await resetPasswordModel.saveResetPasswordToken(email, token);
+    if (!saved) {
+      throw new AppError('Une erreur est survenue. Veuillez réessayer plus tard.', 500);
+    }
+
     const emailContent = await MailersendService.generateResetPasswordEmail(user.username, token);
     const subject = 'Réinitialisation de mot de passe';
 
@@ -40,8 +44,12 @@ class ResetPasswordController {
     const user = await userModel.findByEmail(email);
     if (!user) throw new NotFoundError("Cet email n'existe pas");
 
-    const { token, expiresAt } = await resetPasswordModel.createResetPasswordToken();
-    await resetPasswordModel.saveResetPasswordToken(email, token, expiresAt);
+    const { token } = resetPasswordModel.createResetPasswordToken();
+    const saved = await resetPasswordModel.saveResetPasswordToken(email, token);
+    if (!saved) {
+      throw new AppError('Une erreur est survenue. Veuillez réessayer plus tard.', 500);
+    }
+
     const emailContent = await MailersendService.generateResetPasswordEmail(user.username, token);
     const subject = 'Réinitialisation de mot de passe';
     const emailSent = await emailQueue.enqueue({ to: email, content: emailContent, subject });
@@ -69,15 +77,9 @@ class ResetPasswordController {
 
     const resetPassword = await resetPasswordModel.findByToken(token);
     if (!resetPassword) {
-      throw new ValidationError("Le jeton de réinitialisation du mot de passe n'est pas valide");
-    }
-    if (resetPassword.used) {
-      throw new ValidationError('Le jeton de réinitialisation du mot de passe a déjà été utilisé');
-    }
-
-    const now = new Date();
-    if (new Date(resetPassword.expires_at) < now) {
-      throw new ValidationError('Le jeton de réinitialisation du mot de passe a expiré');
+      throw new ValidationError(
+        "Le jeton de réinitialisation du mot de passe n'est pas valide ou a expiré"
+      );
     }
 
     const salt = await bcrypt.genSalt(10);

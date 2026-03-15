@@ -22,18 +22,29 @@ class Email_verification {
 
   async saveToken(user_id, expires_at, token_hash) {
     const id = this.generateId();
-    const transaction = await global.dbConnection.beginTransaction();
-    //Revoke all tokens for this user
-    await transaction.execute(
-      'UPDATE email_verification SET status = "revoked" WHERE user_id = ?',
-      [user_id]
-    );
-    const [result] = await transaction.execute(
-      'INSERT INTO email_verification (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, ?)',
-      [id, user_id, token_hash, expires_at]
-    );
-    await transaction.commit();
-    return result.affectedRows > 0;
+    let transaction;
+    try {
+      transaction = await global.dbConnection.beginTransaction();
+      await transaction.execute(
+        'UPDATE email_verification SET status = "revoked" WHERE user_id = ?',
+        [user_id]
+      );
+      const [result] = await transaction.execute(
+        'INSERT INTO email_verification (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, ?)',
+        [id, user_id, token_hash, expires_at]
+      );
+      await transaction.commit();
+      return result.affectedRows > 0;
+    } catch (error) {
+      if (transaction) {
+        try {
+          await transaction.rollback();
+        } catch {
+          /* ignore */
+        }
+      }
+      throw error;
+    }
   }
 
   async verifyToken(token) {

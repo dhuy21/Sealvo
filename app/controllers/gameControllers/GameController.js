@@ -4,21 +4,6 @@ const cache = require('../../core/cache');
 const CACHE_TTL = require('../../config/cache');
 
 class GameController {
-  async index(req, res) {
-    const userId = req.session.user.id;
-    let stats = await cache.get(`gamestats:${userId}`);
-    if (!stats) {
-      stats = await gameScoresModel.getUserGameStats(userId);
-      await cache.set(`gamestats:${userId}`, stats, CACHE_TTL.GAME_STATS);
-    }
-    return res.render('games/index', {
-      title: 'Jeux éducatifs',
-      user: req.session.user,
-      stats: stats,
-      package_id: req.query.package,
-    });
-  }
-
   async showGame(req, res) {
     const package_id = req.query.package;
     const gameType = req.params.gameType;
@@ -32,16 +17,10 @@ class GameController {
     let hsWrapper = await cache.get(hsKey);
     let highScore;
     if (hsWrapper === null) {
-      highScore = await gameScoresModel.getHighScore(req.session.user.id, dbGameType);
+      highScore = await gameScoresModel.getBestScore(req.session.user.id, dbGameType);
       await cache.set(hsKey, { v: highScore }, CACHE_TTL.HIGH_SCORE);
     } else {
       highScore = hsWrapper.v;
-    }
-
-    let leaderboard = await cache.get(`lb:${dbGameType}`);
-    if (!leaderboard) {
-      leaderboard = await gameScoresModel.getLeaderboard(dbGameType, 5);
-      await cache.set(`lb:${dbGameType}`, leaderboard, CACHE_TTL.LEADERBOARD);
     }
 
     const levelGame = {
@@ -69,10 +48,10 @@ class GameController {
 
     let errorMessage = null;
 
-    if (wordCount < minWordsRequired || WordCountlevel == 0) {
+    if (WordCountlevel < minWordsRequired) {
       errorMessage = `Vous devez avoir au moins ${minWordsRequired} mots au niveau ${levelGame[gameType]} dans votre vocabulaire pour jouer à ce jeu.`;
-    } else if (WordCountlevel !== 0 && wordCount == 0) {
-      errorMessage = `Aujourd'hui, vous n'avez pas de mots à apprendre pour niveau ${levelGame[gameType]}. Si vous voulez jouer à ce jeu, veuillez ajouter des mots à votre vocabulaire.`;
+    } else if (wordCount < minWordsRequired) {
+      errorMessage = `Aujourd'hui, vous n'avez pas assez de mots à réviser au niveau ${levelGame[gameType]} pour jouer. Revenez quand vos mots seront prêts pour la révision.`;
     }
 
     const gameTitles = {
@@ -100,7 +79,6 @@ class GameController {
       package_id: package_id,
       user: req.session.user,
       highScore: highScore,
-      leaderboard: leaderboard,
       wordCount: wordCount,
       errorMessage: errorMessage,
       gameTitle: gameTitles[gameType],
@@ -109,20 +87,16 @@ class GameController {
   }
 
   async saveScore(req, res) {
-    const { game_type, score, details } = req.body;
-
+    const { game_type, score } = req.body;
     const userId = req.session.user.id;
-    const scoreId = await gameScoresModel.saveScore(userId, game_type, score, details || {});
 
-    await cache.del([`gamestats:${userId}`, `lb:${game_type}`, `highscore:${userId}:${game_type}`]);
+    const isHighScore = await gameScoresModel.saveScore(userId, game_type, score);
 
-    const stats = await gameScoresModel.getUserGameStats(userId);
-    await cache.set(`gamestats:${userId}`, stats, CACHE_TTL.GAME_STATS);
+    await cache.del(`highscore:${userId}:${game_type}`);
 
     return res.json({
       success: true,
-      score_id: scoreId,
-      stats: stats[game_type],
+      isHighScore,
     });
   }
 }

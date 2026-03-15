@@ -3,6 +3,7 @@ const router = express.Router();
 const userController = require('../../controllers/UserController');
 const resetPasswordController = require('../../controllers/authControllers/ResetPasswordController');
 const { isAuthenticated } = require('../../middleware/auth');
+const { emailLimiter } = require('../../middleware/rateLimiter');
 const asyncHandler = require('../../middleware/asyncHandler');
 const { validate } = require('../../validation/validate');
 const { resetPasswordSchema } = require('../../validation/schemas/auth.schema');
@@ -18,6 +19,7 @@ router.post(
 router.post(
   '/changePassword',
   isAuthenticated,
+  emailLimiter,
   asyncHandler(resetPasswordController.changePasswordPost)
 );
 router.get('/resetPassword', isAuthenticated, resetPasswordController.resetPassword);

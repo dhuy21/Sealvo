@@ -48,23 +48,20 @@ beforeEach(() => jest.clearAllMocks());
 // ── Part A: showGame — high score cache ─────────────────────────
 describe('GameController.showGame — high score cache-aside', () => {
   beforeEach(() => {
-    // Leaderboard and word counts are always needed; provide defaults
     learningModel.countUserWordsByLevel.mockResolvedValue(10);
     learningModel.getNumWordsByLevel.mockResolvedValue(10);
   });
 
   it('reads high score from cache on HIT (wrapper { v: ... })', async () => {
-    const fakeScore = { score: 500, id: 1 };
-    cache.get
-      .mockResolvedValueOnce({ v: fakeScore }) // highscore cache HIT
-      .mockResolvedValueOnce([{ username: 'a', score: 500 }]); // leaderboard cache HIT
+    const fakeScore = { score: 500 };
+    cache.get.mockResolvedValueOnce({ v: fakeScore }); // highscore cache HIT
     const req = makeReq('wordScramble');
     const res = mockRes();
 
     await GameController.showGame(req, res);
 
     expect(cache.get).toHaveBeenCalledWith('highscore:u1:word_scramble');
-    expect(gameScoresModel.getHighScore).not.toHaveBeenCalled();
+    expect(gameScoresModel.getBestScore).not.toHaveBeenCalled();
     expect(res.render).toHaveBeenCalledWith(
       'games/wordScramble',
       expect.objectContaining({ highScore: fakeScore })
@@ -73,17 +70,14 @@ describe('GameController.showGame — high score cache-aside', () => {
 
   it('queries DB on cache MISS and wraps result before caching', async () => {
     const fakeScore = { score: 300 };
-    cache.get
-      .mockResolvedValueOnce(null) // highscore cache MISS
-      .mockResolvedValueOnce(null); // leaderboard cache MISS
-    gameScoresModel.getHighScore.mockResolvedValue(fakeScore);
-    gameScoresModel.getLeaderboard.mockResolvedValue([]);
+    cache.get.mockResolvedValueOnce(null); // highscore cache MISS
+    gameScoresModel.getBestScore.mockResolvedValue(fakeScore);
     const req = makeReq('flashMatch');
     const res = mockRes();
 
     await GameController.showGame(req, res);
 
-    expect(gameScoresModel.getHighScore).toHaveBeenCalledWith('u1', 'flash_match');
+    expect(gameScoresModel.getBestScore).toHaveBeenCalledWith('u1', 'flash_match');
     expect(cache.set).toHaveBeenCalledWith(
       'highscore:u1:flash_match',
       { v: fakeScore },
@@ -96,16 +90,13 @@ describe('GameController.showGame — high score cache-aside', () => {
   });
 
   it('correctly handles null high score (new player, never played)', async () => {
-    cache.get
-      .mockResolvedValueOnce(null) // highscore MISS
-      .mockResolvedValueOnce([]); // leaderboard HIT (empty)
-    gameScoresModel.getHighScore.mockResolvedValue(null);
+    cache.get.mockResolvedValueOnce(null); // highscore MISS
+    gameScoresModel.getBestScore.mockResolvedValue(null);
     const req = makeReq('speedVocab');
     const res = mockRes();
 
     await GameController.showGame(req, res);
 
-    // Wraps null in { v: null }
     expect(cache.set).toHaveBeenCalledWith(
       'highscore:u1:speed_vocab',
       { v: null },
@@ -118,15 +109,13 @@ describe('GameController.showGame — high score cache-aside', () => {
   });
 
   it('unwraps { v: null } from cache correctly (does not re-query DB)', async () => {
-    cache.get
-      .mockResolvedValueOnce({ v: null }) // cached wrapper with null inside
-      .mockResolvedValueOnce([]); // leaderboard
+    cache.get.mockResolvedValueOnce({ v: null }); // cached wrapper with null inside
     const req = makeReq('vocabQuiz');
     const res = mockRes();
 
     await GameController.showGame(req, res);
 
-    expect(gameScoresModel.getHighScore).not.toHaveBeenCalled();
+    expect(gameScoresModel.getBestScore).not.toHaveBeenCalled();
     expect(res.render).toHaveBeenCalledWith(
       'games/vocabQuiz',
       expect.objectContaining({ highScore: null })
@@ -204,7 +193,6 @@ describe('FlashMatchController — uses single JOIN query', () => {
 
   it('calls findWordsWithDetailsByLevel and returns cards with word IDs', async () => {
     learningModel.findWordsWithDetailsByLevel.mockResolvedValue(SAMPLE_WORDS);
-    // Need at least 4 words for FlashMatch (minPairsCount)
     const fourWords = [
       ...SAMPLE_WORDS,
       { ...SAMPLE_WORDS[0], id: 3 },
@@ -222,7 +210,7 @@ describe('FlashMatchController — uses single JOIN query', () => {
     const body = res.json.mock.calls[0][0];
     expect(body.cards).toBeDefined();
     expect(body.wordIds).toBeDefined();
-    expect(body.cards.length).toBe(fourWords.length * 2); // word + meaning per pair
+    expect(body.cards.length).toBe(fourWords.length * 2);
   });
 });
 

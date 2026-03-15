@@ -11,6 +11,7 @@
         <link rel="apple-touch-icon" href="/images/logo.png">
         <meta name="msapplication-TileImage" content="/images/logo.png">
         <meta name="theme-color" content="#2575fc">
+        <meta name="csrf-token" content="{{csrfToken}}">
         
         <!-- Early Dark Mode Detection -->
         <script src="/js/theme-init.js" nonce="{{nonce}}"></script>
@@ -33,6 +34,8 @@
         </div>
 
         
+        <!-- CSRF interceptor (must load before any app script) -->
+        <script src="/js/csrf.js" nonce="{{nonce}}"></script>
         <!-- App scripts -->
         <script src="/js/notification.js" nonce="{{nonce}}"></script>
         <script src="/js/jobWatcher.js" nonce="{{nonce}}"></script>

@@ -27,11 +27,11 @@ class LevelProgressController {
       phrase_completion: '0',
       speed_vocab: '1',
       word_search: '2',
-      test_pronunciation: 'x',
+      test_pronun: 'x',
     };
 
     const levelGames = {
-      x: ['flash_match', 'vocab_quiz', 'test_pronunciation'],
+      x: ['flash_match', 'vocab_quiz', 'test_pronun'],
       0: ['word_scramble', 'phrase_completion'],
       1: ['speed_vocab'],
       2: ['word_search'],
@@ -56,11 +56,11 @@ class LevelProgressController {
       if (allCompleted) {
         const package_id = req.query.package;
         const words = await learningModel.findWordsTodayByLevel(package_id, currentLevel);
+        const detailIds = words.map((w) => w.detail_id);
 
-        const updatedWords = [];
-        for (const word of words) {
-          await learningModel.updateLevelWord(package_id, word.detail_id, currentLevel);
-          updatedWords.push(word.detail_id);
+        let updatedCount = 0;
+        if (detailIds.length > 0) {
+          updatedCount = await learningModel.batchUpdateLevel(package_id, detailIds, currentLevel);
         }
 
         delete progress[currentLevel];
@@ -71,7 +71,7 @@ class LevelProgressController {
         return res.json({
           success: true,
           level_completed: true,
-          words_updated: updatedWords.length,
+          words_updated: updatedCount,
           from_level: currentLevel,
           to_level: this.getNextLevel(currentLevel),
         });

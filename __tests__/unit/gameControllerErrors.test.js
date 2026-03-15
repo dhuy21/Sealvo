@@ -1,13 +1,11 @@
 /**
- * Unit tests: GameController — Phase 2+3 error handling
+ * Unit tests: GameController — error handling
  *
  * Validates that:
- * - saveScore and showGame propagate DB errors (no try/catch masking)
+ * - saveScore propagates DB errors (no try/catch masking)
  * - showGame degrades gracefully when word counting fails (intentional try/catch)
- * - index propagates DB errors as unhandled rejections
  *
  * Note: game_type validation moved to route-level schema middleware (Phase 3).
- * Schema validation is tested in middleware/validation integration tests.
  */
 const cache = require('../../app/core/cache');
 const gameScoresModel = require('../../app/models/game_scores');
@@ -32,7 +30,6 @@ const mockRes = () => ({
 beforeEach(() => jest.clearAllMocks());
 
 // ── saveScore ───────────────────────────────────────────────────
-// game_type validation is now handled by saveScoreSchema middleware (Phase 3).
 
 describe('GameController.saveScore — error handling', () => {
   it('propagates DB error (no try/catch masking)', async () => {
@@ -46,31 +43,30 @@ describe('GameController.saveScore — error handling', () => {
     await expect(GameController.saveScore(req, res)).rejects.toThrow('DB connection lost');
   });
 
-  it('returns success with valid game_type', async () => {
-    gameScoresModel.saveScore.mockResolvedValue(42);
-    gameScoresModel.getUserGameStats.mockResolvedValue({ word_scramble: { best: 100 } });
+  it('returns success with isHighScore flag', async () => {
+    gameScoresModel.saveScore.mockResolvedValue(true);
     cache.del.mockResolvedValue(true);
-    cache.set.mockResolvedValue(true);
 
     const req = {
       session: { user: { id: 'u1' } },
-      body: { game_type: 'word_scramble', score: 100, details: { accuracy: 95 } },
+      body: { game_type: 'word_scramble', score: 100 },
     };
     const res = mockRes();
 
     await GameController.saveScore(req, res);
 
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, score_id: 42 }));
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true, isHighScore: true })
+    );
   });
 });
 
 // ── showGame ────────────────────────────────────────────────────
-// gameType validation is now handled by showGameSchema middleware (Phase 3).
 
 describe('GameController.showGame — error handling', () => {
   it('still renders when word counting fails (graceful degradation)', async () => {
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    cache.get.mockResolvedValueOnce({ v: 0 }).mockResolvedValueOnce([]);
+    cache.get.mockResolvedValueOnce({ v: 0 });
 
     learningModel.countUserWordsByLevel.mockRejectedValue(new Error('count failed'));
     learningModel.getNumWordsByLevel.mockRejectedValue(new Error('count failed'));
@@ -89,33 +85,5 @@ describe('GameController.showGame — error handling', () => {
       expect.objectContaining({ wordCount: 0 })
     );
     spy.mockRestore();
-  });
-});
-
-// ── index ───────────────────────────────────────────────────────
-
-describe('GameController.index — error handling', () => {
-  it('propagates DB error (no try/catch masking)', async () => {
-    cache.get.mockResolvedValue(null);
-    gameScoresModel.getUserGameStats.mockRejectedValue(new Error('DB timeout'));
-
-    const req = { session: { user: { id: 'u1' } }, query: {} };
-    const res = mockRes();
-
-    await expect(GameController.index(req, res)).rejects.toThrow('DB timeout');
-  });
-
-  it('renders game index on success', async () => {
-    cache.get.mockResolvedValue({ total_games: 5 });
-
-    const req = { session: { user: { id: 'u1' } }, query: { package: '1' } };
-    const res = mockRes();
-
-    await GameController.index(req, res);
-
-    expect(res.render).toHaveBeenCalledWith(
-      'games/index',
-      expect.objectContaining({ title: 'Jeux éducatifs' })
-    );
   });
 });

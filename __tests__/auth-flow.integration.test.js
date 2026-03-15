@@ -68,8 +68,7 @@ describe('Auth flow (integration)', () => {
       );
     });
 
-    it('returns 400 when token is not found in DB', async () => {
-      // Mock DB returns [] → findByToken returns undefined → "token not valid"
+    it('returns 400 when token is not found in Redis', async () => {
       const res = await request(app).post('/login/resetPassword').send({
         token: 'invalid-token-xyz',
         password: 'Pass123!',

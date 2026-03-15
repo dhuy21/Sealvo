@@ -1,10 +1,19 @@
-# Stage 1: install production dependencies
+# Stage 1: build (minify JS/CSS with esbuild — needs devDependencies)
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci
+COPY public ./public
+COPY scripts/build.js ./scripts/build.js
+RUN node scripts/build.js
+
+# Stage 2: install production dependencies only
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev
 
-# Stage 2: production runner
+# Stage 3: production runner
 FROM node:20-alpine AS runner
 
 # Strip package managers not needed at runtime (eliminates known CVEs)
@@ -18,6 +27,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
 COPY . .
+COPY --from=builder /app/public ./public
 RUN mkdir -p app/uploads && chown -R appuser:appgroup /app
 
 USER appuser

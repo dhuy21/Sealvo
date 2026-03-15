@@ -3,6 +3,16 @@ document.addEventListener('DOMContentLoaded', function () {
   var streakRecorded = false;
   checkBrowser();
 
+  function escAttr(str) {
+    if (!str) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
   let allWords = [];
   const wordsContainer = document.getElementById('words-data');
   if (wordsContainer && wordsContainer.dataset.words) {
@@ -175,15 +185,21 @@ document.addEventListener('DOMContentLoaded', function () {
                     word.pronunciation
                       ? `
                     <p><strong>Prononciation:</strong> <span class="pronunciation-text">${word.pronunciation}</span></p>
-                    <button class="pronunciation-btn" data-text="${word.word}">
+                    <button class="pronunciation-btn" data-text="${escAttr(word.word)}">
                       <i class="fas fa-volume-up"></i> Écouter
                     </button> 
                   `
                       : ''
                   }
-                    <button class="pronunciation-btn" data-text="${word.example}">
+                  ${
+                    word.example
+                      ? `
+                    <button class="pronunciation-btn" data-text="${escAttr(word.example)}">
                       <i class="fas fa-volume-up"></i> Écouter l'exemple
                     </button>
+                  `
+                      : ''
+                  }
                 </div>
               </div>
             </div>`;

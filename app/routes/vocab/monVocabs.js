@@ -23,7 +23,13 @@ router.post(
   asyncHandler(wordController.addWordPost)
 );
 
-router.post('/add/import', isAuthenticated, uploadMiddleware, asyncHandler(importWords));
+router.post(
+  '/add/import',
+  isAuthenticated,
+  validate(addWordSchema),
+  uploadMiddleware,
+  asyncHandler(importWords)
+);
 
 router.post(
   '/deleteAll',

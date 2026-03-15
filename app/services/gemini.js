@@ -64,11 +64,18 @@ class GeminiService {
         const cleanText = text.replace(/```json|```/g, '').trim();
         try {
           return JSON.parse(cleanText);
-        } catch {
+        } catch (parseErr) {
+          console.warn(
+            '[gemini] modifyExample JSON parse failed for',
+            words.length,
+            'words:',
+            parseErr.message
+          );
           return [];
         }
       }
-    } catch {
+    } catch (err) {
+      console.warn('[gemini] modifyExample failed for', words.length, 'words:', err.message);
       return [];
     }
   }
@@ -118,11 +125,18 @@ class GeminiService {
         const cleanText = text.replace(/```json|```/g, '').trim();
         try {
           return JSON.parse(cleanText);
-        } catch {
+        } catch (parseErr) {
+          console.warn(
+            '[gemini] generateExemple JSON parse failed for',
+            words.length,
+            'words:',
+            parseErr.message
+          );
           return [];
         }
       }
-    } catch {
+    } catch (err) {
+      console.warn('[gemini] generateExemple failed for', words.length, 'words:', err.message);
       return [];
     }
   }

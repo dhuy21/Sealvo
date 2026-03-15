@@ -2,6 +2,16 @@ const geminiService = require('./gemini');
 const wordModel = require('../models/words');
 const cache = require('../core/cache');
 
+const GEMINI_BATCH_SIZE = 25;
+
+function chunk(arr, size) {
+  const chunks = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+}
+
 async function enrichWithGemini(words) {
   const wordsNoExample = [];
   const wordsWithExample = [];
@@ -29,24 +39,36 @@ async function enrichWithGemini(words) {
   }
 
   if (wordsNoExample.length > 0) {
-    try {
-      const generated = await geminiService.generateExemple(wordsNoExample);
-      if (Array.isArray(generated) && generated.length > 0) {
-        words = await geminiService.replaceExample(words, generated);
+    const batches = chunk(wordsNoExample, GEMINI_BATCH_SIZE);
+    for (const batch of batches) {
+      try {
+        const generated = await geminiService.generateExemple(batch);
+        if (Array.isArray(generated) && generated.length > 0) {
+          words = await geminiService.replaceExample(words, generated);
+        }
+      } catch (err) {
+        console.warn(
+          `[wordProcessing] Gemini generateExemple error (batch ${batches.indexOf(batch) + 1}/${batches.length}):`,
+          err.message
+        );
       }
-    } catch (err) {
-      console.warn('[wordProcessing] Gemini generateExemple error:', err.message);
     }
   }
 
   if (wordsWithExample.length > 0) {
-    try {
-      const corrected = await geminiService.modifyExample(wordsWithExample);
-      if (Array.isArray(corrected) && corrected.length > 0) {
-        words = await geminiService.replaceExample(words, corrected);
+    const batches = chunk(wordsWithExample, GEMINI_BATCH_SIZE);
+    for (const batch of batches) {
+      try {
+        const corrected = await geminiService.modifyExample(batch);
+        if (Array.isArray(corrected) && corrected.length > 0) {
+          words = await geminiService.replaceExample(words, corrected);
+        }
+      } catch (err) {
+        console.warn(
+          `[wordProcessing] Gemini modifyExample error (batch ${batches.indexOf(batch) + 1}/${batches.length}):`,
+          err.message
+        );
       }
-    } catch (err) {
-      console.warn('[wordProcessing] Gemini modifyExample error:', err.message);
     }
   }
 

@@ -35,15 +35,16 @@ class User {
     return rows[0] || null;
   }
   async findByEmail(email) {
-    const [rows] = await global.dbConnection.execute('SELECT id FROM users WHERE email = ?', [
-      email,
-    ]);
+    const [rows] = await global.dbConnection.execute(
+      'SELECT id, username FROM users WHERE email = ?',
+      [email]
+    );
     return rows[0] || null;
   }
   async findByUsername(username) {
     this.checkDbConnection();
     const [rows] = await global.dbConnection.execute(
-      'SELECT id, username, password, email, ava, is_verified FROM users WHERE username = ?',
+      'SELECT id, username, password, email, ava, is_verified, last_login, created_at FROM users WHERE username = ?',
       [username]
     );
     return rows[0] || null;
@@ -93,14 +94,6 @@ class User {
     const [result] = await global.dbConnection.execute(
       'UPDATE users SET username = ?, email = ?, password = ? WHERE id = ?',
       [userData.username, userData.email, userData.password, id]
-    );
-    return result.affectedRows > 0;
-  }
-
-  async updateResetPasswordToken(email, token, expiresAt) {
-    const [result] = await global.dbConnection.execute(
-      'UPDATE users SET reset_password_token = ?, reset_password_expires = ? WHERE email = ?',
-      [token, expiresAt, email]
     );
     return result.affectedRows > 0;
   }

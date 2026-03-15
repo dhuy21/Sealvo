@@ -13,8 +13,6 @@ const asyncHandler = require('../../middleware/asyncHandler');
 const { validate } = require('../../validation/validate');
 const { saveScoreSchema, showGameSchema } = require('../../validation/schemas/game.schema');
 
-router.get('/', isAuthenticated, asyncHandler(gameController.index));
-
 router.post(
   '/score',
   isAuthenticatedAPI,

@@ -1,11 +1,17 @@
 const UserModel = require('../../models/users');
 const WordModel = require('../../models/words');
 const LearningModel = require('../../models/learning');
+const EmailVerificationModel = require('../../models/email_verification');
 const MailersendService = require('../../services/mailersend');
 const emailQueue = require('../../queues/emailQueue');
 const { AppError } = require('../../errors/AppError');
 
 class ReminderController {
+  constructor() {
+    this.reminder = this.reminder.bind(this);
+    this.testEmail = this.testEmail.bind(this);
+  }
+
   async testEmail(req, res) {
     const user = req.session.user;
 
@@ -79,12 +85,23 @@ class ReminderController {
       }
     }
 
+    await this._runCleanup();
+
     res.status(200).json({
       success: true,
       message: `Rappels traités : ${sent} envoyé(s), ${failed} échoué(s).`,
       sent,
       failed,
     });
+  }
+
+  async _runCleanup() {
+    try {
+      await EmailVerificationModel.deleteUserExpired();
+      await UserModel.deleteUserNotVerified();
+    } catch (err) {
+      console.error('[Reminder] Cleanup failed:', err.message);
+    }
   }
 }
 

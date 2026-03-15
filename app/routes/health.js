@@ -2,10 +2,11 @@ const express = require('express');
 const { isReady: redisReady } = require('../core/redis');
 const { isReady: rabbitReady } = require('../core/rabbitmq');
 const { CircuitBreaker } = require('../core/resilience');
+const { requireCronSecret } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/deps', (_req, res) => {
+router.get('/deps', requireCronSecret, (_req, res) => {
   const breakers = {};
   for (const [name, cb] of CircuitBreaker.getAll()) {
     breakers[name] = {

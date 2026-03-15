@@ -141,8 +141,9 @@ class PackageController {
     myPackage.mode = 'private';
     const newPackage = await packageModel.create(myPackage);
     const words = await wordModel.findWordsByPackageId(packageId);
-    for (const word of words) {
-      await learningModel.stockWord(newPackage, word.detail_id, 'x');
+    const detailIds = words.map((w) => w.detail_id);
+    if (detailIds.length > 0) {
+      await learningModel.batchStockWords(newPackage, detailIds, 'x');
     }
     await cache.del([
       `pkgs:user:${req.session.user.id}`,

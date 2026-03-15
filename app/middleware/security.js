@@ -6,6 +6,22 @@ const nonceMiddleware = (req, res, next) => {
   next();
 };
 
+const PERMISSIONS_POLICY = [
+  'camera=()',
+  'geolocation=()',
+  'payment=()',
+  'usb=()',
+  'interest-cohort=()',
+  'browsing-topics=()',
+  'microphone=(self)',
+  'autoplay=(self)',
+].join(', ');
+
+const permissionsPolicyMiddleware = (req, res, next) => {
+  res.setHeader('Permissions-Policy', PERMISSIONS_POLICY);
+  next();
+};
+
 const cspConfig = {
   contentSecurityPolicy: {
     directives: {
@@ -17,20 +33,14 @@ const cspConfig = {
         'https://accounts.google.com',
         'https://apis.google.com',
       ],
-      styleSrc: [
-        "'self'",
-        "'unsafe-inline'", // Still needed for CSS
-        'https://cdnjs.cloudflare.com',
-        'https://fonts.googleapis.com',
-      ],
-      fontSrc: ["'self'", 'https://cdnjs.cloudflare.com', 'https://fonts.gstatic.com'],
-      imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://cdnjs.cloudflare.com'],
+      fontSrc: ["'self'", 'https://cdnjs.cloudflare.com'],
+      imgSrc: ["'self'", 'data:', 'blob:'],
       connectSrc: [
         "'self'",
         'https://accounts.google.com',
         'https://oauth2.googleapis.com',
         'https://www.googleapis.com',
-        'https://cdn.jsdelivr.net', // Pour les source maps et ressources CDN
       ],
       frameSrc: ["'self'", 'https://accounts.google.com'],
       objectSrc: ["'none'"],
@@ -41,12 +51,6 @@ const cspConfig = {
       baseUri: ["'self'"],
       manifestSrc: ["'self'"],
       workerSrc: ["'self'", 'blob:'],
-      scriptSrcElem: [
-        "'self'",
-        (req, res) => `'nonce-${res.locals.nonce}'`,
-        'https://accounts.google.com',
-        'https://apis.google.com',
-      ],
       upgradeInsecureRequests: [],
     },
   },
@@ -71,6 +75,7 @@ const cspConfig = {
 
 const initializeSecurity = (app) => {
   app.use(nonceMiddleware);
+  app.use(permissionsPolicyMiddleware);
   app.use(helmet(cspConfig));
 };
 
