@@ -153,6 +153,15 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_WORKER_SERVICE_ID: ${{ secrets.RAILWAY_WORKER_SERVICE_ID }}
 
+      - name: Redeploy Scheduler
+        run: |
+          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
+          [ -z "$RAILWAY_SCHEDULER_SERVICE_ID" ] && echo "RAILWAY_SCHEDULER_SERVICE_ID not set, skip." && exit 0
+          npx -y @railway/cli redeploy --service "$RAILWAY_SCHEDULER_SERVICE_ID" --yes
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SCHEDULER_SERVICE_ID: ${{ secrets.RAILWAY_SCHEDULER_SERVICE_ID }}
+
       - name: Summary
         if: always()
         run: |
@@ -201,6 +210,15 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_WORKER_SERVICE_ID: ${{ secrets.RAILWAY_WORKER_SERVICE_ID }}
+
+      - name: Redeploy Scheduler
+        run: |
+          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
+          [ -z "$RAILWAY_SCHEDULER_SERVICE_ID" ] && echo "RAILWAY_SCHEDULER_SERVICE_ID not set, skip." && exit 0
+          npx -y @railway/cli redeploy --service "$RAILWAY_SCHEDULER_SERVICE_ID" --yes
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SCHEDULER_SERVICE_ID: ${{ secrets.RAILWAY_SCHEDULER_SERVICE_ID }}
 
       - name: Summary
         if: always()
