@@ -3,14 +3,19 @@ const router = express.Router();
 
 const siteController = require('../../app/controllers/SiteController');
 const { feedbackLimiter } = require('../middleware/rateLimiter');
+const asyncHandler = require('../middleware/asyncHandler');
+const { validate } = require('../validation/validate');
+const { feedbackSchema } = require('../validation/schemas/site.schema');
 
-// Page "À propos de moi"
 router.get('/aboutme', siteController.aboutme);
-//Page "Feedback"
 router.get('/feedback', siteController.feedback);
-router.post('/feedback', feedbackLimiter, siteController.feedbackPost);
+router.post(
+  '/feedback',
+  feedbackLimiter,
+  validate(feedbackSchema),
+  asyncHandler(siteController.feedbackPost)
+);
 
-// Page d'accueil
 router.get('/', siteController.index);
 
 module.exports = router;

@@ -1,8 +1,12 @@
 /**
- * Unit tests: TTSController — validation, cache-aside (voices + audio),
+ * Unit tests: TTSController — cache-aside (voices + audio),
  * deterministic voice selection, graceful degradation.
+ *
+ * Input validation (text, language) is now handled by ttsGenerateSchema
+ * middleware (Phase 3). See integration/middleware tests for that coverage.
  */
 const crypto = require('crypto');
+const { AppError } = require('../../app/errors/AppError');
 
 jest.mock('../../app/services/google_cloud_tts');
 jest.mock('../../app/core/cache', () => ({
@@ -39,36 +43,19 @@ beforeEach(() => {
 });
 
 // ────────────────────────────────────────────────────────
-// 1. Input Validation
+// 1. Business Logic Errors
 // ────────────────────────────────────────────────────────
-describe('TTSController — input validation', () => {
-  it('returns 400 when text is missing', async () => {
-    const res = mockRes();
-    await TTSController.generateAudio({ body: { language: 'fr-FR' } }, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ success: false, message: expect.stringMatching(/texte/i) })
-    );
-    expect(googleCloudTTS.fetchWavenetVoices).not.toHaveBeenCalled();
-  });
-
-  it('returns 400 when language is missing', async () => {
-    const res = mockRes();
-    await TTSController.generateAudio({ body: { text: 'hello' } }, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ success: false, message: expect.stringMatching(/langue/i) })
-    );
-  });
-
-  it('returns 400 when no Wavenet voices available', async () => {
+// Input validation (text, language presence) is now in ttsGenerateSchema middleware.
+describe('TTSController — business logic errors', () => {
+  it('throws AppError 422 when no Wavenet voices available', async () => {
     googleCloudTTS.fetchWavenetVoices.mockResolvedValue([]);
     const res = mockRes();
-    await TTSController.generateAudio({ body: { text: 'hi', language: 'zz-ZZ' } }, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ success: false, message: expect.stringMatching(/voix/i) })
-    );
+    await expect(
+      TTSController.generateAudio({ body: { text: 'hi', language: 'zz-ZZ' } }, res)
+    ).rejects.toThrow(AppError);
+    await expect(
+      TTSController.generateAudio({ body: { text: 'hi', language: 'zz-ZZ' } }, res)
+    ).rejects.toThrow(/voix disponible/i);
   });
 });
 
@@ -227,14 +214,13 @@ describe('TTSController — graceful degradation', () => {
     expect(res.send).toHaveBeenCalledWith(FAKE_BUFFER);
   });
 
-  it('returns 500 when Google API throws', async () => {
+  it('propagates error when Google API throws', async () => {
     cache.get.mockResolvedValue(null);
     googleCloudTTS.fetchWavenetVoices.mockRejectedValue(new Error('API unavailable'));
 
     const res = mockRes();
-    await TTSController.generateAudio({ body: { text: 'bonjour', language: 'fr-FR' } }, res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+    await expect(
+      TTSController.generateAudio({ body: { text: 'bonjour', language: 'fr-FR' } }, res)
+    ).rejects.toThrow('API unavailable');
   });
 });

@@ -56,6 +56,19 @@ class Learning {
     return rows[0] || null;
   }
 
+  async batchUpdateLevel(package_id, detailIds, currentLevel) {
+    const levelMap = { x: '0', 0: '1', 1: '2', 2: 'v' };
+    const newLevel = levelMap[currentLevel];
+    if (!newLevel || detailIds.length === 0) return 0;
+
+    const placeholders = detailIds.map(() => '?').join(',');
+    const [result] = await global.dbConnection.execute(
+      `UPDATE learning SET level = ?, date_memorized = NOW() WHERE package_id = ? AND detail_id IN (${placeholders})`,
+      [newLevel, package_id, ...detailIds]
+    );
+    return result.affectedRows;
+  }
+
   async dateMemoryWord(package_id, detail_id) {
     const [rows] = await global.dbConnection.execute(
       'SELECT date_memorized FROM learning WHERE package_id = ? AND detail_id = ?',
@@ -70,6 +83,16 @@ class Learning {
       [package_id, detail_id, level]
     );
     return rows[0] || null;
+  }
+
+  async batchStockWords(package_id, detailIds, level) {
+    if (detailIds.length === 0) return;
+    const placeholders = detailIds.map(() => '(?, ?, ?)').join(', ');
+    const params = detailIds.flatMap((id) => [package_id, id, level]);
+    await global.dbConnection.execute(
+      `INSERT INTO learning (package_id, detail_id, level) VALUES ${placeholders}`,
+      params
+    );
   }
 
   async getNumWordsByLevelAllPackages(user_id, level) {

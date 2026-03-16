@@ -129,15 +129,17 @@
                 {{#if words.[0].pronunciation}}
                   <div class='pronunciation-text'><strong>Prononciation:</strong>
                     {{words.[0].pronunciation}}</div>
-                  <button class='pronunciation-btn' data-text='{{words.[0].word}}'>
+                  <button class='pronunciation-btn' data-text="{{words.[0].word}}">
                     <i class='fas fa-volume-up'></i>
                     Écouter
                   </button>
                 {{/if}}
-                <button class='pronunciation-btn' data-text='{{words.[0].example}}'>
-                  <i class='fas fa-volume-up'></i>
-                  Écouter l'exemple
-                </button>
+                {{#if words.[0].example}}
+                  <button class='pronunciation-btn' data-text="{{words.[0].example}}">
+                    <i class='fas fa-volume-up'></i>
+                    Écouter l'exemple
+                  </button>
+                {{/if}}
                 {{#if words.[0].synonyms}}
                   <p><strong>Synonymes:</strong> {{words.[0].synonyms}}</p>
                 {{/if}}

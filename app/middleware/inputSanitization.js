@@ -1,5 +1,16 @@
 const { sanitizeInput } = require('./sanitization');
 
+const WORD_FIELDS = {
+  word: 'text',
+  meaning: 'text',
+  synonyms: 'text',
+  antonyms: 'text',
+  example: 'text',
+  grammar: 'text',
+  pronunciation: 'text',
+  subject: 'text',
+};
+
 const sanitizationRoutes = {
   registration: {
     path: '/registre',
@@ -16,17 +27,12 @@ const sanitizationRoutes = {
     },
   },
   addWord: {
-    path: '/addWord',
-    fields: {
-      word: 'text',
-      meaning: 'text',
-      synonyms: 'text',
-      antonyms: 'text',
-      example: 'text',
-      grammar: 'text',
-      pronunciation: 'text',
-      subject: 'text',
-    },
+    path: '/monVocabs/add',
+    fields: WORD_FIELDS,
+  },
+  editWord: {
+    path: '/monVocabs/edit',
+    fields: WORD_FIELDS,
   },
 };
 

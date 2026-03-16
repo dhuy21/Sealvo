@@ -44,9 +44,15 @@ describe('inputSanitization (unit)', () => {
 
     it('has addWord path and expected fields', () => {
       expect(sanitizationRoutes.addWord).toBeDefined();
-      expect(sanitizationRoutes.addWord.path).toBe('/addWord');
+      expect(sanitizationRoutes.addWord.path).toBe('/monVocabs/add');
       expect(sanitizationRoutes.addWord.fields).toHaveProperty('word');
       expect(sanitizationRoutes.addWord.fields).toHaveProperty('meaning');
+    });
+
+    it('has editWord path and same fields as addWord', () => {
+      expect(sanitizationRoutes.editWord).toBeDefined();
+      expect(sanitizationRoutes.editWord.path).toBe('/monVocabs/edit');
+      expect(sanitizationRoutes.editWord.fields).toBe(sanitizationRoutes.addWord.fields);
     });
   });
 });

@@ -3,7 +3,7 @@
  *
  * Strategy: mock cache.del, call the write method, then verify:
  *   1. cache.del was called
- *   2. The correct keys were passed (dashboard, pkgs, gamestats, lb)
+ *   2. The correct keys were passed (dashboard, pkgs, gamestats)
  *
  * This is the most important test for Phase 2: if invalidation is missing,
  * users see stale data.
@@ -198,29 +198,20 @@ describe('GameController — cache invalidation', () => {
   const GameController = require('../../app/controllers/gameControllers/GameController');
 
   describe('saveScore', () => {
-    it('invalidates gamestats and leaderboard, then re-caches gamestats', async () => {
-      gameScoresModel.saveScore.mockResolvedValue(1);
-      gameScoresModel.getUserGameStats.mockResolvedValue({ word_scramble: { highScore: 100 } });
+    it('invalidates highscore cache for the saved game', async () => {
+      gameScoresModel.saveScore.mockResolvedValue(true);
 
       const req = makeReq({
-        body: { game_type: 'word_scramble', score: 100, details: {} },
+        body: { game_type: 'word_scramble', score: 100 },
       });
       const res = mockRes();
 
       await GameController.saveScore(req, res);
 
-      expect(cache.del).toHaveBeenCalledWith([
-        'gamestats:u1',
-        'lb:word_scramble',
-        'highscore:u1:word_scramble',
-      ]);
-      // Then: re-cache fresh stats
-      expect(cache.set).toHaveBeenCalledWith(
-        'gamestats:u1',
-        expect.any(Object),
-        expect.any(Number)
+      expect(cache.del).toHaveBeenCalledWith('highscore:u1:word_scramble');
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ success: true, isHighScore: true })
       );
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     });
   });
 });
@@ -285,16 +276,15 @@ describe('LevelProgressController — words cache invalidation on level-up', () 
 
   it('invalidates dashboard AND words cache when all games at a level are completed', async () => {
     learningModel.findWordsTodayByLevel.mockResolvedValue([{ detail_id: 10 }, { detail_id: 20 }]);
-    learningModel.updateLevelWord.mockResolvedValue(undefined);
+    learningModel.batchUpdateLevel.mockResolvedValue(2);
 
-    // Simulate: flash_match, vocab_quiz already completed; test_pronunciation triggers level-up
     cache.get.mockResolvedValueOnce({
       x: { flash_match: true, vocab_quiz: true },
     });
     cache.set.mockResolvedValue(true);
 
     const req = makeReq({
-      body: { game_type: 'test_pronunciation', completed: true },
+      body: { game_type: 'test_pronun', completed: true },
       query: { package: '55' },
     });
     const res = mockRes();
@@ -308,7 +298,6 @@ describe('LevelProgressController — words cache invalidation on level-up', () 
   });
 
   it('does NOT invalidate words cache when level is NOT yet completed', async () => {
-    // Only flash_match completed, vocab_quiz + test_pronunciation missing
     cache.get.mockResolvedValueOnce({});
     cache.set.mockResolvedValue(true);
 

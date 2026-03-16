@@ -3,6 +3,7 @@
  */
 const streakService = require('../../app/services/streakService');
 const LearningController = require('../../app/controllers/LearningController');
+const { UnauthorizedError } = require('../../app/errors/AppError');
 
 jest.mock('../../app/services/streakService');
 
@@ -45,29 +46,23 @@ describe('LearningController (unit)', () => {
       });
     });
 
-    it('returns 401 when user is not authenticated', async () => {
+    it('throws UnauthorizedError when user is not authenticated', async () => {
       const req = { session: {} };
       const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
-      await LearningController.checkAndUpdateStreak(req, res);
-
+      await expect(LearningController.checkAndUpdateStreak(req, res)).rejects.toThrow(
+        UnauthorizedError
+      );
       expect(streakService.recordActivity).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(401);
     });
 
-    it('returns 500 when service throws', async () => {
+    it('propagates service error as unhandled rejection', async () => {
       streakService.recordActivity.mockRejectedValue(new Error('DB error'));
 
       const req = { session: { user: { id: 1 } } };
       const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
-      await LearningController.checkAndUpdateStreak(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({
-        updated: false,
-        message: expect.stringMatching(/erreur|série/i),
-      });
+      await expect(LearningController.checkAndUpdateStreak(req, res)).rejects.toThrow('DB error');
     });
   });
 });

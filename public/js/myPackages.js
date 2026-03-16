@@ -356,12 +356,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Mettre à jour les statistiques
   function updateStats() {
+    const totalCount = allPackages.length;
     const publicCount = allPackages.filter((p) => p.mode === 'public').length;
     const privateCount = allPackages.filter((p) => p.mode === 'private').length;
 
+    const totalElement = document.getElementById('package-count');
     const publicElement = document.getElementById('public-count');
     const privateElement = document.getElementById('private-count');
 
+    if (totalElement) animateCounter(totalElement, totalCount);
     if (publicElement) animateCounter(publicElement, publicCount);
     if (privateElement) animateCounter(privateElement, privateCount);
   }
@@ -433,18 +436,15 @@ document.addEventListener('DOMContentLoaded', function () {
   function showModal(modal) {
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
-
-    // Bloquer le scroll en arrière-plan
-    modal.style.paddingRight = getScrollbarWidth() + 'px';
+    document.body.style.paddingRight = getScrollbarWidth() + 'px';
   }
 
   // Fermer le modal de package
   function closePackageModal() {
     packageModal.classList.remove('active');
     document.body.style.overflow = '';
-    packageModal.style.paddingRight = '';
+    document.body.style.paddingRight = '';
 
-    // Réinitialiser le formulaire après la fermeture
     setTimeout(() => {
       packageForm.reset();
       currentEditId = null;
@@ -455,7 +455,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function closeDeleteConfirmModal() {
     deleteModal.classList.remove('active');
     document.body.style.overflow = '';
-    deleteModal.style.paddingRight = '';
+    document.body.style.paddingRight = '';
   }
 
   // Obtenir la largeur de la scrollbar
@@ -571,15 +571,26 @@ document.addEventListener('DOMContentLoaded', function () {
       if (response.ok) {
         showNotification('Package supprimé avec succès!', 'success');
 
-        // Retirer la carte avec animation
         const packageCard = document.querySelector(`[data-package-id="${currentEditId}"]`);
         if (packageCard) {
           packageCard.style.transform = 'scale(0.8)';
           packageCard.style.opacity = '0';
           setTimeout(() => {
             packageCard.remove();
-            updateStats();
             loadPackagesData();
+            updateStats();
+
+            if (allPackages.length === 0) {
+              packagesGrid.innerHTML =
+                '<div class="empty-state">' +
+                '<div class="empty-icon"><i class="fas fa-box-open"></i></div>' +
+                '<h3>Aucun package trouvé</h3>' +
+                '<p>Créez votre premier package pour organiser votre vocabulaire</p>' +
+                '<button class="btn btn-primary create-first-package-btn">' +
+                '<i class="fas fa-plus"></i> Créer mon premier package</button></div>';
+              var btn = packagesGrid.querySelector('.create-first-package-btn');
+              if (btn) btn.addEventListener('click', openCreateModal);
+            }
           }, 300);
         }
 

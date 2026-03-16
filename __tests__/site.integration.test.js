@@ -43,11 +43,17 @@ describe('Site routes (integration)', () => {
   });
 
   describe('POST /feedback', () => {
-    it('returns 400 when required fields are missing', async () => {
+    it('returns 400 with validation details when required fields are missing', async () => {
       const res = await request(app).post('/feedback').send({});
       expect(res.status).toBe(400);
       expect(res.body).toHaveProperty('success', false);
-      expect(res.body.message).toMatch(/champs obligatoires|remplir/i);
+      expect(res.body.details).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ field: 'type' }),
+          expect.objectContaining({ field: 'subject' }),
+          expect.objectContaining({ field: 'content' }),
+        ])
+      );
     });
 
     it('returns 400 when only some fields are sent', async () => {

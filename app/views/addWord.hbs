@@ -9,6 +9,7 @@
       enctype='multipart/form-data'
       class='import-form'
     >
+      <input type='hidden' name='_csrf' value='{{csrfToken}}'>
       <div class='file-upload-container'>
         <input
           type='file'
@@ -124,6 +125,7 @@
     enctype='multipart/form-data'
     class='word-form multiple-words-form'
   >
+    <input type='hidden' name='_csrf' value='{{csrfToken}}'>
 
     <div class='words-cards-container' id='word-rows'>
       <!-- Card Template -->

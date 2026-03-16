@@ -39,6 +39,7 @@
       </div>
 
       <form action="/registre" method="POST" class="auth-form">
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
         <div class="form-group" data-delay="100">
           <div class="input-icon-wrapper">
             <input type="text" id="username" name="username" placeholder="Nom d'utilisateur" required>
@@ -87,7 +88,7 @@
               <div class="avatar-option">
                 <input type="radio" id="avatar-{{this}}" name="avatar" value="{{this}}" {{#if @first}}checked{{/if}}>
                 <label for="avatar-{{this}}">
-                  <img src="/images/avatars/{{this}}" alt="Avatar {{this}}">
+                  <img src="/images/avatars/{{this}}" alt="Avatar {{this}}" loading="lazy">
                 </label>
               </div>
             {{/each}}

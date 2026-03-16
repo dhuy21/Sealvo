@@ -1,66 +1,58 @@
 /**
- * Unit tests: LevelProgressController.trackGameCompletion (validation + auth)
+ * Unit tests: LevelProgressController.trackGameCompletion (validation)
+ *
+ * Auth is handled by the isAuthenticatedAPI middleware, not the controller.
+ * These tests focus on the validation logic that throws ValidationError.
  */
 const LevelProgressController = require('../../app/controllers/LevelProgressController');
+const { ValidationError } = require('../../app/errors/AppError');
 
 jest.mock('../../app/models/learning');
+jest.mock('../../app/core/cache', () => ({
+  get: jest.fn().mockResolvedValue(null),
+  set: jest.fn().mockResolvedValue(true),
+  del: jest.fn().mockResolvedValue(true),
+}));
 
 describe('LevelProgressController (unit)', () => {
   describe('trackGameCompletion', () => {
-    it('returns 401 when user is not authenticated', async () => {
-      const req = { session: {}, body: {}, query: {} };
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-      await LevelProgressController.trackGameCompletion(req, res);
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Vous devez être connecté',
-      });
-    });
-
-    it('returns 400 when game_type is missing', async () => {
+    it('throws ValidationError when game_type is missing', async () => {
       const req = {
         session: { user: { id: 1 } },
         body: { completed: true },
         query: {},
       };
       const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-      await LevelProgressController.trackGameCompletion(req, res);
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Paramètres manquants',
-      });
+
+      await expect(LevelProgressController.trackGameCompletion(req, res)).rejects.toThrow(
+        ValidationError
+      );
     });
 
-    it('returns 400 when completed is undefined', async () => {
+    it('throws ValidationError when completed is undefined', async () => {
       const req = {
         session: { user: { id: 1 } },
         body: { game_type: 'vocab_quiz' },
         query: {},
       };
       const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-      await LevelProgressController.trackGameCompletion(req, res);
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Paramètres manquants',
-      });
+
+      await expect(LevelProgressController.trackGameCompletion(req, res)).rejects.toThrow(
+        ValidationError
+      );
     });
 
-    it('returns 400 when game_type is not recognized', async () => {
+    it('throws ValidationError when game_type is not recognized', async () => {
       const req = {
         session: { user: { id: 1 } },
         body: { game_type: 'unknown_game', completed: true },
         query: {},
       };
       const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-      await LevelProgressController.trackGameCompletion(req, res);
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Type de jeu non reconnu',
-      });
+
+      await expect(LevelProgressController.trackGameCompletion(req, res)).rejects.toThrow(
+        ValidationError
+      );
     });
   });
 });

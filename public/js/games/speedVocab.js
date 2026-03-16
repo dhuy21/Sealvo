@@ -272,12 +272,11 @@ document.addEventListener('DOMContentLoaded', function () {
         'Content-Type': 'application/json',
       },
     })
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+        return response.json();
+      })
       .then((data) => {
-        if (data.error) {
-          console.error(data.error);
-          return;
-        }
         words = data.words;
 
         timer = 100 + words.length * 6;

@@ -22,6 +22,23 @@ async function set(key, value, ttlSeconds) {
   }
 }
 
+/**
+ * Atomic "set if not exists" with TTL — used for idempotence / dedup.
+ * Returns true if the key was set (first time), false if it already existed or Redis is down.
+ */
+async function setNX(key, value, ttlSeconds) {
+  if (!isReady()) return false;
+  try {
+    const result = await getClient().set(PREFIX + key, JSON.stringify(value), {
+      EX: ttlSeconds,
+      NX: true,
+    });
+    return result === 'OK';
+  } catch {
+    return false;
+  }
+}
+
 async function del(keys) {
   if (!isReady()) return false;
   try {
@@ -52,4 +69,4 @@ async function invalidatePattern(pattern) {
   }
 }
 
-module.exports = { get, set, del, invalidatePattern };
+module.exports = { get, set, setNX, del, invalidatePattern };

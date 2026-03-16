@@ -260,7 +260,7 @@
           <div class="avatar-grid">
             {{#for 1 11}}
               <div class="avatar-option" data-avatar="{{this}}">
-                <img src="/images/avatars/{{this}}.png" alt="Avatar {{this}}" class="avatar-selection">
+                <img src="/images/avatars/{{this}}.png" alt="Avatar {{this}}" class="avatar-selection" loading="lazy">
                 {{#if (eq ../user.avatar this)}}
                   <div class="avatar-selected"><i class="fas fa-check"></i></div>
                 {{/if}}

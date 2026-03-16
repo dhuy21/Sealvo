@@ -1,31 +1,70 @@
 const express = require('express');
 const router = express.Router();
 const wordController = require('../../controllers/WordController');
-const importFile = require('../../services/importFile');
+const { uploadMiddleware, importWords } = require('../../services/importFile');
 const multer = require('multer');
 const upload = multer();
 const { isAuthenticated } = require('../../middleware/auth');
-// Routes pour l'ajout de mots
-router.get('/add', isAuthenticated, wordController.addWord);
-router.post('/add', isAuthenticated, upload.none(), wordController.addWordPost);
+const asyncHandler = require('../../middleware/asyncHandler');
+const { validate } = require('../../validation/validate');
+const {
+  addWordSchema,
+  editWordSchema,
+  deleteWordSchema,
+  deleteAllWordsSchema,
+} = require('../../validation/schemas/word.schema');
 
-// Route pour l'importation de mots depuis un fichier
-router.post('/add/import', isAuthenticated, importFile.importWords);
+router.get('/add', isAuthenticated, validate(addWordSchema), wordController.addWord);
+router.post(
+  '/add',
+  isAuthenticated,
+  upload.none(),
+  validate(addWordSchema),
+  asyncHandler(wordController.addWordPost)
+);
 
-// Route pour la suppression de tous les mots
-router.post('/deleteAll', isAuthenticated, wordController.deleteAllWords);
+router.post(
+  '/add/import',
+  isAuthenticated,
+  validate(addWordSchema),
+  uploadMiddleware,
+  asyncHandler(importWords)
+);
 
-// Route pour la suppression d'un mot individuel
-router.post('/delete/:id', isAuthenticated, wordController.deleteWord);
+router.post(
+  '/deleteAll',
+  isAuthenticated,
+  validate(deleteAllWordsSchema),
+  asyncHandler(wordController.deleteAllWords)
+);
 
-// Routes pour la modification d'un mot
-router.get('/edit/:id', isAuthenticated, wordController.editWord);
-router.post('/edit/:id', isAuthenticated, wordController.editWordPost);
+router.post(
+  '/delete/:id',
+  isAuthenticated,
+  validate(deleteWordSchema),
+  asyncHandler(wordController.deleteWord)
+);
 
-//Route pour apprendre un vocabulaire
-router.get('/learn', isAuthenticated, wordController.learnVocabs);
+router.get(
+  '/edit/:id',
+  isAuthenticated,
+  validate(deleteWordSchema),
+  asyncHandler(wordController.editWord)
+);
+router.post(
+  '/edit/:id',
+  isAuthenticated,
+  validate(editWordSchema),
+  asyncHandler(wordController.editWordPost)
+);
 
-// Afficher tous les mots (tableau de bord)
-router.get('/', isAuthenticated, wordController.monVocabs);
+router.get(
+  '/learn',
+  isAuthenticated,
+  validate(addWordSchema),
+  asyncHandler(wordController.learnVocabs)
+);
+
+router.get('/', isAuthenticated, asyncHandler(wordController.monVocabs));
 
 module.exports = router;

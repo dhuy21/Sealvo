@@ -1,6 +1,14 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { withTimeout, withRetry, CircuitBreaker, isTransientError } = require('../core/resilience');
+const cfg = require('../config/resilience').gemini;
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+const geminiBreaker = new CircuitBreaker({
+  name: 'gemini',
+  threshold: cfg.breakerThreshold,
+  resetTimeout: cfg.breakerResetTimeout,
+});
 
 class GeminiService {
   async replaceExample(words, words_need_replace_example) {
@@ -40,7 +48,13 @@ class GeminiService {
             Words: 
             ${JSON.stringify(words, null, 2)}`;
 
-      const result = await model.generateContent(batchPrompt);
+      const result = await geminiBreaker.execute(() =>
+        withRetry(() => withTimeout(() => model.generateContent(batchPrompt), cfg.modifyTimeout), {
+          retries: cfg.retries,
+          delay: cfg.retryDelay,
+          shouldRetry: isTransientError,
+        })
+      );
       const response = await result.response;
       const text = response.text();
 
@@ -50,11 +64,18 @@ class GeminiService {
         const cleanText = text.replace(/```json|```/g, '').trim();
         try {
           return JSON.parse(cleanText);
-        } catch {
+        } catch (parseErr) {
+          console.warn(
+            '[gemini] modifyExample JSON parse failed for',
+            words.length,
+            'words:',
+            parseErr.message
+          );
           return [];
         }
       }
-    } catch {
+    } catch (err) {
+      console.warn('[gemini] modifyExample failed for', words.length, 'words:', err.message);
       return [];
     }
   }
@@ -85,7 +106,16 @@ class GeminiService {
             Words: 
             ${JSON.stringify(words, null, 2)}`;
 
-      const result = await model.generateContent(batchPrompt);
+      const result = await geminiBreaker.execute(() =>
+        withRetry(
+          () => withTimeout(() => model.generateContent(batchPrompt), cfg.generateTimeout),
+          {
+            retries: cfg.retries,
+            delay: cfg.retryDelay,
+            shouldRetry: isTransientError,
+          }
+        )
+      );
       const response = await result.response;
       const text = response.text();
 
@@ -95,11 +125,18 @@ class GeminiService {
         const cleanText = text.replace(/```json|```/g, '').trim();
         try {
           return JSON.parse(cleanText);
-        } catch {
+        } catch (parseErr) {
+          console.warn(
+            '[gemini] generateExemple JSON parse failed for',
+            words.length,
+            'words:',
+            parseErr.message
+          );
           return [];
         }
       }
-    } catch {
+    } catch (err) {
+      console.warn('[gemini] generateExemple failed for', words.length, 'words:', err.message);
       return [];
     }
   }

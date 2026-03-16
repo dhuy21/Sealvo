@@ -12,8 +12,6 @@ describe('Cache TTL config', () => {
     'PACKAGES_USER',
     'PACKAGES_SHARED',
     'WORDS',
-    'LEADERBOARD',
-    'GAME_STATS',
     'HIGH_SCORE',
     'TTS_VOICES',
     'TTS_AUDIO',

@@ -35,6 +35,6 @@ test.describe('Feedback page', () => {
     const alert = page.locator('#alert');
     await expect(alert).toBeVisible({ timeout: 5000 });
     await expect(alert).toHaveClass(/alert-error/);
-    await expect(alert).toContainText(/champs obligatoires|remplir/i);
+    await expect(alert).toContainText(/validation invalides|champs obligatoires|remplir/i);
   });
 });

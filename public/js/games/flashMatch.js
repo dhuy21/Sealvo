@@ -164,11 +164,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return response.json();
       })
       .then((data) => {
-        if (data.error) {
-          console.error(data.error);
-          return;
-        }
-
         if (!data.cards || !Array.isArray(data.cards) || data.cards.length === 0) {
           throw new Error('Aucune carte disponible');
         }
