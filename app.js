@@ -4,6 +4,9 @@ const path = require('path');
 // En container : Compose injecte les variables via env_file ; dotenv ne surcharge pas les variables déjà présentes.
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
+const { validateSecrets } = require('./app/config/secrets');
+validateSecrets();
+
 const db = require('./app/core/database.js');
 const redis = require('./app/core/redis.js');
 const rabbitmq = require('./app/core/rabbitmq.js');

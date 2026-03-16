@@ -3,12 +3,20 @@
  * Covers: deleteWord, editWordPost, deleteAllWords — authorization, validation, success, error paths.
  */
 const wordModel = require('../../app/models/words');
-const geminiService = require('../../app/services/gemini');
 const WordController = require('../../app/controllers/WordController');
+const { NotFoundError, ForbiddenError, ValidationError } = require('../../app/errors/AppError');
+const { enrichSingleWord } = require('../../app/services/wordProcessingService');
 
 jest.mock('../../app/models/words');
 jest.mock('../../app/models/learning');
 jest.mock('../../app/services/gemini');
+jest.mock('../../app/services/wordProcessingService', () => ({
+  validateWords: jest.fn(() => []),
+  formatValidationErrors: jest.fn(),
+  processWords: jest.fn(),
+  enrichSingleWord: jest.fn((w) => Promise.resolve(w)),
+  saveWords: jest.fn(),
+}));
 jest.mock('../../app/core/cache', () => ({
   get: jest.fn().mockResolvedValue(null),
   set: jest.fn().mockResolvedValue(true),
@@ -28,17 +36,16 @@ describe('WordController (unit)', () => {
 
   // ── deleteWord ──────────────────────────────────────────────
   describe('deleteWord', () => {
-    it('returns 401 when not authenticated', async () => {
+    it('redirects to /login when not authenticated', async () => {
       const req = { params: { id: '1' }, query: { package: '1' }, session: {} };
       const res = mockRes();
 
       await WordController.deleteWord(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+      expect(res.redirect).toHaveBeenCalledWith('/login');
     });
 
-    it('returns 404 when word is not found', async () => {
+    it('throws NotFoundError when word is not found', async () => {
       wordModel.findUsersByWordId.mockResolvedValue(null);
       const req = {
         params: { id: '99' },
@@ -47,13 +54,10 @@ describe('WordController (unit)', () => {
       };
       const res = mockRes();
 
-      await WordController.deleteWord(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+      await expect(WordController.deleteWord(req, res)).rejects.toThrow(NotFoundError);
     });
 
-    it('returns 403 when word does not belong to the given package', async () => {
+    it('throws ForbiddenError when word does not belong to the given package', async () => {
       wordModel.findUsersByWordId.mockResolvedValue({ package_id: 2 });
       const req = {
         params: { id: '1' },
@@ -62,10 +66,7 @@ describe('WordController (unit)', () => {
       };
       const res = mockRes();
 
-      await WordController.deleteWord(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+      await expect(WordController.deleteWord(req, res)).rejects.toThrow(ForbiddenError);
     });
 
     it('deletes word and returns success when authorized', async () => {
@@ -80,15 +81,12 @@ describe('WordController (unit)', () => {
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     });
 
-    it('returns 500 when DB throws an error', async () => {
+    it('propagates DB error as unhandled rejection', async () => {
       wordModel.findUsersByWordId.mockRejectedValue(new Error('DB error'));
       const req = { params: { id: '1' }, query: { package: '1' }, session: { user: { id: 'u1' } } };
       const res = mockRes();
 
-      await WordController.deleteWord(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+      await expect(WordController.deleteWord(req, res)).rejects.toThrow('DB error');
     });
   });
 
@@ -103,7 +101,7 @@ describe('WordController (unit)', () => {
       expect(res.redirect).toHaveBeenCalledWith('/login');
     });
 
-    it('returns 404 when word is not found', async () => {
+    it('throws NotFoundError when word is not found', async () => {
       wordModel.findById.mockResolvedValue(null);
       const req = {
         session: { user: { id: 1 } },
@@ -113,13 +111,10 @@ describe('WordController (unit)', () => {
       };
       const res = mockRes();
 
-      await WordController.editWordPost(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+      await expect(WordController.editWordPost(req, res)).rejects.toThrow(NotFoundError);
     });
 
-    it('returns 403 when word belongs to a different package', async () => {
+    it('throws ForbiddenError when word belongs to a different package', async () => {
       wordModel.findById.mockResolvedValue({ package_id: '999' });
       const req = {
         session: { user: { id: 1 } },
@@ -129,37 +124,15 @@ describe('WordController (unit)', () => {
       };
       const res = mockRes();
 
-      await WordController.editWordPost(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+      await expect(WordController.editWordPost(req, res)).rejects.toThrow(ForbiddenError);
     });
 
-    it('returns 403 when required fields are missing', async () => {
-      wordModel.findById.mockResolvedValue({ package_id: '1' });
-      const req = {
-        session: { user: { id: 1 } },
-        params: { id: '1' },
-        query: { package: '1' },
-        body: { word: 'test' }, // missing language_code, type, meaning, example
-      };
-      const res = mockRes();
-
-      await WordController.editWordPost(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: expect.stringMatching(/champs obligatoires/i),
-        })
-      );
-    });
+    // Required field validation is now handled by editWordSchema middleware (Phase 3).
+    // See integration/middleware tests for that coverage.
 
     it('updates word and returns success with valid data', async () => {
       wordModel.findById.mockResolvedValue({ package_id: '1' });
       wordModel.updateWord.mockResolvedValue(undefined);
-      geminiService.modifyExample.mockResolvedValue([]);
 
       const req = {
         session: { user: { id: 1 } },
@@ -178,6 +151,7 @@ describe('WordController (unit)', () => {
 
       await WordController.editWordPost(req, res);
 
+      expect(enrichSingleWord).toHaveBeenCalled();
       expect(wordModel.updateWord).toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     });
@@ -221,15 +195,12 @@ describe('WordController (unit)', () => {
       );
     });
 
-    it('returns 500 when DB throws an error', async () => {
+    it('propagates DB error as unhandled rejection', async () => {
       wordModel.deleteAllWords.mockRejectedValue(new Error('DB error'));
       const req = { session: { user: { id: 1 } }, query: { package: '1' } };
       const res = mockRes();
 
-      await WordController.deleteAllWords(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+      await expect(WordController.deleteAllWords(req, res)).rejects.toThrow('DB error');
     });
   });
 });

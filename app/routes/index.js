@@ -9,10 +9,13 @@ const authRouter = require('./auth/auth');
 const newUserDashboard = require('./user/dashboard');
 const newUserPackages = require('./package/package');
 const levelProgressRouter = require('./level_progress');
+const healthRouter = require('./health');
 const LearningController = require('../controllers/LearningController');
 const { isAuthenticatedAPI } = require('../middleware/auth');
+const asyncHandler = require('../middleware/asyncHandler');
 
 function route(app) {
+  app.use('/health', healthRouter);
   app.use('/login', newUserLogin);
   app.use('/registre', newUserRegister);
   app.use('/logout', newUserLogout);
@@ -23,7 +26,11 @@ function route(app) {
   app.use('/api', apiRouter);
   app.use('/auth', authRouter);
   app.use('/level-progress', levelProgressRouter);
-  app.post('/update-streak', isAuthenticatedAPI, LearningController.checkAndUpdateStreak);
+  app.post(
+    '/update-streak',
+    isAuthenticatedAPI,
+    asyncHandler(LearningController.checkAndUpdateStreak)
+  );
   app.use('/', siteRouter);
 }
 

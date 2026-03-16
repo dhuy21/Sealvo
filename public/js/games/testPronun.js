@@ -629,76 +629,51 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 2000);
   }
 
-  function playWordAudio(word) {
-    // Activer l'effet de parole pendant la lecture audio
+  async function playWordAudio(word) {
     activateSpeakingEffect();
 
-    // Essayer d'abord l'audio enregistré si disponible
-    if (word.audio) {
-      try {
-        const audio = new Audio(word.audio);
-        audio.play().catch(() => {
-          useTextToSpeech(word);
-        });
-      } catch {
-        useTextToSpeech(word);
-      }
-    } else {
-      // Utiliser la synthèse vocale (Text-to-Speech)
-      useTextToSpeech(word);
+    if (feedbackText) {
+      feedbackText.textContent = 'Lecture en cours...';
+      setFeedbackTextColor('info');
     }
-  }
 
-  function useTextToSpeech(word) {
-    if ('speechSynthesis' in window) {
-      // Arrêter toute synthèse vocale en cours
-      speechSynthesis.cancel();
+    try {
+      const response = await fetch('/api/tts/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: word.word,
+          language: word.language_code || 'en-US',
+        }),
+      });
 
-      // Créer un nouvel énoncé
-      const utterance = new SpeechSynthesisUtterance(word.word);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-      // Configurer la langue selon le code de langue du mot
-      if (word.language_code) {
-        utterance.lang = word.language_code;
-      } else {
-        // Fallback vers l'anglais si pas de langue spécifiée
-        utterance.lang = 'en-US';
-      }
+      const audioUrl = URL.createObjectURL(await response.blob());
+      const audio = new Audio(audioUrl);
+      audio.volume = 0.8;
 
-      // Configurer la vitesse et le pitch
-      utterance.rate = 0.8; // Vitesse légèrement plus lente
-      utterance.pitch = 1.0; // Pitch normal
-      utterance.volume = 1.0; // Volume maximum
-
-      // Événements pour le feedback
-      utterance.onstart = () => {
-        if (feedbackText) {
-          feedbackText.textContent = 'Lecture en cours...';
-          setFeedbackTextColor('info');
-        }
-      };
-
-      utterance.onend = () => {
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl);
         if (feedbackText) {
           feedbackText.textContent = '';
           setFeedbackTextColor('neutral');
         }
       };
 
-      utterance.onerror = (event) => {
-        console.error('Erreur de synthèse vocale:', event.error);
+      audio.onerror = () => {
+        URL.revokeObjectURL(audioUrl);
         if (feedbackText) {
           feedbackText.textContent = 'Erreur de lecture audio.';
           setFeedbackTextColor('error');
         }
       };
 
-      // Démarrer la synthèse vocale
-      speechSynthesis.speak(utterance);
-    } else {
-      console.error('Synthèse vocale non supportée par ce navigateur');
+      await audio.play();
+    } catch (err) {
+      console.error('TTS error:', err);
       if (feedbackText) {
-        feedbackText.textContent = 'Lecture audio non supportée sur ce navigateur.';
+        feedbackText.textContent = 'Erreur de synthèse vocale. Vérifiez votre connexion.';
         setFeedbackTextColor('error');
       }
     }
@@ -716,13 +691,13 @@ document.addEventListener('DOMContentLoaded', function () {
           'Content-Type': 'application/json',
         },
       });
-      const data = await response.json();
-
-      if (data.error) {
-        console.error(data.error);
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        console.error(errData.message || `Erreur HTTP: ${response.status}`);
         alert('Une erreur est survenue lors du chargement du mot.');
         return;
       }
+      const data = await response.json();
 
       words = data.words;
 
@@ -1292,7 +1267,7 @@ document.addEventListener('DOMContentLoaded', function () {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        game_type: 'test_pronunciation',
+        game_type: 'test_pronun',
         completed: isSuccessful,
       }),
     })

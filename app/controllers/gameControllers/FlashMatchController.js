@@ -1,4 +1,5 @@
 const learningModel = require('../../models/learning');
+const { NotFoundError } = require('../../errors/AppError');
 const levelGame = 'x';
 
 class FlashMatchController {
@@ -7,46 +8,32 @@ class FlashMatchController {
   }
 
   async getCardsForFlashMatch(req, res) {
-    try {
-      if (!req.session.user) {
-        return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
-      }
-      const package_id = req.query.package;
-      let pairsCount = 15;
-      const minPairsCount = 4;
-      const maxPairsCount = 15;
+    const package_id = req.query.package;
+    const minPairsCount = 4;
+    const maxPairsCount = 15;
 
-      const words = await learningModel.findWordsWithDetailsByLevel(package_id, levelGame);
+    const words = await learningModel.findWordsWithDetailsByLevel(package_id, levelGame);
 
-      if (words.length < minPairsCount) {
-        return res.status(404).json({
-          error: `Vous devez avoir au moins ${minPairsCount} mots au niveau ${levelGame} dans votre vocabulaire pour jouer à ce niveau de difficulté.`,
-        });
-      }
-
-      if (words.length < maxPairsCount) {
-        pairsCount = words.length;
-      }
-
-      const shuffledWords = this.shuffleArray([...words]);
-      const selectedWords = shuffledWords.slice(0, pairsCount);
-
-      const cards = [];
-      selectedWords.forEach((word, index) => {
-        cards.push({ pairId: index, type: 'word', content: word.word });
-        let meaning = word.type ? `${word.type} : ${word.meaning}` : word.meaning;
-        cards.push({ pairId: index, type: 'meaning', content: meaning });
-      });
-
-      const wordIdsForUpdate = selectedWords.map((word) => word.id);
-
-      return res.json({ cards, wordIds: wordIdsForUpdate });
-    } catch (error) {
-      console.error('Erreur lors de la récupération des cartes:', error);
-      return res
-        .status(500)
-        .json({ error: 'Une erreur est survenue lors de la récupération des cartes.' });
+    if (words.length < minPairsCount) {
+      throw new NotFoundError(
+        `Vous devez avoir au moins ${minPairsCount} mots au niveau ${levelGame} dans votre vocabulaire pour jouer à ce niveau de difficulté.`
+      );
     }
+
+    const pairsCount = Math.min(words.length, maxPairsCount);
+    const shuffledWords = this.shuffleArray([...words]);
+    const selectedWords = shuffledWords.slice(0, pairsCount);
+
+    const cards = [];
+    selectedWords.forEach((word, index) => {
+      cards.push({ pairId: index, type: 'word', content: word.word });
+      let meaning = word.type ? `${word.type} : ${word.meaning}` : word.meaning;
+      cards.push({ pairId: index, type: 'meaning', content: meaning });
+    });
+
+    const wordIdsForUpdate = selectedWords.map((word) => word.id);
+
+    return res.json({ cards, wordIds: wordIdsForUpdate });
   }
 
   shuffleArray(array) {

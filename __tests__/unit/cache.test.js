@@ -95,6 +95,47 @@ describe('cache.set', () => {
   });
 });
 
+// ── setNX (Phase 5 — idempotence / dedup) ───────────────────────
+describe('cache.setNX', () => {
+  it('returns false when Redis is not ready (safe fallback)', async () => {
+    redis.isReady.mockReturnValue(false);
+    const result = await cache.setNX('email:dedup:abc', 1, 86400);
+    expect(result).toBe(false);
+    expect(mockClient.set).not.toHaveBeenCalled();
+  });
+
+  it('returns true when key is new (first time)', async () => {
+    redis.isReady.mockReturnValue(true);
+    mockClient.set.mockResolvedValue('OK');
+
+    const result = await cache.setNX('email:dedup:abc', 1, 86400);
+
+    expect(mockClient.set).toHaveBeenCalledWith('cache:email:dedup:abc', '1', {
+      EX: 86400,
+      NX: true,
+    });
+    expect(result).toBe(true);
+  });
+
+  it('returns false when key already exists (duplicate)', async () => {
+    redis.isReady.mockReturnValue(true);
+    mockClient.set.mockResolvedValue(null);
+
+    const result = await cache.setNX('email:dedup:abc', 1, 86400);
+
+    expect(result).toBe(false);
+  });
+
+  it('returns false when Redis throws (graceful degradation)', async () => {
+    redis.isReady.mockReturnValue(true);
+    mockClient.set.mockRejectedValue(new Error('Redis error'));
+
+    const result = await cache.setNX('email:dedup:abc', 1, 86400);
+
+    expect(result).toBe(false);
+  });
+});
+
 // ── del ─────────────────────────────────────────────────────────
 describe('cache.del', () => {
   it('returns false when Redis is not ready', async () => {

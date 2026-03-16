@@ -1,6 +1,7 @@
 const wordModel = require('../models/words');
 const learningModel = require('../models/learning');
 const { setFlash } = require('../middleware/flash');
+const { NotFoundError, ForbiddenError, ValidationError } = require('../errors/AppError');
 const cache = require('../core/cache');
 const CACHE_TTL = require('../config/cache');
 const rabbitmq = require('../core/rabbitmq');
@@ -77,159 +78,112 @@ class WordController {
     }
 
     const package_id = req.query.package;
+    let wordsData = [];
 
-    try {
-      let wordsData = [];
-
-      if (package_id) {
-        const {
-          words,
-          language_codes,
-          subjects,
-          types,
-          meanings,
-          pronunciations,
-          synonyms,
-          antonyms,
-          examples,
-          grammars,
-          levels,
-        } = req.body;
-        const wordCount = words.length;
-        for (let i = 0; i < wordCount; i++) {
-          wordsData.push({
-            id: i,
-            word: words[i],
-            language_code: language_codes[i].replace(/\([^)]*\)/g, '').trim(),
-            subject: subjects[i],
-            type: types[i],
-            meaning: meanings[i],
-            pronunciation: pronunciations[i] || '',
-            synonyms: synonyms[i] || '',
-            antonyms: antonyms[i] || '',
-            example: examples[i],
-            grammar: grammars[i] || '',
-            level: levels[i],
-          });
-        }
+    if (package_id) {
+      const {
+        words,
+        language_codes,
+        subjects,
+        types,
+        meanings,
+        pronunciations,
+        synonyms,
+        antonyms,
+        examples,
+        grammars,
+        levels,
+      } = req.body;
+      const wordCount = words.length;
+      for (let i = 0; i < wordCount; i++) {
+        wordsData.push({
+          id: i,
+          word: words[i],
+          language_code: language_codes[i].replace(/\([^)]*\)/g, '').trim(),
+          subject: subjects[i],
+          type: types[i],
+          meaning: meanings[i],
+          pronunciation: pronunciations[i] || '',
+          synonyms: synonyms[i] || '',
+          antonyms: antonyms[i] || '',
+          example: examples[i],
+          grammar: grammars[i] || '',
+          level: levels[i],
+        });
       }
+    }
 
-      const validationErrors = validateWords(wordsData);
-      if (validationErrors.length > 0) {
-        return res
-          .status(400)
-          .json({ success: false, message: formatValidationErrors(validationErrors) });
-      }
+    const validationErrors = validateWords(wordsData);
+    if (validationErrors.length > 0) {
+      throw new ValidationError(formatValidationErrors(validationErrors));
+    }
 
-      const BULK_THRESHOLD = 3;
-      if (wordsData.length >= BULK_THRESHOLD && rabbitmq.isReady()) {
-        const job = await jobTracker.create('addWords', {
+    const BULK_THRESHOLD = 3;
+    if (wordsData.length >= BULK_THRESHOLD && rabbitmq.isReady()) {
+      const job = await jobTracker.create('addWords', {
+        packageId: package_id,
+        userId: req.session.user.id,
+        wordCount: wordsData.length,
+      });
+      if (job) {
+        const published = importQueue.publish({
+          jobId: job.id,
+          wordsData,
           packageId: package_id,
           userId: req.session.user.id,
-          wordCount: wordsData.length,
         });
-        if (job) {
-          const published = importQueue.publish({
-            jobId: job.id,
-            wordsData,
-            packageId: package_id,
-            userId: req.session.user.id,
-          });
-          if (published) {
-            return res
-              .status(202)
-              .json({ success: true, jobId: job.id, async: true, message: 'Traitement en cours.' });
-          }
-          jobTracker.remove(job.id).catch(() => {});
+        if (published) {
+          return res
+            .status(202)
+            .json({ success: true, jobId: job.id, async: true, message: 'Traitement en cours.' });
         }
+        jobTracker.remove(job.id).catch(() => {});
       }
-
-      const result = await processWords(wordsData, package_id, req.session.user.id);
-
-      res.status(200).json({
-        success: true,
-        async: false,
-        message: `${result.successCount} mot(s) importé(s) avec succès. ${result.errChamps} erreur(s) de champs obligatoires.`,
-      });
-    } catch (error) {
-      console.error("Erreur lors de l'ajout du mot:", error);
-      res.status(500).json({
-        success: false,
-        message: "Une erreur est survenue lors de l'ajout du mot",
-      });
     }
+
+    const result = await processWords(wordsData, package_id, req.session.user.id);
+
+    res.status(200).json({
+      success: true,
+      async: false,
+      message: `${result.successCount} mot(s) importé(s) avec succès. ${result.errChamps} erreur(s) de champs obligatoires.`,
+    });
   }
 
   async deleteAllWords(req, res) {
-    try {
-      if (!req.session.user) {
-        setFlash(req, 'error', 'Vous devez être connecté pour effectuer cette action');
-        return res.redirect('/login');
-      }
-      const package_id = req.query.package;
-      const count = await wordModel.deleteAllWords(package_id);
+    if (!req.session.user) {
+      setFlash(req, 'error', 'Vous devez être connecté pour effectuer cette action');
+      return res.redirect('/login');
+    }
+    const package_id = req.query.package;
+    const count = await wordModel.deleteAllWords(package_id);
 
-      if (count) {
-        await cache.del([`dashboard:${req.session.user.id}`, `words:${package_id}`]);
-        res.status(200).json({
-          success: true,
-          message: `Le(s) mot(s) supprimé(s) avec succès`,
-        });
-      } else {
-        res.status(200).json({
-          success: true,
-          message: 'Aucun mot à supprimer',
-        });
-      }
-    } catch (error) {
-      console.error('Erreur lors de la suppression de tous les mots:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Une erreur est survenue lors de la suppression des mots',
-      });
+    if (count) {
+      await cache.del([`dashboard:${req.session.user.id}`, `words:${package_id}`]);
+      res.status(200).json({ success: true, message: 'Le(s) mot(s) supprimé(s) avec succès' });
+    } else {
+      res.status(200).json({ success: true, message: 'Aucun mot à supprimer' });
     }
   }
 
   async deleteWord(req, res) {
-    try {
-      if (!req.session.user) {
-        return res.status(401).json({
-          success: false,
-          message: 'Vous devez être connecté pour supprimer un mot',
-        });
-      }
-
-      const detail_id = req.params.id;
-      const package_id = req.query.package;
-      const word = await wordModel.findUsersByWordId(detail_id);
-      if (!word) {
-        return res.status(404).json({
-          success: false,
-          message: 'Mot non trouvé',
-        });
-      }
-
-      if (word.package_id != package_id) {
-        return res.status(403).json({
-          success: false,
-          message: "Vous n'êtes pas autorisé à supprimer ce mot",
-        });
-      }
-
-      await wordModel.deleteWord(detail_id, package_id);
-      await cache.del([`dashboard:${req.session.user.id}`, `words:${package_id}`]);
-
-      res.json({
-        success: true,
-        message: 'Mot supprimé avec succès',
-      });
-    } catch (error) {
-      console.error('Erreur lors de la suppression du mot:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erreur lors de la suppression du mot',
-      });
+    if (!req.session.user) {
+      setFlash(req, 'error', 'Vous devez être connecté pour supprimer un mot');
+      return res.redirect('/login');
     }
+
+    const detail_id = req.params.id;
+    const package_id = req.query.package;
+    const word = await wordModel.findUsersByWordId(detail_id);
+    if (!word) throw new NotFoundError('Mot non trouvé');
+    if (word.package_id != package_id) {
+      throw new ForbiddenError("Vous n'êtes pas autorisé à supprimer ce mot");
+    }
+
+    await wordModel.deleteWord(detail_id, package_id);
+    await cache.del([`dashboard:${req.session.user.id}`, `words:${package_id}`]);
+
+    res.json({ success: true, message: 'Mot supprimé avec succès' });
   }
 
   async editWord(req, res) {
@@ -271,77 +225,53 @@ class WordController {
   }
 
   async editWordPost(req, res) {
+    if (!req.session.user) {
+      setFlash(req, 'error', 'Vous devez être connecté pour effectuer cette action');
+      return res.redirect('/login');
+    }
+
     const detail_id = req.params.id;
     const package_id = req.query.package;
-    try {
-      if (!req.session.user) {
-        setFlash(req, 'error', 'Vous devez être connecté pour effectuer cette action');
-        return res.redirect('/login');
-      }
 
-      const wordCheck = await wordModel.findById(detail_id);
-
-      if (!wordCheck) {
-        return res.status(404).json({
-          success: false,
-          message: 'Mot non trouvé',
-        });
-      }
-
-      if (wordCheck.package_id != package_id) {
-        return res.status(403).json({
-          success: false,
-          message: "Vous n'êtes pas autorisé à modifier ce mot",
-        });
-      }
-
-      const {
-        word,
-        language_code,
-        type,
-        meaning,
-        pronunciation,
-        synonyms,
-        antonyms,
-        example,
-        grammar,
-        level,
-      } = req.body;
-
-      if (!word || !language_code || !type || !meaning || !example) {
-        return res.status(403).json({
-          success: false,
-          message: 'Veuillez remplir tous les champs obligatoires',
-        });
-      }
-
-      let wordData = {
-        id: 0,
-        word,
-        language_code: language_code.replace(/\([^)]*\)/g, '').trim(),
-        type,
-        meaning,
-        pronunciation: pronunciation || '',
-        synonyms: synonyms || '',
-        antonyms: antonyms || '',
-        example,
-        grammar: grammar || '',
-        level,
-      };
-
-      wordData = await enrichSingleWord(wordData);
-
-      await wordModel.updateWord(wordData, detail_id, package_id);
-      await cache.del([`dashboard:${req.session.user.id}`, `words:${package_id}`]);
-
-      res.json({ success: true, message: 'Mot modifié avec succès' });
-    } catch (error) {
-      console.error('Erreur lors de la modification du mot:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Une erreur est survenue lors de la modification du mot',
-      });
+    const wordCheck = await wordModel.findById(detail_id);
+    if (!wordCheck) throw new NotFoundError('Mot non trouvé');
+    if (wordCheck.package_id != package_id) {
+      throw new ForbiddenError("Vous n'êtes pas autorisé à modifier ce mot");
     }
+
+    const {
+      word,
+      language_code,
+      type,
+      meaning,
+      pronunciation,
+      synonyms,
+      antonyms,
+      example,
+      grammar,
+      level,
+    } = req.body;
+
+    let wordData = {
+      id: 0,
+      word,
+      language_code: language_code.replace(/\([^)]*\)/g, '').trim(),
+      type,
+      meaning,
+      pronunciation: pronunciation || '',
+      synonyms: synonyms || '',
+      antonyms: antonyms || '',
+      example,
+      grammar: grammar || '',
+      level,
+    };
+
+    wordData = await enrichSingleWord(wordData);
+
+    await wordModel.updateWord(wordData, detail_id, package_id);
+    await cache.del([`dashboard:${req.session.user.id}`, `words:${package_id}`]);
+
+    res.json({ success: true, message: 'Mot modifié avec succès' });
   }
 
   async learnVocabs(req, res) {

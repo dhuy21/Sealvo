@@ -44,6 +44,7 @@
 
 
       <form action="/login" method="POST" class="auth-form">
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
         <div class="form-group" data-delay="100">
           <div class="input-icon-wrapper">
             <input type="text" id="username" name="username" placeholder="Nom d'utilisateur" required>

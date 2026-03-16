@@ -5,14 +5,7 @@ const { getClient } = require('../core/redis');
 const { isProductionLike } = require('../config/environment');
 
 const getSessionSecret = () => {
-  const secret = process.env.SESSION_SECRET;
-  if (secret) return secret;
-  if (isProductionLike()) {
-    console.warn(
-      '[session] SESSION_SECRET is not set — sessions will be invalidated on every restart!'
-    );
-  }
-  return crypto.randomBytes(64).toString('hex');
+  return process.env.SESSION_SECRET || crypto.randomBytes(64).toString('hex');
 };
 
 const userSessionMiddleware = (req, res, next) => {

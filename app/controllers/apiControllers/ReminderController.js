@@ -1,29 +1,66 @@
 const UserModel = require('../../models/users');
 const WordModel = require('../../models/words');
 const LearningModel = require('../../models/learning');
+const EmailVerificationModel = require('../../models/email_verification');
 const MailersendService = require('../../services/mailersend');
 const emailQueue = require('../../queues/emailQueue');
-class ReminderController {
-  async testEmail(req, res) {
-    try {
-      const user = req.session.user;
-      let message = '';
+const { AppError } = require('../../errors/AppError');
 
-      // Vérifie si l'utilisateur a des mots à réviser aujourd'hui
+class ReminderController {
+  constructor() {
+    this.reminder = this.reminder.bind(this);
+    this.testEmail = this.testEmail.bind(this);
+  }
+
+  async testEmail(req, res) {
+    const user = req.session.user;
+
+    const wordsToday = await LearningModel.findWordsTodayToLearnAllPackages(user.id);
+
+    if (!wordsToday || wordsToday.length === 0) {
+      return res.status(200).json({ success: true, message: "Aucun mot à réviser aujourd'hui" });
+    }
+
+    const streakData = await UserModel.findStreakById(user.id);
+    const wordsEmail = wordsToday.slice(0, 5);
+    let allWords = [];
+    for (const item of wordsEmail) {
+      const wordDetails = await WordModel.findById(item.detail_id);
+      if (wordDetails) allWords.push(wordDetails);
+    }
+
+    const emailContent = await MailersendService.generateEmail(
+      allWords,
+      wordsToday.length,
+      streakData,
+      user
+    );
+    const sent = await emailQueue.enqueue({
+      to: user.email,
+      content: emailContent,
+      subject: 'Révision quotidienne - SealVo',
+    });
+
+    if (!sent) throw new AppError("Échec de l'envoi de l'email", 500);
+
+    res.status(200).json({ success: true, message: "L'email a été envoyé pour tester" });
+  }
+
+  async reminder(req, res) {
+    const users = await UserModel.getAllUsers();
+    let sent = 0;
+    let failed = 0;
+
+    for (const user of users) {
       const wordsToday = await LearningModel.findWordsTodayToLearnAllPackages(user.id);
 
-      // N'envoie un email que si l'utilisateur a des mots à réviser
       if (wordsToday && wordsToday.length > 0) {
-        // Récupération des données pour le template
         const streakData = await UserModel.findStreakById(user.id);
         const wordsEmail = wordsToday.slice(0, 5);
-        // Récupérer les détails complets des mots
         let allWords = [];
         for (const item of wordsEmail) {
           const wordDetails = await WordModel.findById(item.detail_id);
-          if (wordDetails) {
-            allWords.push(wordDetails);
-          }
+          if (wordDetails) allWords.push(wordDetails);
         }
 
         const emailContent = await MailersendService.generateEmail(
@@ -32,81 +69,38 @@ class ReminderController {
           streakData,
           user
         );
-        const sent = await emailQueue.enqueue({
+        const ok = await emailQueue.enqueue({
           to: user.email,
           content: emailContent,
           subject: 'Révision quotidienne - SealVo',
         });
-        message = sent ? `L'email a été envoyé pour tester` : `Échec de l'envoi de l'email`;
-      } else {
-        message = `Aucun mot à réviser aujourd'hui`;
+        if (ok) {
+          sent++;
+        } else {
+          failed++;
+          console.error(`[Reminder] Failed to enqueue email for ${user.email}`);
+        }
+      } else if (process.env.NODE_ENV !== 'production') {
+        console.log(`[Reminder] No words to review today for ${user.email}`);
       }
-
-      const success = !message.includes('Échec');
-      res.status(success ? 200 : 500).json({ success, message });
-    } catch (error) {
-      console.error("Erreur lors de l'envoi des rappels :", error);
-      res.status(500).json({
-        success: false,
-        message: "Erreur lors de l'envoi des rappels",
-      });
     }
+
+    await this._runCleanup();
+
+    res.status(200).json({
+      success: true,
+      message: `Rappels traités : ${sent} envoyé(s), ${failed} échoué(s).`,
+      sent,
+      failed,
+    });
   }
 
-  async reminder(req, res) {
+  async _runCleanup() {
     try {
-      const users = await UserModel.getAllUsers();
-      let sent = 0;
-      let failed = 0;
-
-      for (const user of users) {
-        const wordsToday = await LearningModel.findWordsTodayToLearnAllPackages(user.id);
-
-        if (wordsToday && wordsToday.length > 0) {
-          const streakData = await UserModel.findStreakById(user.id);
-          const wordsEmail = wordsToday.slice(0, 5);
-          let allWords = [];
-          for (const item of wordsEmail) {
-            const wordDetails = await WordModel.findById(item.detail_id);
-            if (wordDetails) {
-              allWords.push(wordDetails);
-            }
-          }
-
-          const emailContent = await MailersendService.generateEmail(
-            allWords,
-            wordsToday.length,
-            streakData,
-            user
-          );
-          const ok = await emailQueue.enqueue({
-            to: user.email,
-            content: emailContent,
-            subject: 'Révision quotidienne - SealVo',
-          });
-          if (ok) {
-            sent++;
-          } else {
-            failed++;
-            console.error(`[Reminder] Failed to enqueue email for ${user.email}`);
-          }
-        } else if (process.env.NODE_ENV !== 'production') {
-          console.log(`[Reminder] No words to review today for ${user.email}`);
-        }
-      }
-
-      res.status(200).json({
-        success: true,
-        message: `Rappels traités : ${sent} envoyé(s), ${failed} échoué(s).`,
-        sent,
-        failed,
-      });
-    } catch (error) {
-      console.error("Erreur lors de l'envoi des rappels :", error);
-      res.status(500).json({
-        success: false,
-        message: "Erreur lors de l'envoi des rappels",
-      });
+      await EmailVerificationModel.deleteUserExpired();
+      await UserModel.deleteUserNotVerified();
+    } catch (err) {
+      console.error('[Reminder] Cleanup failed:', err.message);
     }
   }
 }

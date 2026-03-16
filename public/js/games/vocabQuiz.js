@@ -261,13 +261,11 @@ document.addEventListener('DOMContentLoaded', function () {
         'Content-Type': 'application/json',
       },
     })
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+        return response.json();
+      })
       .then((data) => {
-        if (data.error) {
-          console.error(data.error);
-          return;
-        }
-
         // Mettre à jour le nombre total de questions en fonction des mots disponibles
         availableWords = data.count;
         totalQuestions = Math.min(availableWords, maxQuestions);
@@ -323,14 +321,17 @@ document.addEventListener('DOMContentLoaded', function () {
         'Content-Type': 'application/json',
       },
     })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.error) {
-          console.error(data.error);
-          resultMessage.textContent = data.error;
+      .then(async (response) => {
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          const msg = errData.message || 'Une erreur est survenue';
+          console.error(msg);
+          resultMessage.textContent = msg;
           resultMessage.className = 'result-message incorrect';
+          loader.setAttribute('style', 'display: none;');
           return;
         }
+        const data = await response.json();
 
         for (let i = 0; i < totalQuestions; i++) {
           questionWords[i] = data.questionWords[i % data.questionWords.length];

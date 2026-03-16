@@ -8,30 +8,22 @@ class WordScrambleController {
   }
 
   async getRandomWordsForScramble(req, res) {
-    try {
-      const package_id = req.query.package;
+    const package_id = req.query.package;
 
-      const rawWords = await learningModel.findWordsWithDetailsByLevel(package_id, levelGame);
-      let words = rawWords.map((w) => {
-        let meaning = w.type ? `${w.type} : ${w.meaning}` : w.meaning;
-        return { word: w.word, scrambled: this.scrambleWord(w.word), meaning };
-      });
-      words = this.shuffleArray(words);
+    const rawWords = await learningModel.findWordsWithDetailsByLevel(package_id, levelGame);
+    let words = rawWords.map((w) => {
+      let meaning = w.type ? `${w.type} : ${w.meaning}` : w.meaning;
+      return { word: w.word, scrambled: this.scrambleWord(w.word), meaning };
+    });
+    words = this.shuffleArray(words);
 
-      return res.json({ words });
-    } catch (error) {
-      console.error("Erreur lors de la récupération d'un mot aléatoire:", error);
-      return res
-        .status(500)
-        .json({ error: "Une erreur est survenue lors de la récupération d'un mot." });
-    }
+    return res.json({ words });
   }
 
   scrambleWord(word) {
     const letters = word.split('');
     let scrambled;
 
-    // S'assurer que le mot mélangé est différent de l'original
     do {
       scrambled = this.shuffleArray([...letters]).join('');
     } while (scrambled === word && word.length > 1);

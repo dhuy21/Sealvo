@@ -1,4 +1,5 @@
 const learningModel = require('../../models/learning');
+const { NotFoundError } = require('../../errors/AppError');
 const levelGame = 'x';
 
 class VocabQuizController {
@@ -9,76 +10,63 @@ class VocabQuizController {
   }
 
   async getQuestionForVocabQuiz(req, res) {
-    try {
-      if (!req.session.user) {
-        return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
-      }
-      const package_id = req.query.package;
-      const optionsCount = 6;
+    const package_id = req.query.package;
+    const optionsCount = 6;
 
-      const words = await learningModel.findWordsWithDetailsByLevel(package_id, levelGame);
+    const words = await learningModel.findWordsWithDetailsByLevel(package_id, levelGame);
 
-      if (words.length < optionsCount) {
-        return res.status(404).json({
-          error: `Vous devez avoir au moins ${optionsCount} mots au niveau ${levelGame} dans votre vocabulaire pour jouer à ce niveau de difficulté.`,
-        });
-      }
-
-      let questionWords = [];
-
-      for (let i = 0; i < words.length; i++) {
-        let correctMeaning = [];
-
-        const shuffledWords = this.shuffleArray([...words]);
-        questionWords[i] = shuffledWords[0];
-        questionWords[i].correctIndex = [];
-        questionWords[i].incorrectOptions = shuffledWords.slice(1, optionsCount).map((word) => ({
-          id: word.id,
-          word: word.word,
-          type: word.type,
-          meaning: word.meaning,
-        }));
-        if (questionWords[i].type) {
-          correctMeaning[0] = `${questionWords[i].type} : `;
-          correctMeaning[0] += questionWords[i].meaning;
-          questionWords[i].options = [];
-          questionWords[i].options.push(correctMeaning[0]);
-        }
-
-        // Ajouter les options incorrectes et verifier si un mot a plusieurs significations
-        questionWords[i].incorrectOptions.forEach((word) => {
-          let meaning = '';
-          if (word.type) {
-            meaning += `${word.type} : `;
-          }
-          meaning += word.meaning;
-
-          if (questionWords[i].word === word.word) {
-            correctMeaning.push(meaning);
-            questionWords[i].options.push(meaning);
-          } else {
-            questionWords[i].options.push(meaning);
-          }
-        });
-
-        questionWords[i].options = this.shuffleArray(questionWords[i].options);
-
-        for (let j = 0; j < correctMeaning.length; j++) {
-          questionWords[i].correctIndex.push(
-            questionWords[i].options.findIndex((option) => option === correctMeaning[j])
-          );
-        }
-      }
-
-      return res.json({
-        questionWords: questionWords,
-      });
-    } catch (error) {
-      console.error("Erreur lors de la récupération d'une question:", error);
-      return res
-        .status(500)
-        .json({ error: "Une erreur est survenue lors de la récupération d'une question." });
+    if (words.length < optionsCount) {
+      throw new NotFoundError(
+        `Vous devez avoir au moins ${optionsCount} mots au niveau ${levelGame} dans votre vocabulaire pour jouer à ce niveau de difficulté.`
+      );
     }
+
+    let questionWords = [];
+
+    for (let i = 0; i < words.length; i++) {
+      let correctMeaning = [];
+
+      const shuffledWords = this.shuffleArray([...words]);
+      questionWords[i] = shuffledWords[0];
+      questionWords[i].correctIndex = [];
+      questionWords[i].incorrectOptions = shuffledWords.slice(1, optionsCount).map((word) => ({
+        id: word.id,
+        word: word.word,
+        type: word.type,
+        meaning: word.meaning,
+      }));
+      if (questionWords[i].type) {
+        correctMeaning[0] = `${questionWords[i].type} : `;
+        correctMeaning[0] += questionWords[i].meaning;
+        questionWords[i].options = [];
+        questionWords[i].options.push(correctMeaning[0]);
+      }
+
+      questionWords[i].incorrectOptions.forEach((word) => {
+        let meaning = '';
+        if (word.type) {
+          meaning += `${word.type} : `;
+        }
+        meaning += word.meaning;
+
+        if (questionWords[i].word === word.word) {
+          correctMeaning.push(meaning);
+          questionWords[i].options.push(meaning);
+        } else {
+          questionWords[i].options.push(meaning);
+        }
+      });
+
+      questionWords[i].options = this.shuffleArray(questionWords[i].options);
+
+      for (let j = 0; j < correctMeaning.length; j++) {
+        questionWords[i].correctIndex.push(
+          questionWords[i].options.findIndex((option) => option === correctMeaning[j])
+        );
+      }
+    }
+
+    return res.json({ questionWords });
   }
 
   shuffleArray(array) {
@@ -90,24 +78,10 @@ class VocabQuizController {
   }
 
   async getAvailableWordsCount(req, res) {
-    try {
-      if (!req.session.user) {
-        return res.status(401).json({ error: 'Vous devez être connecté pour jouer.' });
-      }
+    const package_id = req.query.package;
+    const wordCount = await learningModel.countUserWordsByLevel(package_id, levelGame);
 
-      const package_id = req.query.package;
-      const wordCount = await learningModel.countUserWordsByLevel(package_id, levelGame);
-
-      return res.json({
-        success: true,
-        count: wordCount,
-      });
-    } catch (error) {
-      console.error('Erreur lors du comptage des mots disponibles:', error);
-      return res
-        .status(500)
-        .json({ error: 'Une erreur est survenue lors du comptage des mots disponibles.' });
-    }
+    return res.json({ success: true, count: wordCount });
   }
 }
 

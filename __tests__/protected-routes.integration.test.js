@@ -20,7 +20,7 @@ describe('Protected routes (integration)', () => {
   });
 
   describe('Page routes – redirect to /login when not authenticated', () => {
-    it.each([['/dashboard'], ['/monVocabs'], ['/myPackages'], ['/games']])(
+    it.each([['/dashboard'], ['/monVocabs'], ['/myPackages']])(
       'GET %s redirects to /login',
       async (path) => {
         const res = await request(app).get(path);

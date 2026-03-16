@@ -21,6 +21,7 @@
     <!-- Feedback Form -->
     <div class="feedback-form-container fade-in">
       <form action="/feedback" method="POST" class="feedback-form">
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
         <div class="form-group">
           <label for="feedback-type">Type de feedback</label>
           <select id="feedback-type" name="type" required class="form-control">

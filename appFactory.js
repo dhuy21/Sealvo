@@ -1,5 +1,6 @@
 const path = require('path');
 const express = require('express');
+const compression = require('compression');
 const morgan = require('morgan');
 const route = require('./app/routes');
 const { engine } = require('express-handlebars');
@@ -8,6 +9,8 @@ const { initializeMiddleware } = require('./app/middleware');
 const { isReady: redisReady } = require('./app/core/redis');
 const { isReady: rabbitmqReady } = require('./app/core/rabbitmq');
 const { globalLimiter } = require('./app/middleware/rateLimiter');
+const notFoundHandler = require('./app/middleware/notFoundHandler');
+const errorHandler = require('./app/middleware/errorHandler');
 
 /**
  * Create and return the Express app (middleware + routes).
@@ -17,9 +20,27 @@ const { globalLimiter } = require('./app/middleware/rateLimiter');
 function getApp() {
   const app = express();
 
+  app.use(
+    compression({
+      filter: (req, res) => {
+        if (res.getHeader('Content-Type')?.includes('text/event-stream')) return false;
+        return compression.filter(req, res);
+      },
+      threshold: 1024,
+    })
+  );
+
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
-  app.use(express.static(path.join(__dirname, 'public')));
+
+  const isProduction = process.env.NODE_ENV === 'production';
+  app.use(
+    express.static(path.join(__dirname, 'public'), {
+      maxAge: isProduction ? '1d' : 0,
+      etag: true,
+      lastModified: true,
+    })
+  );
 
   app.use((req, res, next) => {
     res.setHeader('Cache-Control', 'no-cache');
@@ -85,6 +106,9 @@ function getApp() {
   });
 
   route(app);
+
+  app.use(notFoundHandler);
+  app.use(errorHandler);
 
   return app;
 }
