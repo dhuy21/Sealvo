@@ -59,7 +59,7 @@ export class WordsService {
 
     const intervals: Record<string, number> = {
       x: 0,
-      level_0: 2,
+      level_0: 2, // Prisma enum level_0 @map("0")
       level_1: 4,
       level_2: 10,
       v: 20,

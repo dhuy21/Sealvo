@@ -51,8 +51,8 @@ export class CreateWordDto {
   @IsString()
   grammar?: string;
 
-  @ApiProperty({ enum: ['x', '0', '1', '2', 'v'], default: 'x' })
+  @ApiProperty({ enum: ['x', 'level_0', 'level_1', 'level_2', 'v'], default: 'x' })
   @IsOptional()
-  @IsEnum(['x', '0', '1', '2', 'v'] as const)
+  @IsEnum(['x', 'level_0', 'level_1', 'level_2', 'v'] as const)
   level?: string;
 }

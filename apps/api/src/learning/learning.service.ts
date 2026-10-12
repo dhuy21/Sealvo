@@ -2,39 +2,44 @@ import { Injectable } from '@nestjs/common';
 import type { learning_level } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 
+/**
+ * Prisma enum learning_level uses: x, level_0, level_1, level_2, v
+ * These map to DB values: x, 0, 1, 2, v
+ */
+
 /** Game → level mapping (which level each game belongs to) */
-const GAME_LEVEL: Record<string, string> = {
+const GAME_LEVEL: Record<string, learning_level> = {
   flash_match: 'x',
   vocab_quiz: 'x',
   test_pronun: 'x',
-  word_scramble: '0',
-  phrase_completion: '0',
-  speed_vocab: '1',
-  word_search: '2',
+  word_scramble: 'level_0',
+  phrase_completion: 'level_0',
+  speed_vocab: 'level_1',
+  word_search: 'level_2',
 };
 
 /** Required games per level (all must be completed to promote) */
 const LEVEL_GAMES: Record<string, string[]> = {
   x: ['flash_match', 'vocab_quiz', 'test_pronun'],
-  '0': ['word_scramble', 'phrase_completion'],
-  '1': ['speed_vocab'],
-  '2': ['word_search'],
+  level_0: ['word_scramble', 'phrase_completion'],
+  level_1: ['speed_vocab'],
+  level_2: ['word_search'],
 };
 
 /** Level promotion map */
-const NEXT_LEVEL: Record<string, string> = {
-  x: '0',
-  '0': '1',
-  '1': '2',
-  '2': 'v',
+const NEXT_LEVEL: Record<string, learning_level> = {
+  x: 'level_0',
+  level_0: 'level_1',
+  level_1: 'level_2',
+  level_2: 'v',
 };
 
 /** Spaced repetition intervals (days) */
 const INTERVALS: Record<string, number> = {
   x: 0,
-  '0': 2,
-  '1': 4,
-  '2': 10,
+  level_0: 2,
+  level_1: 4,
+  level_2: 10,
   v: 20,
 };
 
@@ -49,7 +54,12 @@ export class LearningService {
    * Track game completion and promote level if all games done
    * Source: LevelProgressController.js trackGameCompletion()
    */
-  async trackGameCompletion(userId: string, gameType: string, completed: boolean, packageId: number) {
+  async trackGameCompletion(
+    userId: string,
+    gameType: string,
+    completed: boolean,
+    packageId: number,
+  ) {
     const currentLevel = GAME_LEVEL[gameType];
     if (!currentLevel) {
       return { success: false, message: 'Unknown game type' };
@@ -178,13 +188,13 @@ export class LearningService {
   /**
    * Find words due for review at a specific level
    */
-  private async findWordsDueByLevel(packageId: number, level: string) {
+  private async findWordsDueByLevel(packageId: number, level: learning_level) {
     const interval = INTERVALS[level] ?? 0;
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
     const entries = await this.prisma.learning.findMany({
-      where: { package_id: packageId, level: level as learning_level },
+      where: { package_id: packageId, level },
       select: { detail_id: true, date_memorized: true },
     });
 
@@ -201,7 +211,11 @@ export class LearningService {
    * Batch update level for words (promote to next level)
    * Source: learning.js batchUpdateLevel()
    */
-  private async batchUpdateLevel(packageId: number, detailIds: number[], currentLevel: string) {
+  private async batchUpdateLevel(
+    packageId: number,
+    detailIds: number[],
+    currentLevel: learning_level,
+  ) {
     const newLevel = NEXT_LEVEL[currentLevel];
     if (!newLevel) return 0;
 
@@ -209,10 +223,10 @@ export class LearningService {
       where: {
         package_id: packageId,
         detail_id: { in: detailIds },
-        level: currentLevel as learning_level,
+        level: currentLevel,
       },
       data: {
-        level: newLevel as learning_level,
+        level: newLevel,
         date_memorized: new Date(),
       },
     });
