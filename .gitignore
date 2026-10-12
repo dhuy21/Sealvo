@@ -35,3 +35,4 @@ coverage/
 db_data/
 redis_data/
 rabbitmq_data/
+*.tsbuildinfo
