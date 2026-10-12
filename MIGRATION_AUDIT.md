@@ -16,7 +16,14 @@
 7. [Security Checklist (25 endpoints)](#7-security-checklist)
 8. [Frontend Decomposition](#8-frontend-decomposition)
 9. [CI/CD Pipeline](#9-cicd-pipeline)
-10. [Phase 0 Plan](#10-phase-0-plan)
+10. [Phase 0 Plan](#10-phase-0-plan) ✅ DONE
+11. [Phase 1 Plan — Database + Health](#11-phase-1-plan--database--health) ✅ DONE
+12. [Phase 2 Plan — Auth + Core Guards](#12-phase-2-plan--auth--core-guards) ✅ DONE
+13. [Phase 3 Plan — Business Modules](#13-phase-3-plan--business-modules)
+14. [Phase 4 Plan — Workers + Queues](#14-phase-4-plan--workers--queues)
+15. [Phase 5 Plan — Frontend Migration](#15-phase-5-plan--frontend-migration)
+16. [Phase 6 Plan — CI/CD + Deploy](#16-phase-6-plan--cicd--deploy)
+17. [Migration Progress Tracker](#17-migration-progress-tracker)
 
 ---
 
@@ -873,7 +880,7 @@ jobs:
 
 ---
 
-## 10. Phase 0 Plan
+## 10. Phase 0 Plan ✅ DONE
 
 ### ⚠️ CRITICAL RULE: NO DELETE OLD CODE
 - src/ folder MUST remain untouched throughout all phases
@@ -968,3 +975,310 @@ CORRECT (PackageController only):
 ```
 
 **Solution: PackageOwnershipGuard applied globally.**
+
+---
+
+## 11. Phase 1 Plan — Database + Health ✅ DONE
+
+> **Branch:** `feature/phase-1-prisma` → merged into `develop`
+
+### What was done
+1. Prisma introspect (`prisma db pull`) → 8 models, 6 enums
+2. Fixed `learning_level` enum: `level_0 @map("0")`, `level_1 @map("1")`, `level_2 @map("2")`
+3. Baseline migration (`001_baseline/migration.sql`) resolved as applied
+4. Global `PrismaModule` (@Global) with `PrismaService` (onModuleInit + onModuleDestroy)
+5. `HealthController` — GET /health with proper HTTP 503 when DB down
+6. Swagger documented on health endpoint
+
+### Files created
+```
+apps/api/prisma/schema.prisma
+apps/api/prisma/migrations/001_baseline/migration.sql
+apps/api/src/prisma/prisma.service.ts
+apps/api/src/prisma/prisma.module.ts
+apps/api/src/health/health.controller.ts
+apps/api/src/health/health.module.ts
+```
+
+### Audits: 4 rounds, issues found & fixed
+- HealthController always returned 200 → fixed with @Res() + proper status code
+- AppController Swagger misleading → fixed tag/summary
+- prisma in dependencies → moved to devDependencies
+- tsbuildinfo tracked by git → added to .gitignore
+
+---
+
+## 12. Phase 2 Plan — Auth + Core Guards ✅ DONE
+
+> **Branch:** `feature/phase-2-auth` → merged into `develop`
+
+### What was done
+
+| Step | Content |
+|---|---|
+| 1 | AuthModule skeleton + JwtModule.registerAsync + JwtStrategy + JwtRefreshStrategy + ValidationPipe + cookie-parser |
+| 2 | AuthService (register, login, refreshTokens, getMe) + RegisterDto + LoginDto (class-validator + Swagger) |
+| 3 | JwtAuthGuard + JwtRefreshGuard + RolesGuard + @CurrentUser decorator + @Roles decorator |
+| 4 | AuthController — 5 endpoints: POST register/login/refresh/logout + GET me |
+| 5 | PackageOwnershipGuard (IDOR fix, Admin bypass) |
+| 6 | Verify + 3 rounds audit |
+
+### Files created (14 files, +764 lines)
+```
+apps/api/src/auth/
+├── auth.module.ts
+├── auth.service.ts
+├── auth.controller.ts
+├── dto/
+│   ├── login.dto.ts
+│   └── register.dto.ts
+├── strategies/
+│   ├── jwt.strategy.ts
+│   └── jwt-refresh.strategy.ts
+├── guards/
+│   ├── jwt-auth.guard.ts
+│   ├── jwt-refresh.guard.ts
+│   ├── roles.guard.ts
+│   └── package-ownership.guard.ts
+└── decorators/
+    ├── current-user.decorator.ts
+    └── roles.decorator.ts
+```
+
+### Key decisions
+- class-validator (not Zod) for DTOs
+- Google OAuth deferred to later phase
+- Refresh token in httpOnly cookie (path: /auth, sameSite: strict, secure in prod)
+- Access token 15m (Bearer header), Refresh token 7d
+
+### Audits: 3 rounds, 5 issues found & fixed
+1. `generateTokens` used `string` instead of `users_role` enum
+2. `COOKIE_OPTIONS.secure` used `process.env` at import time → switched to ConfigService getter
+3. Race condition on register → catch Prisma P2002
+4. PackageOwnershipGuard missing Admin bypass
+5. Duplicate `@prisma/client` import
+
+---
+
+## 13. Phase 3 Plan — Business Modules
+
+> **Branch:** `feature/phase-3-business-modules` (from `develop`)
+
+### Goal
+Migrate all business logic from Express controllers/models to NestJS modules using Prisma.
+
+### Steps
+
+```
+Step 1: PackagesModule — DTOs + Service + Controller
+  Source: PackageController.js + packages.js
+  Endpoints:
+    GET    /api/packages              — user's packages (JwtAuthGuard)
+    GET    /api/packages/public       — public + protected packages
+    POST   /api/packages              — create package (JwtAuthGuard)
+    PATCH  /api/packages/:packageId   — edit package (JwtAuthGuard + PackageOwnershipGuard)
+    DELETE /api/packages/:packageId   — delete package (JwtAuthGuard + PackageOwnershipGuard)
+    PATCH  /api/packages/:packageId/toggle — toggle activation (JwtAuthGuard + PackageOwnershipGuard)
+    POST   /api/packages/:packageId/copy  — copy public package (JwtAuthGuard, no ownership)
+  DTOs: CreatePackageDto, UpdatePackageDto, PackageResponseDto
+  Fix: #57 (3 non-transactional calls → single Prisma $transaction)
+  → verify: 7 endpoints mapped, Swagger documented, turbo build OK
+
+Step 2: WordsModule — DTOs + Service + Controller
+  Source: WordController.js + words.js
+  Endpoints:
+    GET    /api/packages/:packageId/words           — list words (JwtAuthGuard + PackageOwnershipGuard)
+    GET    /api/packages/:packageId/words/review     — words due today (JwtAuthGuard + PackageOwnershipGuard)
+    POST   /api/packages/:packageId/words           — add words (JwtAuthGuard + PackageOwnershipGuard)
+    PATCH  /api/packages/:packageId/words/:detailId — edit word (JwtAuthGuard + PackageOwnershipGuard)
+    DELETE /api/packages/:packageId/words/:detailId — delete word (JwtAuthGuard + PackageOwnershipGuard)
+    DELETE /api/packages/:packageId/words           — delete all words (JwtAuthGuard + PackageOwnershipGuard)
+  DTOs: CreateWordDto, UpdateWordDto, WordResponseDto
+  Fix: #46 (package copy shares word_details → clone), #47 (deleteWord orphans), #56 (updateWord missing subject), #63 (sequential inserts → $transaction)
+  Note: Batch import via RabbitMQ deferred to Phase 4
+  → verify: 6 endpoints mapped, Swagger documented, turbo build OK
+
+Step 3: LearningModule — DTOs + Service + Controller
+  Source: LearningController.js + LevelProgressController.js + learning.js + streakService.js
+  Endpoints:
+    POST /api/learning/streak                      — check & update streak (JwtAuthGuard)
+    POST /api/learning/level-progress/track        — track game completion (JwtAuthGuard + PackageOwnershipGuard)
+    GET  /api/learning/level-progress              — get level progress (JwtAuthGuard)
+    POST /api/learning/level-progress/reset        — reset level progress (JwtAuthGuard)
+  Business logic:
+    - Spaced repetition: 5 levels (x→0→1→2→v), intervals (0/2/4/10/20 days)
+    - Level promotion: ALL games for level must be completed
+    - Streak: daily activity tracking
+  DTOs: TrackGameDto, ResetLevelDto
+  Note: Level progress stored in Redis (deferred — use in-memory/DB fallback for Phase 3)
+  → verify: 4 endpoints mapped, spaced repetition logic correct, Swagger documented
+
+Step 4: GamesModule — DTOs + Service + Controller
+  Source: GameController.js + game_scores.js + 7 game controllers
+  Endpoints:
+    GET  /api/games/:gameType/data?packageId=X    — get words for game (JwtAuthGuard + PackageOwnershipGuard)
+    POST /api/games/score                          — save score (JwtAuthGuard)
+    GET  /api/games/scores                         — get user's best scores (JwtAuthGuard)
+  Business logic:
+    - 7 game types, each mapped to a level
+    - Words fetched by level + spaced repetition interval
+    - Score upsert with GREATEST (atomic)
+    - 1 GamesService (not 7 controllers — logic is shared, only word fetching differs)
+  DTOs: SaveScoreDto, GameDataResponseDto
+  Fix: #62 (saveScore redundant query → single upsert), #79 (VocabQuiz O(n²))
+  → verify: 3 endpoints mapped, 7 game types supported, Swagger documented
+
+Step 5: Verify + Audit
+  → verify: all 20 business endpoints work
+  → verify: turbo build succeeds
+  → verify: TypeScript zero errors
+  → verify: Swagger UI shows all endpoints
+  → audit: at least 2 rounds
+```
+
+### URL convention change
+Words and games nested under packages for natural ownership:
+- `/api/packages/:packageId/words` (not `/api/words?package=X`)
+- `/api/games/:gameType/data?packageId=X` (query param because game is top-level)
+
+---
+
+## 14. Phase 4 Plan — Workers + Queues
+
+> **Branch:** `feature/phase-4-workers` (from `develop`)
+
+### Steps
+
+```
+Step 1: RabbitmqModule — connection + channel management
+  Source: rabbitmq.js
+  - Auto-reconnect with exponential backoff
+  - Separate channels per queue (fix #96)
+  - Graceful shutdown (onModuleDestroy)
+  → verify: connects to RabbitMQ, auto-reconnects on disconnect
+
+Step 2: RedisModule — connection + cache service
+  Source: redis.js + cache.js + cache config
+  - CacheService with get/set/del + TTL
+  - Centralized CacheKeys constant (fix #61)
+  → verify: connects to Redis, get/set/del work
+
+Step 3: EmailModule — SES + email queue
+  Source: mailersend.js + emailQueue.js
+  - Pre-compiled Handlebars templates (fix #26)
+  - Queue consumer in worker process
+  → verify: sends email via SES, queue publish/consume works
+
+Step 4: ImportModule — bulk word import queue
+  Source: importFile.js + importQueue.js + wordProcessingService.js
+  - Publish job when ≥3 words + RabbitMQ ready
+  - Worker consumes and processes
+  - SSE job tracking endpoint
+  → verify: bulk import via queue, SSE stream works
+
+Step 5: Worker + Scheduler entry points
+  Source: worker process + scheduler (cron)
+  - worker.ts: RabbitMQ consumers (email + import)
+  - scheduler.ts: Cron jobs (daily reminder)
+  - Same Docker image, different CMD (fix #72, #86)
+  → verify: 3 processes start independently
+
+Step 6: Verify + Audit
+```
+
+---
+
+## 15. Phase 5 Plan — Frontend Migration
+
+> **Branch:** `feature/phase-5-frontend` (from `develop`)
+
+### Steps
+
+```
+Step 1: Layout + Theme + Auth
+  - App Router layout (Header, Footer, Sidebar)
+  - ThemeProvider (dark mode, cookie-based)
+  - useAuth hook (JWT state + Axios interceptor + refresh)
+  - Login + Register pages
+
+Step 2: Dashboard + Profile
+  - Dashboard page (stats cards, streak, charts)
+  - Profile editor + avatar picker
+
+Step 3: Packages
+  - Package list (my packages + public)
+  - Create/Edit/Delete package
+  - Toggle activation, copy public package
+
+Step 4: Words
+  - Word list by package (grouped by level)
+  - Add word(s) form (single + multiple)
+  - Edit word, delete word, delete all
+  - Learn/review mode (flashcard UI)
+  - Import progress (SSE job tracking)
+
+Step 5: Games (7)
+  - FlashMatch, VocabQuiz, WordScramble, SpeedVocab
+  - PhraseCompletion, WordSearch, TestPronun
+  - Shared game shell + per-game component
+
+Step 6: Remaining pages
+  - About, Feedback, Forgot/Reset password
+  - Email verification flow
+
+Step 7: Verify + Audit
+  - All pages render correctly
+  - All API calls work end-to-end
+  - Responsive design (mobile + desktop)
+  - Playwright E2E tests
+```
+
+---
+
+## 16. Phase 6 Plan — CI/CD + Deploy
+
+> **Branch:** `feature/phase-6-cicd` (from `develop`)
+
+### Steps
+
+```
+Step 1: GitHub Actions CI
+  - turbo lint + turbo test on PR
+  - npm audit
+  - Docker build matrix (api + web)
+  - Trivy vulnerability scan
+
+Step 2: Docker production
+  - Dockerfile for api (multi-stage, shared image for api/worker/scheduler)
+  - Dockerfile for web (Next.js standalone)
+  - docker-compose.prod.yml
+
+Step 3: Railway deploy
+  - API + Worker + Scheduler + Web services
+  - Health check verification
+  - Rolling deploy strategy
+
+Step 4: Release flow
+  - develop → release/* → staging → test → main
+  - Semantic versioning
+  - Changelog generation
+
+Step 5: Post-deploy verification
+  - Production health check
+  - E2E tests against production
+  - Delete src/ (old code) ONLY after everything verified
+```
+
+---
+
+## 17. Migration Progress Tracker
+
+| Phase | Description | Branch | Status | Merged into |
+|---|---|---|---|---|
+| **Phase 0** | Monorepo Init (Turborepo + NestJS + Next.js + Shared) | `feature/phase-0-monorepo-init` | ✅ DONE | `develop` |
+| **Phase 1** | Database + Health (Prisma + HealthController) | `feature/phase-1-prisma` | ✅ DONE | `develop` |
+| **Phase 2** | Auth + Core Guards (JWT + Guards + Decorators) | `feature/phase-2-auth` | ✅ DONE | `develop` |
+| **Phase 3** | Business Modules (Packages + Words + Learning + Games) | `feature/phase-3-business-modules` | 🔲 TODO | — |
+| **Phase 4** | Workers + Queues (RabbitMQ + Redis + Email + Import) | `feature/phase-4-workers` | 🔲 TODO | — |
+| **Phase 5** | Frontend Migration (Next.js + React + Tailwind) | `feature/phase-5-frontend` | 🔲 TODO | — |
+| **Phase 6** | CI/CD + Deploy (GitHub Actions + Docker + Railway) | `feature/phase-6-cicd` | 🔲 TODO | — |
