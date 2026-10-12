@@ -1,45 +1,37 @@
 # Dependencies
-node_modules
-npm-debug.log
-yarn-debug.log
-yarn-error.log
+node_modules/
 
-# Environment variables
+# Environment
 .env
-
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*.local
 
-# Build files
-/build
-/dist
+# Build outputs
+dist/
+.next/
+.turbo/
 
-# Logs
-logs
-*.log
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Editor directories and files
-.idea
-.vscode
+# IDE
+.vscode/
+.idea/
 *.swp
 *.swo
 
-# Debug files
+# OS
+.DS_Store
+Thumbs.db
+
+# Prisma
+apps/api/prisma/migrations/**/migration_lock.toml
+
+# Logs
+*.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-# Playwright
-test-results/
-playwright-report/
-blob-report/
-.playwright/
+# Test
+coverage/
 
-# Database backups (Phase 2 — contain sensitive data, do not commit)
-backups/
+# Docker volumes
+db_data/
+redis_data/
+rabbitmq_data/

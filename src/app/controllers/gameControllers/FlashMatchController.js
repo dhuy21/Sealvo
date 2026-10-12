@@ -16,7 +16,7 @@ class FlashMatchController {
 
     if (words.length < minPairsCount) {
       throw new NotFoundError(
-        `Vous devez avoir au moins ${minPairsCount} mots au niveau ${levelGame} dans votre vocabulaire pour jouer à ce niveau de difficulté.`
+        `Vous devez avoir au moins ${minPairsCount} mots au niveau ${levelGame}  tới ngày cần học`
       );
     }
 

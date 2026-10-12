@@ -1,0 +1,221 @@
+{
+  "info": {
+    "name": "Web Vocab API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "username", "value": "" },
+    { "key": "password", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "GET Login page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/login"
+          }
+        },
+        {
+          "name": "POST Login",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}\n"
+            },
+            "url": "{{baseUrl}}/login"
+          }
+        },
+        {
+          "name": "GET Registre page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/registre"
+          }
+        },
+        {
+          "name": "POST Registre",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"newuser\",\n  \"email\": \"new@example.com\",\n  \"password\": \"secret12\",\n  \"password2\": \"secret12\",\n  \"avatar\": \"1.png\"\n}\n"
+            },
+            "url": "{{baseUrl}}/registre"
+          }
+        },
+        {
+          "name": "GET Logout",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/logout"
+          }
+        },
+        {
+          "name": "GET Forgot Password",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/login/forgotPassword"
+          }
+        },
+        {
+          "name": "POST Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}\n"
+            },
+            "url": "{{baseUrl}}/login/forgotPassword"
+          }
+        },
+        {
+          "name": "GET Reset Password",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/login/resetPassword?token=YOUR_TOKEN"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Protected pages",
+      "item": [
+        {
+          "name": "GET Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/dashboard"
+          }
+        },
+        {
+          "name": "GET Mon Vocabulaire",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/monVocabs?package=YOUR_PACKAGE_ID"
+          }
+        },
+        {
+          "name": "GET My Packages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/myPackages"
+          }
+        },
+        {
+          "name": "GET Games",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games"
+          }
+        }
+      ]
+    },
+    {
+      "name": "API need auth",
+      "item": [
+        {
+          "name": "POST Update streak",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{}\n"
+            },
+            "url": "{{baseUrl}}/update-streak"
+          }
+        },
+        {
+          "name": "POST Create package",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mon paquet\",\n  \"mode\": \"private\"\n}\n"
+            },
+            "url": "{{baseUrl}}/myPackages"
+          }
+        },
+        {
+          "name": "GET Level progress status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/level-progress/status"
+          }
+        },
+        {
+          "name": "POST Level progress track",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gameType\": \"vocabQuiz\",\n  \"packageId\": \"1\",\n  \"score\": 10\n}\n"
+            },
+            "url": "{{baseUrl}}/level-progress/track"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Site public",
+      "item": [
+        {
+          "name": "GET Home",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/"
+          }
+        },
+        {
+          "name": "GET About me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/aboutme"
+          }
+        },
+        {
+          "name": "GET Feedback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/feedback"
+          }
+        },
+        {
+          "name": "POST Feedback",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"bug\",\n  \"subject\": \"Test\",\n  \"content\": \"Message\",\n  \"email\": \"test@example.com\"\n}\n"
+            },
+            "url": "{{baseUrl}}/feedback"
+          }
+        }
+      ]
+    }
+  ]
+}
