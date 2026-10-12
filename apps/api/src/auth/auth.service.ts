@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import type { users_role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { RegisterDto } from './dto/register.dto.js';
 import type { LoginDto } from './dto/login.dto.js';
@@ -107,7 +108,7 @@ export class AuthService {
     return user;
   }
 
-  private generateTokens(userId: string, username: string, role: string) {
+  private generateTokens(userId: string, username: string, role: users_role) {
     const payload = { sub: userId, username, role };
 
     const accessToken = this.jwt.sign(payload);
