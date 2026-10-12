@@ -1,6 +1,7 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Res, UseGuards } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import type { Response } from 'express';
+import type { CookieOptions, Response } from 'express';
 import { AuthService } from './auth.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
@@ -9,18 +10,24 @@ import { JwtRefreshGuard } from './guards/jwt-refresh.guard.js';
 import { CurrentUser } from './decorators/current-user.decorator.js';
 
 const REFRESH_COOKIE = 'refresh_token';
-const COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
-  path: '/auth',
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-};
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly config: ConfigService,
+  ) {}
+
+  private get cookieOptions(): CookieOptions {
+    return {
+      httpOnly: true,
+      secure: this.config.get<string>('NODE_ENV') === 'production',
+      sameSite: 'strict',
+      path: '/auth',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    };
+  }
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
@@ -37,7 +44,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials or unverified account' })
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const { accessToken, refreshToken } = await this.authService.login(dto);
-    res.cookie(REFRESH_COOKIE, refreshToken, COOKIE_OPTIONS);
+    res.cookie(REFRESH_COOKIE, refreshToken, this.cookieOptions);
     return { accessToken };
   }
 
@@ -52,7 +59,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { accessToken, refreshToken } = await this.authService.refreshTokens(userId);
-    res.cookie(REFRESH_COOKIE, refreshToken, COOKIE_OPTIONS);
+    res.cookie(REFRESH_COOKIE, refreshToken, this.cookieOptions);
     return { accessToken };
   }
 

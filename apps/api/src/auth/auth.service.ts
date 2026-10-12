@@ -2,8 +2,10 @@ import { randomBytes } from 'crypto';
 import {
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
@@ -35,17 +37,24 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(dto.password, 12);
     const userId = await this.generateUniqueId();
 
-    const user = await this.prisma.users.create({
-      data: {
-        id: userId,
-        username: dto.username,
-        email: dto.email,
-        password: hashedPassword,
-        ava: dto.avatar ?? 1,
-      },
-    });
+    try {
+      const user = await this.prisma.users.create({
+        data: {
+          id: userId,
+          username: dto.username,
+          email: dto.email,
+          password: hashedPassword,
+          ava: dto.avatar ?? 1,
+        },
+      });
 
-    return { id: user.id, username: user.username, email: user.email };
+      return { id: user.id, username: user.username, email: user.email };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('Username or email is already taken');
+      }
+      throw new InternalServerErrorException();
+    }
   }
 
   async login(dto: LoginDto) {
