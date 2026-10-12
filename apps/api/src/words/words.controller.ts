@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseArrayPipe,
   ParseIntPipe,
   Patch,
   Post,
@@ -42,7 +43,7 @@ export class WordsController {
   @ApiResponse({ status: 201, description: 'Words added' })
   async addWords(
     @Param('packageId', ParseIntPipe) packageId: number,
-    @Body() dto: CreateWordDto[],
+    @Body(new ParseArrayPipe({ items: CreateWordDto })) dto: CreateWordDto[],
   ) {
     return this.wordsService.addWords(packageId, dto);
   }
