@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { PackagesModule } from './packages/packages.module.js';
 import { WordsModule } from './words/words.module.js';
 import { LearningModule } from './learning/learning.module.js';
+import { GamesModule } from './games/games.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 
@@ -21,6 +22,7 @@ import { AppService } from './app.service.js';
     PackagesModule,
     WordsModule,
     LearningModule,
+    GamesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
