@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { RabbitmqModule } from './rabbitmq/rabbitmq.module.js';
 import { RedisModule } from './redis/redis.module.js';
+import { EmailModule } from './email/email.module.js';
 import { HealthModule } from './health/health.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { PackagesModule } from './packages/packages.module.js';
@@ -21,6 +22,7 @@ import { AppService } from './app.service.js';
     PrismaModule,
     RabbitmqModule,
     RedisModule,
+    EmailModule,
     HealthModule,
     AuthModule,
     PackagesModule,
