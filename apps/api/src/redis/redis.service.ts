@@ -28,12 +28,12 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     const url = this.config.get<string>('REDIS_URL');
     if (url) return url;
 
-    const host = this.config.get<string>('REDISHOST');
+    const host = this.config.get<string>('REDIS_HOST');
     if (!host) return null;
 
-    const port = this.config.get<string>('REDISPORT') ?? '6379';
+    const port = this.config.get<string>('REDIS_PORT') ?? '6379';
     const password = this.config.get<string>('REDIS_PASSWORD');
-    const user = this.config.get<string>('REDISUSER') ?? 'default';
+    const user = this.config.get<string>('REDIS_USER') ?? 'default';
 
     if (password) return `redis://${user}:${encodeURIComponent(password)}@${host}:${port}`;
     return `redis://${host}:${port}`;
@@ -42,7 +42,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async connect(): Promise<void> {
     const url = this.buildUrl();
     if (!url) {
-      this.logger.warn('No REDIS_URL or REDISHOST — running without Redis.');
+      this.logger.warn('No REDIS_URL or REDIS_HOST — running without Redis.');
       return;
     }
 

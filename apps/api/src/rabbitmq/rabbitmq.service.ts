@@ -30,19 +30,19 @@ export class RabbitmqService implements OnModuleInit, OnModuleDestroy {
     const url = this.config.get<string>('RABBITMQ_URL');
     if (url) return url;
 
-    const host = this.config.get<string>('RABBITMQ_DEFAULT_HOST');
+    const host = this.config.get<string>('RABBITMQ_HOST');
     if (!host) return null;
 
-    const port = this.config.get<string>('RABBITMQ_DEFAULT_PORT') ?? '5672';
-    const user = this.config.get<string>('RABBITMQ_DEFAULT_USER') ?? 'guest';
-    const pass = this.config.get<string>('RABBITMQ_DEFAULT_PASS') ?? 'guest';
+    const port = this.config.get<string>('RABBITMQ_PORT') ?? '5672';
+    const user = this.config.get<string>('RABBITMQ_USER') ?? 'guest';
+    const pass = this.config.get<string>('RABBITMQ_PASS') ?? 'guest';
     return `amqp://${user}:${pass}@${host}:${port}`;
   }
 
   async connect(): Promise<void> {
     const url = this.buildUrl();
     if (!url) {
-      this.logger.warn('No RABBITMQ_URL or RABBITMQ_DEFAULT_HOST — skipping.');
+      this.logger.warn('No RABBITMQ_URL or RABBITMQ_HOST — skipping.');
       return;
     }
 
