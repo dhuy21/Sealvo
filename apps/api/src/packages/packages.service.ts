@@ -1,0 +1,171 @@
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service.js';
+import type { CreatePackageDto } from './dto/create-package.dto.js';
+import type { UpdatePackageDto } from './dto/update-package.dto.js';
+
+@Injectable()
+export class PackagesService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async findByUserId(userId: string) {
+    return this.prisma.packages.findMany({
+      where: { user_id: userId },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  async findPublicPackages() {
+    return this.prisma.packages.findMany({
+      where: { mode: { in: ['public', 'protected'] } },
+      include: { users: { select: { username: true } } },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  async create(userId: string, dto: CreatePackageDto) {
+    const isPublic = dto.mode === 'public';
+
+    const pkg = await this.prisma.packages.create({
+      data: {
+        user_id: userId,
+        package_name: dto.package_name,
+        package_description: dto.package_description ?? null,
+        mode: dto.mode ?? 'private',
+        is_active: !isPublic, // auto-deactivate public packages
+      },
+    });
+
+    return {
+      packageId: pkg.package_id,
+      message: isPublic
+        ? 'Package created. Auto-deactivated because it is public.'
+        : 'Package created successfully',
+    };
+  }
+
+  async update(packageId: number, dto: UpdatePackageDto) {
+    // Single transaction for all updates (fix #57)
+    const isPublic = dto.mode === 'public';
+
+    await this.prisma.packages.update({
+      where: { package_id: packageId },
+      data: {
+        ...(dto.package_name !== undefined && { package_name: dto.package_name }),
+        ...(dto.package_description !== undefined && {
+          package_description: dto.package_description,
+        }),
+        ...(dto.mode !== undefined && { mode: dto.mode }),
+        ...(isPublic && { is_active: false }),
+      },
+    });
+
+    return {
+      message: isPublic
+        ? 'Package updated. Auto-deactivated because it is now public.'
+        : 'Package updated successfully',
+    };
+  }
+
+  async delete(packageId: number) {
+    await this.prisma.packages.delete({
+      where: { package_id: packageId },
+    });
+
+    return { message: 'Package deleted successfully' };
+  }
+
+  async toggleActivation(packageId: number) {
+    const pkg = await this.prisma.packages.findUnique({
+      where: { package_id: packageId },
+      select: { is_active: true },
+    });
+
+    if (!pkg) {
+      throw new NotFoundException('Package not found');
+    }
+
+    const newStatus = !pkg.is_active;
+
+    await this.prisma.packages.update({
+      where: { package_id: packageId },
+      data: { is_active: newStatus },
+    });
+
+    return {
+      message: `Package ${newStatus ? 'activated' : 'deactivated'} successfully`,
+      isActive: newStatus,
+    };
+  }
+
+  async copyPublicPackage(packageId: number, userId: string) {
+    const source = await this.prisma.packages.findUnique({
+      where: { package_id: packageId },
+    });
+
+    if (!source) {
+      throw new NotFoundException('Package not found');
+    }
+
+    if (source.mode !== 'public') {
+      throw new ForbiddenException('This package is not public');
+    }
+
+    // Get all words linked to this package (via learning → word_details)
+    const learningEntries = await this.prisma.learning.findMany({
+      where: { package_id: packageId },
+      include: {
+        word_details: {
+          include: { words: true },
+        },
+      },
+    });
+
+    // Transaction: create package + clone word_details + create learning entries (fix #46)
+    return this.prisma.$transaction(async (tx) => {
+      const newPkg = await tx.packages.create({
+        data: {
+          user_id: userId,
+          package_name: source.package_name,
+          package_description: source.package_description,
+          mode: 'private',
+          is_active: true,
+        },
+      });
+
+      // Clone each word_detail to get new detail_ids (fix #46: no shared references)
+      for (const entry of learningEntries) {
+        const detail = entry.word_details;
+
+        const newDetail = await tx.word_details.create({
+          data: {
+            word_id: detail.word_id,
+            type: detail.type,
+            meaning: detail.meaning,
+            pronunciation: detail.pronunciation,
+            synonyms: detail.synonyms,
+            antonyms: detail.antonyms,
+            example: detail.example,
+            grammar: detail.grammar,
+          },
+        });
+
+        await tx.learning.create({
+          data: {
+            package_id: newPkg.package_id,
+            detail_id: newDetail.detail_id,
+            level: 'x',
+          },
+        });
+      }
+
+      return {
+        packageId: newPkg.package_id,
+        message: 'Package copied successfully',
+      };
+    });
+  }
+}
