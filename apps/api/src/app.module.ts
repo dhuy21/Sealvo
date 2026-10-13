@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { RabbitmqModule } from './rabbitmq/rabbitmq.module.js';
 import { HealthModule } from './health/health.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { PackagesModule } from './packages/packages.module.js';
@@ -17,6 +18,7 @@ import { AppService } from './app.service.js';
       envFilePath: '../../.env',
     }),
     PrismaModule,
+    RabbitmqModule,
     HealthModule,
     AuthModule,
     PackagesModule,
