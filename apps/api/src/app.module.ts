@@ -4,6 +4,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
 import { RabbitmqModule } from './rabbitmq/rabbitmq.module.js';
 import { RedisModule } from './redis/redis.module.js';
 import { EmailModule } from './email/email.module.js';
+import { ImportModule } from './import/import.module.js';
 import { HealthModule } from './health/health.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { PackagesModule } from './packages/packages.module.js';
@@ -23,6 +24,7 @@ import { AppService } from './app.service.js';
     RabbitmqModule,
     RedisModule,
     EmailModule,
+    ImportModule,
     HealthModule,
     AuthModule,
     PackagesModule,
