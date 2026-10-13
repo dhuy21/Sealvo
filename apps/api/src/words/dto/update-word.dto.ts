@@ -18,9 +18,9 @@ export class UpdateWordDto {
   @IsString()
   subject?: string;
 
-  @ApiProperty({ enum: ['noun', 'verb', 'adjective', 'adverb', 'ph.v', 'idiom', 'collocation'], required: false })
+  @ApiProperty({ enum: ['noun', 'verb', 'adjective', 'adverb', 'ph_v', 'idiom', 'collocation'], required: false })
   @IsOptional()
-  @IsEnum(['noun', 'verb', 'adjective', 'adverb', 'ph.v', 'idiom', 'collocation'] as const)
+  @IsEnum(['noun', 'verb', 'adjective', 'adverb', 'ph_v', 'idiom', 'collocation'] as const)
   type?: string;
 
   @ApiProperty({ example: 'a greeting', required: false })

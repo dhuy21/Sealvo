@@ -17,8 +17,8 @@ export class CreateWordDto {
   @MinLength(1)
   subject!: string;
 
-  @ApiProperty({ enum: ['noun', 'verb', 'adjective', 'adverb', 'ph.v', 'idiom', 'collocation'] })
-  @IsEnum(['noun', 'verb', 'adjective', 'adverb', 'ph.v', 'idiom', 'collocation'] as const)
+  @ApiProperty({ enum: ['noun', 'verb', 'adjective', 'adverb', 'ph_v', 'idiom', 'collocation'] })
+  @IsEnum(['noun', 'verb', 'adjective', 'adverb', 'ph_v', 'idiom', 'collocation'] as const)
   type!: string;
 
   @ApiProperty({ example: 'a greeting' })
