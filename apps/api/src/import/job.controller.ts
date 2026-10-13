@@ -5,12 +5,10 @@ import {
   NotFoundException,
   Param,
   Res,
-  Sse,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { type Response } from 'express';
-import { Observable } from 'rxjs';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { JobTrackerService, type Job } from './job-tracker.service.js';
