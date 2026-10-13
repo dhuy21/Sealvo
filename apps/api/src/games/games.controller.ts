@@ -25,6 +25,7 @@ export class GamesController {
   constructor(private readonly gamesService: GamesService) {}
 
   @Get(':gameType/data')
+  @UseGuards(JwtAuthGuard, PackageOwnershipGuard)
   @ApiOperation({ summary: 'Get words for a game (filtered by level + spaced repetition)' })
   @ApiResponse({ status: 200, description: 'Game data with words' })
   async getGameData(
