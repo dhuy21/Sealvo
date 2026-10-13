@@ -4,6 +4,7 @@ import { CacheService } from '../redis/cache.service.js';
 import { WordsService } from '../words/words.service.js';
 import { JobTrackerService } from './job-tracker.service.js';
 import { CACHE_KEYS } from '../redis/cache-keys.constant.js';
+import type { CreateWordDto } from '../words/dto/create-word.dto.js';
 
 const EXCHANGE = 'import.direct';
 const RETRY_EXCHANGE = 'import.retry.direct';
@@ -16,19 +17,7 @@ const MAX_RETRIES = 1;
 
 export interface ImportPayload {
   jobId: string;
-  wordsData: Array<{
-    word: string;
-    language_code: string;
-    subject: string;
-    type: string;
-    meaning: string;
-    pronunciation?: string;
-    synonyms?: string;
-    antonyms?: string;
-    example?: string;
-    grammar?: string;
-    level?: string;
-  }>;
+  wordsData: CreateWordDto[];
   packageId: number;
   userId: string;
 }
@@ -108,7 +97,7 @@ export class ImportQueueService {
         });
 
         // Reuse WordsService.addWords (already handles find-or-create + transaction)
-        const result = await this.wordsService.addWords(packageId, wordsData as any);
+        const result = await this.wordsService.addWords(packageId, wordsData);
 
         await this.jobTracker.update(jobId, {
           status: 'completed',
@@ -119,6 +108,7 @@ export class ImportQueueService {
         // Invalidate cache
         await this.cache.del([
           CACHE_KEYS.dashboard(userId),
+          CACHE_KEYS.packagesUser(userId),
           CACHE_KEYS.words(packageId),
         ]);
 

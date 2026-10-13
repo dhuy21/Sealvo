@@ -4,7 +4,7 @@ import { RabbitmqService } from '../rabbitmq/rabbitmq.service.js';
 import { CacheService } from '../redis/cache.service.js';
 import { RedisService } from '../redis/redis.service.js';
 import { EmailService } from './email.service.js';
-import { CACHE_TTL } from '../redis/cache-keys.constant.js';
+import { CACHE_KEYS, CACHE_TTL } from '../redis/cache-keys.constant.js';
 
 const EXCHANGE = 'email.direct';
 const RETRY_EXCHANGE = 'email.retry.direct';
@@ -94,7 +94,7 @@ export class EmailQueueService {
       const dedupId = msg.properties.messageId;
       if (dedupId && this.redis.isReady()) {
         const isNew = await this.cache.setNX(
-          `email:dedup:${dedupId}`,
+          CACHE_KEYS.emailDedup(dedupId),
           1,
           CACHE_TTL.EMAIL_DEDUP,
         );
