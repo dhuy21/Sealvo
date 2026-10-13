@@ -162,6 +162,16 @@ export class WordsService {
         (dto.language_code !== undefined && dto.language_code !== currentWord.language_code) ||
         (dto.subject !== undefined && dto.subject !== currentWord.subject);
 
+      // Build word_details update payload
+      const detailUpdate: Record<string, unknown> = {};
+      if (dto.type !== undefined) detailUpdate.type = dto.type as word_details_type;
+      if (dto.meaning !== undefined) detailUpdate.meaning = dto.meaning;
+      if (dto.pronunciation !== undefined) detailUpdate.pronunciation = dto.pronunciation;
+      if (dto.synonyms !== undefined) detailUpdate.synonyms = dto.synonyms;
+      if (dto.antonyms !== undefined) detailUpdate.antonyms = dto.antonyms;
+      if (dto.example !== undefined) detailUpdate.example = dto.example;
+      if (dto.grammar !== undefined) detailUpdate.grammar = dto.grammar;
+
       if (wordChanged) {
         const newWord = dto.word ?? currentWord.word;
         const newLang = dto.language_code ?? currentWord.language_code;
@@ -178,25 +188,16 @@ export class WordsService {
           });
         }
 
-        await tx.word_details.update({
-          where: { detail_id: detailId },
-          data: { word_id: wordRecord.word_id },
-        });
+        detailUpdate.word_id = wordRecord.word_id;
       }
 
-      // Update word_details fields
-      await tx.word_details.update({
-        where: { detail_id: detailId },
-        data: {
-          ...(dto.type !== undefined && { type: dto.type as word_details_type }),
-          ...(dto.meaning !== undefined && { meaning: dto.meaning }),
-          ...(dto.pronunciation !== undefined && { pronunciation: dto.pronunciation }),
-          ...(dto.synonyms !== undefined && { synonyms: dto.synonyms }),
-          ...(dto.antonyms !== undefined && { antonyms: dto.antonyms }),
-          ...(dto.example !== undefined && { example: dto.example }),
-          ...(dto.grammar !== undefined && { grammar: dto.grammar }),
-        },
-      });
+      // Single word_details update (merged word_id + fields)
+      if (Object.keys(detailUpdate).length > 0) {
+        await tx.word_details.update({
+          where: { detail_id: detailId },
+          data: detailUpdate,
+        });
+      }
 
       // Update level if provided
       if (dto.level !== undefined) {
