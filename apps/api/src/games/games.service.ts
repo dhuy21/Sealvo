@@ -1,26 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import type { learning_level, user_best_scores_game_type } from '@prisma/client';
+import type { user_best_scores_game_type } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
-
-/** Game type → Prisma learning_level mapping */
-const GAME_LEVEL: Record<string, learning_level> = {
-  flash_match: 'x',
-  vocab_quiz: 'x',
-  test_pronun: 'x',
-  word_scramble: 'level_0',
-  phrase_completion: 'level_0',
-  speed_vocab: 'level_1',
-  word_search: 'level_2',
-};
-
-/** Spaced repetition intervals (days) */
-const INTERVALS: Record<string, number> = {
-  x: 0,
-  level_0: 2,
-  level_1: 4,
-  level_2: 10,
-  v: 20,
-};
+import { GAME_LEVEL, INTERVALS } from '../common/constants/spaced-repetition.js';
 
 /** Minimum words required per game */
 const MIN_WORDS: Record<string, number> = {
