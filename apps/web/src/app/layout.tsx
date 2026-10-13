@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { AppProviders } from '@/providers/app-providers';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import './globals.css';
 
@@ -28,7 +30,11 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <AppProviders>{children}</AppProviders>
+        <AppProviders>
+          <Header />
+          <main className="content flex-1">{children}</main>
+          <Footer />
+        </AppProviders>
       </body>
     </html>
   );
