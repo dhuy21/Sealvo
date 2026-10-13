@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsEnum, IsInt } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, Min } from 'class-validator';
 
 export class TrackGameDto {
   @ApiProperty({
@@ -30,5 +30,6 @@ export class TrackGameDto {
 
   @ApiProperty({ example: 1 })
   @IsInt()
+  @Min(1)
   packageId!: number;
 }

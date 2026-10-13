@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import type { user_best_scores_game_type } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { GAME_LEVEL, INTERVALS } from '../learning/constants.js';
@@ -20,7 +20,7 @@ export class GamesService {
   async getWordsForGame(packageId: number, gameType: string) {
     const level = GAME_LEVEL[gameType];
     if (!level) {
-      return { error: 'Unknown game type' };
+      throw new BadRequestException(`Unknown game type: ${gameType}`);
     }
 
     const interval = INTERVALS[level] ?? 0;

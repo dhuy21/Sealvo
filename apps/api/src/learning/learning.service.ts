@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type { learning_level } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { GAME_LEVEL, INTERVALS, LEVEL_GAMES, NEXT_LEVEL } from './constants.js';
@@ -25,7 +25,7 @@ export class LearningService {
 
     const currentLevel = GAME_LEVEL[gameType];
     if (!currentLevel) {
-      return { success: false, message: 'Unknown game type' };
+      throw new BadRequestException(`Unknown game type: ${gameType}`);
     }
 
     if (!completed) {

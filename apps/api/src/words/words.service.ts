@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { learning_level, word_details_type } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { INTERVALS } from '../learning/constants.js';
 import type { CreateWordDto } from './dto/create-word.dto.js';
 import type { UpdateWordDto } from './dto/update-word.dto.js';
 
@@ -57,18 +58,10 @@ export class WordsService {
       select: { detail_id: true, level: true, date_memorized: true },
     });
 
-    const intervals: Record<string, number> = {
-      x: 0,
-      level_0: 2, // Prisma enum level_0 @map("0")
-      level_1: 4,
-      level_2: 10,
-      v: 20,
-    };
-
     const dueDetailIds = new Set(
       learningEntries
         .filter((entry) => {
-          const interval = intervals[entry.level] ?? 0;
+          const interval = INTERVALS[entry.level] ?? 0;
           const memorized = new Date(entry.date_memorized ?? now);
           memorized.setHours(0, 0, 0, 0);
           const dueDate = new Date(memorized);
