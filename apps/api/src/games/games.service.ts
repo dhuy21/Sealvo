@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { user_best_scores_game_type } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { GAME_LEVEL, INTERVALS } from '../common/constants/spaced-repetition.js';
+import { GAME_LEVEL, INTERVALS } from '../learning/constants.js';
 
 /** Minimum words required per game */
 const MIN_WORDS: Record<string, number> = {

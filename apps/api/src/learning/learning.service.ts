@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type { learning_level } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { GAME_LEVEL, INTERVALS, LEVEL_GAMES, NEXT_LEVEL } from '../common/constants/spaced-repetition.js';
+import { GAME_LEVEL, INTERVALS, LEVEL_GAMES, NEXT_LEVEL } from './constants.js';
 
 @Injectable()
 export class LearningService {
@@ -20,6 +20,9 @@ export class LearningService {
     completed: boolean,
     packageId: number,
   ) {
+    // Ownership check (fix #78: IDOR on trackGameCompletion)
+    await this.verifyPackageOwnership(userId, packageId);
+
     const currentLevel = GAME_LEVEL[gameType];
     if (!currentLevel) {
       return { success: false, message: 'Unknown game type' };
@@ -192,6 +195,21 @@ export class LearningService {
     });
 
     return result.count;
+  }
+
+  private async verifyPackageOwnership(userId: string, packageId: number) {
+    const pkg = await this.prisma.packages.findUnique({
+      where: { package_id: packageId },
+      select: { user_id: true },
+    });
+
+    if (!pkg) {
+      throw new NotFoundException('Package not found');
+    }
+
+    if (pkg.user_id !== userId) {
+      throw new ForbiddenException('You do not own this package');
+    }
   }
 
   private getUserProgress(userId: string): Record<string, Record<string, boolean>> {
