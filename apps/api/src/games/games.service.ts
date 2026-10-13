@@ -85,7 +85,7 @@ export class GamesService {
   async saveScore(userId: string, gameType: string, score: number) {
     const gt = gameType as user_best_scores_game_type;
 
-    // Atomic upsert — fix #62: no pre-query, determine isHighScore from result
+    // Upsert — fix #62: single upsert instead of separate insert/update
     const existing = await this.prisma.user_best_scores.findUnique({
       where: { user_id_game_type: { user_id: userId, game_type: gt } },
       select: { best_score: true },

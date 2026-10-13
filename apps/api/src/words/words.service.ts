@@ -156,10 +156,11 @@ export class WordsService {
       const current = entry.word_details;
       const currentWord = current.words;
 
-      // Check if base word changed
+      // Check if base word changed (all 3 fields form unique key: word + subject + language_code)
       const wordChanged =
         (dto.word !== undefined && dto.word !== currentWord.word) ||
-        (dto.language_code !== undefined && dto.language_code !== currentWord.language_code);
+        (dto.language_code !== undefined && dto.language_code !== currentWord.language_code) ||
+        (dto.subject !== undefined && dto.subject !== currentWord.subject);
 
       if (wordChanged) {
         const newWord = dto.word ?? currentWord.word;
