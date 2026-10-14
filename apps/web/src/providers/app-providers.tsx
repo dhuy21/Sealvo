@@ -3,13 +3,14 @@
 import type { ReactNode } from 'react';
 import { QueryProvider } from './query-provider';
 import { ThemeProvider } from './theme-provider';
+import { AuthInitializer } from './auth-initializer';
 import { Toaster } from 'react-hot-toast';
 
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <QueryProvider>
       <ThemeProvider>
-        {children}
+        <AuthInitializer>{children}</AuthInitializer>
         <Toaster
           position="top-right"
           toastOptions={{

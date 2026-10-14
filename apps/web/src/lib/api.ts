@@ -52,7 +52,7 @@ api.interceptors.response.use(
   },
 );
 
-async function refreshAccessToken(): Promise<string | null> {
+export async function refreshAccessToken(): Promise<string | null> {
   try {
     const { data } = await axios.post<{ accessToken: string }>(
       `${api.defaults.baseURL}/auth/refresh`,

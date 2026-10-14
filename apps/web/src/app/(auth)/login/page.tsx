@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import type { User } from '@/stores/auth.store';
+import { safeRedirect } from '@/lib/safe-redirect';
 import '@/styles/auth.css';
 
 const loginSchema = z.object({
@@ -20,9 +21,26 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const login = useAuthStore((s) => s.login);
+  const isReady = useAuthStore((s) => s.isReady);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (isReady && isAuthenticated) {
+      router.replace(safeRedirect(searchParams.get('redirect')));
+    }
+  }, [isReady, isAuthenticated, router, searchParams]);
 
   const {
     register,
@@ -38,7 +56,7 @@ export default function LoginPage() {
       });
       login(meRes.data, res.data.accessToken);
       toast.success('Connexion réussie !');
-      router.push('/dashboard');
+      router.push(safeRedirect(searchParams.get('redirect')));
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||

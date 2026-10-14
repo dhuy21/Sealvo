@@ -11,7 +11,7 @@ import api from '@/lib/api';
 export function Header() {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, isReady, logout } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -149,7 +149,7 @@ export function Header() {
               </button>
             )}
 
-            {isAuthenticated && user ? (
+            {isReady && isAuthenticated && user ? (
               <div className="user-profile">
                 <div className="user-avatar">
                   {user.ava ? (
@@ -167,12 +167,12 @@ export function Header() {
                   <span>Sign Out</span>
                 </button>
               </div>
-            ) : (
+            ) : isReady ? (
               <Link href="/login" className="login-btn" onClick={closeMobile}>
                 <i className="fas fa-sign-in-alt" />
                 <span>Sign In</span>
               </Link>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
