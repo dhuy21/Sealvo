@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 
 export interface User {
-  id: number;
+  id: string;
   username: string;
   email: string;
-  avatar: string | null;
+  role: string;
+  ava: number;
   is_verified: boolean;
+  streak: number;
   created_at: string;
 }
 

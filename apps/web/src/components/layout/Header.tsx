@@ -152,9 +152,9 @@ export function Header() {
             {isAuthenticated && user ? (
               <div className="user-profile">
                 <div className="user-avatar">
-                  {user.avatar ? (
+                  {user.ava ? (
                     <Image
-                      src={`/images/avatars/${user.avatar}.png`}
+                      src={`/images/avatars/${user.ava}.png`}
                       alt={`${user.username}'s avatar`}
                       width={32}
                       height={32}
