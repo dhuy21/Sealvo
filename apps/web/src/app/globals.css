@@ -9,6 +9,7 @@
 @import "../styles/vocabs.css";
 @import "../styles/learn.css";
 @import "../styles/games/flash-match.css";
+@import "../styles/games/vocab-quiz.css";
 
 @theme inline {
   --font-sans: var(--font-geist-sans);
