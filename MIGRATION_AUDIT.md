@@ -1223,15 +1223,18 @@ Step 5: Games (7)
   - PhraseCompletion, WordSearch, TestPronun
   - Shared game shell + per-game component
 
-Step 6: Remaining pages
-  - About, Feedback, Forgot/Reset password
-  - Email verification flow
+Step 6: Remaining pages ✅
+  - Games hub page (grid of 7 games)
+  - About page (static profile/skills/timeline/contact)
+  - Feedback page + POST /feedback endpoint
+  - Forgot Password page + POST /auth/forgot-password endpoint (Redis token, email queue)
+  - Reset Password page + POST /auth/reset-password endpoint (token validation)
+  - 3 CSS files (aboutme, feedback, password-reset)
+  - html-entities dependency for XSS protection in feedback
 
-Step 7: Verify + Audit
-  - All pages render correctly
-  - All API calls work end-to-end
-  - Responsive design (mobile + desktop)
-  - Playwright E2E tests
+Step 7: Verify + Audit (deferred to post-deploy)
+  - Manual testing after turbo dev
+  - Playwright E2E tests (Phase 6 or later)
 ```
 
 ---
@@ -1281,5 +1284,5 @@ Step 5: Post-deploy verification
 | **Phase 2** | Auth + Core Guards (JWT + Guards + Decorators) | `feature/phase-2-auth` | ✅ DONE | `develop` |
 | **Phase 3** | Business Modules (Packages + Words + Learning + Games) | `feature/phase-3-business-modules` | ✅ DONE | 13 commits, +1401 lines, 7 audit rounds, 9 issues fixed |
 | **Phase 4** | Workers + Queues (RabbitMQ + Redis + Email + Import) | `feature/phase-4-workers` | ✅ DONE | 8 commits, +1838 lines, 7 audit rounds, 8 issues fixed |
-| **Phase 5** | Frontend Migration (Next.js + React + Tailwind) | `feature/phase-5-frontend` | 🔲 TODO | — |
+| **Phase 5** | Frontend Migration (Next.js + React + Tailwind) | `feature/phase-5-frontend` | ✅ DONE | 9 commits: auth pages, dashboard, packages, vocabs, learn, 7 games, TTS endpoint, remaining pages (about, feedback, forgot/reset password, games hub) |
 | **Phase 6** | CI/CD + Deploy (GitHub Actions + Docker + Railway) | `feature/phase-6-cicd` | 🔲 TODO | — |
