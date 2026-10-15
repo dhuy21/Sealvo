@@ -11,6 +11,7 @@
 @import "../styles/games/flash-match.css";
 @import "../styles/games/vocab-quiz.css";
 @import "../styles/games/test-pronun.css";
+@import "../styles/games/word-scramble.css";
 
 @theme inline {
   --font-sans: var(--font-geist-sans);
