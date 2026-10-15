@@ -56,17 +56,7 @@ export function useImportFile(packageId: number) {
         const jobId = data.jobId as string;
         setJob({ id: jobId, status: 'pending' });
 
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
-        const es = new EventSource(`${baseUrl}/jobs/${jobId}/stream`, {
-          // EventSource doesn't support headers natively
-          // We'll use a workaround: pass token as query param is not ideal
-          // Instead, poll with fetch
-        } as EventSourceInit);
-
-        // EventSource doesn't support Bearer auth headers.
-        // Use polling instead for authenticated SSE.
-        cleanup();
-
+        // Poll job status (EventSource doesn't support Bearer auth headers)
         const poll = async () => {
           const interval = setInterval(async () => {
             try {
