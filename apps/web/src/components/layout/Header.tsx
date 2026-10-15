@@ -66,10 +66,10 @@ export function Header() {
       active: pathname === '/feedback',
     },
     {
-      href: '/aboutme',
+      href: '/about',
       label: 'About',
       icon: 'fas fa-user',
-      active: pathname === '/aboutme',
+      active: pathname === '/about',
     },
   ];
 
@@ -125,7 +125,7 @@ export function Header() {
                 <ul className="dropdown-menu">
                   <li>
                     <Link
-                      href="/my-packages"
+                      href="/packages"
                       className="dropdown-item"
                       onClick={() => {
                         setDropdownOpen(false);

@@ -631,7 +631,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="text-center" style={{ marginTop: '4rem' }}>
-              <SparkleBtn onClick={() => router.push('/change-password')}>
+              <SparkleBtn onClick={() => router.push('/forgot-password')}>
                 <i className="fas fa-key"></i> Changer le mot de passe
               </SparkleBtn>
             </div>
