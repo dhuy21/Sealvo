@@ -12,6 +12,7 @@ import { WordsModule } from './words/words.module.js';
 import { LearningModule } from './learning/learning.module.js';
 import { GamesModule } from './games/games.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
+import { TtsModule } from './tts/tts.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 
@@ -33,6 +34,7 @@ import { AppService } from './app.service.js';
     LearningModule,
     GamesModule,
     DashboardModule,
+    TtsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

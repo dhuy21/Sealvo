@@ -10,6 +10,7 @@
 @import "../styles/learn.css";
 @import "../styles/games/flash-match.css";
 @import "../styles/games/vocab-quiz.css";
+@import "../styles/games/test-pronun.css";
 
 @theme inline {
   --font-sans: var(--font-geist-sans);
