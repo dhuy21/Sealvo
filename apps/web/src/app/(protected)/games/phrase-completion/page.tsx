@@ -8,6 +8,9 @@ import confetti from 'canvas-confetti';
 /* ================================================================
    TYPES & HELPERS
    ================================================================ */
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 interface Phrase {
   phrase: string;
   word: string;
@@ -141,7 +144,7 @@ function PhraseCompletionInner() {
     setMeaningText('');
     setLevelMessage('');
     setLevelStatus('');
-    setDisplayPhrase(extendedPhrases[0].phrase);
+    setDisplayPhrase(escapeHtml(extendedPhrases[0].phrase));
 
     const gameTimer = 200 + 4 * totalQ;
     setTimer(gameTimer);
@@ -192,9 +195,9 @@ function PhraseCompletionInner() {
       setFeedbackType('correct');
 
       // Replace blanks with correct words in green
-      let updated = currentPhrase.phrase;
+      let updated = escapeHtml(currentPhrase.phrase);
       for (const w of currentPhrase.correctWords) {
-        updated = updated.replace('_____', `<span class="blank correct">${w}</span>`);
+        updated = updated.replace('_____', `<span class="blank correct">${escapeHtml(w)}</span>`);
       }
       setDisplayPhrase(updated);
     } else {
@@ -203,9 +206,9 @@ function PhraseCompletionInner() {
       setFeedbackMessage(`Incorrect. La bonne réponse était "${currentPhrase.correctWords.join(' ')}"`);
       setFeedbackType('incorrect');
 
-      let updated = currentPhrase.phrase;
+      let updated = escapeHtml(currentPhrase.phrase);
       for (const w of currentPhrase.correctWords) {
-        updated = updated.replace('_____', `<span class="blank incorrect">${w}</span>`);
+        updated = updated.replace('_____', `<span class="blank incorrect">${escapeHtml(w)}</span>`);
       }
       setDisplayPhrase(updated);
     }
@@ -225,7 +228,7 @@ function PhraseCompletionInner() {
     setFeedbackType('');
     setAnswered(false);
     setMeaningText('');
-    setDisplayPhrase(phrases[nextIdx]?.phrase ?? '');
+    setDisplayPhrase(escapeHtml(phrases[nextIdx]?.phrase ?? ''));
     questionStartRef.current = Date.now();
     attemptsRef.current = 0;
 
