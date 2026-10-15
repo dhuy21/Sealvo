@@ -11,6 +11,7 @@ import { PackagesModule } from './packages/packages.module.js';
 import { WordsModule } from './words/words.module.js';
 import { LearningModule } from './learning/learning.module.js';
 import { GamesModule } from './games/games.module.js';
+import { DashboardModule } from './dashboard/dashboard.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 
@@ -31,6 +32,7 @@ import { AppService } from './app.service.js';
     WordsModule,
     LearningModule,
     GamesModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
