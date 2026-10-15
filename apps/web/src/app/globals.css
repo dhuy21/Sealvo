@@ -6,6 +6,7 @@
 @import "../styles/auth.css";
 @import "../styles/dashboard.css";
 @import "../styles/packages.css";
+@import "../styles/vocabs.css";
 
 @theme inline {
   --font-sans: var(--font-geist-sans);
