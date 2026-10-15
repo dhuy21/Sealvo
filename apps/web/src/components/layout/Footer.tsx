@@ -29,7 +29,7 @@ export function Footer() {
             <h3>Liens</h3>
             <div className="footer-links">
               <a href="/">Accueil</a>
-              <a href="/aboutme">À propos</a>
+              <a href="/about">À propos</a>
               <a href="/dashboard">Vocabulaire</a>
             </div>
           </div>

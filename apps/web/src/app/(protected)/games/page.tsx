@@ -65,7 +65,7 @@ const GAMES = [
 
 function GamesHub() {
   const searchParams = useSearchParams();
-  const packageId = searchParams.get('packageId');
+  const packageId = searchParams.get('package');
 
   return (
     <div style={{ minHeight: '100vh', padding: '2rem' }}>
@@ -87,7 +87,7 @@ function GamesHub() {
           {GAMES.map((game) => (
             <Link
               key={game.slug}
-              href={`/games/${game.slug}${packageId ? `?packageId=${packageId}` : ''}`}
+              href={`/games/${game.slug}${packageId ? `?package=${packageId}` : ''}`}
               style={{ textDecoration: 'none', color: 'inherit' }}
             >
               <div
