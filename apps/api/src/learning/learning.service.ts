@@ -1,14 +1,17 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type { learning_level } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { CacheService } from '../redis/cache.service.js';
 import { GAME_LEVEL, INTERVALS, LEVEL_GAMES, NEXT_LEVEL } from './constants.js';
+
+const LEVEL_PROGRESS_TTL = 3 * 60 * 60; // 3 hours
 
 @Injectable()
 export class LearningService {
-  // In-memory level progress (Phase 4 will move to Redis)
-  private levelProgress = new Map<string, Record<string, Record<string, boolean>>>();
-
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: CacheService,
+  ) {}
 
   /**
    * Track game completion and promote level if all games done
@@ -33,12 +36,12 @@ export class LearningService {
     }
 
     // Update progress
-    const progress = this.getUserProgress(userId);
+    const progress = await this.getUserProgress(userId);
     if (!progress[currentLevel]) {
       progress[currentLevel] = {};
     }
     progress[currentLevel][gameType] = true;
-    this.setUserProgress(userId, progress);
+    await this.setUserProgress(userId, progress);
 
     // Check if all required games are done
     const requiredGames = LEVEL_GAMES[currentLevel];
@@ -56,7 +59,7 @@ export class LearningService {
 
       // Reset progress for this level
       delete progress[currentLevel];
-      this.setUserProgress(userId, progress);
+      await this.setUserProgress(userId, progress);
 
       return {
         success: true,
@@ -78,17 +81,17 @@ export class LearningService {
   /**
    * Get current level progress for a user
    */
-  getLevelProgress(userId: string) {
+  async getLevelProgress(userId: string) {
     return this.getUserProgress(userId);
   }
 
   /**
    * Reset level progress for a specific level
    */
-  resetLevelProgress(userId: string, level: string) {
-    const progress = this.getUserProgress(userId);
+  async resetLevelProgress(userId: string, level: string) {
+    const progress = await this.getUserProgress(userId);
     delete progress[level];
-    this.setUserProgress(userId, progress);
+    await this.setUserProgress(userId, progress);
     return { message: `Progress for level ${level} reset` };
   }
 
@@ -212,11 +215,12 @@ export class LearningService {
     }
   }
 
-  private getUserProgress(userId: string): Record<string, Record<string, boolean>> {
-    return this.levelProgress.get(userId) ?? {};
+  private async getUserProgress(userId: string): Promise<Record<string, Record<string, boolean>>> {
+    const cached = await this.cache.get<Record<string, Record<string, boolean>>>(`level_progress:${userId}`);
+    return cached ?? {};
   }
 
-  private setUserProgress(userId: string, progress: Record<string, Record<string, boolean>>) {
-    this.levelProgress.set(userId, progress);
+  private async setUserProgress(userId: string, progress: Record<string, Record<string, boolean>>): Promise<void> {
+    await this.cache.set(`level_progress:${userId}`, progress, LEVEL_PROGRESS_TTL);
   }
 }

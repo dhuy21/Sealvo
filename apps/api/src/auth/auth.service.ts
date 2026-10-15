@@ -1,5 +1,6 @@
-import { randomBytes } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
@@ -10,8 +11,15 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { RedisService } from '../redis/redis.service.js';
+import { EmailQueueService } from '../email/email-queue.service.js';
+import { EmailService } from '../email/email.service.js';
 import type { RegisterDto } from './dto/register.dto.js';
 import type { LoginDto } from './dto/login.dto.js';
+
+const RESET_TOKEN_PREFIX = 'reset:';
+const RESET_EMAIL_PREFIX = 'reset:email:';
+const RESET_TOKEN_TTL = 3600; // 1 hour
 
 @Injectable()
 export class AuthService {
@@ -19,6 +27,9 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private readonly redis: RedisService,
+    private readonly emailQueue: EmailQueueService,
+    private readonly emailService: EmailService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -106,6 +117,7 @@ export class AuthService {
         is_verified: true,
         streak: true,
         created_at: true,
+        last_login: true,
       },
     });
 
@@ -114,6 +126,74 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    const user = await this.prisma.users.findUnique({ where: { email } });
+    if (!user) {
+      throw new BadRequestException("Cet email n'existe pas");
+    }
+
+    const token = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const client = this.redis.getClient();
+    if (!client) {
+      throw new InternalServerErrorException('Service temporarily unavailable');
+    }
+
+    // Delete any previous token for this email
+    const oldHash = await client.get(RESET_EMAIL_PREFIX + email);
+    if (oldHash) await client.del(RESET_TOKEN_PREFIX + oldHash);
+
+    await client.set(RESET_TOKEN_PREFIX + tokenHash, JSON.stringify({ email }), { EX: RESET_TOKEN_TTL });
+    await client.set(RESET_EMAIL_PREFIX + email, tokenHash, { EX: RESET_TOKEN_TTL });
+
+    const baseUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+    const resetLink = `${baseUrl}/reset-password?token=${token}`;
+    const htmlContent = this.emailService.compileTemplate('mailResetPassword.hbs', {
+      username: user.username,
+      resetPasswordLink: resetLink,
+    });
+
+    const sent = await this.emailQueue.enqueue({
+      to: email,
+      content: htmlContent,
+      subject: 'Réinitialisation de mot de passe',
+    });
+
+    if (!sent) {
+      throw new InternalServerErrorException('Une erreur est survenue. Veuillez réessayer plus tard.');
+    }
+
+    return { message: 'Un email a été envoyé pour réinitialiser votre mot de passe' };
+  }
+
+  async resetPassword(token: string, password: string): Promise<{ message: string }> {
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const client = this.redis.getClient();
+    if (!client) {
+      throw new InternalServerErrorException('Service temporarily unavailable');
+    }
+
+    const raw = await client.get(RESET_TOKEN_PREFIX + tokenHash);
+    if (!raw) {
+      throw new BadRequestException(
+        "Le jeton de réinitialisation du mot de passe n'est pas valide ou a expiré",
+      );
+    }
+
+    const { email } = JSON.parse(raw) as { email: string };
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    await this.prisma.users.update({
+      where: { email },
+      data: { password: hashedPassword },
+    });
+
+    // Clean up tokens
+    await client.del([RESET_TOKEN_PREFIX + tokenHash, RESET_EMAIL_PREFIX + email]);
+
+    return { message: 'Votre mot de passe a été réinitialisé avec succès' };
   }
 
   private generateTokens(userId: string, username: string, role: users_role) {
