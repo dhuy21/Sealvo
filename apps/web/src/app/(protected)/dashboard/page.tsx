@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth.store';
 import { useDashboard, useUpdateProfile } from '@/hooks/use-dashboard';
@@ -663,14 +664,14 @@ export default function DashboardPage() {
                   ></i>
                   Créez vos propres packages de mots.
                 </p>
-                <a href="/packages" className="dashboard-btn dashboard-btn-primary sparkle-btn">
+                <Link href="/packages" className="dashboard-btn dashboard-btn-primary sparkle-btn">
                   <i className="fas fa-bookmark"></i> Mes Packages
                   {[1, 2, 3, 4, 5, 6].map((n) => (
                     <div key={n} className={`star-${n}`}>
                       <StarSVG />
                     </div>
                   ))}
-                </a>
+                </Link>
               </div>
             </div>
           </div>
@@ -690,25 +691,25 @@ export default function DashboardPage() {
 
         {/* Footer */}
         <div className="dashboard-footer fade-in">
-          <a href="/" className="dashboard-btn dashboard-btn-primary sparkle-btn">
+          <Link href="/" className="dashboard-btn dashboard-btn-primary sparkle-btn">
             <i className="fas fa-home"></i> Retour à l&apos;accueil
             {[1, 2, 3, 4, 5, 6].map((n) => (
               <div key={n} className={`star-${n}`}>
                 <StarSVG />
               </div>
             ))}
-          </a>
+          </Link>
           <span style={{ display: 'inline-block', margin: '0 10px', color: 'var(--text-secondary)' }}>
             <i className="fas fa-heart" style={{ color: '#EF4444' }}></i>
           </span>
-          <a href="/feedback" className="dashboard-btn dashboard-btn-primary sparkle-btn">
+          <Link href="/feedback" className="dashboard-btn dashboard-btn-primary sparkle-btn">
             <i className="fas fa-comment-dots"></i> Feedback
             {[1, 2, 3, 4, 5, 6].map((n) => (
               <div key={n} className={`star-${n}`}>
                 <StarSVG />
               </div>
             ))}
-          </a>
+          </Link>
         </div>
       </div>
 

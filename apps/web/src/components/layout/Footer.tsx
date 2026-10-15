@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 export function Footer() {
@@ -28,9 +29,9 @@ export function Footer() {
           <div className="footer-col">
             <h3>Liens</h3>
             <div className="footer-links">
-              <a href="/">Accueil</a>
-              <a href="/about">À propos</a>
-              <a href="/dashboard">Vocabulaire</a>
+              <Link href="/">Accueil</Link>
+              <Link href="/about">À propos</Link>
+              <Link href="/dashboard">Vocabulaire</Link>
             </div>
           </div>
 
