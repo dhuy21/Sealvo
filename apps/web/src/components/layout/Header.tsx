@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import { useAuthStore } from '@/stores/auth.store';
@@ -10,6 +10,7 @@ import api from '@/lib/api';
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const { theme, setTheme } = useTheme();
   const { user, isAuthenticated, isReady, logout } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -46,6 +47,7 @@ export function Header() {
       /* ignore */
     }
     logout();
+    router.push('/');
   };
 
   const closeMobile = () => setMobileOpen(false);

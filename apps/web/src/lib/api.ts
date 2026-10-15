@@ -23,11 +23,12 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Only attempt refresh once per request, and not on auth endpoints
+    // Skip refresh on login/register/refresh itself (avoid loops).
+    // /auth/logout and /auth/me still refresh so an expired access token can clear the cookie.
     if (
       error.response?.status !== 401 ||
       originalRequest._retry ||
-      originalRequest.url?.startsWith('/auth/')
+      isAuthRefreshSkip(originalRequest.url)
     ) {
       return Promise.reject(error);
     }
@@ -51,6 +52,11 @@ api.interceptors.response.use(
     return api(originalRequest);
   },
 );
+
+function isAuthRefreshSkip(url?: string): boolean {
+  if (!url) return false;
+  return /\/auth\/(login|register|refresh)(\?|$)/.test(url);
+}
 
 export async function refreshAccessToken(): Promise<string | null> {
   try {
