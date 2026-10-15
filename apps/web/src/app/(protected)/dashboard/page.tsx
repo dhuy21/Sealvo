@@ -367,8 +367,9 @@ function useWaveEffect() {
 }
 
 /* ─── 3D Tilt Cards ─── */
-function useCardTilt() {
+function useCardTilt(ready: boolean) {
   useEffect(() => {
+    if (!ready) return;
     const cards = document.querySelectorAll<HTMLElement>('.action-card');
 
     const handlers = new Map<HTMLElement, { move: (e: MouseEvent) => void; leave: () => void }>();
@@ -402,7 +403,7 @@ function useCardTilt() {
         card.removeEventListener('mouseleave', leave);
       });
     };
-  }, []);
+  }, [ready]);
 }
 
 /* ─── Sparkle Button SVG ─── */
@@ -445,7 +446,7 @@ export default function DashboardPage() {
   // Decorative effects
   useMouseTracker();
   useWaveEffect();
-  useCardTilt();
+  useCardTilt(!!data);
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '—';
