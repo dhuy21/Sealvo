@@ -13,6 +13,7 @@
 @import "../styles/games/test-pronun.css";
 @import "../styles/games/word-scramble.css";
 @import "../styles/games/phrase-completion.css";
+@import "../styles/games/speed-vocab.css";
 
 @theme inline {
   --font-sans: var(--font-geist-sans);
