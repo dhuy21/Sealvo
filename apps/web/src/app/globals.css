@@ -12,6 +12,7 @@
 @import "../styles/games/vocab-quiz.css";
 @import "../styles/games/test-pronun.css";
 @import "../styles/games/word-scramble.css";
+@import "../styles/games/phrase-completion.css";
 
 @theme inline {
   --font-sans: var(--font-geist-sans);
