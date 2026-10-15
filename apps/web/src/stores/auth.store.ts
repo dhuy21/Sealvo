@@ -9,6 +9,7 @@ export interface User {
   is_verified: boolean;
   streak: number;
   created_at: string;
+  last_login: string | null;
 }
 
 interface AuthState {

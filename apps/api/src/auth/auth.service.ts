@@ -106,6 +106,7 @@ export class AuthService {
         is_verified: true,
         streak: true,
         created_at: true,
+        last_login: true,
       },
     });
 
