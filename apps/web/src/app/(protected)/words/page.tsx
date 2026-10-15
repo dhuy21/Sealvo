@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, useMemo, useCallback } from 'react';
 import {
@@ -10,6 +10,7 @@ import {
   useDeleteWord,
   useDeleteAllWords,
 } from '@/hooks/use-words';
+import { useImportFile } from '@/hooks/use-import';
 import type { Word, CreateWordPayload, UpdateWordPayload } from '@/hooks/use-words';
 import toast from 'react-hot-toast';
 
@@ -464,6 +465,8 @@ function WordsContent() {
   const updateWord = useUpdateWord(packageId);
   const deleteWord = useDeleteWord(packageId);
   const deleteAll = useDeleteAllWords(packageId);
+  const importFile = useImportFile(packageId);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [search, setSearch] = useState('');
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -574,12 +577,106 @@ function WordsContent() {
         >
           <i className="fas fa-book-open"></i> Mode d&apos;apprentissage
         </button>
+        <button
+          className="add-word-btn"
+          style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+          onClick={() => fileInputRef.current?.click()}
+          disabled={importFile.uploading}
+        >
+          {importFile.uploading ? (
+            <i className="fas fa-spinner fa-spin"></i>
+          ) : (
+            <i className="fas fa-file-import"></i>
+          )}{' '}
+          Importer (Excel)
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".xlsx,.xls"
+          style={{ display: 'none' }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              importFile.upload(file);
+              e.target.value = '';
+            }
+          }}
+        />
         {hasWords && (
           <button className="btn-danger" onClick={() => setDeleteAllOpen(true)}>
             <i className="fas fa-trash"></i> Supprimer tous les mots
           </button>
         )}
       </div>
+
+      {/* Import Progress */}
+      {importFile.job && (
+        <div
+          className="alert"
+          style={{
+            marginTop: '1rem',
+            padding: '1rem',
+            borderRadius: '8px',
+            background:
+              importFile.job.status === 'completed'
+                ? '#d1fae5'
+                : importFile.job.status === 'failed'
+                  ? '#fee2e2'
+                  : '#dbeafe',
+          }}
+        >
+          {importFile.job.status === 'pending' && (
+            <p>
+              <i className="fas fa-clock"></i> Import en attente...
+            </p>
+          )}
+          {importFile.job.status === 'processing' && (
+            <p>
+              <i className="fas fa-spinner fa-spin"></i> Import en cours...
+              {importFile.job.progress !== undefined &&
+                importFile.job.total !== undefined &&
+                ` (${importFile.job.progress}/${importFile.job.total})`}
+            </p>
+          )}
+          {importFile.job.status === 'completed' && (
+            <p>
+              <i className="fas fa-check-circle" style={{ color: '#059669' }}></i>{' '}
+              {importFile.job.message ?? 'Import terminé avec succès'}
+              <button
+                style={{
+                  marginLeft: '1rem',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#6b7280',
+                }}
+                onClick={importFile.reset}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </p>
+          )}
+          {importFile.job.status === 'failed' && (
+            <p>
+              <i className="fas fa-exclamation-circle" style={{ color: '#dc2626' }}></i>{' '}
+              {importFile.job.error ?? "Erreur lors de l'import"}
+              <button
+                style={{
+                  marginLeft: '1rem',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#6b7280',
+                }}
+                onClick={importFile.reset}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Search */}
       <div className="search-container">
