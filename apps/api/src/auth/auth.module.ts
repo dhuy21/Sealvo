@@ -6,10 +6,14 @@ import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy.js';
+import { RedisModule } from '../redis/redis.module.js';
+import { EmailModule } from '../email/email.module.js';
 
 @Module({
   imports: [
     PassportModule,
+    RedisModule,
+    EmailModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({

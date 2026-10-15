@@ -15,6 +15,9 @@
 @import "../styles/games/phrase-completion.css";
 @import "../styles/games/speed-vocab.css";
 @import "../styles/games/word-search.css";
+@import "../styles/aboutme.css";
+@import "../styles/feedback.css";
+@import "../styles/password-reset.css";
 
 @theme inline {
   --font-sans: var(--font-geist-sans);
