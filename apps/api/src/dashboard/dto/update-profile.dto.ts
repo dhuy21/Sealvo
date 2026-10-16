@@ -14,6 +14,11 @@ export class UpdateProfileDto {
   @IsEmail()
   email?: string;
 
+  @ApiPropertyOptional({ description: 'Required when `email` differs from the current email' })
+  @IsOptional()
+  @IsString()
+  current_password?: string;
+
   @ApiPropertyOptional({ minimum: 1, maximum: 11 })
   @IsOptional()
   @IsInt()

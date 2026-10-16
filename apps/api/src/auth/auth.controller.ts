@@ -40,10 +40,14 @@ export class AuthController {
     private readonly config: ConfigService,
   ) {}
 
+  private get secureCookies(): boolean {
+    return ['production', 'staging'].includes(this.config.get<string>('NODE_ENV') ?? '');
+  }
+
   private get cookieOptions(): CookieOptions {
     return {
       httpOnly: true,
-      secure: this.config.get<string>('NODE_ENV') === 'production',
+      secure: this.secureCookies,
       sameSite: 'strict',
       path: '/auth',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
@@ -105,8 +109,10 @@ export class AuthController {
   @Throttle({ default: { ttl: 60 * 60_000, limit: 3 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Send password reset email' })
-  @ApiResponse({ status: 200, description: 'Reset email sent' })
-  @ApiResponse({ status: 400, description: 'Email not found' })
+  @ApiResponse({
+    status: 200,
+    description: 'Generic message; the email is only sent if the account exists',
+  })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto.email);
   }
@@ -126,6 +132,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Verify email address with the token sent at registration' })
   @ApiResponse({ status: 200, description: 'Email verified' })
   @ApiResponse({ status: 400, description: 'Invalid, expired or already used token' })
+  @ApiResponse({ status: 409, description: 'Email change: the new address was taken meanwhile' })
   async verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.authService.verifyEmail(dto.token);
   }
@@ -138,7 +145,7 @@ export class AuthController {
     const state = randomBytes(16).toString('hex');
     res.cookie(GOOGLE_STATE_COOKIE, state, {
       httpOnly: true,
-      secure: this.config.get<string>('NODE_ENV') === 'production',
+      secure: this.secureCookies,
       // Strict cookies are not sent on Google's cross-site redirect back to the callback
       sameSite: 'lax',
       path: GOOGLE_STATE_PATH,

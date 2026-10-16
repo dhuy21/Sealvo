@@ -140,11 +140,18 @@ export default function DashboardPage() {
   };
 
   const handleFieldSave = useCallback(
-    (fieldName: string, newValue: string) => {
+    (fieldName: string, newValue: string, currentPassword?: string) => {
       updateProfile.mutate(
-        { [fieldName]: newValue },
+        { [fieldName]: newValue, current_password: currentPassword },
         {
-          onSuccess: () => {
+          onSuccess: ({ pendingEmail }) => {
+            if (pendingEmail) {
+              toast.success(
+                `Un email de confirmation a été envoyé à ${pendingEmail}. Cliquez sur le lien qu'il contient pour valider votre nouvelle adresse.`,
+                { duration: 8000 },
+              );
+              return;
+            }
             toast.success('Informations modifiées avec succès');
             if (user) {
               setUser({ ...user, [fieldName]: newValue });
@@ -289,6 +296,7 @@ export default function DashboardPage() {
                 iconColor="#b720ad"
                 value={user?.email ?? ''}
                 fieldName="email"
+                requirePassword
                 onSave={handleFieldSave}
               />
               <div className="info-row">

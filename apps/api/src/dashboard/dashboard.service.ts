@@ -1,5 +1,6 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AuthService } from '../auth/auth.service.js';
 import { CacheService } from '../redis/cache.service.js';
 import { CACHE_KEYS, CACHE_TTL } from '../redis/cache-keys.constant.js';
 import { dueWhereConditions } from '../learning/spaced-repetition.js';
@@ -25,6 +26,7 @@ export class DashboardService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cache: CacheService,
+    private readonly auth: AuthService,
   ) {}
 
   async getStats(userId: string): Promise<DashboardStats> {
@@ -56,30 +58,37 @@ export class DashboardService {
     return stats;
   }
 
-  async updateProfile(userId: string, dto: UpdateProfileDto) {
-    // Check uniqueness if username or email changed
+  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<{ pendingEmail?: string }> {
+    // Check uniqueness if username changed (email uniqueness: AuthService.requestEmailChange)
     if (dto.username) {
       const existing = await this.prisma.users.findUnique({ where: { username: dto.username } });
       if (existing && existing.id !== userId) {
         throw new ConflictException("Ce nom d'utilisateur est déjà pris");
       }
     }
+
+    let pendingEmail: string | undefined;
     if (dto.email) {
-      const existing = await this.prisma.users.findUnique({ where: { email: dto.email } });
-      if (existing && existing.id !== userId) {
-        throw new ConflictException('Cet email est déjà utilisé');
+      const user = await this.prisma.users.findUnique({
+        where: { id: userId },
+        select: { email: true },
+      });
+      if (dto.email !== user?.email) {
+        await this.auth.requestEmailChange(userId, dto.email, dto.current_password);
+        pendingEmail = dto.email;
       }
     }
 
     const data: Record<string, unknown> = {};
     if (dto.username) data.username = dto.username;
-    if (dto.email) data.email = dto.email;
     if (dto.ava) data.ava = dto.ava;
 
-    if (Object.keys(data).length === 0) return;
+    if (Object.keys(data).length > 0) {
+      await this.prisma.users.update({ where: { id: userId }, data });
+      await this.cache.del(CACHE_KEYS.dashboard(userId));
+    }
 
-    await this.prisma.users.update({ where: { id: userId }, data });
-    await this.cache.del(CACHE_KEYS.dashboard(userId));
+    return { pendingEmail };
   }
 
   private async countTotalWords(userId: string): Promise<number> {

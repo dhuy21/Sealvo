@@ -1,4 +1,5 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import type { packages_mode } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
 @Injectable()
@@ -20,24 +21,27 @@ export class PackageOwnershipGuard implements CanActivate {
       throw new ForbiddenException('Missing user or package identifier');
     }
 
-    // Admin can access any package
-    if (userRole === 'Admin') {
-      return true;
-    }
-
     const pkg = await this.prisma.packages.findUnique({
       where: { package_id: packageId },
-      select: { user_id: true },
+      select: { user_id: true, mode: true },
     });
 
     if (!pkg) {
       throw new NotFoundException('Package not found');
     }
 
-    if (pkg.user_id !== userId) {
-      throw new ForbiddenException('You do not own this package');
+    // Read by InvalidateDashboardInterceptor: the stale dashboard is the owner's, not an admin's
+    request.packageOwnerId = pkg.user_id;
+
+    // Admin can access any package
+    if (userRole === 'Admin' || pkg.user_id === userId || this.allowsNonOwner(pkg.mode)) {
+      return true;
     }
 
-    return true;
+    throw new ForbiddenException('You do not own this package');
+  }
+
+  protected allowsNonOwner(_mode: packages_mode): boolean {
+    return false;
   }
 }

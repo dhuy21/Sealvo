@@ -33,7 +33,15 @@ export function useDashboard() {
 interface UpdateProfilePayload {
   username?: string;
   email?: string;
+  current_password?: string;
   ava?: number;
+}
+
+interface UpdateProfileResponse {
+  success: boolean;
+  message: string;
+  /** Set when an email change awaits confirmation from the new inbox */
+  pendingEmail?: string;
 }
 
 export function useUpdateProfile() {
@@ -41,7 +49,7 @@ export function useUpdateProfile() {
 
   return useMutation({
     mutationFn: async (payload: UpdateProfilePayload) => {
-      const { data } = await api.patch('/dashboard/profile', payload);
+      const { data } = await api.patch<UpdateProfileResponse>('/dashboard/profile', payload);
       return data;
     },
     onSuccess: () => {

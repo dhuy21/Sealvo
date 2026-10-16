@@ -8,6 +8,7 @@ export function EditableField({
   iconColor,
   value,
   fieldName,
+  requirePassword = false,
   onSave,
 }: {
   label: string;
@@ -15,11 +16,14 @@ export function EditableField({
   iconColor: string;
   value: string;
   fieldName: 'username' | 'email';
-  onSave: (fieldName: string, newValue: string) => void;
+  requirePassword?: boolean;
+  onSave: (fieldName: string, newValue: string, currentPassword?: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [inputValue, setInputValue] = useState(value);
+  const [password, setPassword] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -31,13 +35,19 @@ export function EditableField({
   const handleSave = () => {
     const trimmed = inputValue.trim();
     if (trimmed && trimmed !== value) {
-      onSave(fieldName, trimmed);
+      if (requirePassword && !password) {
+        passwordRef.current?.focus();
+        return;
+      }
+      onSave(fieldName, trimmed, requirePassword ? password : undefined);
     }
+    setPassword('');
     setEditing(false);
   };
 
   const handleCancel = () => {
     setInputValue(value);
+    setPassword('');
     setEditing(false);
   };
 
@@ -55,14 +65,28 @@ export function EditableField({
       <div className="info-value">
         {editing ? (
           <>
-            <input
-              ref={inputRef}
-              type="text"
-              className="edit-input"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
+              <input
+                ref={inputRef}
+                type="text"
+                className="edit-input"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+              />
+              {requirePassword && (
+                <input
+                  ref={passwordRef}
+                  type="password"
+                  className="edit-input"
+                  placeholder="Mot de passe actuel"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                />
+              )}
+            </div>
             <button className="save-btn" title="Valider" onClick={handleSave}>
               <i className="fas fa-check"></i>
             </button>
@@ -73,7 +97,14 @@ export function EditableField({
         ) : (
           <>
             <div className={`${fieldName}-display`}>{value}</div>
-            <button className="edit-btn" title="Modifier" onClick={() => setEditing(true)}>
+            <button
+              className="edit-btn"
+              title="Modifier"
+              onClick={() => {
+                setInputValue(value);
+                setEditing(true);
+              }}
+            >
               <i className="fas fa-edit"></i>
             </button>
           </>
