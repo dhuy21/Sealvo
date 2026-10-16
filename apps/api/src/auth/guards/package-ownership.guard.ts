@@ -9,11 +9,14 @@ export class PackageOwnershipGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const userId: string = request.user?.id;
     const userRole: string = request.user?.role;
-    const packageId = Number(
-      request.params.packageId ?? request.query.packageId ?? request.body?.packageId,
-    );
+    // Handlers read the id from different places (params, query or body): every id sent must be
+    // the same, otherwise a request could pass the check with one id and act on another
+    const ids = [request.params?.packageId, request.query?.packageId, request.body?.packageId]
+      .filter((id) => id !== undefined)
+      .map(Number);
+    const packageId = ids[0];
 
-    if (!userId || isNaN(packageId)) {
+    if (!userId || ids.length === 0 || ids.some((id) => isNaN(id) || id !== packageId)) {
       throw new ForbiddenException('Missing user or package identifier');
     }
 

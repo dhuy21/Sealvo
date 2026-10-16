@@ -132,6 +132,8 @@ export class EmailQueueService {
           this.logger.warn(
             `Send failed (retry ${retries + 1}/${MAX_RETRIES}): ${err instanceof Error ? err.message : err}`,
           );
+          // The retry comes back with the same messageId: release it or dedup would drop the retry
+          if (dedupId) await this.cache.del(CACHE_KEYS.emailDedup(dedupId));
           ch.nack(msg, false, false);
         }
       }

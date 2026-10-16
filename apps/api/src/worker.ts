@@ -34,6 +34,12 @@ async function bootstrap() {
   await emailQueue.startConsumer();
   await importQueue.startConsumer();
 
+  // Exit so the platform restarts the worker: a fresh process re-subscribes the consumers
+  rabbitmq.onConnectionLost(() => {
+    console.error('[worker] RabbitMQ connection lost — exiting to restart the consumers.');
+    process.exit(1);
+  });
+
   console.log('[worker] Ready — consuming email + import queues.');
 
   const shutdown = async (signal: string) => {

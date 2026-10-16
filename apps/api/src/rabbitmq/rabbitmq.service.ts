@@ -13,9 +13,16 @@ export class RabbitmqService implements OnModuleInit, OnModuleDestroy {
   private connection: amqp.ChannelModel | null = null;
   private channel: amqp.ConfirmChannel | null = null;
   private ready = false;
+  private closing = false;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly connectionLostHandlers: (() => void)[] = [];
 
   constructor(private readonly config: ConfigService) {}
+
+  /** Consumers live on the lost connection's channels: reconnecting does not bring them back. */
+  onConnectionLost(handler: () => void): void {
+    this.connectionLostHandlers.push(handler);
+  }
 
   async onModuleInit() {
     await this.connect();
@@ -59,6 +66,8 @@ export class RabbitmqService implements OnModuleInit, OnModuleDestroy {
         this.ready = false;
         this.connection = null;
         this.channel = null;
+        if (this.closing) return;
+        this.connectionLostHandlers.forEach((handler) => handler());
         this.scheduleReconnect();
       });
 
@@ -119,6 +128,7 @@ export class RabbitmqService implements OnModuleInit, OnModuleDestroy {
   }
 
   async disconnect(): Promise<void> {
+    this.closing = true;
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
