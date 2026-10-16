@@ -1,0 +1,49 @@
+# On-demand E2E smoke test against production or staging.
+# Triggered manually or after deploy via workflow_call.
+name: E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+  workflow_call:
+    inputs:
+      target:
+        required: true
+        type: string
+
+jobs:
+  e2e:
+    name: E2E (${{ inputs.target }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+      - name: Run E2E
+        run: npx turbo test:e2e --filter=@sealvo/web
+        env:
+          BASE_URL: ${{ inputs.target == 'production' && vars.PRODUCTION_URL || vars.STAGING_URL }}
+      - name: Upload report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ inputs.target }}
+          path: apps/web/playwright-report/
+          retention-days: 7
+      - name: Summary
+        if: always()
+        run: |
+          echo "### E2E ${{ inputs.target }} — ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
