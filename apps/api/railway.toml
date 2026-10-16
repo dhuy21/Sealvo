@@ -3,7 +3,6 @@ dockerfilePath = "apps/api/Dockerfile"
 watchPatterns = ["apps/api/**", "packages/shared/**"]
 
 [deploy]
-startCommand = "npx prisma migrate deploy --schema=./prisma/schema.prisma && exec node dist/main.js"
 healthcheckPath = "/health"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"

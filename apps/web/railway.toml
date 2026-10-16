@@ -3,7 +3,6 @@ dockerfilePath = "apps/web/Dockerfile"
 watchPatterns = ["apps/web/**", "packages/shared/**"]
 
 [deploy]
-startCommand = "node apps/web/server.js"
 healthcheckPath = "/"
 healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"

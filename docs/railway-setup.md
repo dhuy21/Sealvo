@@ -19,7 +19,7 @@ Railway Project
 
 - **Source:** Root of repo
 - **Dockerfile:** `apps/api/Dockerfile`
-- **Start Command:** _(use Dockerfile CMD — runs prisma migrate then main.js)_
+- **Start Command:** _(use Dockerfile CMD — do not override)_
 - **Port:** 3000
 - **Health Check:** `/health`
 - **Watch Paths:** `apps/api/**`, `packages/shared/**`
@@ -91,6 +91,7 @@ All 4 services need these variables (shared via Railway shared variables or per-
 |---|---|
 | `API_URL` | Production API URL (e.g. `https://api.sealvo.it.com`) |
 | `STAGING_URL` | Staging URL |
+| `NEXT_PUBLIC_API_URL` | API URL baked into Next.js build (e.g. `https://api.sealvo.it.com`) |
 
 ## Deploy Order
 
