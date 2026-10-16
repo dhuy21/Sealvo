@@ -1246,31 +1246,40 @@ Step 7: Verify + Audit (deferred to post-deploy)
 ### Steps
 
 ```
-Step 1: GitHub Actions CI
+Step 1: Merge Phase 5 → develop ✅
+  - git merge feature/phase-5-frontend --no-ff
+  - 99 files, +44,764 lines, no conflicts
+
+Step 2: GitHub Actions CI ✅
+  - .github/workflows/ci-cd.yml (rewritten for Turborepo monorepo)
   - turbo lint + turbo test on PR
-  - npm audit
-  - Docker build matrix (api + web)
-  - Trivy vulnerability scan
+  - npm audit, Node 22
+  - Docker build matrix (api + web), Trivy scan
+  - Deploy: staging (auto) + production (auto)
+  - turbo.json: added "test" task
 
-Step 2: Docker production
-  - Dockerfile for api (multi-stage, shared image for api/worker/scheduler)
-  - Dockerfile for web (Next.js standalone)
-  - docker-compose.prod.yml
+Step 3: Dockerfiles production ✅
+  - apps/api/Dockerfile — 4-stage multi-stage (deps → build → prod-deps → runner)
+    Same image for api/worker/scheduler (different CMD)
+    API runs prisma migrate deploy on startup
+  - apps/web/Dockerfile — 3-stage (deps → build → runner)
+    Next.js standalone output
+  - docker-compose.prod.yml — 7 services (api, web, worker, scheduler, db, redis, rabbitmq)
+  - .dockerignore
+  - next.config.ts: added output: "standalone"
 
-Step 3: Railway deploy
-  - API + Worker + Scheduler + Web services
-  - Health check verification
-  - Rolling deploy strategy
+Step 4: Railway deploy configuration ✅
+  - apps/api/railway.toml + apps/web/railway.toml
+  - docs/railway-setup.md — complete setup guide (4 services, env vars, GitHub secrets)
 
-Step 4: Release flow
-  - develop → release/* → staging → test → main
-  - Semantic versioning
-  - Changelog generation
+Step 5: Semantic versioning + Changelog ✅
+  - @changesets/cli + @changesets/changelog-github
+  - .changeset/config.json (baseBranch: main, GitHub changelog)
+  - Scripts: changeset, version-packages, release
 
-Step 5: Post-deploy verification
-  - Production health check
-  - E2E tests against production
-  - Delete src/ (old code) ONLY after everything verified
+Step 6: Post-deploy verification ✅
+  - .github/workflows/e2e.yml (manual + workflow_call, production/staging)
+  - Delete src/ (old code) ONLY after production verified
 ```
 
 ---
@@ -1285,4 +1294,4 @@ Step 5: Post-deploy verification
 | **Phase 3** | Business Modules (Packages + Words + Learning + Games) | `feature/phase-3-business-modules` | ✅ DONE | 13 commits, +1401 lines, 7 audit rounds, 9 issues fixed |
 | **Phase 4** | Workers + Queues (RabbitMQ + Redis + Email + Import) | `feature/phase-4-workers` | ✅ DONE | 8 commits, +1838 lines, 7 audit rounds, 8 issues fixed |
 | **Phase 5** | Frontend Migration (Next.js + React + Tailwind) | `feature/phase-5-frontend` | ✅ DONE | 9 commits: auth pages, dashboard, packages, vocabs, learn, 7 games, TTS endpoint, remaining pages (about, feedback, forgot/reset password, games hub) |
-| **Phase 6** | CI/CD + Deploy (GitHub Actions + Docker + Railway) | `feature/phase-6-cicd` | 🔲 TODO | — |
+| **Phase 6** | CI/CD + Deploy (GitHub Actions + Docker + Railway) | `feature/phase-6-cicd` | ✅ DONE | 5 commits: CI/CD workflow, Dockerfiles, Railway config, Changesets, E2E workflow |

@@ -1,0 +1,133 @@
+# Production Docker Compose — 7 services
+# Usage: docker compose -f docker-compose.prod.yml up -d
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: sealvo-api
+    container_name: sealvo_api
+    ports:
+      - '${API_PORT:-3001}:3000'
+    env_file: .env
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'node -e "import(\"http\").then(h=>h.default.get(\"http://127.0.0.1:3000/health\",r=>process.exit(r.statusCode===200?0:1)).on(\"error\",()=>process.exit(1)))"']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    container_name: sealvo_web
+    ports:
+      - '${WEB_PORT:-3000}:3000'
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+
+  worker:
+    image: sealvo-api
+    container_name: sealvo_worker
+    command: ['node', 'dist/worker.js']
+    env_file: .env
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'pgrep -f "node dist/worker.js" || exit 1']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  scheduler:
+    image: sealvo-api
+    container_name: sealvo_scheduler
+    command: ['node', 'dist/scheduler.js']
+    env_file: .env
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'pgrep -f "node dist/scheduler.js" || exit 1']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  db:
+    image: mysql:8.0
+    container_name: sealvo_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    ports:
+      - '${MYSQL_PORT:-3306}:3306'
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -P 3306 -uroot -p${MYSQL_ROOT_PASSWORD}']
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 45s
+
+  redis:
+    image: redis:7-alpine
+    container_name: sealvo_redis
+    restart: unless-stopped
+    command: redis-server --maxmemory-policy volatile-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: sealvo_rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+    ports:
+      - '15672:15672'
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'check_port_connectivity']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  db_data:
+  redis_data:
+  rabbitmq_data:
