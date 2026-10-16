@@ -2,7 +2,7 @@ import { ConflictException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CacheService } from '../redis/cache.service.js';
 import { CACHE_KEYS, CACHE_TTL } from '../redis/cache-keys.constant.js';
-import { INTERVALS } from '../learning/constants.js';
+import { dueWhereConditions } from '../learning/spaced-repetition.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 
 export interface PackageToReview {
@@ -98,23 +98,11 @@ export class DashboardService {
   }
 
   private async getPackagesToReview(userId: string): Promise<PackageToReview[]> {
-    const now = new Date();
-
-    // Build OR conditions for each level's interval
-    const conditions = Object.entries(INTERVALS).map(([level, days]) => {
-      const cutoff = new Date(now);
-      cutoff.setDate(cutoff.getDate() - days);
-      return {
-        level: level as any,
-        date_memorized: { lte: cutoff },
-      };
-    });
-
     const results = await this.prisma.learning.groupBy({
       by: ['package_id'],
       where: {
         packages: { user_id: userId, is_active: true },
-        OR: conditions,
+        OR: dueWhereConditions(),
       },
       _count: { package_id: true },
     });

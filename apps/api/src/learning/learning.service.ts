@@ -1,8 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import type { learning_level } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CacheService } from '../redis/cache.service.js';
-import { GAME_LEVEL, INTERVALS, LEVEL_GAMES, NEXT_LEVEL } from './constants.js';
+import { GAME_LEVEL, LEVEL_GAMES, NEXT_LEVEL } from './constants.js';
+import { isDue, startOfToday } from './spaced-repetition.js';
 
 const LEVEL_PROGRESS_TTL = 3 * 60 * 60; // 3 hours
 
@@ -23,9 +24,6 @@ export class LearningService {
     completed: boolean,
     packageId: number,
   ) {
-    // Ownership check (fix #78: IDOR on trackGameCompletion)
-    await this.verifyPackageOwnership(userId, packageId);
-
     const currentLevel = GAME_LEVEL[gameType];
     if (!currentLevel) {
       throw new BadRequestException(`Unknown game type: ${gameType}`);
@@ -155,22 +153,13 @@ export class LearningService {
    * Find words due for review at a specific level
    */
   private async findWordsDueByLevel(packageId: number, level: learning_level) {
-    const interval = INTERVALS[level] ?? 0;
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-
     const entries = await this.prisma.learning.findMany({
       where: { package_id: packageId, level },
       select: { detail_id: true, date_memorized: true },
     });
 
-    return entries.filter((e) => {
-      const memorized = new Date(e.date_memorized ?? now);
-      memorized.setHours(0, 0, 0, 0);
-      const dueDate = new Date(memorized);
-      dueDate.setDate(dueDate.getDate() + interval);
-      return dueDate <= now;
-    });
+    const today = startOfToday();
+    return entries.filter((e) => isDue(level, e.date_memorized, today));
   }
 
   /**
@@ -198,21 +187,6 @@ export class LearningService {
     });
 
     return result.count;
-  }
-
-  private async verifyPackageOwnership(userId: string, packageId: number) {
-    const pkg = await this.prisma.packages.findUnique({
-      where: { package_id: packageId },
-      select: { user_id: true },
-    });
-
-    if (!pkg) {
-      throw new NotFoundException('Package not found');
-    }
-
-    if (pkg.user_id !== userId) {
-      throw new ForbiddenException('You do not own this package');
-    }
   }
 
   private async getUserProgress(userId: string): Promise<Record<string, Record<string, boolean>>> {

@@ -27,7 +27,7 @@ import { AppService } from './app.service.js';
       envFilePath: '../../.env',
     }),
     ThrottlerModule.forRoot({
-      throttlers: [{ ttl: 60_000, limit: 60 }],
+      throttlers: [{ ttl: 60_000, limit: 100 }],
     }),
     PrismaModule,
     RabbitmqModule,

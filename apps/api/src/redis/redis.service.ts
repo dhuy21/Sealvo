@@ -79,7 +79,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         `Connection failed: ${err instanceof Error ? err.message : err}`,
       );
       try {
-        instance.disconnect();
+        await instance.disconnect();
       } catch {
         /* ignore */
       }
@@ -101,11 +101,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         if (this.ready) {
           await this.client.quit();
         } else {
-          this.client.disconnect();
+          await this.client.disconnect();
         }
       } catch {
         try {
-          this.client.disconnect();
+          await this.client.disconnect();
         } catch {
           /* ignore */
         }

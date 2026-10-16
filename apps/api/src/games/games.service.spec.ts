@@ -7,13 +7,15 @@ describe('GamesService', () => {
   let service: GamesService;
   let prisma: {
     learning: { findMany: any };
-    user_best_scores: { findUnique: any; upsert: any; findMany: any };
+    user_best_scores: { createMany: any; update: any; updateMany: any; findMany: any };
+    $transaction: any;
   };
 
   beforeEach(async () => {
     prisma = {
       learning: { findMany: vi.fn() },
-      user_best_scores: { findUnique: vi.fn(), upsert: vi.fn(), findMany: vi.fn() },
+      user_best_scores: { createMany: vi.fn(), update: vi.fn(), updateMany: vi.fn(), findMany: vi.fn() },
+      $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     };
 
     const module = await Test.createTestingModule({
@@ -65,24 +67,30 @@ describe('GamesService', () => {
 
   describe('saveScore', () => {
     it('should report high score when no previous score', async () => {
-      prisma.user_best_scores.findUnique.mockResolvedValue(null);
-      prisma.user_best_scores.upsert.mockResolvedValue({});
+      prisma.user_best_scores.createMany.mockResolvedValue({ count: 1 });
 
       const result = await service.saveScore('user1', 'flash_match', 100);
       expect(result.isHighScore).toBe(true);
+      expect(prisma.user_best_scores.updateMany).not.toHaveBeenCalled();
     });
 
     it('should report high score when beating previous', async () => {
-      prisma.user_best_scores.findUnique.mockResolvedValue({ best_score: 50 });
-      prisma.user_best_scores.upsert.mockResolvedValue({});
+      prisma.user_best_scores.createMany.mockResolvedValue({ count: 0 });
+      prisma.user_best_scores.update.mockResolvedValue({});
+      prisma.user_best_scores.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await service.saveScore('user1', 'flash_match', 100);
       expect(result.isHighScore).toBe(true);
+      expect(prisma.user_best_scores.updateMany).toHaveBeenCalledWith({
+        where: { user_id: 'user1', game_type: 'flash_match', best_score: { lt: 100 } },
+        data: { best_score: 100 },
+      });
     });
 
     it('should not report high score when lower', async () => {
-      prisma.user_best_scores.findUnique.mockResolvedValue({ best_score: 200 });
-      prisma.user_best_scores.upsert.mockResolvedValue({});
+      prisma.user_best_scores.createMany.mockResolvedValue({ count: 0 });
+      prisma.user_best_scores.update.mockResolvedValue({});
+      prisma.user_best_scores.updateMany.mockResolvedValue({ count: 0 });
 
       const result = await service.saveScore('user1', 'flash_match', 100);
       expect(result.isHighScore).toBe(false);

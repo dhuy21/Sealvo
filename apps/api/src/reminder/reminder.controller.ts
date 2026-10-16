@@ -1,39 +1,27 @@
-import {
-  Controller,
-  Post,
-  Headers,
-  ForbiddenException,
-  Logger,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { SkipThrottle } from '@nestjs/throttler';
+import { Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { ApiExcludeController } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { CronSecretGuard } from '../auth/guards/cron-secret.guard.js';
 import { ReminderService } from './reminder.service.js';
 
-@SkipThrottle()
+@ApiExcludeController()
 @Controller('api/reminder')
+@UseGuards(CronSecretGuard)
 export class ReminderController {
-  private readonly logger = new Logger(ReminderController.name);
-
-  constructor(
-    private readonly reminderService: ReminderService,
-    private readonly config: ConfigService,
-  ) {}
+  constructor(private readonly reminderService: ReminderService) {}
 
   @Post()
-  async triggerReminder(@Headers('x-cron-secret') cronSecret?: string) {
-    const expected = this.config.get<string>('CRON_SECRET');
-    if (!expected || cronSecret !== expected) {
-      throw new ForbiddenException('Invalid cron secret');
-    }
-
-    this.logger.log('Reminder triggered by scheduler');
-    const result = await this.reminderService.sendReminders();
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60 * 60_000, limit: 3 } })
+  async triggerReminder() {
+    const { sent, failed } = await this.reminderService.sendReminders();
     await this.reminderService.cleanupExpired();
 
     return {
       success: true,
-      message: `Rappels: ${result.sent} envoyé(s), ${result.failed} échoué(s).`,
-      ...result,
+      message: `Rappels traités : ${sent} envoyé(s), ${failed} échoué(s).`,
+      sent,
+      failed,
     };
   }
 }

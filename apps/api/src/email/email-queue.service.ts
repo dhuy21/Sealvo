@@ -84,7 +84,7 @@ export class EmailQueueService {
 
   /** Start consuming email jobs (called in worker process) */
   async startConsumer(): Promise<void> {
-    const ch = this.rabbitmq.getChannel();
+    const ch = await this.rabbitmq.createChannel();
     if (!ch) throw new Error('Channel not available');
 
     await ch.consume(QUEUE, async (msg) => {

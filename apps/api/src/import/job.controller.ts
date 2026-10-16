@@ -8,6 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { type Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
@@ -33,6 +34,7 @@ export class JobController {
   }
 
   @Get(':id')
+  @SkipThrottle()
   @ApiOperation({ summary: 'Get job status' })
   @ApiResponse({ status: 200, description: 'Job details' })
   @ApiResponse({ status: 404, description: 'Job not found' })
@@ -102,13 +104,13 @@ export class JobController {
       try {
         res.write(`data: ${message}\n\n`);
       } catch {
-        cleanup();
+        void cleanup();
         return;
       }
       try {
         const data = JSON.parse(message);
         if (data.status === 'completed' || data.status === 'failed') {
-          cleanup().then(() => res.end());
+          void cleanup().then(() => res.end());
         }
       } catch {
         /* ignore parse errors */

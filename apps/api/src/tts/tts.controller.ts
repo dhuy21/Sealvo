@@ -7,6 +7,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { TtsService } from './tts.service.js';
@@ -28,6 +29,7 @@ export class TtsController {
   constructor(private readonly ttsService: TtsService) {}
 
   @Post('generate')
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
   async generateAudio(
     @Body() dto: GenerateAudioDto,
     @Res() res: Response,

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { learning_level, word_details_type } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { INTERVALS } from '../learning/constants.js';
+import { isDue, startOfToday } from '../learning/spaced-repetition.js';
 import type { CreateWordDto } from './dto/create-word.dto.js';
 import type { UpdateWordDto } from './dto/update-word.dto.js';
 
@@ -48,9 +48,7 @@ export class WordsService {
    */
   async findWordsToReview(packageId: number) {
     const words = await this.findByPackageId(packageId);
-
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
+    const today = startOfToday();
 
     // Get date_memorized for filtering
     const learningEntries = await this.prisma.learning.findMany({
@@ -60,14 +58,7 @@ export class WordsService {
 
     const dueDetailIds = new Set(
       learningEntries
-        .filter((entry) => {
-          const interval = INTERVALS[entry.level] ?? 0;
-          const memorized = new Date(entry.date_memorized ?? now);
-          memorized.setHours(0, 0, 0, 0);
-          const dueDate = new Date(memorized);
-          dueDate.setDate(dueDate.getDate() + interval);
-          return dueDate <= now;
-        })
+        .filter((entry) => isDue(entry.level, entry.date_memorized, today))
         .map((e) => e.detail_id),
     );
 

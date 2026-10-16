@@ -20,6 +20,7 @@ import type { LoginDto } from './dto/login.dto.js';
 const RESET_TOKEN_PREFIX = 'reset:';
 const RESET_EMAIL_PREFIX = 'reset:email:';
 const RESET_TOKEN_TTL = 3600; // 1 hour
+const USER_ID_MAX_ATTEMPTS = 5;
 
 @Injectable()
 export class AuthService {
@@ -45,26 +46,30 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 12);
-    const userId = await this.generateUniqueId();
 
-    try {
-      const user = await this.prisma.users.create({
-        data: {
-          id: userId,
-          username: dto.username,
-          email: dto.email,
-          password: hashedPassword,
-          ava: dto.avatar ?? 1,
-        },
-      });
+    // Random 7-char IDs can collide: retry on a primary-key conflict (fix #48)
+    for (let attempt = 0; attempt < USER_ID_MAX_ATTEMPTS; attempt++) {
+      try {
+        const user = await this.prisma.users.create({
+          data: {
+            id: randomBytes(4).toString('hex').substring(0, 7),
+            username: dto.username,
+            email: dto.email,
+            password: hashedPassword,
+            ava: dto.avatar ?? 1,
+          },
+        });
 
-      return { id: user.id, username: user.username, email: user.email };
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('Username or email is already taken');
+        return { id: user.id, username: user.username, email: user.email };
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+          if (error.meta?.target === 'PRIMARY') continue;
+          throw new ConflictException('Username or email is already taken');
+        }
+        throw new InternalServerErrorException();
       }
-      throw new InternalServerErrorException();
     }
+    throw new InternalServerErrorException('Could not allocate a user id');
   }
 
   async login(dto: LoginDto) {
@@ -207,18 +212,5 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken };
-  }
-
-  private async generateUniqueId(): Promise<string> {
-    let id: string;
-    let exists: boolean;
-
-    do {
-      id = randomBytes(4).toString('hex').substring(0, 7);
-      const user = await this.prisma.users.findUnique({ where: { id } });
-      exists = !!user;
-    } while (exists);
-
-    return id;
   }
 }

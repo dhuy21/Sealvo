@@ -1,16 +1,28 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { learning_level, word_details_type } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { EmailService } from '../email/email.service.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
+import { dueWhereConditions, startOfToday } from '../learning/spaced-repetition.js';
 
-/** Spaced repetition intervals (days) per level */
-const INTERVALS: Record<string, number> = {
-  x: 0,
-  level_0: 2,
-  level_1: 4,
-  level_2: 10,
-  v: 20,
+const PREVIEW_LIMIT = 5;
+const UNVERIFIED_USER_RETENTION_DAYS = 3;
+const VERIFICATION_RETENTION_DAYS = 15;
+
+/** mail.hbs uses the raw DB values (`0`, `ph.v`), not the Prisma enum names. */
+const LEVEL_DB_VALUE: Record<learning_level, string> = {
+  x: 'x',
+  level_0: '0',
+  level_1: '1',
+  level_2: '2',
+  v: 'v',
 };
+
+interface DueSummary {
+  total: number;
+  preview: { detailId: number; level: learning_level }[];
+}
 
 @Injectable()
 export class ReminderService {
@@ -18,126 +30,140 @@ export class ReminderService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly emailService: EmailService,
     private readonly emailQueue: EmailQueueService,
     private readonly config: ConfigService,
   ) {}
 
-  /** Send reminder emails to all users who have words due today */
+  /** Email every user who has words due today (source: ReminderController.reminder) */
   async sendReminders(): Promise<{ sent: number; failed: number }> {
-    const users = await this.prisma.users.findMany({
-      where: { is_verified: true },
-      select: { id: true, email: true, username: true },
-    });
+    const dueByUser = await this.findDueWordsByUser();
+    if (dueByUser.size === 0) return { sent: 0, failed: 0 };
+
+    const previewIds = [...dueByUser.values()].flatMap((s) => s.preview.map((p) => p.detailId));
+    const [users, details] = await Promise.all([
+      this.prisma.users.findMany({
+        where: { id: { in: [...dueByUser.keys()] } },
+        select: { id: true, email: true, username: true, streak: true },
+      }),
+      this.prisma.word_details.findMany({
+        where: { detail_id: { in: previewIds } },
+        include: { words: true },
+      }),
+    ]);
+    const detailsById = new Map(details.map((d) => [d.detail_id, d]));
 
     let sent = 0;
     let failed = 0;
-
     for (const user of users) {
-      const dueCount = await this.countWordsDue(user.id);
-      if (dueCount === 0) continue;
+      const summary = dueByUser.get(user.id)!;
+      const words = summary.preview.flatMap(({ detailId, level }) => {
+        const detail = detailsById.get(detailId);
+        return detail ? [this.toTemplateWord(detail, level)] : [];
+      });
 
-      const preview = await this.getWordPreview(user.id, 5);
-      const html = this.buildEmailHtml(user.username, dueCount, preview);
+      const content = this.emailService.compileTemplate('mail.hbs', {
+        user: { username: user.username },
+        wordCount: summary.total,
+        wordsShown: words.length,
+        hasMoreWords: summary.total > PREVIEW_LIMIT,
+        words,
+        streak: this.toTemplateStreak(user.streak, summary.total),
+        baseUrl: this.config.get<string>('FRONTEND_URL'),
+      });
 
       const ok = await this.emailQueue.enqueue({
         to: user.email,
-        content: html,
+        content,
         subject: 'Révision quotidienne - SealVo',
       });
-
       if (ok) {
         sent++;
       } else {
         failed++;
-        this.logger.warn(`Failed to enqueue reminder for ${user.email}`);
+        this.logger.warn(`Failed to enqueue reminder for user ${user.id}`);
       }
     }
 
-    this.logger.log(`Reminders: ${sent} sent, ${failed} failed`);
     return { sent, failed };
   }
 
-  /** Count words due for review across all active packages */
-  private async countWordsDue(userId: string): Promise<number> {
-    const now = new Date();
-    const conditions = Object.entries(INTERVALS).map(([level, days]) => {
-      const cutoff = new Date(now);
-      cutoff.setDate(cutoff.getDate() - days);
-      return { level: level as any, date_memorized: { lte: cutoff } };
-    });
-
-    return this.prisma.learning.count({
-      where: {
-        packages: { user_id: userId, is_active: true },
-        OR: conditions,
-      },
-    });
-  }
-
-  /** Get a preview of words due (for the email) */
-  private async getWordPreview(
-    userId: string,
-    limit: number,
-  ): Promise<{ word: string; translation: string }[]> {
-    const now = new Date();
-    const conditions = Object.entries(INTERVALS).map(([level, days]) => {
-      const cutoff = new Date(now);
-      cutoff.setDate(cutoff.getDate() - days);
-      return { level: level as any, date_memorized: { lte: cutoff } };
-    });
-
-    const rows = await this.prisma.learning.findMany({
-      where: {
-        packages: { user_id: userId, is_active: true },
-        OR: conditions,
-      },
-      include: { word_details: { select: { word: true, translation: true } } },
-      take: limit,
-    });
-
-    return rows.map((r) => ({
-      word: r.word_details?.word ?? '',
-      translation: r.word_details?.translation ?? '',
-    }));
-  }
-
-  /** Build reminder email HTML */
-  private buildEmailHtml(
-    username: string,
-    totalDue: number,
-    preview: { word: string; translation: string }[],
-  ): string {
-    const wordRows = preview
-      .map((w) => `<tr><td>${w.word}</td><td>${w.translation}</td></tr>`)
-      .join('');
-
-    return `<h2>Bonjour ${username} 👋</h2>
-<p>Vous avez <strong>${totalDue} mot(s)</strong> à réviser aujourd'hui !</p>
-<table border="1" cellpadding="8" cellspacing="0">
-  <tr><th>Mot</th><th>Traduction</th></tr>
-  ${wordRows}
-</table>
-${totalDue > preview.length ? `<p>...et ${totalDue - preview.length} de plus.</p>` : ''}
-<p><a href="${this.config.get<string>('FRONTEND_URL') ?? 'https://www.sealvo.it.com'}">Réviser maintenant →</a></p>`;
-  }
-
-  /** Cleanup: delete expired verification tokens + unverified users */
+  /** Delete stale verification tokens and never-verified accounts (source: ReminderController._runCleanup) */
   async cleanupExpired(): Promise<void> {
     try {
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - 7);
-
       await this.prisma.email_verification.deleteMany({
-        where: { expires_at: { lt: new Date() } },
+        where: { created_at: { lt: this.retentionCutoff(VERIFICATION_RETENTION_DAYS) } },
       });
-
       await this.prisma.users.deleteMany({
-        where: { is_verified: false, created_at: { lt: cutoff } },
+        where: {
+          is_verified: false,
+          created_at: { lt: this.retentionCutoff(UNVERIFIED_USER_RETENTION_DAYS) },
+        },
       });
     } catch (err) {
-      this.logger.warn(
-        `Cleanup failed: ${err instanceof Error ? err.message : err}`,
-      );
+      this.logger.error(`Cleanup failed: ${err instanceof Error ? err.message : String(err)}`);
     }
+  }
+
+  private async findDueWordsByUser(): Promise<Map<string, DueSummary>> {
+    const rows = await this.prisma.learning.findMany({
+      where: { packages: { is_active: true }, OR: dueWhereConditions() },
+      select: { detail_id: true, level: true, packages: { select: { user_id: true } } },
+    });
+
+    const byUser = new Map<string, DueSummary>();
+    for (const row of rows) {
+      const userId = row.packages.user_id;
+      const summary = byUser.get(userId) ?? { total: 0, preview: [] };
+      summary.total++;
+      if (summary.preview.length < PREVIEW_LIMIT) {
+        summary.preview.push({ detailId: row.detail_id, level: row.level });
+      }
+      byUser.set(userId, summary);
+    }
+    return byUser;
+  }
+
+  /** Same rule as the old SQL: DATE(created_at) + INTERVAL n DAY <= CURDATE() */
+  private retentionCutoff(days: number): Date {
+    const cutoff = startOfToday();
+    cutoff.setDate(cutoff.getDate() + 1 - days);
+    return cutoff;
+  }
+
+  private toTemplateWord(
+    detail: {
+      type: word_details_type;
+      meaning: string;
+      pronunciation: string | null;
+      example: string | null;
+      words: { word: string };
+    },
+    level: learning_level,
+  ) {
+    const dbLevel = LEVEL_DB_VALUE[level];
+    return {
+      word: detail.words.word,
+      type: detail.type === 'ph_v' ? 'ph.v' : detail.type,
+      meaning: detail.meaning,
+      pronunciation: detail.pronunciation,
+      example: detail.example,
+      level: dbLevel,
+      isLevel0: dbLevel === 'x',
+      isLevel1: dbLevel === '0',
+      isLevel2: dbLevel === '1',
+      isLevel3: dbLevel === '2',
+      isLevel4: dbLevel === 'v',
+    };
+  }
+
+  private toTemplateStreak(currentStreak: number, totalWords: number) {
+    return {
+      currentStreak,
+      longestStreak: currentStreak,
+      isAtRisk: currentStreak > 0 && totalWords > 0,
+      isOnFire: currentStreak >= 7,
+      isGood: currentStreak >= 3 && currentStreak < 7,
+    };
   }
 }
