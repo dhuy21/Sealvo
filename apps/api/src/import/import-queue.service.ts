@@ -93,11 +93,15 @@ export class ImportQueueService {
       try {
         await this.jobTracker.update(jobId, {
           status: 'processing',
-          progress: { current: 0, total: wordsData.length, phase: 'saving' },
+          progress: { current: 0, total: wordsData.length, phase: 'parsing' },
         });
 
-        // Reuse WordsService.addWords (already handles find-or-create + transaction)
-        const result = await this.wordsService.addWords(packageId, wordsData);
+        // Reuse WordsService.addWords (Gemini enrichment + find-or-create + transaction)
+        const result = await this.wordsService.addWords(packageId, wordsData, (phase) =>
+          this.jobTracker.update(jobId, {
+            progress: { current: 0, total: wordsData.length, phase },
+          }),
+        );
 
         await this.jobTracker.update(jobId, {
           status: 'completed',

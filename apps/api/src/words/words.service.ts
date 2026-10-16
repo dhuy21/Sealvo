@@ -1,13 +1,57 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { learning_level, word_details_type } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { GeminiService, type ExamplePayload } from '../gemini/gemini.service.js';
 import { isDue, startOfToday } from '../learning/spaced-repetition.js';
 import type { CreateWordDto } from './dto/create-word.dto.js';
 import type { UpdateWordDto } from './dto/update-word.dto.js';
 
+const GEMINI_BATCH_SIZE = 25;
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+}
+
 @Injectable()
 export class WordsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly gemini: GeminiService,
+  ) {}
+
+  /**
+   * Generate missing examples / correct existing ones so the target word is wrapped in **...**
+   * (required by the phrase_completion game). Mutates `words` in place; never throws.
+   * Source: wordProcessingService.js enrichWithGemini()
+   */
+  private async enrichWithGemini(words: (CreateWordDto | UpdateWordDto)[]) {
+    const wordsNoExample: ExamplePayload[] = [];
+    const wordsWithExample: ExamplePayload[] = [];
+
+    words.forEach((w, id) => {
+      if (!w.meaning || !w.type || !w.word) return;
+      const payload = {
+        id,
+        word: w.word,
+        language_code: w.language_code,
+        meaning: w.meaning,
+        type: w.type,
+      };
+      if (!w.example) wordsNoExample.push(payload);
+      else wordsWithExample.push({ ...payload, example: w.example });
+    });
+
+    for (const batch of chunk(wordsNoExample, GEMINI_BATCH_SIZE)) {
+      this.gemini.replaceExample(words, await this.gemini.generateExample(batch));
+    }
+    for (const batch of chunk(wordsWithExample, GEMINI_BATCH_SIZE)) {
+      this.gemini.replaceExample(words, await this.gemini.modifyExample(batch));
+    }
+  }
 
   /**
    * Get all words for a package (joined: words + word_details + learning)
@@ -69,10 +113,18 @@ export class WordsService {
   }
 
   /**
-   * Add words to a package (synchronous, single transaction)
-   * Source: words.js create() — fix #63: batch in single transaction
+   * Add words to a package (Gemini enrichment, then single transaction)
+   * Source: wordProcessingService.js processWords() + words.js create() — fix #63: batch in single transaction
    */
-  async addWords(packageId: number, wordsData: CreateWordDto[]) {
+  async addWords(
+    packageId: number,
+    wordsData: CreateWordDto[],
+    onPhase?: (phase: 'gemini' | 'saving') => Promise<unknown>,
+  ) {
+    await onPhase?.('gemini');
+    await this.enrichWithGemini(wordsData);
+    await onPhase?.('saving');
+
     let successCount = 0;
 
     await this.prisma.$transaction(async (tx) => {
@@ -131,7 +183,7 @@ export class WordsService {
 
   /**
    * Update a word (word base + details + level)
-   * Source: words.js updateWord() — fix #56: correct subject in WHERE
+   * Source: words.js updateWord() + wordProcessingService.js enrichSingleWord() — fix #56: correct subject in WHERE
    */
   async updateWord(packageId: number, detailId: number, dto: UpdateWordDto) {
     const entry = await this.prisma.learning.findUnique({
@@ -142,6 +194,8 @@ export class WordsService {
     if (!entry) {
       throw new NotFoundException('Word not found in this package');
     }
+
+    if (dto.example !== undefined) await this.enrichWithGemini([dto]);
 
     await this.prisma.$transaction(async (tx) => {
       const current = entry.word_details;
