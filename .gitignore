@@ -30,9 +30,12 @@ npm-debug.log*
 
 # Test
 coverage/
+playwright-report/
+test-results/
 
 # Docker volumes
 db_data/
 redis_data/
 rabbitmq_data/
 *.tsbuildinfo
+apps/api/backups/

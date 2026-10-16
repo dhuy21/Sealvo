@@ -1,5 +1,6 @@
-# Production Docker Compose — 7 services
+# Production Docker Compose — 7 services (+ backup, profile "backup")
 # Usage: docker compose -f docker-compose.prod.yml up -d
+# Backup: docker compose -f docker-compose.prod.yml --profile backup run --rm backup
 
 services:
   api:
@@ -78,6 +79,20 @@ services:
       retries: 3
       start_period: 10s
 
+  backup:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.backup
+    image: sealvo-backup
+    container_name: sealvo_backup
+    profiles: ['backup']
+    env_file: .env
+    volumes:
+      - backups_data:/app/backups
+    depends_on:
+      db:
+        condition: service_healthy
+
   db:
     image: mysql:8.0
     container_name: sealvo_db
@@ -131,3 +146,4 @@ volumes:
   db_data:
   redis_data:
   rabbitmq_data:
+  backups_data:

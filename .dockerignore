@@ -15,6 +15,7 @@
 **/.env*
 !.env.example
 docs/
+apps/api/backups/
 
 # Old Express app: only the email templates are used at runtime
 src/
