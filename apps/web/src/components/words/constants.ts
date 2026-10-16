@@ -7,3 +7,12 @@ export const WORD_TYPES = [
   { value: 'idiom', label: 'Idiom' },
   { value: 'collocation', label: 'Colloc' },
 ];
+
+export function wordTypeLabel(type: string): string {
+  return WORD_TYPES.find((t) => t.value === type)?.label ?? type;
+}
+
+/** Display-only: examples store the target word as `**word**`. */
+export function stripBoldMarkup(text: string): string {
+  return text.replace(/\*\*([^*]+)\*\*/g, '$1');
+}

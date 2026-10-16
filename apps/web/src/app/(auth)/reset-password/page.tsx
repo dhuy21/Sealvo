@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
@@ -28,6 +28,12 @@ function ResetPasswordForm() {
   const token = searchParams.get('token');
   const [success, setSuccess] = useState(false);
 
+  useEffect(() => {
+    if (!success) return;
+    const timer = setTimeout(() => router.push('/login'), 3000);
+    return () => clearTimeout(timer);
+  }, [success, router]);
+
   const {
     register,
     handleSubmit,
@@ -46,7 +52,6 @@ function ResetPasswordForm() {
       });
       toast.success(res.data.message);
       setSuccess(true);
-      setTimeout(() => router.push('/login'), 3000);
     } catch (err: unknown) {
       toast.error(getApiErrorMessage(err, 'Une erreur est survenue'));
     }

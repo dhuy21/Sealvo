@@ -31,7 +31,7 @@ export default function FeedbackPage() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const res = await api.post('/feedback', data);
+      const res = await api.post('/feedback', { ...data, email: data.email || undefined });
       toast.success(res.data.message);
       reset();
     } catch (err: unknown) {

@@ -132,7 +132,7 @@ export function PackageCard({
           </>
         )}
 
-        {isPublicView && pkg.user_id !== currentUserId && (
+        {isPublicView && pkg.mode === 'public' && pkg.user_id !== currentUserId && (
           <button className="pushable copy-package-btn" onClick={() => onCopy(pkg.package_id)}>
             <span className="shadow-copy"></span>
             <span className="edge-copy"></span>

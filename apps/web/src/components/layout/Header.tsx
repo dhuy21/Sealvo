@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import { useAuthStore } from '@/stores/auth.store';
@@ -11,9 +11,8 @@ import api from '@/lib/api';
 
 export function Header() {
   const pathname = usePathname();
-  const router = useRouter();
   const { theme, setTheme } = useTheme();
-  const { user, isAuthenticated, isReady, logout } = useAuthStore();
+  const { user, isAuthenticated, isReady } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const mounted = useIsClient();
@@ -45,8 +44,10 @@ export function Header() {
     } catch {
       /* ignore */
     }
-    logout();
-    router.push('/');
+    // Full reload instead of logout() + router.push: clearing the store while a protected page
+    // is mounted makes AuthGuard redirect to /login?redirect=… before the push lands.
+    // The reload also drops all in-memory auth and query state.
+    window.location.assign('/');
   };
 
   const closeMobile = () => setMobileOpen(false);

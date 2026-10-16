@@ -1,7 +1,8 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { useAuthStore } from '@/stores/auth.store';
 
 export function QueryProvider({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -15,6 +16,16 @@ export function QueryProvider({ children }: { children: ReactNode }) {
           },
         },
       }),
+  );
+
+  // Query keys are not scoped per user: drop all cached data whenever the user changes
+  // (login, logout, interceptor-forced logout).
+  useEffect(
+    () =>
+      useAuthStore.subscribe((state, prev) => {
+        if (state.user?.id !== prev.user?.id) queryClient.clear();
+      }),
+    [queryClient],
   );
 
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;

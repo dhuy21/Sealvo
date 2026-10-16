@@ -2,18 +2,20 @@
 
 import { useState } from 'react';
 import type { Word, UpdateWordPayload } from '@/hooks/use-words';
-import { WORD_TYPES } from './constants';
+import { WORD_TYPES, stripBoldMarkup, wordTypeLabel } from './constants';
 
 export function WordRow({
   w,
   onSave,
   onDelete,
   savePending,
+  readOnly = false,
 }: {
   w: Word;
   onSave: (detailId: number, dto: UpdateWordPayload) => void;
   onDelete: (detailId: number) => void;
   savePending: boolean;
+  readOnly?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
@@ -155,7 +157,7 @@ export function WordRow({
         <div className="table-cell-content">{w.language_code}</div>
       </td>
       <td className="table-cell">
-        <div className="table-cell-content">{w.type}</div>
+        <div className="table-cell-content">{wordTypeLabel(w.type)}</div>
       </td>
       <td className="table-cell">
         <div className="table-cell-content">{w.meaning}</div>
@@ -170,21 +172,23 @@ export function WordRow({
         <div className="table-cell-content">{w.antonyms}</div>
       </td>
       <td className="table-cell">
-        <div className="table-cell-content">{w.example}</div>
+        <div className="table-cell-content">{w.example && stripBoldMarkup(w.example)}</div>
       </td>
       <td className="table-cell">
         <div className="table-cell-content">{w.grammar}</div>
       </td>
-      <td className="table-cell">
-        <div className="action-buttons">
-          <button className="edit-btn" title="Modifier" onClick={() => setEditing(true)}>
-            <i className="fas fa-edit"></i>
-          </button>
-          <button className="delete-btn" title="Supprimer" onClick={() => onDelete(w.detail_id)}>
-            <i className="fas fa-trash"></i>
-          </button>
-        </div>
-      </td>
+      {!readOnly && (
+        <td className="table-cell">
+          <div className="action-buttons">
+            <button className="edit-btn" title="Modifier" onClick={() => setEditing(true)}>
+              <i className="fas fa-edit"></i>
+            </button>
+            <button className="delete-btn" title="Supprimer" onClick={() => onDelete(w.detail_id)}>
+              <i className="fas fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      )}
     </tr>
   );
 }

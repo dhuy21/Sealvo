@@ -31,6 +31,27 @@ export function usePublicPackages() {
   });
 }
 
+export interface PackageDetail {
+  package_id: number;
+  package_name: string;
+  package_description: string | null;
+  mode: Package['mode'];
+  is_active: boolean;
+  username: string;
+  isOwner: boolean;
+}
+
+export function usePackage(packageId: number | null) {
+  return useQuery({
+    queryKey: ['packages', 'detail', packageId],
+    queryFn: async () => {
+      const { data } = await api.get<PackageDetail>(`/packages/${packageId}`);
+      return data;
+    },
+    enabled: !!packageId,
+  });
+}
+
 interface CreatePackageDto {
   package_name: string;
   package_description?: string;

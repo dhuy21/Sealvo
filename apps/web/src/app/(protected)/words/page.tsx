@@ -11,6 +11,7 @@ import {
   useDeleteAllWords,
 } from '@/hooks/use-words';
 import { useImportFile } from '@/hooks/use-import';
+import { usePackage } from '@/hooks/use-packages';
 import type { Word, CreateWordPayload, UpdateWordPayload } from '@/hooks/use-words';
 import { getApiErrorMessage } from '@/lib/api-error';
 import toast from 'react-hot-toast';
@@ -19,6 +20,13 @@ import { DeleteAllModal } from '@/components/words/DeleteAllModal';
 import { WordRow } from '@/components/words/WordRow';
 
 const LEVELS = ['x', 'level_0', 'level_1', 'level_2', 'v'] as const;
+
+const IMPORT_PHASES: Record<string, string> = {
+  parsing: 'analyse du fichier',
+  gemini: 'enrichissement IA',
+  saving: 'enregistrement',
+  done: 'finalisation',
+};
 
 function levelLabel(level: string): string {
   if (level === 'x') return 'x';
@@ -34,7 +42,10 @@ function WordsContent() {
   const router = useRouter();
   const packageId = Number(searchParams.get('package'));
 
-  const { data: words, isLoading } = useWords(packageId || null);
+  const pkgQuery = usePackage(packageId || null);
+  const wordsQuery = useWords(packageId || null);
+  const words = wordsQuery.data;
+  const isOwner = pkgQuery.data?.isOwner ?? false;
   const addWord = useAddWord(packageId);
   const updateWord = useUpdateWord(packageId);
   const deleteWord = useDeleteWord(packageId);
@@ -70,9 +81,10 @@ function WordsContent() {
   }, [words, search]);
 
   const handleAddWord = useCallback(
-    (data: CreateWordPayload) => {
+    (data: CreateWordPayload, resetForm: () => void) => {
       addWord.mutate(data, {
         onSuccess: () => {
+          resetForm();
           toast.success('Mot ajouté avec succès');
           setAddModalOpen(false);
         },
@@ -126,7 +138,7 @@ function WordsContent() {
     );
   }
 
-  if (isLoading) {
+  if (pkgQuery.isLoading || wordsQuery.isLoading) {
     return (
       <div className="vocabulary-container" style={{ textAlign: 'center', padding: '4rem' }}>
         <i className="fas fa-spinner fa-spin fa-2x"></i>
@@ -134,55 +146,87 @@ function WordsContent() {
     );
   }
 
+  if (pkgQuery.isError || wordsQuery.isError) {
+    return (
+      <div className="vocabulary-container" style={{ textAlign: 'center', padding: '4rem' }}>
+        <div className="no-words">
+          <i className="fas fa-exclamation-circle"></i>
+          <h3>Package inaccessible</h3>
+          <p>
+            {getApiErrorMessage(
+              pkgQuery.error ?? wordsQuery.error,
+              "Ce package n'existe pas ou vous n'avez pas l'autorisation de le consulter.",
+            )}
+          </p>
+        </div>
+        <button className="btn" onClick={() => router.push('/packages')}>
+          Retour aux packages
+        </button>
+      </div>
+    );
+  }
+
   const hasWords = words && words.length > 0;
   const levelEntries = Object.entries(wordsByLevel);
+  const importProgress = importFile.job?.progress;
 
   return (
     <div className="vocabulary-container" data-package={packageId}>
-      <h1>Mon Vocabulaire</h1>
+      <h1>{pkgQuery.data?.package_name ?? 'Mon Vocabulaire'}</h1>
 
-      <div className="action-container">
-        <button className="add-word-btn" onClick={() => setAddModalOpen(true)}>
-          <i className="fas fa-plus"></i> Ajouter un nouveau mot
-        </button>
-        <button
-          className="learn-btn"
-          onClick={() => router.push(`/learn?package=${packageId}`)}
-        >
-          <i className="fas fa-book-open"></i> Mode d&apos;apprentissage
-        </button>
-        <button
-          className="add-word-btn"
-          style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
-          onClick={() => fileInputRef.current?.click()}
-          disabled={importFile.uploading}
-        >
-          {importFile.uploading ? (
-            <i className="fas fa-spinner fa-spin"></i>
-          ) : (
-            <i className="fas fa-file-import"></i>
-          )}{' '}
-          Importer (Excel)
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".xlsx,.xls"
-          style={{ display: 'none' }}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-              importFile.upload(file);
-              e.target.value = '';
-            }
-          }}
-        />
-        {hasWords && (
-          <button className="btn-danger" onClick={() => setDeleteAllOpen(true)}>
-            <i className="fas fa-trash"></i> Supprimer tous les mots
+      {!isOwner && pkgQuery.data && (
+        <div className="search-results-info" style={{ display: 'block' }}>
+          <p>
+            <i className="fas fa-eye"></i> Lecture seule — package de{' '}
+            <strong>{pkgQuery.data.username}</strong>
+          </p>
+        </div>
+      )}
+
+      {isOwner && (
+        <div className="action-container">
+          <button className="add-word-btn" onClick={() => setAddModalOpen(true)}>
+            <i className="fas fa-plus"></i> Ajouter un nouveau mot
           </button>
-        )}
-      </div>
+          <button
+            className="learn-btn"
+            onClick={() => router.push(`/learn?package=${packageId}`)}
+          >
+            <i className="fas fa-book-open"></i> Mode d&apos;apprentissage
+          </button>
+          <button
+            className="add-word-btn"
+            style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importFile.uploading}
+          >
+            {importFile.uploading ? (
+              <i className="fas fa-spinner fa-spin"></i>
+            ) : (
+              <i className="fas fa-file-import"></i>
+            )}{' '}
+            Importer (Excel)
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                importFile.upload(file);
+                e.target.value = '';
+              }
+            }}
+          />
+          {hasWords && (
+            <button className="btn-danger" onClick={() => setDeleteAllOpen(true)}>
+              <i className="fas fa-trash"></i> Supprimer tous les mots
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Import Progress */}
       {importFile.job && (
@@ -208,15 +252,22 @@ function WordsContent() {
           {importFile.job.status === 'processing' && (
             <p>
               <i className="fas fa-spinner fa-spin"></i> Import en cours...
-              {importFile.job.progress !== undefined &&
-                importFile.job.total !== undefined &&
-                ` (${importFile.job.progress}/${importFile.job.total})`}
+              {importProgress &&
+                ` ${IMPORT_PHASES[importProgress.phase] ?? importProgress.phase} (${importProgress.current}/${importProgress.total})`}
+            </p>
+          )}
+          {importFile.job.status === 'retrying' && (
+            <p>
+              <i className="fas fa-redo fa-spin"></i> Nouvelle tentative d&apos;import...
             </p>
           )}
           {importFile.job.status === 'completed' && (
             <p>
               <i className="fas fa-check-circle" style={{ color: '#059669' }}></i>{' '}
-              {importFile.job.message ?? 'Import terminé avec succès'}
+              {importFile.job.message ??
+                (importFile.job.result
+                  ? `${importFile.job.result.imported}/${importFile.job.result.total} mot(s) importé(s) avec succès`
+                  : 'Import terminé avec succès')}
               <button
                 style={{
                   marginLeft: '1rem',
@@ -299,7 +350,7 @@ function WordsContent() {
                     <th>Antonymes</th>
                     <th>Exemple</th>
                     <th>Grammaire</th>
-                    <th>Actions</th>
+                    {isOwner && <th>Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -310,6 +361,7 @@ function WordsContent() {
                       onSave={handleUpdateWord}
                       onDelete={handleDeleteWord}
                       savePending={updateWord.isPending}
+                      readOnly={!isOwner}
                     />
                   ))}
                 </tbody>
@@ -326,11 +378,17 @@ function WordsContent() {
       ) : (
         <div className="no-words">
           <i className="fas fa-book"></i>
-          <h3>Aucun mot dans votre vocabulaire</h3>
-          <p>Commencez à ajouter des mots pour enrichir votre vocabulaire.</p>
-          <button className="btn" onClick={() => setAddModalOpen(true)}>
-            Ajouter votre premier mot
-          </button>
+          {isOwner ? (
+            <>
+              <h3>Aucun mot dans votre vocabulaire</h3>
+              <p>Commencez à ajouter des mots pour enrichir votre vocabulaire.</p>
+              <button className="btn" onClick={() => setAddModalOpen(true)}>
+                Ajouter votre premier mot
+              </button>
+            </>
+          ) : (
+            <h3>Aucun mot dans ce package</h3>
+          )}
         </div>
       )}
 

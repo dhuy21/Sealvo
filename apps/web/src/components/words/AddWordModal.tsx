@@ -4,6 +4,19 @@ import { useState } from 'react';
 import type { CreateWordPayload } from '@/hooks/use-words';
 import { WORD_TYPES } from './constants';
 
+const EMPTY_FORM: CreateWordPayload = {
+  word: '',
+  language_code: '',
+  subject: 'Daily',
+  type: 'noun',
+  meaning: '',
+  pronunciation: '',
+  synonyms: '',
+  antonyms: '',
+  example: '',
+  grammar: '',
+};
+
 export function AddWordModal({
   open,
   onClose,
@@ -12,21 +25,10 @@ export function AddWordModal({
 }: {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: CreateWordPayload) => void;
+  onSubmit: (data: CreateWordPayload, onSuccess: () => void) => void;
   saving: boolean;
 }) {
-  const [form, setForm] = useState<CreateWordPayload>({
-    word: '',
-    language_code: '',
-    subject: 'Daily',
-    type: 'noun',
-    meaning: '',
-    pronunciation: '',
-    synonyms: '',
-    antonyms: '',
-    example: '',
-    grammar: '',
-  });
+  const [form, setForm] = useState<CreateWordPayload>(EMPTY_FORM);
 
   if (!open) return null;
 
@@ -53,19 +55,7 @@ export function AddWordModal({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            onSubmit(form);
-            setForm({
-              word: '',
-              language_code: '',
-              subject: 'Daily',
-              type: 'noun',
-              meaning: '',
-              pronunciation: '',
-              synonyms: '',
-              antonyms: '',
-              example: '',
-              grammar: '',
-            });
+            onSubmit(form, () => setForm(EMPTY_FORM));
           }}
         >
           <div className="modal-body">
