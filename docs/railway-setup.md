@@ -63,6 +63,8 @@ The API, Worker and Scheduler all boot the same `AppModule`, so they need the **
 | `GOOGLE_TTS_PROJECT_ID`, `GOOGLE_TTS_CLIENT_EMAIL`, `GOOGLE_TTS_PRIVATE_KEY` | optional | TTS is disabled when missing |
 | `STAGING_EMAIL_INTERCEPT` | staging | every email is redirected to this address |
 | `PORT` | — | injected by Railway; the images default to `3000` |
+| `TZ` | — | `Europe/Paris`, set by the API image: Railway services inherit the image environment, so API, Worker and Scheduler run in this zone without a service variable. Do not override it: the day boundaries (spaced repetition, streak, cleanup retention) and the scheduler cron (`0 6,12,18,23 * * *`, Paris time) depend on it |
+| `GIT_SHA` | — | set by the images from the CI build arg; `GET /health` reports it as `version` |
 
 The Web service has **no runtime variables**: `NEXT_PUBLIC_API_URL` is baked in at build time
 (GitHub environment variable → Docker build arg).
@@ -91,23 +93,29 @@ DATABASE_URL="<production url>" npx prisma migrate resolve --applied 001_baselin
   --schema=apps/api/prisma/schema.prisma
 ```
 
-Migration `002` (applied automatically by the API on startup) only adds the `refresh_sessions`
-and `password_reset_tokens` tables. Refresh tokens are now server-side sessions, so refresh
-cookies issued before this release are rejected: **every user logs in once again** after the deploy.
+Migrations `002` and `003` (applied automatically by the API on startup) are additive: `002` adds
+the `refresh_sessions` and `password_reset_tokens` tables, `003` the `email_verification.new_email`
+column. Refresh tokens are now server-side sessions, so refresh cookies issued before this release
+are rejected: **every user logs in once again** after the deploy.
+
+The local dev database has the same history problem: see [local-dev.md](local-dev.md).
 
 ## GitHub Secrets (for CI/CD workflow)
 
 | Secret | Description |
 |---|---|
-| `RAILWAY_TOKEN` | Railway API token |
+| `RAILWAY_TOKEN` | Railway **project token** of the matching Railway environment (Project Settings → Tokens: a project token is scoped to one environment, so create one for `staging` and one for `production`) |
 | `RAILWAY_API_SERVICE_ID` | Service ID for API |
 | `RAILWAY_WEB_SERVICE_ID` | Service ID for Web |
 | `RAILWAY_WORKER_SERVICE_ID` | Service ID for Worker |
 | `RAILWAY_SCHEDULER_SERVICE_ID` | Service ID for Scheduler |
 | `RAILWAY_BACKUP_SERVICE_ID` | Service ID for the Backup cron (production environment only) |
+| `E2E_USERNAME`, `E2E_PASSWORD` | optional, E2E workflow: account created by `apps/api/prisma/seed.mjs` (see [local-dev.md](local-dev.md)). When unset, the protected-page specs are skipped, so production runs without a seeded account still pass |
 
-Service IDs differ between staging and production: define them as **environment secrets** on the
-`staging` and `production` GitHub environments.
+Tokens and service IDs differ between staging and production: define all of them as
+**environment secrets** on the `staging` and `production` GitHub environments (Settings →
+Environments), not as repository secrets. Without `RAILWAY_TOKEN` the deploy steps and the
+health check are skipped.
 
 ## GitHub Variables
 
@@ -116,8 +124,8 @@ environments (Settings → Environments), so each environment gets its own value
 
 | Variable | Description |
 |---|---|
-| `API_URL` | API base URL, used for the post-deploy health check (`$API_URL/health`) |
-| `NEXT_PUBLIC_API_URL` | API URL baked into the Next.js build |
+| `API_URL` | API base URL for the post-deploy health check: CI polls `$API_URL/health` (up to 10 min) until its `version` equals the deployed commit, so a 200 from the previous deployment does not count. Skipped when unset |
+| `NEXT_PUBLIC_API_URL` | API URL baked into the Next.js build (the web image build fails when it is empty) |
 | `STAGING_URL` | Staging frontend URL (staging environment only) |
 | `PRODUCTION_URL` | Production frontend URL, used by the manual E2E workflow |
 
