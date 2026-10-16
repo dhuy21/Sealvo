@@ -67,23 +67,51 @@ model user_best_scores {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model users {
-  id                 String               @id @db.Char(7)
-  username           String               @unique(map: "username") @db.VarChar(255)
-  email              String               @unique(map: "email") @db.VarChar(255)
-  role               users_role           @default(User)
-  password           String               @db.VarChar(255)
-  streak             Int                  @default(0)
-  streak_updated_at  DateTime?            @db.Timestamp(0)
-  last_login         DateTime?            @db.Timestamp(0)
-  created_at         DateTime?            @default(now()) @db.Timestamp(0)
-  updated_at         DateTime?            @db.Timestamp(0)
-  is_verified        Boolean              @default(false)
-  ava                Int                  @default(1)
-  email_verification email_verification[]
-  packages           packages[]
-  user_best_scores   user_best_scores[]
+  id                    String                  @id @db.Char(7)
+  username              String                  @unique(map: "username") @db.VarChar(255)
+  email                 String                  @unique(map: "email") @db.VarChar(255)
+  role                  users_role              @default(User)
+  password              String                  @db.VarChar(255)
+  streak                Int                     @default(0)
+  streak_updated_at     DateTime?               @db.Timestamp(0)
+  last_login            DateTime?               @db.Timestamp(0)
+  created_at            DateTime?               @default(now()) @db.Timestamp(0)
+  updated_at            DateTime?               @db.Timestamp(0)
+  is_verified           Boolean                 @default(false)
+  ava                   Int                     @default(1)
+  email_verification    email_verification[]
+  packages              packages[]
+  user_best_scores      user_best_scores[]
+  refresh_sessions      refresh_sessions[]
+  password_reset_tokens password_reset_tokens[]
 
   @@index([is_verified, created_at], map: "idx_users_verified_created")
+}
+
+/// One row per logged-in device. Only SHA-256 hashes of the refresh token secret are stored.
+model refresh_sessions {
+  id            String    @id @db.Char(36)
+  user_id       String    @db.Char(7)
+  token_hash    String    @db.Char(64)
+  /// Hash of the token replaced by the last rotation, still accepted for a short leeway
+  previous_hash String?   @db.Char(64)
+  rotated_at    DateTime? @db.DateTime(0)
+  expires_at    DateTime  @db.DateTime(0)
+  created_at    DateTime  @default(now()) @db.DateTime(0)
+  users         users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([expires_at])
+}
+
+model password_reset_tokens {
+  token_hash String   @id @db.Char(64)
+  user_id    String   @db.Char(7)
+  expires_at DateTime @db.DateTime(0)
+  created_at DateTime @default(now()) @db.DateTime(0)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
 }
 
 model word_details {

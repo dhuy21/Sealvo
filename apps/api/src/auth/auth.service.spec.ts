@@ -6,9 +6,9 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { AuthService } from './auth.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { RedisService } from '../redis/redis.service.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
 import { EmailService } from '../email/email.service.js';
+import { SessionService } from './session.service.js';
 
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
 
@@ -17,9 +17,11 @@ describe('AuthService', () => {
   let prisma: {
     users: { findFirst: any; findUnique: any; create: any; update: any };
     email_verification: { findFirst: any; create: any; update: any; updateMany: any };
+    password_reset_tokens: { findFirst: any; create: any; deleteMany: any };
+    refresh_sessions: { deleteMany: any };
     $transaction: any;
   };
-  let redis: { getClient: any };
+  let sessions: { create: any; rotate: any; revoke: any };
   let emailQueue: { enqueue: any };
   let emailService: { compileTemplate: any };
 
@@ -37,10 +39,12 @@ describe('AuthService', () => {
         update: vi.fn(),
         updateMany: vi.fn(),
       },
+      password_reset_tokens: { findFirst: vi.fn(), create: vi.fn(), deleteMany: vi.fn() },
+      refresh_sessions: { deleteMany: vi.fn() },
       $transaction: vi.fn(),
     };
 
-    redis = { getClient: vi.fn() };
+    sessions = { create: vi.fn().mockResolvedValue('session.token'), rotate: vi.fn(), revoke: vi.fn() };
     emailQueue = { enqueue: vi.fn() };
     emailService = { compileTemplate: vi.fn() };
 
@@ -50,7 +54,7 @@ describe('AuthService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: JwtService, useValue: { sign: vi.fn().mockReturnValue('token') } },
         { provide: ConfigService, useValue: { getOrThrow: vi.fn().mockReturnValue('secret'), get: vi.fn() } },
-        { provide: RedisService, useValue: redis },
+        { provide: SessionService, useValue: sessions },
         { provide: EmailQueueService, useValue: emailQueue },
         { provide: EmailService, useValue: emailService },
       ],
@@ -88,8 +92,8 @@ describe('AuthService', () => {
       prisma.users.update.mockResolvedValue({});
 
       const result = await service.login({ username: 'user', password: 'pass' });
-      expect(result).toHaveProperty('accessToken');
-      expect(result).toHaveProperty('refreshToken');
+      expect(result).toEqual({ accessToken: 'token', refreshToken: 'session.token' });
+      expect(sessions.create).toHaveBeenCalledWith('1');
     });
   });
 
@@ -223,13 +227,53 @@ describe('AuthService', () => {
     });
   });
 
-  describe('resetPassword', () => {
-    it('should throw on invalid token', async () => {
-      const mockClient = { get: vi.fn().mockResolvedValue(null) };
-      redis.getClient.mockReturnValue(mockClient);
+  describe('forgotPassword (DB tokens, #103)', () => {
+    it('should replace previous tokens with a hashed one and email the raw token', async () => {
+      prisma.users.findUnique.mockResolvedValue({ id: 'u1', username: 'ann', email: 'a@b.c' });
+      emailQueue.enqueue.mockResolvedValue(true);
 
+      await service.forgotPassword('a@b.c');
+
+      expect(prisma.password_reset_tokens.deleteMany).toHaveBeenCalledWith({ where: { user_id: 'u1' } });
+      const { token_hash } = prisma.password_reset_tokens.create.mock.calls[0][0].data;
+      const { resetPasswordLink } = emailService.compileTemplate.mock.calls[0][1];
+      expect(token_hash).toBe(sha256(resetPasswordLink.split('token=')[1]));
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('should throw on invalid or expired token', async () => {
+      prisma.password_reset_tokens.findFirst.mockResolvedValue(null);
       await expect(service.resetPassword('badtoken', 'newpass123'))
         .rejects.toThrow(BadRequestException);
+    });
+
+    it('should update the password and revoke reset tokens and every session', async () => {
+      prisma.password_reset_tokens.findFirst.mockResolvedValue({ user_id: 'u1' });
+
+      await service.resetPassword('raw', 'newpass123');
+
+      expect(prisma.password_reset_tokens.findFirst.mock.calls[0][0].where.token_hash).toBe(sha256('raw'));
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(prisma.password_reset_tokens.deleteMany).toHaveBeenCalledWith({ where: { user_id: 'u1' } });
+      expect(prisma.refresh_sessions.deleteMany).toHaveBeenCalledWith({ where: { user_id: 'u1' } });
+    });
+  });
+
+  describe('refreshTokens', () => {
+    it('should reject a session that cannot be rotated', async () => {
+      sessions.rotate.mockResolvedValue(null);
+      await expect(service.refreshTokens('sid.secret')).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should return a new access token and the rotated refresh token', async () => {
+      sessions.rotate.mockResolvedValue({ userId: '1', token: 'sid.new' });
+      prisma.users.findUnique.mockResolvedValue({ id: '1', username: 'user', role: 'User' });
+
+      await expect(service.refreshTokens('sid.old')).resolves.toEqual({
+        accessToken: 'token',
+        refreshToken: 'sid.new',
+      });
     });
   });
 });

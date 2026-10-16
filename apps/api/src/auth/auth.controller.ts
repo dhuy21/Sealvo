@@ -24,7 +24,6 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
 import { ResetPasswordDto } from './dto/reset-password.dto.js';
 import { VerifyEmailDto } from './dto/verify-email.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
-import { JwtRefreshGuard } from './guards/jwt-refresh.guard.js';
 import { CurrentUser } from './decorators/current-user.decorator.js';
 
 const REFRESH_COOKIE = 'refresh_token';
@@ -73,27 +72,31 @@ export class AuthController {
   }
 
   @Post('refresh')
-  @UseGuards(JwtRefreshGuard)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Refresh access token using refresh cookie' })
+  @ApiOperation({ summary: 'Rotate the refresh cookie and return a new access token' })
   @ApiResponse({ status: 200, description: 'New access token returned' })
-  @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
-  async refresh(
-    @CurrentUser('id') userId: string,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const { accessToken, refreshToken } = await this.authService.refreshTokens(userId);
-    res.cookie(REFRESH_COOKIE, refreshToken, this.cookieOptions);
-    return { accessToken };
+  @ApiResponse({ status: 401, description: 'Invalid, expired or revoked session' })
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    try {
+      const { accessToken, refreshToken } = await this.authService.refreshTokens(
+        req.cookies?.[REFRESH_COOKIE],
+      );
+      res.cookie(REFRESH_COOKIE, refreshToken, this.cookieOptions);
+      return { accessToken };
+    } catch (error) {
+      res.clearCookie(REFRESH_COOKIE, { path: '/auth' });
+      throw error;
+    }
   }
 
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Logout (clears refresh cookie)' })
+  @ApiOperation({ summary: 'Logout: revokes this device session and clears the refresh cookie' })
   @ApiResponse({ status: 200, description: 'Logged out' })
-  async logout(@Res({ passthrough: true }) res: Response) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    await this.authService.logout(req.cookies?.[REFRESH_COOKIE]);
     res.clearCookie(REFRESH_COOKIE, { path: '/auth' });
     return { message: 'Logged out' };
   }

@@ -100,6 +100,9 @@ export class ReminderService {
           created_at: { lt: this.retentionCutoff(UNVERIFIED_USER_RETENTION_DAYS) },
         },
       });
+      const now = new Date();
+      await this.prisma.refresh_sessions.deleteMany({ where: { expires_at: { lt: now } } });
+      await this.prisma.password_reset_tokens.deleteMany({ where: { expires_at: { lt: now } } });
     } catch (err) {
       this.logger.error(`Cleanup failed: ${err instanceof Error ? err.message : String(err)}`);
     }

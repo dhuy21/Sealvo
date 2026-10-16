@@ -11,15 +11,13 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { RedisService } from '../redis/redis.service.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
 import { EmailService } from '../email/email.service.js';
+import { SessionService } from './session.service.js';
 import type { RegisterDto } from './dto/register.dto.js';
 import type { LoginDto } from './dto/login.dto.js';
 
-const RESET_TOKEN_PREFIX = 'reset:';
-const RESET_EMAIL_PREFIX = 'reset:email:';
-const RESET_TOKEN_TTL = 3600; // 1 hour
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const USER_ID_MAX_ATTEMPTS = 5;
 const VERIFICATION_TOKEN_TTL_MS = 3 * 60 * 60 * 1000; // 3 hours, stated in mailVerification.hbs
 const VERIFICATION_TOKEN_MAX_ATTEMPTS = 5;
@@ -30,7 +28,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
-    private readonly redis: RedisService,
+    private readonly sessions: SessionService,
     private readonly emailQueue: EmailQueueService,
     private readonly emailService: EmailService,
   ) {}
@@ -111,19 +109,25 @@ export class AuthService {
       data: { last_login: new Date() },
     });
 
-    return this.generateTokens(user.id, user.username, user.role);
+    return this.issueTokens(user);
   }
 
-  async refreshTokens(userId: string) {
-    const user = await this.prisma.users.findUnique({
-      where: { id: userId },
-    });
+  async refreshTokens(refreshToken: string | undefined) {
+    const rotated = await this.sessions.rotate(refreshToken);
+    if (!rotated) {
+      throw new UnauthorizedException('Invalid or expired session');
+    }
 
+    const user = await this.prisma.users.findUnique({ where: { id: rotated.userId } });
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
-    return this.generateTokens(user.id, user.username, user.role);
+    return { accessToken: this.signAccessToken(user), refreshToken: rotated.token };
+  }
+
+  logout(refreshToken: string | undefined): Promise<void> {
+    return this.sessions.revoke(refreshToken);
   }
 
   async getMe(userId: string) {
@@ -157,17 +161,18 @@ export class AuthService {
 
     const token = randomBytes(32).toString('hex');
     const tokenHash = createHash('sha256').update(token).digest('hex');
-    const client = this.redis.getClient();
-    if (!client) {
-      throw new InternalServerErrorException('Service temporarily unavailable');
-    }
 
-    // Delete any previous token for this email
-    const oldHash = await client.get(RESET_EMAIL_PREFIX + email);
-    if (oldHash) await client.del(RESET_TOKEN_PREFIX + oldHash);
-
-    await client.set(RESET_TOKEN_PREFIX + tokenHash, JSON.stringify({ email }), { EX: RESET_TOKEN_TTL });
-    await client.set(RESET_EMAIL_PREFIX + email, tokenHash, { EX: RESET_TOKEN_TTL });
+    // A new request replaces the previous token (#103: stored in DB, not only in Redis)
+    await this.prisma.$transaction([
+      this.prisma.password_reset_tokens.deleteMany({ where: { user_id: user.id } }),
+      this.prisma.password_reset_tokens.create({
+        data: {
+          token_hash: tokenHash,
+          user_id: user.id,
+          expires_at: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+        },
+      }),
+    ]);
 
     const baseUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
     const resetLink = `${baseUrl}/reset-password?token=${token}`;
@@ -191,28 +196,24 @@ export class AuthService {
 
   async resetPassword(token: string, password: string): Promise<{ message: string }> {
     const tokenHash = createHash('sha256').update(token).digest('hex');
-    const client = this.redis.getClient();
-    if (!client) {
-      throw new InternalServerErrorException('Service temporarily unavailable');
-    }
-
-    const raw = await client.get(RESET_TOKEN_PREFIX + tokenHash);
-    if (!raw) {
+    const resetToken = await this.prisma.password_reset_tokens.findFirst({
+      where: { token_hash: tokenHash, expires_at: { gt: new Date() } },
+    });
+    if (!resetToken) {
       throw new BadRequestException(
         "Le jeton de réinitialisation du mot de passe n'est pas valide ou a expiré",
       );
     }
 
-    const { email } = JSON.parse(raw) as { email: string };
+    const userId = resetToken.user_id;
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    await this.prisma.users.update({
-      where: { email },
-      data: { password: hashedPassword },
-    });
-
-    // Clean up tokens
-    await client.del([RESET_TOKEN_PREFIX + tokenHash, RESET_EMAIL_PREFIX + email]);
+    // New password: consume the token and log out every device (RFC 9700 §4.14.2)
+    await this.prisma.$transaction([
+      this.prisma.users.update({ where: { id: userId }, data: { password: hashedPassword } }),
+      this.prisma.password_reset_tokens.deleteMany({ where: { user_id: userId } }),
+      this.prisma.refresh_sessions.deleteMany({ where: { user_id: userId } }),
+    ]);
 
     return { message: 'Votre mot de passe a été réinitialisé avec succès' };
   }
@@ -277,7 +278,7 @@ export class AuthService {
       data: { last_login: new Date() },
     });
 
-    return this.generateTokens(user.id, user.username, user.role);
+    return this.issueTokens(user);
   }
 
   private async createUser(data: Omit<Prisma.usersCreateInput, 'id'>) {
@@ -348,16 +349,15 @@ export class AuthService {
     }
   }
 
-  private generateTokens(userId: string, username: string, role: users_role) {
-    const payload = { sub: userId, username, role };
+  private signAccessToken(user: { id: string; username: string; role: users_role }) {
+    return this.jwt.sign({ sub: user.id, username: user.username, role: user.role });
+  }
 
-    const accessToken = this.jwt.sign(payload);
-
-    const refreshToken = this.jwt.sign(payload, {
-      secret: this.config.getOrThrow<string>('JWT_REFRESH_SECRET'),
-      expiresIn: '7d' as const,
-    });
-
-    return { accessToken, refreshToken };
+  /** Access token (JWT, 15 min) + a new refresh session for this device */
+  private async issueTokens(user: { id: string; username: string; role: users_role }) {
+    return {
+      accessToken: this.signAccessToken(user),
+      refreshToken: await this.sessions.create(user.id),
+    };
   }
 }
