@@ -47,8 +47,7 @@ COPY --from=builder --chown=appuser:appgroup /app/node_modules/.prisma node_modu
 COPY --from=builder --chown=appuser:appgroup /app/packages/shared/dist packages/shared/dist
 COPY --from=builder --chown=appuser:appgroup /app/apps/api/dist apps/api/dist
 COPY --chown=appuser:appgroup apps/api/prisma apps/api/prisma
-# EmailService resolves templates from <cwd>/../../src/app/views/mails
-COPY --chown=appuser:appgroup src/app/views/mails src/app/views/mails
+COPY --chown=appuser:appgroup apps/api/templates apps/api/templates
 
 WORKDIR /app/apps/api
 USER appuser

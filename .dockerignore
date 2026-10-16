@@ -17,6 +17,5 @@
 docs/
 apps/api/backups/
 
-# Old Express app: only the email templates are used at runtime
+# Old Express app: kept in the repo until the migration is finished, never needed by the images
 src/
-!src/app/views/mails/

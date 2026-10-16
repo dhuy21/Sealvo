@@ -6,10 +6,15 @@ import type { Transporter } from 'nodemailer';
 import handlebars from 'handlebars';
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+// Same depth from src/email (tests) and dist/email (runtime), independent of the process cwd
+const TEMPLATES_DIR = fileURLToPath(new URL('../../templates/mails/', import.meta.url));
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
+  private readonly templates = new Map<string, ReturnType<typeof handlebars.compile>>();
   private transporter: Transporter;
   private readonly fromAddress: string;
   private readonly isStaging: boolean;
@@ -75,15 +80,14 @@ export class EmailService {
     }
   }
 
-  /** Compile a Handlebars template from the old views directory */
-  compileTemplate(templateRelativePath: string, data: Record<string, unknown>): string {
-    const templatePath = path.resolve(
-      process.cwd(),
-      '../../src/app/views/mails',
-      templateRelativePath,
-    );
-    const source = fs.readFileSync(templatePath, 'utf8');
-    const template = handlebars.compile(source);
+  /** Render apps/api/templates/mails/<name>; each template is compiled once (#26) */
+  compileTemplate(templateName: string, data: Record<string, unknown>): string {
+    let template = this.templates.get(templateName);
+    if (!template) {
+      const source = fs.readFileSync(path.join(TEMPLATES_DIR, templateName), 'utf8');
+      template = handlebars.compile(source);
+      this.templates.set(templateName, template);
+    }
     return template(data);
   }
 }
