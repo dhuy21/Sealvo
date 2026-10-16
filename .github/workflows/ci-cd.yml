@@ -40,7 +40,7 @@ jobs:
 
   # ── 2. BUILD, SCAN & PUSH ──────────────────────────────────
   docker-build-push:
-    name: Build & Push (${{ matrix.app }})
+    name: Build & Push (${{ matrix.image }})
     runs-on: ubuntu-latest
     needs: lint-and-test
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')
@@ -52,7 +52,10 @@ jobs:
       packages: write
     strategy:
       matrix:
-        app: [api, web]
+        include:
+          - { image: api, dockerfile: apps/api/Dockerfile }
+          - { image: web, dockerfile: apps/web/Dockerfile }
+          - { image: backup, dockerfile: apps/api/Dockerfile.backup }
     env:
       REGISTRY: ghcr.io
     steps:
@@ -65,7 +68,7 @@ jobs:
       - name: Resolve tags
         id: meta
         run: |
-          IMG="${{ env.REGISTRY }}/${{ steps.image.outputs.name }}/${{ matrix.app }}"
+          IMG="${{ env.REGISTRY }}/${{ steps.image.outputs.name }}/${{ matrix.image }}"
           case "${{ github.ref }}" in
             refs/heads/main)
               TAGS="${IMG}:latest,${IMG}:sha-${{ github.sha }}" ;;
@@ -85,10 +88,10 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./apps/${{ matrix.app }}/Dockerfile
+          file: ./${{ matrix.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          build-args: ${{ matrix.app == 'web' && format('NEXT_PUBLIC_API_URL={0}', vars.NEXT_PUBLIC_API_URL) || '' }}
+          build-args: ${{ matrix.image == 'web' && format('NEXT_PUBLIC_API_URL={0}', vars.NEXT_PUBLIC_API_URL) || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -106,7 +109,7 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          echo "### Docker Build — ${{ matrix.app }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Docker Build — ${{ matrix.image }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Tags:** \`${{ steps.meta.outputs.tags }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Status:** ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
 
@@ -170,6 +173,15 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_SCHEDULER_SERVICE_ID: ${{ secrets.RAILWAY_SCHEDULER_SERVICE_ID }}
+
+      - name: Redeploy Backup (cron)
+        run: |
+          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
+          [ -z "$RAILWAY_BACKUP_SERVICE_ID" ] && echo "Backup service not set, skip." && exit 0
+          npx -y @railway/cli redeploy --service "$RAILWAY_BACKUP_SERVICE_ID" --yes
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_BACKUP_SERVICE_ID: ${{ secrets.RAILWAY_BACKUP_SERVICE_ID }}
 
       - name: Summary
         if: always()
