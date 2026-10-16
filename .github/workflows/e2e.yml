@@ -2,6 +2,9 @@
 # Triggered manually or after deploy via workflow_call.
 name: E2E
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
@@ -24,6 +27,8 @@ jobs:
     name: E2E (${{ inputs.target }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Environment-scoped variables and secrets (STAGING_URL, E2E_USERNAME, E2E_PASSWORD)
+    environment: ${{ inputs.target }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,6 +46,9 @@ jobs:
           npx turbo test:e2e --filter=@sealvo/web
         env:
           BASE_URL: ${{ inputs.target == 'production' && (vars.PRODUCTION_URL || 'https://www.sealvo.it.com') || vars.STAGING_URL }}
+          # Seeded account (apps/api/prisma/seed.mjs); the protected-page specs skip when unset
+          E2E_USERNAME: ${{ secrets.E2E_USERNAME }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
       - name: Upload report
         if: failure()
         uses: actions/upload-artifact@v4

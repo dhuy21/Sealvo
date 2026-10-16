@@ -1,6 +1,6 @@
 import type { NextConfig } from 'next';
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const isHttps = apiUrl.startsWith('https://');
 
 // Ported from the old helmet config (src/app/middleware/security.js). Pages are prerendered,

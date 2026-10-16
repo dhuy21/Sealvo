@@ -37,9 +37,11 @@ RUN npm pkg delete scripts.prepare \
 
 # ── Runtime ──────────────────────────────────────────────────
 FROM base AS runner
+# Day boundaries (spaced repetition, streak, cleanup) use the process local time.
+# Node's bundled ICU resolves the zone: no tzdata package needed.
 ENV NODE_ENV=production \
     PORT=3000 \
-    TZ=UTC
+    TZ=Europe/Paris
 RUN addgroup -g 1001 -S appgroup && adduser -u 1001 -S appuser -G appgroup
 
 COPY --from=prod-deps --chown=appuser:appgroup /app ./
@@ -48,6 +50,10 @@ COPY --from=builder --chown=appuser:appgroup /app/packages/shared/dist packages/
 COPY --from=builder --chown=appuser:appgroup /app/apps/api/dist apps/api/dist
 COPY --chown=appuser:appgroup apps/api/prisma apps/api/prisma
 COPY --chown=appuser:appgroup apps/api/templates apps/api/templates
+
+# Commit the image was built from, reported as `version` by GET /health
+ARG GIT_SHA=unknown
+ENV GIT_SHA=${GIT_SHA}
 
 WORKDIR /app/apps/api
 USER appuser

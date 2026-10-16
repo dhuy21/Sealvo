@@ -1,7 +1,7 @@
 import type { learning_level, Prisma } from '@prisma/client';
 import { INTERVALS } from './constants.js';
 
-/** Midnight of the current day in server time (containers run with TZ=UTC). */
+/** Midnight of the current day in server time (the API image sets TZ=Europe/Paris). */
 export function startOfToday(): Date {
   const today = new Date();
   today.setHours(0, 0, 0, 0);

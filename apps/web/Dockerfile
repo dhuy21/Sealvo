@@ -34,6 +34,10 @@ COPY --from=builder --chown=appuser:appgroup /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=appuser:appgroup /app/apps/web/.next/static apps/web/.next/static
 COPY --from=builder --chown=appuser:appgroup /app/apps/web/public apps/web/public
 
+# Commit the image was built from (visible with `docker inspect` / in the service variables)
+ARG GIT_SHA=unknown
+ENV GIT_SHA=${GIT_SHA}
+
 USER appuser
 EXPOSE 3000
 

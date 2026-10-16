@@ -21,8 +21,6 @@ jobs:
     name: Lint & Test
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      NODE_ENV: test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -77,6 +75,14 @@ jobs:
           esac
           echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
 
+      # An empty value would be baked into the bundle and the site would call the wrong API
+      - name: Check NEXT_PUBLIC_API_URL
+        if: matrix.image == 'web'
+        run: |
+          : "${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL is empty: set it as a variable of the GitHub environment}"
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+
       - uses: docker/setup-buildx-action@v3
 
       - uses: docker/login-action@v3
@@ -86,25 +92,33 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: docker/build-push-action@v6
+        id: build
         with:
           context: .
           file: ./${{ matrix.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          build-args: ${{ matrix.image == 'web' && format('NEXT_PUBLIC_API_URL={0}', vars.NEXT_PUBLIC_API_URL) || '' }}
+          build-args: |
+            ${{ matrix.image != 'backup' && format('GIT_SHA={0}', github.sha) || '' }}
+            ${{ matrix.image == 'web' && format('NEXT_PUBLIC_API_URL={0}', vars.NEXT_PUBLIC_API_URL) || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Pinned by digest (aquasec/trivy:0.76.0). The container only gets the registry
+      # credentials, through the environment, to pull the image it scans.
       - name: Trivy vulnerability scan
         continue-on-error: true
         run: |
-          FIRST_TAG=$(echo "${{ steps.meta.outputs.tags }}" | cut -d',' -f1)
           docker run --rm \
-            -e TRIVY_USERNAME="${{ github.actor }}" \
-            -e TRIVY_PASSWORD="${{ secrets.GITHUB_TOKEN }}" \
-            aquasec/trivy:latest image \
+            --cap-drop ALL --security-opt no-new-privileges \
+            -e TRIVY_USERNAME -e TRIVY_PASSWORD \
+            aquasec/trivy:0.76.0@sha256:2416d1f74045b57274df1a340eee6b510cacd73c66a6ccb8da092b117eb7d222 image \
               --severity CRITICAL,HIGH --ignore-unfixed --exit-code 0 --format table \
-              "$FIRST_TAG"
+              "$IMAGE"
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}/${{ matrix.image }}@${{ steps.build.outputs.digest }}
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Summary
         if: always()
@@ -119,7 +133,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: docker-build-push
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    timeout-minutes: 15
+    timeout-minutes: 20
     environment:
       name: production
       url: https://www.sealvo.it.com
@@ -135,18 +149,23 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_API_SERVICE_ID: ${{ secrets.RAILWAY_API_SERVICE_ID }}
 
+      # A 200 alone could come from the previous deployment: wait until /health reports this commit
       - name: Health check (API)
         run: |
-          sleep 30
-          for i in 1 2 3 4 5; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/health" || true)
-            echo "Attempt $i: $STATUS"
-            [ "$STATUS" = "200" ] && exit 0
-            sleep 15
+          if [ -z "$RAILWAY_TOKEN" ] || [ -z "$API_URL" ]; then
+            echo "RAILWAY_TOKEN or API_URL not set, skip." && exit 0
+          fi
+          for i in $(seq 1 30); do
+            VERSION=$(curl -fsS --max-time 10 "$API_URL/health" | jq -r '.version // empty' 2>/dev/null || true)
+            echo "Attempt $i: version=${VERSION:-none}"
+            [ "$VERSION" = "$EXPECTED_VERSION" ] && exit 0
+            sleep 20
           done
-          echo "Health check failed." && exit 1
+          echo "API did not report version $EXPECTED_VERSION within 10 minutes." && exit 1
         env:
           API_URL: ${{ vars.API_URL }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          EXPECTED_VERSION: ${{ github.sha }}
 
       - name: Redeploy Web
         run: |
@@ -196,7 +215,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: docker-build-push
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    timeout-minutes: 15
+    timeout-minutes: 20
     environment:
       name: staging
       url: ${{ vars.STAGING_URL }}
@@ -212,18 +231,23 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_API_SERVICE_ID: ${{ secrets.RAILWAY_API_SERVICE_ID }}
 
+      # A 200 alone could come from the previous deployment: wait until /health reports this commit
       - name: Health check (API)
         run: |
-          sleep 30
-          for i in 1 2 3 4 5; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/health" || true)
-            echo "Attempt $i: $STATUS"
-            [ "$STATUS" = "200" ] && exit 0
-            sleep 15
+          if [ -z "$RAILWAY_TOKEN" ] || [ -z "$API_URL" ]; then
+            echo "RAILWAY_TOKEN or API_URL not set, skip." && exit 0
+          fi
+          for i in $(seq 1 30); do
+            VERSION=$(curl -fsS --max-time 10 "$API_URL/health" | jq -r '.version // empty' 2>/dev/null || true)
+            echo "Attempt $i: version=${VERSION:-none}"
+            [ "$VERSION" = "$EXPECTED_VERSION" ] && exit 0
+            sleep 20
           done
-          echo "Health check failed." && exit 1
+          echo "API did not report version $EXPECTED_VERSION within 10 minutes." && exit 1
         env:
           API_URL: ${{ vars.API_URL }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          EXPECTED_VERSION: ${{ github.sha }}
 
       - name: Redeploy Web
         run: |

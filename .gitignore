@@ -21,9 +21,6 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Prisma
-apps/api/prisma/migrations/**/migration_lock.toml
-
 # Logs
 *.log
 npm-debug.log*

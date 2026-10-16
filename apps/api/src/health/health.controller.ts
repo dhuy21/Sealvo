@@ -35,6 +35,8 @@ export class HealthController {
     const isHealthy = dbStatus === 'ok';
     const body = {
       status: isHealthy ? 'healthy' : 'unhealthy',
+      // Build commit (GIT_SHA build arg): CI waits for it to know the new deployment is live
+      version: process.env.GIT_SHA || 'unknown',
       uptime: process.uptime(),
       db: dbStatus,
       latency: Date.now() - start,

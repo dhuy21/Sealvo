@@ -32,6 +32,7 @@ const TASKS: ScheduledTask[] = [
   },
 ];
 
+const CRON_TIMEZONE = 'Europe/Paris';
 const REDIS_PREFIX = 'scheduler:';
 const REQUEST_TIMEOUT_MS = 120_000;
 
@@ -125,10 +126,10 @@ async function bootstrap() {
 
   const jobs: ReturnType<typeof cron.schedule>[] = [];
   for (const task of TASKS) {
-    const job = cron.schedule(task.cron, () => triggerTask(task), { timezone: 'UTC' });
+    const job = cron.schedule(task.cron, () => triggerTask(task), { timezone: CRON_TIMEZONE });
     jobs.push(job);
     console.log(
-      `[scheduler] Registered "${task.name}" — cron: ${task.cron} (UTC) — ${task.description}`,
+      `[scheduler] Registered "${task.name}" — cron: ${task.cron} (${CRON_TIMEZONE}) — ${task.description}`,
     );
   }
 
