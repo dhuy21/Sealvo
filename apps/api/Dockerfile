@@ -3,6 +3,7 @@ FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
 RUN npm ci
 
@@ -24,6 +25,7 @@ FROM node:22-alpine AS prod-deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
 RUN npm ci --omit=dev
 # Re-generate Prisma client in prod node_modules
@@ -45,6 +47,10 @@ COPY --from=prod-deps /app/packages/shared/node_modules /app/packages/shared/nod
 # Built output
 COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/packages/shared/dist /app/packages/shared/dist
+
+# Prisma CLI (devDependency, needed for migrate deploy at startup)
+COPY --from=deps /app/node_modules/prisma /app/node_modules/prisma
+COPY --from=deps /app/node_modules/.bin/prisma /app/node_modules/.bin/prisma
 
 # Package files for module resolution
 COPY --from=builder /app/package.json /app/package.json

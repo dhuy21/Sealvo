@@ -6,6 +6,7 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+    image: sealvo-api
     container_name: sealvo_api
     ports:
       - '${API_PORT:-3001}:3000'
@@ -40,9 +41,7 @@ services:
         condition: service_healthy
 
   worker:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
+    image: sealvo-api
     container_name: sealvo_worker
     command: ['node', 'dist/worker.js']
     env_file: .env
@@ -62,9 +61,7 @@ services:
       start_period: 30s
 
   scheduler:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
+    image: sealvo-api
     container_name: sealvo_scheduler
     command: ['node', 'dist/scheduler.js']
     env_file: .env
