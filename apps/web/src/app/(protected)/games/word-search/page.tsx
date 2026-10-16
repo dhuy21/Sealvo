@@ -1,18 +1,35 @@
 'use client';
 
-import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useGameData, useSaveScore, useTrackLevelProgress } from '@/hooks/use-games';
+import { useGameData, useSaveScore } from '@/hooks/use-games';
+import { useTimeouts } from '@/hooks/use-timeouts';
 import { launchFireworks } from '@/components/games/confetti';
-import { levelCompletedMessage } from '@/components/games/level-progress';
+import { useCelebration } from '@/components/games/use-celebration';
+import { useLevelTracking } from '@/components/games/use-level-tracking';
 import { GameDataStatus } from '@/components/games/GameDataStatus';
 import { GameStats } from '@/components/games/GameStats';
 import { GameFooter } from '@/components/games/GameFooter';
 import type { LevelStatus } from '@/components/games/TrackLevelMessage';
-import { DIRECTIONS, cellKey, generateGrid, type CellRef } from '@/components/games/word-search/grid';
+import {
+  cellKey,
+  findWordInGrid,
+  generateGrid,
+  normalizeWord,
+  type CellRef,
+} from '@/components/games/word-search/grid';
+import { showHintToast, showLowScoreToast } from '@/components/games/word-search/hint-toasts';
+import { useCellSelection } from '@/components/games/word-search/use-cell-selection';
+import { useHintFlash } from '@/components/games/word-search/use-hint-flash';
+import { useLetterExplosions } from '@/components/games/word-search/use-letter-explosions';
+import { isPortraitBlocked, usePortraitBlocked } from '@/components/games/word-search/use-portrait-blocked';
+import { useWordListSidebar } from '@/components/games/word-search/use-word-list-sidebar';
+import { RotationNotice } from '@/components/games/word-search/RotationNotice';
 import { WordSearchRules } from '@/components/games/word-search/WordSearchRules';
 import { WordSearchBoard } from '@/components/games/word-search/WordSearchBoard';
 import { WordSearchSummary } from '@/components/games/word-search/WordSearchSummary';
+import { cx } from '@/lib/css-module';
+import styles from '@/styles/games/word-search.module.css';
 
 /* ================================================================
    INNER COMPONENT
@@ -23,7 +40,7 @@ function WordSearchInner() {
 
   const { data: gameData, isLoading, error } = useGameData('word_search', packageId);
   const saveScoreMut = useSaveScore();
-  const trackLevel = useTrackLevelProgress();
+  const level = useLevelTracking('word_search');
 
   type Screen = 'pre' | 'active' | 'post';
   const [screen, setScreen] = useState<Screen>('pre');
@@ -33,16 +50,19 @@ function WordSearchInner() {
   const [score, setScore] = useState(0);
   const [timer, setTimer] = useState(0);
   const [attempts, setAttempts] = useState(0);
-  const [selectedCells, setSelectedCells] = useState<CellRef[]>([]);
   const [foundCells, setFoundCells] = useState<Set<string>>(new Set());
   const [levelMessage, setLevelMessage] = useState('');
   const [levelStatus, setLevelStatus] = useState<LevelStatus>('');
-  const [startNotice, setStartNotice] = useState('');
-
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-  const isSelectingRef = useRef(false);
   const gridRef = useRef<string[][]>([]);
   const gameActiveRef = useRef(false);
+
+  const letters = useLetterExplosions();
+  const portraitBlocked = usePortraitBlocked();
+  const sidebar = useWordListSidebar();
+  const hint = useHintFlash();
+  const later = useTimeouts();
+  const celebrate = useCelebration(launchFireworks);
 
   const ready = !!gameData && !gameData.errorMessage;
 
@@ -67,137 +87,73 @@ function WordSearchInner() {
   }, [foundWords.length]);
 
   function startGame() {
+    if (isPortraitBlocked()) return;
+    sidebar.close();
+    letters.gameStart();
+
     if (!gameData || gameData.errorMessage || gameData.words.length === 0) {
       setScreen('pre');
       return;
     }
 
     const wordStrings = gameData.words.slice(0, 30).map((w) => w.word);
-    const { grid: newGrid, placedWords } = generateGrid(wordStrings);
-    if (placedWords.length === 0) {
-      setStartNotice(
-        'Aucun mot ne peut être placé dans la grille : seuls les mots de 2 à 15 lettres latines (A–Z) sont utilisables.',
-      );
-      setScreen('pre');
-      return;
-    }
-    setStartNotice('');
+    const newGrid = generateGrid(wordStrings);
 
     setGrid(newGrid);
     gridRef.current = newGrid;
-    setWordsToFind(placedWords);
+    setWordsToFind(wordStrings);
     setFoundWords([]);
     setFoundCells(new Set());
     setScore(0);
     setAttempts(0);
-    setSelectedCells([]);
     setLevelMessage('');
     setLevelStatus('');
     gameActiveRef.current = true;
 
-    const gameTimer = 300 + placedWords.length * 13;
+    const gameTimer = 300 + wordStrings.length * 13;
     setTimer(gameTimer);
     setScreen('active');
   }
 
-  const handleCellMouseDown = useCallback((row: number, col: number) => {
-    if (!gameActiveRef.current) return;
-    isSelectingRef.current = true;
-    setSelectedCells([{ row, col }]);
-  }, []);
+  function checkSelection(cells: CellRef[]) {
+    const selectedWord = cells.map((c) => gridRef.current[c.row][c.col]).join('');
+    const word = wordsToFind.find((w) => normalizeWord(w) === selectedWord && !foundWords.includes(w));
 
-  const handleCellMouseOver = useCallback((row: number, col: number) => {
-    if (!isSelectingRef.current || !gameActiveRef.current) return;
-
-    setSelectedCells((prev) => {
-      if (prev.length === 0) return prev;
-
-      // Already selected?
-      const existingIdx = prev.findIndex((c) => c.row === row && c.col === col);
-      if (existingIdx !== -1 && existingIdx < prev.length - 1) {
-        return prev.slice(0, existingIdx + 1);
-      }
-      if (existingIdx !== -1) return prev;
-
-      const last = prev[prev.length - 1];
-      const rowDiff = row - last.row;
-      const colDiff = col - last.col;
-
-      const isValid = DIRECTIONS.some(([dx, dy]) =>
-        dx === Math.sign(rowDiff) && dy === Math.sign(colDiff) &&
-        (Math.abs(rowDiff) === Math.abs(colDiff) || rowDiff === 0 || colDiff === 0)
-      );
-      if (!isValid) return prev;
-
-      // Check consistent direction
-      if (prev.length > 1) {
-        const first = prev[0];
-        const dirX = Math.sign(last.row - first.row);
-        const dirY = Math.sign(last.col - first.col);
-        const newDirX = Math.sign(row - first.row);
-        const newDirY = Math.sign(col - first.col);
-
-        if (dirX !== 0 && newDirX !== dirX) return prev;
-        if (dirY !== 0 && newDirY !== dirY) return prev;
-
-        const isInLine = (dirX === 0 && newDirX === 0) || (dirY === 0 && newDirY === 0) ||
-          Math.abs(row - first.row) === Math.abs(col - first.col);
-        if (!isInLine) return prev;
-      }
-
-      return [...prev, { row, col }];
-    });
-  }, []);
-
-  const handleSelectionEnd = useCallback(() => {
-    if (!gameActiveRef.current) return;
-    isSelectingRef.current = false;
-
-    setSelectedCells((prev) => {
-      if (prev.length === 0) return prev;
-
-      const selectedWord = prev.map((c) => gridRef.current[c.row][c.col]).join('');
-
-      const foundIdx = wordsToFind.findIndex((w) =>
-        w.toUpperCase().replace(/[^A-Z]/g, '') === selectedWord && !foundWords.includes(w)
-      );
-
-      if (foundIdx !== -1) {
-        const word = wordsToFind[foundIdx];
-        setFoundWords((f) => [...f, word]);
-        setScore((s) => s + selectedWord.length * 5);
-        setFoundCells((fc) => {
-          const newSet = new Set(fc);
-          prev.forEach((c) => newSet.add(cellKey(c.row, c.col)));
-          return newSet;
-        });
-      } else {
-        setAttempts((a) => a + 1);
-      }
-
-      return [];
-    });
-  }, [wordsToFind, foundWords]);
-
-  // Touch handling
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isSelectingRef.current) return;
-    e.preventDefault();
-    const touch = e.touches[0];
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
-    if (el && el instanceof HTMLElement && el.dataset.row && el.dataset.col) {
-      handleCellMouseOver(parseInt(el.dataset.row), parseInt(el.dataset.col));
+    if (word !== undefined) {
+      setFoundWords([...foundWords, word]);
+      letters.wordFound(word);
+      setScore((s) => s + selectedWord.length * 5);
+      setFoundCells((fc) => {
+        const newSet = new Set(fc);
+        cells.forEach((c) => newSet.add(cellKey(c.row, c.col)));
+        return newSet;
+      });
+    } else {
+      setAttempts((a) => a + 1);
     }
-  }, [handleCellMouseOver]);
+  }
+
+  const selection = useCellSelection(gameActiveRef, checkSelection);
 
   function showHint() {
-    if (score < 100) return;
+    if (!gameActiveRef.current || foundWords.length >= wordsToFind.length) return;
+    if (score < 100) {
+      showLowScoreToast();
+      return;
+    }
 
     const remaining = wordsToFind.filter((w) => !foundWords.includes(w));
     if (remaining.length === 0) return;
 
     const word = remaining[Math.floor(Math.random() * remaining.length)];
-    alert(`Indice: Cherchez le mot "${word}" (-100 points)`);
+    const cells = findWordInGrid(gridRef.current, normalizeWord(word));
+    if (!cells) {
+      console.warn('No hint position found for word:', normalizeWord(word));
+      return;
+    }
+
+    showHintToast(word);
+    hint.flash(cells);
     setScore((s) => Math.max(0, s - 100));
   }
 
@@ -213,18 +169,7 @@ function WordSearchInner() {
 
     saveScoreMut.mutate({ game_type: 'word_search', score: totalScore });
 
-    trackLevel.mutate(
-      { game_type: 'word_search', completed: isSuccessful, packageId: packageId! },
-      {
-        onSuccess: (data) => {
-          const message = levelCompletedMessage(data);
-          if (message) {
-            setLevelMessage(message);
-            setLevelStatus('completed');
-          }
-        },
-      },
-    );
+    level.track(isSuccessful, packageId!);
 
     if (isSuccessful) {
       setLevelMessage('Excellent travail ! Progressez les autres jeux de ce niveau 😍');
@@ -234,9 +179,9 @@ function WordSearchInner() {
       setLevelStatus('failed');
     }
 
-    setTimeout(() => {
+    later(() => {
       setScreen('post');
-      launchFireworks();
+      celebrate();
     }, 1000);
   }
 
@@ -249,12 +194,12 @@ function WordSearchInner() {
   }, [timer, screen]);
 
   const accuracy = attempts > 0 ? Math.round((foundWords.length / attempts) * 100) : 0;
-  const selectedSet = new Set(selectedCells.map((c) => cellKey(c.row, c.col)));
+  const selectedSet = new Set(selection.selected.map((c) => cellKey(c.row, c.col)));
 
   if (!packageId) {
     return (
-      <div className="game-container" id="package-id">
-        <div className="error-box">
+      <div className={cx(styles, 'game-container')} id="package-id">
+        <div className={cx(styles, 'error-box')}>
           <i className="fas fa-exclamation-triangle"></i>
           <p>Aucun package sélectionné.</p>
         </div>
@@ -263,57 +208,72 @@ function WordSearchInner() {
   }
 
   return (
-    <div className="game-container letter-explosion-mode" id="package-id" data-package={packageId}>
-      {/* Header */}
-      <div className="game-header">
-        <h1>Word Search</h1>
-        <p className="game-description">Trouvez les mots cachés dans la grille</p>
+    <>
+      <button
+        id="sidebar-toggle"
+        className={cx(styles, 'sidebar-toggle')}
+        aria-label="Toggle word list sidebar"
+        onClick={sidebar.toggle}
+      >
+        <i className={`fas ${sidebar.open ? 'fa-times' : 'fa-list'}`}></i>
+      </button>
+      <RotationNotice visible={portraitBlocked} />
+      <div className={cx(styles, 'game-container', 'letter-explosion-mode')} id="package-id" data-package={packageId}>
+        {/* Header */}
+        <div className={cx(styles, 'game-header')}>
+          <h1>Mots Cachés</h1>
+          <p className={cx(styles, 'game-description')}>Trouvez les mots cachés dans la grille</p>
+        </div>
+
+        {screen === 'pre' && (
+          <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} styles={styles} />
+        )}
+
+        {gameData && (screen !== 'pre' || ready) && (
+          <>
+            <GameStats gameType="word_search" wordCount={gameData.wordCount} styles={styles} />
+
+            <div className={cx(styles, 'game-screen')} id="game-screen">
+              {screen === 'pre' && <WordSearchRules onStart={startGame} disabled={portraitBlocked} />}
+
+              {screen === 'active' && (
+                <WordSearchBoard
+                  score={score}
+                  timer={timer}
+                  wordsToFind={wordsToFind}
+                  foundWords={foundWords}
+                  grid={grid}
+                  foundCells={foundCells}
+                  selectedSet={selectedSet}
+                  hintCells={hint.flashing}
+                  sidebarOpen={sidebar.open}
+                  onHint={showHint}
+                  onCellMouseDown={selection.start}
+                  onCellMouseOver={selection.extend}
+                  onSelectionEnd={selection.end}
+                  onTouchMove={selection.touchMove}
+                />
+              )}
+
+              {screen === 'post' && (
+                <WordSearchSummary
+                  finalScore={score}
+                  foundCount={foundWords.length}
+                  accuracy={accuracy}
+                  levelMessage={levelMessage}
+                  levelStatus={levelStatus}
+                  levelFinished={level.levelFinished}
+                  packageId={packageId}
+                  onReplay={startGame}
+                />
+              )}
+            </div>
+          </>
+        )}
+
+        <GameFooter packageId={packageId} nextGame="test-pronun" styles={styles} />
       </div>
-
-      {screen === 'pre' && (
-        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} />
-      )}
-
-      {gameData && (screen !== 'pre' || ready) && (
-        <>
-          <GameStats wordCount={gameData.wordCount} />
-
-          <div className="game-screen" id="game-screen">
-            {screen === 'pre' && <WordSearchRules onStart={startGame} notice={startNotice} />}
-
-            {screen === 'active' && (
-              <WordSearchBoard
-                score={score}
-                timer={timer}
-                wordsToFind={wordsToFind}
-                foundWords={foundWords}
-                grid={grid}
-                foundCells={foundCells}
-                selectedSet={selectedSet}
-                onHint={showHint}
-                onCellMouseDown={handleCellMouseDown}
-                onCellMouseOver={handleCellMouseOver}
-                onSelectionEnd={handleSelectionEnd}
-                onTouchMove={handleTouchMove}
-              />
-            )}
-
-            {screen === 'post' && (
-              <WordSearchSummary
-                finalScore={score + (foundWords.length === wordsToFind.length ? 100 : 0)}
-                foundCount={foundWords.length}
-                accuracy={accuracy}
-                levelMessage={levelMessage}
-                levelStatus={levelStatus}
-                onReplay={startGame}
-              />
-            )}
-          </div>
-        </>
-      )}
-
-      <GameFooter packageId={packageId} />
-    </div>
+    </>
   );
 }
 

@@ -38,12 +38,12 @@ test.afterAll(async () => {
 test('dashboard loads with the username', async () => {
   await page.goto('/dashboard');
   await expect(page.getByRole('heading', { name: 'Tableau de Bord' })).toBeVisible();
-  await expect(page.locator('.dashboard-welcome')).toContainText(username!);
+  await expect(page.locator('[class*="dashboard-welcome"]')).toContainText(username!);
 });
 
 test('packages list shows the seeded package', async () => {
   await page.goto('/packages');
-  const card = page.locator('.package-card', { hasText: PACKAGE_NAME });
+  const card = page.locator('[data-package-id]', { hasText: PACKAGE_NAME });
   await expect(card).toBeVisible();
   packageId = (await card.getAttribute('data-package-id'))!;
   expect(packageId).toMatch(/^\d+$/);
@@ -56,10 +56,20 @@ test('words page lists the seeded words', async () => {
   }
 });
 
+test('words page links to the add-words page', async () => {
+  await page.goto(`/words?package=${packageId}`);
+  await page.getByRole('link', { name: /Ajouter un nouveau mot/ }).click();
+  await expect(page).toHaveURL(new RegExp(`/words/add\\?package=${packageId}$`));
+  await expect(page.getByRole('heading', { name: 'Ajouter un nouveau mot' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Nouveau mot', exact: true })).toHaveCount(1);
+});
+
 test('Flash Match starts with the due words', async () => {
   await page.goto(`/games/flash-match?package=${packageId}`);
   await page.getByRole('button', { name: /Commencer/ }).click();
   // One word card and one meaning card per word (at most 15 pairs)
-  await expect(page.locator('.game-board .card-container')).toHaveCount(SEEDED_WORDS.length * 2);
-  await expect(page.locator('.pairs-value')).toHaveText(`0/${SEEDED_WORDS.length}`);
+  await expect(page.locator('[class*="_game-board"] [class*="_card-container"]')).toHaveCount(
+    SEEDED_WORDS.length * 2,
+  );
+  await expect(page.locator('[class*="_pairs-value"]')).toHaveText(`0/${SEEDED_WORDS.length}`);
 });

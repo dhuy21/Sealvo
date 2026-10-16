@@ -6,6 +6,7 @@ export interface GameWord {
   word_id: number;
   word: string;
   language_code: string;
+  type: string;
   meaning: string;
   pronunciation: string | null;
   example: string | null;
@@ -35,10 +36,14 @@ export function useGameData(gameType: string, packageId: number | null) {
 }
 
 export function useSaveScore() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { game_type: string; score: number }) => {
       const { data } = await api.post('/games/score', payload);
       return data;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['scores'] });
     },
   });
 }

@@ -1,15 +1,25 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Public pages – smoke', () => {
-  test('homepage shows SEALVO branding and sends visitors to /login', async ({ page }) => {
+  test('homepage shows the landing page with SEALVO branding', async ({ page }) => {
     await page.goto('/');
-    await expect(page).toHaveTitle(/SealVo/i);
+    await expect(page).toHaveTitle('Accueil | SealVo');
     const header = page.getByRole('banner');
     await expect(header.getByRole('heading', { name: 'SEALVO' })).toBeVisible();
-    await expect(page).toHaveURL(/\/login/);
     await expect(header.getByRole('link', { name: 'Sign In' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Welcome to SEALVO/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Featured Words' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Register Now' })).toHaveAttribute(
+      'href',
+      '/register',
+    );
+  });
+
+  test('"Get Started" on the homepage navigates to /login', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('link', { name: 'Get Started' }).click();
+    await expect(page).toHaveURL(/\/login/);
     await expect(page.locator('input[name="username"]')).toBeVisible();
-    await expect(page.locator('input[name="password"]')).toBeVisible();
   });
 
   test('/login page renders correctly', async ({ page }) => {

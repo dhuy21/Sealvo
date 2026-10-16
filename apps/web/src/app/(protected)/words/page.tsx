@@ -1,32 +1,21 @@
 'use client';
 
-import { Suspense, useRef } from 'react';
+import { Suspense } from 'react';
+import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, useMemo, useCallback } from 'react';
-import {
-  useWords,
-  useAddWord,
-  useUpdateWord,
-  useDeleteWord,
-  useDeleteAllWords,
-} from '@/hooks/use-words';
-import { useImportFile } from '@/hooks/use-import';
+import { useWords, useUpdateWord, useDeleteWord, useDeleteAllWords } from '@/hooks/use-words';
 import { usePackage } from '@/hooks/use-packages';
-import type { Word, CreateWordPayload, UpdateWordPayload } from '@/hooks/use-words';
+import type { Word, UpdateWordPayload } from '@/hooks/use-words';
 import { getApiErrorMessage } from '@/lib/api-error';
 import toast from 'react-hot-toast';
-import { AddWordModal } from '@/components/words/AddWordModal';
-import { DeleteAllModal } from '@/components/words/DeleteAllModal';
+import { DeleteAllModal, type DeleteAllStatus } from '@/components/words/DeleteAllModal';
 import { WordRow } from '@/components/words/WordRow';
+import { matchesSearch } from '@/components/words/word-search';
+import styles from '@/styles/vocabs.module.css';
+import { cx } from '@/lib/css-module';
 
 const LEVELS = ['x', 'level_0', 'level_1', 'level_2', 'v'] as const;
-
-const IMPORT_PHASES: Record<string, string> = {
-  parsing: 'analyse du fichier',
-  gemini: 'enrichissement IA',
-  saving: 'enregistrement',
-  done: 'finalisation',
-};
 
 function levelLabel(level: string): string {
   if (level === 'x') return 'x';
@@ -46,29 +35,23 @@ function WordsContent() {
   const wordsQuery = useWords(packageId || null);
   const words = wordsQuery.data;
   const isOwner = pkgQuery.data?.isOwner ?? false;
-  const addWord = useAddWord(packageId);
   const updateWord = useUpdateWord(packageId);
   const deleteWord = useDeleteWord(packageId);
   const deleteAll = useDeleteAllWords(packageId);
-  const importFile = useImportFile(packageId);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [search, setSearch] = useState('');
-  const [addModalOpen, setAddModalOpen] = useState(false);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [deleteAllStatus, setDeleteAllStatus] = useState<DeleteAllStatus>('idle');
+  const [deletingLevels, setDeletingLevels] = useState<Set<string>>(new Set());
+  const addWordsHref = `/words/add?package=${packageId}`;
 
   // Group words by level
   const wordsByLevel = useMemo(() => {
     if (!words) return {};
     let filtered = words;
-    if (search) {
-      const term = search.toLowerCase();
-      filtered = words.filter(
-        (w) =>
-          w.word.toLowerCase().includes(term) ||
-          w.meaning.toLowerCase().includes(term) ||
-          (w.synonyms ?? '').toLowerCase().includes(term),
-      );
+    const term = search.trim().toLowerCase();
+    if (term) {
+      filtered = words.filter((w) => matchesSearch(w, term));
     }
     const grouped: Record<string, Word[]> = {};
     for (const level of LEVELS) {
@@ -79,20 +62,6 @@ function WordsContent() {
     }
     return grouped;
   }, [words, search]);
-
-  const handleAddWord = useCallback(
-    (data: CreateWordPayload, resetForm: () => void) => {
-      addWord.mutate(data, {
-        onSuccess: () => {
-          resetForm();
-          toast.success('Mot ajouté avec succès');
-          setAddModalOpen(false);
-        },
-        onError: (err) => toast.error(getApiErrorMessage(err, 'Erreur')),
-      });
-    },
-    [addWord],
-  );
 
   const handleUpdateWord = useCallback(
     (detailId: number, dto: UpdateWordPayload) => {
@@ -118,20 +87,39 @@ function WordsContent() {
   );
 
   const handleDeleteAll = useCallback(() => {
+    setDeleteAllStatus('loading');
     deleteAll.mutate(undefined, {
-      onSuccess: () => {
-        toast.success('Tous les mots ont été supprimés');
-        setDeleteAllOpen(false);
+      onSuccess: (data: { message: string }) => {
+        setDeleteAllStatus('success');
+        setTimeout(() => {
+          setDeleteAllOpen(false);
+          setDeleteAllStatus('idle');
+
+          // Staggered fade-out of the level containers, then refetch, as in the old app
+          const levels = Object.keys(wordsByLevel);
+          levels.forEach((level, i) => {
+            setTimeout(() => setDeletingLevels((prev) => new Set(prev).add(level)), i * 100);
+          });
+          setTimeout(() => {
+            void wordsQuery.refetch().then(() => setDeletingLevels(new Set()));
+            toast.success(data.message);
+          }, levels.length * 100 + 600);
+        }, 1500);
       },
-      onError: (err) => toast.error(getApiErrorMessage(err, 'Erreur')),
+      onError: (err) => {
+        setDeleteAllStatus('idle');
+        toast.error(
+          getApiErrorMessage(err, 'Une erreur est survenue lors de la suppression des mots'),
+        );
+      },
     });
-  }, [deleteAll]);
+  }, [deleteAll, wordsByLevel, wordsQuery]);
 
   if (!packageId) {
     return (
-      <div className="vocabulary-container" style={{ textAlign: 'center', padding: '4rem' }}>
+      <div className={cx(styles, 'vocabulary-container')} style={{ textAlign: 'center', padding: '4rem' }}>
         <p>Aucun package sélectionné.</p>
-        <button className="btn" onClick={() => router.push('/packages')}>
+        <button className={cx(styles, 'btn')} onClick={() => router.push('/packages')}>
           Retour aux packages
         </button>
       </div>
@@ -140,7 +128,7 @@ function WordsContent() {
 
   if (pkgQuery.isLoading || wordsQuery.isLoading) {
     return (
-      <div className="vocabulary-container" style={{ textAlign: 'center', padding: '4rem' }}>
+      <div className={cx(styles, 'vocabulary-container')} style={{ textAlign: 'center', padding: '4rem' }}>
         <i className="fas fa-spinner fa-spin fa-2x"></i>
       </div>
     );
@@ -148,8 +136,8 @@ function WordsContent() {
 
   if (pkgQuery.isError || wordsQuery.isError) {
     return (
-      <div className="vocabulary-container" style={{ textAlign: 'center', padding: '4rem' }}>
-        <div className="no-words">
+      <div className={cx(styles, 'vocabulary-container')} style={{ textAlign: 'center', padding: '4rem' }}>
+        <div className={cx(styles, 'no-words')}>
           <i className="fas fa-exclamation-circle"></i>
           <h3>Package inaccessible</h3>
           <p>
@@ -159,7 +147,7 @@ function WordsContent() {
             )}
           </p>
         </div>
-        <button className="btn" onClick={() => router.push('/packages')}>
+        <button className={cx(styles, 'btn')} onClick={() => router.push('/packages')}>
           Retour aux packages
         </button>
       </div>
@@ -168,14 +156,13 @@ function WordsContent() {
 
   const hasWords = words && words.length > 0;
   const levelEntries = Object.entries(wordsByLevel);
-  const importProgress = importFile.job?.progress;
 
   return (
-    <div className="vocabulary-container" data-package={packageId}>
+    <div className={cx(styles, 'vocabulary-container')} data-package={packageId}>
       <h1>{pkgQuery.data?.package_name ?? 'Mon Vocabulaire'}</h1>
 
       {!isOwner && pkgQuery.data && (
-        <div className="search-results-info" style={{ display: 'block' }}>
+        <div className={cx(styles, 'search-results-info')} style={{ display: 'block' }}>
           <p>
             <i className="fas fa-eye"></i> Lecture seule — package de{' '}
             <strong>{pkgQuery.data.username}</strong>
@@ -184,137 +171,36 @@ function WordsContent() {
       )}
 
       {isOwner && (
-        <div className="action-container">
-          <button className="add-word-btn" onClick={() => setAddModalOpen(true)}>
+        <div className={cx(styles, 'action-container')}>
+          <Link href={addWordsHref} className={cx(styles, 'add-word-btn')}>
             <i className="fas fa-plus"></i> Ajouter un nouveau mot
-          </button>
+          </Link>
           <button
-            className="learn-btn"
+            className={cx(styles, 'learn-btn')}
             onClick={() => router.push(`/learn?package=${packageId}`)}
           >
             <i className="fas fa-book-open"></i> Mode d&apos;apprentissage
           </button>
-          <button
-            className="add-word-btn"
-            style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importFile.uploading}
-          >
-            {importFile.uploading ? (
-              <i className="fas fa-spinner fa-spin"></i>
-            ) : (
-              <i className="fas fa-file-import"></i>
-            )}{' '}
-            Importer (Excel)
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx,.xls"
-            style={{ display: 'none' }}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                importFile.upload(file);
-                e.target.value = '';
-              }
-            }}
-          />
           {hasWords && (
-            <button className="btn-danger" onClick={() => setDeleteAllOpen(true)}>
+            <button className={cx(styles, 'btn-danger')} onClick={() => setDeleteAllOpen(true)}>
               <i className="fas fa-trash"></i> Supprimer tous les mots
             </button>
           )}
         </div>
       )}
 
-      {/* Import Progress */}
-      {importFile.job && (
-        <div
-          className="alert"
-          style={{
-            marginTop: '1rem',
-            padding: '1rem',
-            borderRadius: '8px',
-            background:
-              importFile.job.status === 'completed'
-                ? '#d1fae5'
-                : importFile.job.status === 'failed'
-                  ? '#fee2e2'
-                  : '#dbeafe',
-          }}
-        >
-          {importFile.job.status === 'pending' && (
-            <p>
-              <i className="fas fa-clock"></i> Import en attente...
-            </p>
-          )}
-          {importFile.job.status === 'processing' && (
-            <p>
-              <i className="fas fa-spinner fa-spin"></i> Import en cours...
-              {importProgress &&
-                ` ${IMPORT_PHASES[importProgress.phase] ?? importProgress.phase} (${importProgress.current}/${importProgress.total})`}
-            </p>
-          )}
-          {importFile.job.status === 'retrying' && (
-            <p>
-              <i className="fas fa-redo fa-spin"></i> Nouvelle tentative d&apos;import...
-            </p>
-          )}
-          {importFile.job.status === 'completed' && (
-            <p>
-              <i className="fas fa-check-circle" style={{ color: '#059669' }}></i>{' '}
-              {importFile.job.message ??
-                (importFile.job.result
-                  ? `${importFile.job.result.imported}/${importFile.job.result.total} mot(s) importé(s) avec succès`
-                  : 'Import terminé avec succès')}
-              <button
-                style={{
-                  marginLeft: '1rem',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: '#6b7280',
-                }}
-                onClick={importFile.reset}
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </p>
-          )}
-          {importFile.job.status === 'failed' && (
-            <p>
-              <i className="fas fa-exclamation-circle" style={{ color: '#dc2626' }}></i>{' '}
-              {importFile.job.error ?? "Erreur lors de l'import"}
-              <button
-                style={{
-                  marginLeft: '1rem',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: '#6b7280',
-                }}
-                onClick={importFile.reset}
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </p>
-          )}
-        </div>
-      )}
-
       {/* Search */}
-      <div className="search-container">
-        <div className="search-form">
-          <div className="input-group">
+      <div className={cx(styles, 'search-container')}>
+        <div className={cx(styles, 'search-form')}>
+          <div className={cx(styles, 'input-group')}>
             <input
               type="text"
               placeholder="Tapez pour rechercher un mot..."
-              className="search-input"
+              className={cx(styles, 'search-input')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <button type="button" className="search-btn">
+            <button type="button" className={cx(styles, 'search-btn')}>
               <i className="fas fa-search"></i>
             </button>
           </div>
@@ -322,7 +208,7 @@ function WordsContent() {
       </div>
 
       {search && (
-        <div className="search-results-info" style={{ display: 'block' }}>
+        <div className={cx(styles, 'search-results-info')} style={{ display: 'block' }}>
           <p>
             <span>{levelEntries.reduce((s, [, ws]) => s + ws.length, 0)}</span> résultat(s) pour{' '}
             <strong>{search}</strong>
@@ -333,12 +219,12 @@ function WordsContent() {
       {hasWords ? (
         levelEntries.length > 0 ? (
           levelEntries.map(([level, levelWords]) => (
-            <div key={level} className="level-container" data-level={level}>
-              <div className="level-header">
+            <div key={level} className={cx(styles, 'level-container', deletingLevels.has(level) && 'level-deleting')} data-level={level}>
+              <div className={cx(styles, 'level-header')}>
                 <span>Niveau {levelLabel(level)}</span>
-                <span className="level-badge">{levelWords.length} mot(s)</span>
+                <span className={cx(styles, 'level-badge')}>{levelWords.length} mot(s)</span>
               </div>
-              <table className="words-table">
+              <table className={cx(styles, 'words-table')}>
                 <thead>
                   <tr>
                     <th>Mot</th>
@@ -369,22 +255,22 @@ function WordsContent() {
             </div>
           ))
         ) : (
-          <div className="no-words">
+          <div className={cx(styles, 'no-words')}>
             <i className="fas fa-search"></i>
             <h3>Aucun résultat</h3>
             <p>Aucun mot ne correspond à votre recherche.</p>
           </div>
         )
       ) : (
-        <div className="no-words">
+        <div className={cx(styles, 'no-words')}>
           <i className="fas fa-book"></i>
           {isOwner ? (
             <>
               <h3>Aucun mot dans votre vocabulaire</h3>
               <p>Commencez à ajouter des mots pour enrichir votre vocabulaire.</p>
-              <button className="btn" onClick={() => setAddModalOpen(true)}>
+              <Link href={addWordsHref} className={cx(styles, 'btn')}>
                 Ajouter votre premier mot
-              </button>
+              </Link>
             </>
           ) : (
             <h3>Aucun mot dans ce package</h3>
@@ -392,24 +278,18 @@ function WordsContent() {
         </div>
       )}
 
-      <div className="home-cta" style={{ marginTop: 40 }}>
-        <button className="btn" onClick={() => router.push('/packages')}>
+      <div className={cx(styles, 'home-cta')} style={{ marginTop: 40 }}>
+        <button className={cx(styles, 'btn')} onClick={() => router.push('/packages')}>
           Retour aux packages
         </button>
       </div>
 
       {/* Modals */}
-      <AddWordModal
-        open={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        onSubmit={handleAddWord}
-        saving={addWord.isPending}
-      />
       <DeleteAllModal
         open={deleteAllOpen}
+        status={deleteAllStatus}
         onClose={() => setDeleteAllOpen(false)}
         onConfirm={handleDeleteAll}
-        saving={deleteAll.isPending}
       />
     </div>
   );

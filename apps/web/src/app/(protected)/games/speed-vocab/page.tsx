@@ -1,11 +1,13 @@
 'use client';
 
-import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useGameData, useSaveScore, useTrackLevelProgress } from '@/hooks/use-games';
+import { useGameData, useSaveScore } from '@/hooks/use-games';
+import { useTimeouts } from '@/hooks/use-timeouts';
 import { shuffleArray } from '@/lib/shuffle';
 import { launchEmbers } from '@/components/games/confetti';
-import { levelCompletedMessage } from '@/components/games/level-progress';
+import { useCelebration } from '@/components/games/use-celebration';
+import { useLevelTracking } from '@/components/games/use-level-tracking';
 import { GameDataStatus } from '@/components/games/GameDataStatus';
 import { GameStats } from '@/components/games/GameStats';
 import { GameFooter } from '@/components/games/GameFooter';
@@ -13,6 +15,11 @@ import type { LevelStatus } from '@/components/games/TrackLevelMessage';
 import { SpeedVocabRules } from '@/components/games/speed-vocab/SpeedVocabRules';
 import { SpeedVocabBoard } from '@/components/games/speed-vocab/SpeedVocabBoard';
 import { SpeedVocabSummary } from '@/components/games/speed-vocab/SpeedVocabSummary';
+import { playErrorSound, playSuccessSound } from '@/components/games/speed-vocab/speed-sounds';
+import { useSpeedBackground } from '@/components/games/speed-vocab/use-speed-background';
+import { useTransientFlag } from '@/components/games/use-transient-flag';
+import { cx } from '@/lib/css-module';
+import styles from '@/styles/games/speed-vocab.module.css';
 
 /* ================================================================
    INNER COMPONENT
@@ -23,7 +30,7 @@ function SpeedVocabInner() {
 
   const { data: gameData, isLoading, error } = useGameData('speed_vocab', packageId);
   const saveScore = useSaveScore();
-  const trackLevel = useTrackLevelProgress();
+  const level = useLevelTracking('speed_vocab');
 
   type Screen = 'pre' | 'active' | 'post';
   const [screen, setScreen] = useState<Screen>('pre');
@@ -37,11 +44,19 @@ function SpeedVocabInner() {
   const [correctWords, setCorrectWords] = useState(0);
   const [input, setInput] = useState('');
   const [inputFeedback, setInputFeedback] = useState<'correct' | 'incorrect' | ''>('');
+  const [energetic, triggerEnergetic] = useTransientFlag();
+  const [wordFadeIn, triggerWordFadeIn] = useTransientFlag();
+  const [streakCelebration, triggerStreakCelebration] = useTransientFlag();
+  const [shaking, triggerShake] = useTransientFlag();
   const [levelMessage, setLevelMessage] = useState('');
   const [levelStatus, setLevelStatus] = useState<LevelStatus>('');
 
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const wrongPendingRef = useRef(false);
+  const later = useTimeouts();
+  const celebrate = useCelebration(launchEmbers);
 
   const currentWord = words[currentIndex] ?? null;
   const ready = !!gameData && !gameData.errorMessage;
@@ -59,6 +74,28 @@ function SpeedVocabInner() {
     }
   }, [screen, timer > 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const gameActive = screen === 'active' && timer > 0;
+  const speedLinesRef = useSpeedBackground(gameActive, timer);
+
+  // Urgency shake on every even second of the last ten
+  useEffect(() => {
+    if (gameActive && timer <= 10 && timer % 2 === 0) triggerShake(500);
+  }, [gameActive, timer, triggerShake]);
+
+  // Keep the focus on the input while playing
+  useEffect(() => {
+    if (!gameActive) return;
+    const refocus = () => inputRef.current?.focus();
+    document.addEventListener('click', refocus);
+    return () => document.removeEventListener('click', refocus);
+  }, [gameActive]);
+
+  function showWord(index: number) {
+    setCurrentIndex(index);
+    triggerEnergetic(500);
+    triggerWordFadeIn(500);
+  }
+
   function startGame() {
     if (!gameData || gameData.errorMessage || gameData.words.length === 0) {
       setScreen('pre');
@@ -68,13 +105,15 @@ function SpeedVocabInner() {
     const prepared = gameData.words.map((w) => ({ word: w.word, meaning: w.meaning }));
     const shuffled = shuffleArray(prepared);
     setWords(shuffled);
-    setCurrentIndex(0);
+    showWord(0);
     setScore(0);
     setStreak(0);
     setBestStreak(0);
     setWordsTyped(0);
     setCorrectWords(0);
     setInput('');
+    clearTimeout(feedbackTimeoutRef.current);
+    wrongPendingRef.current = false;
     setInputFeedback('');
     setLevelMessage('');
     setLevelStatus('');
@@ -86,38 +125,34 @@ function SpeedVocabInner() {
     setTimeout(() => inputRef.current?.focus(), 100);
   }
 
-  const moveToNext = useCallback((isCorrect: boolean) => {
-    let nextIndex = Math.floor(Math.random() * words.length);
-    while (nextIndex === currentIndex && words.length > 1) {
-      nextIndex = Math.floor(Math.random() * words.length);
+  function nextIndex() {
+    let index = Math.floor(Math.random() * words.length);
+    while (index === currentIndex && words.length > 1) {
+      index = Math.floor(Math.random() * words.length);
     }
+    return index;
+  }
 
-    if (isCorrect) {
-      setInputFeedback('correct');
-      setInput('');
-      setCurrentIndex(nextIndex);
-      setTimeout(() => setInputFeedback(''), 300);
-    } else {
-      setInputFeedback('incorrect');
-      setTimeout(() => {
-        setInputFeedback('');
-        setInput('');
-        setCurrentIndex(nextIndex);
-      }, 500);
-    }
-  }, [words.length, currentIndex]);
+  function flashInput(feedback: 'correct' | 'incorrect', onDone?: () => void) {
+    clearTimeout(feedbackTimeoutRef.current);
+    setInputFeedback(feedback);
+    feedbackTimeoutRef.current = setTimeout(() => {
+      setInputFeedback('');
+      onDone?.();
+    }, 500);
+  }
 
   function handleInput(value: string) {
-    if (!currentWord) return;
+    if (!currentWord || !gameActive || wrongPendingRef.current) return;
     setInput(value);
 
     const userInput = value.trim().toLowerCase();
     const correctWord = currentWord.word.trim().toLowerCase();
 
     if (userInput === correctWord) {
-      // Correct
       setWordsTyped((p) => p + 1);
       setCorrectWords((p) => p + 1);
+      playSuccessSound();
 
       const newStreak = streak + 1;
       setStreak(newStreak);
@@ -128,12 +163,23 @@ function SpeedVocabInner() {
       wordPoints += Math.floor(newStreak / 3) * 5; // streak bonus
       setScore((p) => p + wordPoints);
 
-      moveToNext(true);
+      if (newStreak % 3 === 0) triggerStreakCelebration(800);
+      flashInput('correct');
+      setInput('');
+      showWord(nextIndex());
     } else if (userInput.length >= correctWord.length) {
-      // Incorrect (typed enough chars but wrong)
       setWordsTyped((p) => p + 1);
       setStreak(0);
-      moveToNext(false);
+      playErrorSound();
+      triggerShake(500);
+
+      wrongPendingRef.current = true;
+      const next = nextIndex();
+      flashInput('incorrect', () => {
+        wrongPendingRef.current = false;
+        setInput('');
+        showWord(next);
+      });
     }
   }
 
@@ -144,19 +190,6 @@ function SpeedVocabInner() {
 
     saveScore.mutate({ game_type: 'speed_vocab', score });
 
-    trackLevel.mutate(
-      { game_type: 'speed_vocab', completed: isSuccessful, packageId: packageId! },
-      {
-        onSuccess: (data) => {
-          const message = levelCompletedMessage(data);
-          if (message) {
-            setLevelMessage(message);
-            setLevelStatus('completed');
-          }
-        },
-      },
-    );
-
     if (isSuccessful) {
       setLevelMessage('Excellent travail ! Progressez les autres jeux de ce niveau 😍');
       setLevelStatus('completed');
@@ -165,9 +198,10 @@ function SpeedVocabInner() {
       setLevelStatus('failed');
     }
 
-    setTimeout(() => {
+    later(() => {
       setScreen('post');
-      launchEmbers();
+      level.track(isSuccessful, packageId!);
+      celebrate();
     }, 1000);
   }
 
@@ -185,8 +219,8 @@ function SpeedVocabInner() {
 
   if (!packageId) {
     return (
-      <div className="game-container" id="speed-vocab">
-        <div className="error-box">
+      <div className={cx(styles, 'game-container')} id="speed-vocab">
+        <div className={cx(styles, 'error-box')}>
           <i className="fas fa-exclamation-triangle"></i>
           <p>Aucun package sélectionné.</p>
         </div>
@@ -195,54 +229,57 @@ function SpeedVocabInner() {
   }
 
   return (
-    <div className="game-container" id="speed-vocab" data-package={packageId}>
+    <div
+      className={cx(styles, 'game-container', shaking && 'screen-shake')}
+      id="speed-vocab"
+      data-package={packageId}
+    >
       {/* Header */}
-      <div className="game-header">
-        <h1>Speed Vocab</h1>
-        <p className="game-description">Tapez les mots le plus vite possible</p>
+      <div className={cx(styles, 'game-header')}>
+        <h1>Vitesse Vocab</h1>
+        <p className={cx(styles, 'game-description')}>Tapez les mots le plus vite possible</p>
       </div>
 
       {screen === 'pre' && (
-        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} />
+        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} styles={styles} />
       )}
 
       {gameData && (screen !== 'pre' || ready) && (
         <>
-          <GameStats wordCount={gameData.wordCount} />
+          <GameStats gameType="speed_vocab" wordCount={gameData.wordCount} styles={styles} />
 
-          <div className="game-area">
-            <div className="game-screen">
-              {screen === 'pre' && <SpeedVocabRules onStart={startGame} />}
+          {screen === 'pre' && <SpeedVocabRules onStart={startGame} />}
 
-              {screen === 'active' && currentWord && (
-                <SpeedVocabBoard
-                  currentWord={currentWord}
-                  score={score}
-                  streak={streak}
-                  timer={timer}
-                  input={input}
-                  inputRef={inputRef}
-                  inputFeedback={inputFeedback}
-                  onInput={handleInput}
-                />
-              )}
+          {screen === 'active' && currentWord && (
+            <SpeedVocabBoard
+              currentWord={currentWord}
+              score={score}
+              streak={streak}
+              timer={timer}
+              input={input}
+              inputRef={inputRef}
+              speedLinesRef={speedLinesRef}
+              flags={{ energetic, wordFadeIn, streakCelebration, inputFeedback }}
+              onInput={handleInput}
+            />
+          )}
 
-              {screen === 'post' && (
-                <SpeedVocabSummary
-                  score={score}
-                  bestStreak={bestStreak}
-                  wpm={wpm}
-                  levelMessage={levelMessage}
-                  levelStatus={levelStatus}
-                  onReplay={startGame}
-                />
-              )}
-            </div>
-          </div>
+          {screen === 'post' && (
+            <SpeedVocabSummary
+              score={score}
+              bestStreak={bestStreak}
+              wpm={wpm}
+              levelMessage={levelMessage}
+              levelStatus={levelStatus}
+              levelFinished={level.levelFinished}
+              packageId={packageId}
+              onReplay={startGame}
+            />
+          )}
         </>
       )}
 
-      <GameFooter packageId={packageId} nextGame="word-search" />
+      <GameFooter packageId={packageId} nextGame="vocab-quiz" styles={styles} />
     </div>
   );
 }

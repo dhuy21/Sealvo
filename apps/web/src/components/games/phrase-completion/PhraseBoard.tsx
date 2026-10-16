@@ -1,4 +1,6 @@
 import type { RefObject } from 'react';
+import { cx } from '@/lib/css-module';
+import styles from '@/styles/games/phrase-completion.module.css';
 
 export function PhraseBoard({
   score,
@@ -33,31 +35,31 @@ export function PhraseBoard({
   onNext: () => void;
 }) {
   return (
-    <div className="screen active-game-screen active">
-      <div className="game-info">
-        <div className="score-display">
-          <div className="score-label">Score</div>
-          <span className="score-value">{score}</span>
+    <div className={cx(styles, 'screen', 'active-game-screen', 'active')}>
+      <div className={cx(styles, 'game-info')}>
+        <div className={cx(styles, 'score-display')}>
+          <div className={cx(styles, 'score-label')}>Score</div>
+          <span className={cx(styles, 'score-value')}>{score}</span>
         </div>
-        <div className="progress-display">
-          <div className="progress-label">Question</div>
-          <span className="progress-value">
+        <div className={cx(styles, 'progress-display')}>
+          <div className={cx(styles, 'progress-label')}>Question</div>
+          <span className={cx(styles, 'progress-value')}>
             {currentIndex + (answered ? 1 : 0)}/{totalQuestions}
           </span>
         </div>
-        <div className="timer-display">
-          <div className="timer-label">Temps</div>
-          <span className={`timer-value ${timer <= 20 ? 'warning' : ''}`}>{timer}</span>
+        <div className={cx(styles, 'timer-display')}>
+          <div className={cx(styles, 'timer-label')}>Temps</div>
+          <span id="timer" className={cx(styles, 'timer-value', timer <= 20 && 'warning')}>{timer}</span>
         </div>
       </div>
 
-      <div className="phrase-container">
+      <div className={cx(styles, 'phrase-container')}>
         <p
-          className="phrase-text"
+          className={cx(styles, 'phrase-text')}
           dangerouslySetInnerHTML={{ __html: displayPhrase }}
         />
 
-        <div className="input-container">
+        <div className={cx(styles, 'input-container')}>
           <input
             ref={inputRef}
             type="text"
@@ -73,18 +75,18 @@ export function PhraseBoard({
           />
         </div>
 
-        <div className="button-group">
-          <button className="submit-btn" onClick={onCheck} disabled={answered}>
-            <div className="back"></div>
-            <div className="front"><i className="fas fa-crown"></i></div>
+        <div className={cx(styles, 'button-group')}>
+          <button className={cx(styles, 'submit-btn')} onClick={onCheck} disabled={answered}>
+            <div className={cx(styles, 'back')}></div>
+            <div className={cx(styles, 'front')}><i className="fas fa-crown"></i></div>
           </button>
           <button
-            className="pass-btn"
+            className={cx(styles, 'pass-btn')}
             onClick={onNext}
             disabled={!answered}
           >
-            <div className="back"></div>
-            <div className="front">
+            <div className={cx(styles, 'back')}></div>
+            <div className={cx(styles, 'front')}>
               {currentIndex + 1 >= totalQuestions
                 ? <i className="fa-solid fa-medal"></i>
                 : <i className="fas fa-play"></i>
@@ -93,12 +95,12 @@ export function PhraseBoard({
           </button>
         </div>
 
-        {meaningText && <p className="word-meaning">{meaningText}</p>}
+        {meaningText && <p className={cx(styles, 'word-meaning')}>{meaningText}</p>}
       </div>
 
       {feedbackMessage && (
-        <div className="feedback-container">
-          <div className={`feedback-message ${feedbackType}`}>{feedbackMessage}</div>
+        <div className={cx(styles, 'feedback-container')}>
+          <div className={cx(styles, 'feedback-message', feedbackType)}>{feedbackMessage}</div>
         </div>
       )}
     </div>

@@ -1,3 +1,9 @@
+/* Dark-mode rules for this module's classes (dark-mode.css loads first): keep them above the page rules */
+:global(.dark) .feedback-form-container {
+  background: #313131 !important;
+  color: #ffffff !important;
+}
+
 .feedback-container {
   max-width: 900px;
   margin: 2rem auto;
@@ -79,7 +85,7 @@
   margin-bottom: 1.5rem;
 }
 
-label {
+:where(.feedback-container) label {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 600;

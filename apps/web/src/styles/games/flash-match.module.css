@@ -1,3 +1,43 @@
+:global(.dark) .pre-game-screen h2 {
+  color: #8b5cf6 !important;
+}
+:global(.dark) .error-box p {
+  color: #191818 !important;
+}
+
+:global(.dark) .game-info h3 {
+  color: black !important;
+}
+
+:global(.dark) .game-info p {
+  color: rgb(108, 107, 110) !important;
+}
+
+:global(.dark) .stat-box span,
+:global(.dark) .stat-box p,
+:global(.dark) .game-area h3,
+:global(.dark) .game-area p,
+:global(.dark) .game-area h4,
+:global(.dark) .game-area h5,
+:global(.dark) .game-area h6,
+:global(.dark) .game-area span,
+:global(.dark) .game-area li {
+  color: black !important;
+}
+
+:global(.dark) .pre-game-screen p,
+:global(.dark) .pre-game-screen h4,
+:global(.dark) .pre-game-screen h5,
+:global(.dark) .pre-game-screen h6,
+:global(.dark) .pre-game-screen span,
+:global(.dark) .pre-game-screen li {
+  color: black !important;
+}
+
+:global(.dark) .card-back {
+  color: black !important;
+}
+
 /* Flash Match Game - Modern Lovely Design with Cloud Effects */
 
 /* ========================================

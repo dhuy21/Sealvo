@@ -14,7 +14,9 @@
   --pattern-opacity: 0.05;
 }
 
-.dark {
+/* Also on body: page stylesheets redefine some of these on :root, which would win on <html> */
+.dark,
+.dark body {
   /* Dark theme variables */
   --bg-color: #121212;
   --text-color: #ffffff;
@@ -31,8 +33,7 @@
 }
 
 /* Apply variables to elements */
-html:not(.dark) body,
-body:not(.dark) {
+html:not(.dark) body {
   color: var(--text-color, #333);
 }
 
@@ -42,10 +43,11 @@ body.dark {
 }
 
 /* Card styles */
-:not(.dark) .card,
-:not(.dark) .dropdown-menu,
-:not(.dark) .form-container,
-:not(.dark) .modal-content {
+/* `:where(html):not(.dark)` = light mode only, with the specificity of the old
+   [data-theme='light'] selectors (a bare `:not(.dark)` also matches any inner element) */
+:where(html):not(.dark) .card,
+:where(html):not(.dark) .dropdown-menu,
+:where(html):not(.dark) .form-container {
   background: var(--card-bg);
   box-shadow: var(--card-shadow);
   border-color: var(--border-color);
@@ -54,25 +56,9 @@ body.dark {
     box-shadow 0.3s ease;
 }
 
-.dark .profile-section p,
-.dark .skills-section p,
-.dark .skills-section span,
-.dark .timeline-section p,
-.dark .timeline-section span,
-.dark .timeline-section h3,
-.dark .timeline-section h2,
-.dark .contact-section h2,
-.dark .contact-section p,
-.dark .contact-section span,
-.dark .contact-section i,
-.dark .contact-section a {
-  color: black !important;
-}
-
 .dark .card,
 .dark .dropdown-menu,
-.dark .form-container,
-.dark .modal-content {
+.dark .form-container {
   background: var(--card-bg) !important;
   box-shadow: var(--card-shadow);
   border-color: var(--border-color);
@@ -82,9 +68,9 @@ body.dark {
 }
 
 /* Form control styles */
-:not(.dark) input,
-:not(.dark) select,
-:not(.dark) textarea {
+:where(html):not(.dark) input,
+:where(html):not(.dark) select,
+:where(html):not(.dark) textarea {
   background-color: var(--input-bg);
   color: var(--input-text);
   border-color: var(--border-color);
@@ -105,8 +91,8 @@ body.dark {
 }
 
 /* Button styles */
-:not(.dark) button.btn-primary,
-:not(.dark) a.btn-primary {
+:where(html):not(.dark) button.btn-primary,
+:where(html):not(.dark) a.btn-primary {
   background: var(--btn-primary-bg);
   color: var(--btn-primary-text);
 }
@@ -115,35 +101,6 @@ body.dark {
 .dark a.btn-primary {
   background: var(--btn-primary-bg);
   color: var(--btn-primary-text);
-}
-
-.dark .recognized-text {
-  color: #01f34e !important;
-}
-
-.dark .recognized-text:not(:empty)::before {
-  color: #ffffff !important;
-}
-
-/* Dark mode feedback text colors */
-.dark .feedback-text.feedback-success {
-  color: #34d399 !important;
-}
-
-.dark .feedback-text.feedback-info {
-  color: #60a5fa !important;
-}
-
-.dark .feedback-text.feedback-warning {
-  color: #fbbf24 !important;
-}
-
-.dark .feedback-text.feedback-error {
-  color: #f87171 !important;
-}
-
-.dark .feedback-text.feedback-neutral {
-  color: #d1d5db !important;
 }
 
 .dark .current-word {
@@ -162,20 +119,6 @@ body.dark {
 .dark td,
 .dark th {
   color: #ffffff !important;
-}
-.dark .pre-game-screen h2 {
-  color: #8b5cf6 !important;
-}
-.dark .animated-title {
-  color: #ffffff !important;
-}
-
-.dark .scroll-indicator .wheel {
-  background: #ffffff !important;
-}
-
-.dark .scroll-indicator .mouse {
-  border: 1px solid #ffffff !important;
 }
 
 /* Exception for special links that need their own color */
@@ -215,11 +158,11 @@ body.dark {
   color: #ffc107;
 }
 
-:not(.dark) .dark-mode-toggle .fa-sun {
+:where(html):not(.dark) .dark-mode-toggle .fa-sun {
   display: none;
 }
 
-:not(.dark) .dark-mode-toggle .fa-moon {
+:where(html):not(.dark) .dark-mode-toggle .fa-moon {
   display: inline-block;
   color: #6a11cb;
 }
@@ -238,83 +181,12 @@ body.dark {
   animation: toggle-spin 0.5s;
 }
 
-/* Card styles for dark mode */
-.dark .word-card-front {
-  background: #2d2d2d;
-  border: 1px solid rgba(106, 17, 203, 0.3);
-}
-
-.dark .word-card h3 {
-  background: linear-gradient(135deg, #8a2be2, #4169e1);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.dark .word-pronunciation {
-  color: #a0aec0;
-}
-
-/* Exception for special cards that need different colors */
-.dark .word-card,
-.dark .word-card-front,
-.dark .testimonial,
-.dark .floating-element,
-.dark .feature-card {
-  background-color: #2d2d2d !important;
-  color: #ffffff !important;
-}
-
-.dark .testimonial p,
-.dark .author-name,
-.dark .word-card p,
-.dark .word-card span,
-.dark .feature p,
-.dark .counter-item p,
-.dark .counter-item span,
-.dark .counter-label {
-  color: #ffffff !important;
-}
-
-/* Ensure back of card has proper color */
-.dark .word-card-back {
-  background: #2d2d2d !important;
-  color: #ffffff !important;
-}
-
-/* Fix for login, auth, and register containers */
-.dark .login-container,
-.dark .auth-container,
-.dark .register-container,
-.dark .logout-container {
-  background: rgba(45, 45, 45, 0.95) !important;
-  color: #ffffff !important;
-}
-
 /* Fix the login form input colors for better visibility */
-.dark .auth-form input,
 .dark .login-form input,
 .dark .register-form input {
   background-color: #3a3a3a !important;
   color: #ffffff !important;
   border-color: rgba(255, 255, 255, 0.2);
-}
-
-.dark .login-container label,
-.dark .auth-container label,
-.dark .register-container label,
-.dark .form-group label,
-.dark .login-container p,
-.dark .auth-container p,
-.dark .register-container p {
-  color: #e0e0e0 !important;
-}
-
-/* Fix for floating cards on login/registration pages */
-.dark .floating-card {
-  background: #2d2d2d !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Fix for card text in dark mode */
@@ -337,242 +209,11 @@ body.dark {
   color: #ffffff !important;
 }
 
-/* Fix for learnVocabs flashcard in dark mode */
-.dark .flashcard-front {
-  background: #2d2d2d !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.dark .flashcard-back {
-  background: linear-gradient(135deg, #6a11cb, #2575fc) !important;
-  color: #ffffff !important;
-}
-.dark .package-name {
-  color: #ffffff !important;
-}
-.dark .package-description {
-  color: #ffffff !important;
-}
-.dark .flashcard-front .card-content,
-.dark .flashcard-front .card-type,
-.dark .flashcard-front .card-prompt,
-.dark .flashcard-front .hint-text {
-  color: #ffffff !important;
-}
-
-.dark .flashcard-front .card-prompt {
-  background: rgba(45, 45, 45, 0.7) !important;
-  color: #e0e0e0 !important;
-}
-
-.dark .hint-btn {
-  background: linear-gradient(135deg, #4a5568 0%, #2d3748 50%, #1a202c 100%) !important;
-  border: 2px solid rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
-}
-
-.dark .hint-btn::before {
-  color: #fbbf24 !important;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 4px rgba(251, 191, 36, 0.3)) !important;
-}
-
-.dark .hint-btn::after {
-  background: linear-gradient(135deg, #374151, #4b5563) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  box-shadow:
-    0 1px 0 0 #1f2937,
-    0 2px 0 0 #111827,
-    0 3px 4px rgba(0, 0, 0, 0.3) !important;
-}
-
-.dark .hint-btn:hover {
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%) !important;
-  box-shadow: 0 8px 20px rgba(251, 191, 36, 0.3) !important;
-}
-
-.dark .hint-btn:hover::before {
-  color: #1f2937 !important;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 8px rgba(251, 191, 36, 0.6)) !important;
-}
-
-.dark .hint-btn:hover::after {
-  background: linear-gradient(135deg, #6b7280, #9ca3af) !important;
-  box-shadow:
-    0 1px 0 0 #374151,
-    0 2px 0 0 #4b5563,
-    0 4px 6px rgba(0, 0, 0, 0.4) !important;
-}
-
-.dark .flashcard-front .hint-text {
-  background: rgba(45, 45, 45, 0.7) !important;
-  color: #e0e0e0 !important;
-}
-
-/* Fix stat cards in learnVocabs */
-.dark .stat-card {
-  background: #2d2d2d !important;
-}
-
-.dark .stat-content h3,
-.dark .stat-content p {
-  color: #ffffff !important;
-}
-
-/* Fix filter options in learnVocabs */
-.dark .flashcard-filters,
-.dark .mode-selector,
-.dark .mode-vocab-selector {
-  background: #2d2d2d !important;
-  color: #ffffff !important;
-}
-
-.dark .filter-label,
-.dark .mode-label,
 .dark .mode-vocab-label {
   color: #ffffff !important;
 }
 
-.dark .custom-checkbox,
-.dark .custom-radio {
-  background-color: #1e1e1e !important;
-}
-
-/* Fix navigation buttons in learnVocabs */
-.dark .nav-btn {
-  background: #2d2d2d !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.dark .nav-btn:hover:not([disabled]) {
-  background: #3a3a3a !important;
-  color: #ffffff !important;
-}
-
-/* Fix progress container in learnVocabs */
-.dark .progress-container {
-  background: #2d2d2d !important;
-}
-.dark .format-info p,
-.dark .format-info ul,
-.dark .format-info li {
-  color: #272525 !important;
-}
-
-.dark .file-label {
-  background: #454343 !important;
-}
-
-.dark .separator:before {
-  background: #cac2c2;
-}
-
-.dark .progress-bar {
-  background: #1e1e1e !important;
-}
-
-.dark .progress-stat {
-  background: #3a3a3a !important;
-  color: #ffffff !important;
-}
-
-/* Fix for monVocabs page in dark mode */
-
-.dark .level-container {
-  background: #2d2d2d !important;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.dark .level-container:hover {
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-}
-
-/* Fix for table text in monVocabs page */
-.dark .words-table th {
-  background: rgba(106, 17, 203, 0.2) !important;
-  color: #ffffff !important;
-}
-
-.dark .words-table td {
-  color: #ffffff !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.dark .words-table tr:hover td {
-  background: rgba(37, 117, 252, 0.15) !important;
-}
-
-/* Fix search input in monVocabs */
-.dark .search-input {
-  background-color: #2d2d2d !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.dark .search-input::placeholder {
-  color: rgba(255, 255, 255, 0.6) !important;
-}
-
-.dark .search-btn {
-  background: rgba(106, 17, 203, 0.3) !important;
-  color: #ffffff !important;
-}
-
-.dark .clear-search-btn {
-  background: #e02a2a !important;
-  color: #ffffff !important;
-}
-
-/* Fix search results info */
-.dark .search-results-info {
-  background: rgba(45, 45, 45, 0.8) !important;
-  color: #ffffff !important;
-}
-
-/* Fix for no-words section */
-.dark .no-words {
-  background: #2d2d2d !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.dark .no-words h3,
-.dark .no-words p {
-  color: #ffffff !important;
-}
-
-.dark .no-words i {
-  color: rgba(255, 255, 255, 0.2) !important;
-}
-.dark .error-box p {
-  color: #191818 !important;
-}
-
-.dark .feedback-form-container {
-  background: #313131 !important;
-  color: #ffffff !important;
-}
-
-.dark .avatar-modal-header h3,
-.dark .avatar-modal-header span {
-  color: black !important;
-}
-
-.dark .info-label {
-  color: #323232 !important;
-}
-
-.dark .user-info {
-  background-color: #918888 !important;
-}
-
-.dark .user-info i {
-  width: 20px;
-}
-
 .dark .games-container h2,
-.dark .game-info h3,
 .dark .info-card h3,
 .dark .info-card p {
   color: black !important;
@@ -582,105 +223,15 @@ body.dark {
   color: rgb(101, 19, 224) !important;
 }
 
-.dark .game-info p {
-  color: rgb(108, 107, 110) !important;
-}
-
-.dark .stat-box span,
-.dark .stat-box p,
-.dark .game-area h3,
-.dark .game-area p,
-.dark .game-area h4,
-.dark .game-area h5,
-.dark .game-area h6,
-.dark .game-area span,
-.dark .game-area li {
-  color: black !important;
-}
-
-.dark .pre-game-screen p,
-.dark .pre-game-screen h4,
-.dark .pre-game-screen h5,
-.dark .pre-game-screen h6,
-.dark .pre-game-screen span,
-.dark .pre-game-screen li {
-  color: black !important;
-}
-
-.dark .phrase-container h2,
-.dark .phrase-container p {
-  color: black !important;
-}
-.dark .phrase-container span,
-.dark .hint-container span {
-  color: rgb(69, 4, 80) !important;
-}
-
 .dark .status-item span {
   color: black !important;
 }
 
-.dark .status-item p,
-.dark .word-list-container h3 {
+.dark .status-item p {
   color: black !important;
-}
-
-.dark .word-list-container li {
-  color: rgb(73, 1, 82) !important;
-}
-
-.dark .word-item span {
-  color: rgb(73, 1, 82) !important;
-}
-
-.dark .word-list-title {
-  color: #ce04e8 !important;
-}
-
-.dark .word-list-title i {
-  color: #0454a0 !important;
 }
 
 .dark .card {
   background: none !important;
   box-shadow: none !important;
-}
-
-.dark .card-back {
-  color: black !important;
-}
-
-/* Dark Mode Animation for Hint Button Lightbulb */
-@keyframes darkLightbulbGlow {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.9;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 4px rgba(251, 191, 36, 0.3)) !important;
-  }
-  50% {
-    transform: scale(1.05);
-    opacity: 1;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 8px rgba(251, 191, 36, 0.5)) !important;
-  }
-}
-
-.dark .hint-btn::before {
-  animation: darkLightbulbGlow 2s infinite ease-in-out !important;
-}
-
-/* Remaining words panel - dark mode */
-.dark .remaining-words h4 {
-  color: #a0aec0 !important;
-}
-
-.dark .word-chip.chip-review {
-  background: rgba(231, 76, 60, 0.2);
-  color: #f87171 !important;
-  border-color: rgba(248, 113, 113, 0.3);
-}
-
-.dark .word-chip.chip-review:hover {
-  background: #e74c3c;
-  color: #fff !important;
 }

@@ -1,3 +1,90 @@
+/* Rules from dark-mode.css (global, loaded before page CSS) that target this module's classes:
+   kept first so the page rules below still win at equal specificity. */
+:global(:where(html):not(.dark)) .modal-content {
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  border-color: var(--border-color);
+  transition:
+    background-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+:global(.dark) .modal-content {
+  background: var(--card-bg) !important;
+  box-shadow: var(--card-shadow);
+  border-color: var(--border-color);
+  transition:
+    background-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+:global(.dark) .level-container {
+  background: #2d2d2d !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+:global(.dark) .level-container:hover {
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+}
+
+:global(.dark) .words-table th {
+  background: rgba(106, 17, 203, 0.2) !important;
+  color: #ffffff !important;
+}
+
+:global(.dark) .words-table td {
+  color: #ffffff !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+:global(.dark) .words-table tr:hover td {
+  background: rgba(37, 117, 252, 0.15) !important;
+}
+
+:global(.dark) .search-input {
+  background-color: #2d2d2d !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+:global(.dark) .search-input::placeholder {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+:global(.dark) .search-btn {
+  background: rgba(106, 17, 203, 0.3) !important;
+  color: #ffffff !important;
+}
+
+:global(.dark) .clear-search-btn {
+  background: #e02a2a !important;
+  color: #ffffff !important;
+}
+
+:global(.dark) .search-results-info {
+  background: rgba(45, 45, 45, 0.8) !important;
+  color: #ffffff !important;
+}
+
+:global(.dark) .no-words {
+  background: #2d2d2d !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+:global(.dark) .no-words h3,
+:global(.dark) .no-words p {
+  color: #ffffff !important;
+}
+
+:global(.dark) .no-words i {
+  color: rgba(255, 255, 255, 0.2) !important;
+}
+
+:global(.dark) .word-item span {
+  color: rgb(73, 1, 82) !important;
+}
+
 /* Mon Vocabulaire - Enhanced Styling */
 .vocabulary-container {
   max-width: 100000px;
@@ -44,6 +131,13 @@
     transform 0.3s ease,
     box-shadow 0.3s ease;
   border: 1px solid rgba(230, 236, 245, 0.8);
+}
+
+/* Delete-all exit animation (old vocabs.js inline styles) */
+.level-container.level-deleting {
+  transition: all 0.6s ease;
+  opacity: 0;
+  transform: translateY(-30px) scale(0.95);
 }
 
 .level-container:hover {
@@ -966,7 +1060,7 @@
   }
 }
 
-#no-search-results {
+.vocabulary-container :global(#no-search-results) {
   animation: fadeIn 0.5s ease-out;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(245, 247, 250, 0.95));
   border-radius: 24px;
@@ -977,7 +1071,7 @@
   overflow: hidden;
 }
 
-#no-search-results i {
+.vocabulary-container :global(#no-search-results) i {
   color: #6a11cb60;
   font-size: 90px;
   margin-bottom: 20px;
@@ -1045,7 +1139,7 @@
   -webkit-backdrop-filter: blur(20px);
 }
 
-.rotation-notification.show {
+.rotation-notification:global(.show) {
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
 }
@@ -1113,7 +1207,7 @@
   padding: 20px;
 }
 
-.delete-confirmation-modal.show {
+.delete-confirmation-modal:global(.show) {
   opacity: 1;
 }
 
@@ -1132,7 +1226,7 @@
   transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-.delete-confirmation-modal.show .modal-content {
+.delete-confirmation-modal:global(.show) .modal-content {
   transform: scale(1) translateY(0);
 }
 
@@ -1310,7 +1404,7 @@
   pointer-events: none;
 }
 
-.confirm-delete-btn.success {
+.confirm-delete-btn:global(.success) {
   background: linear-gradient(135deg, #10b981, #059669);
   box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
 }
@@ -1331,7 +1425,7 @@
 }
 
 @media (max-width: 1290px) {
-  .content {
+  :global(.content):has(.vocabulary-container) {
     padding: 0px;
   }
   .vocabulary-container {
@@ -1382,7 +1476,7 @@
 }
 
 @media (max-width: 1030px) {
-  .content {
+  :global(.content):has(.vocabulary-container) {
     padding: 0px;
   }
   .vocabulary-container {
@@ -1444,7 +1538,7 @@
 }
 
 @media (max-width: 930px) {
-  .content {
+  :global(.content):has(.vocabulary-container) {
     padding: 0px;
   }
   .vocabulary-container {
@@ -1495,7 +1589,7 @@
 }
 
 @media (max-width: 820px) {
-  .content {
+  :global(.content):has(.vocabulary-container) {
     padding: 0px;
   }
   .vocabulary-container {
@@ -1546,7 +1640,7 @@
 }
 
 @media (max-width: 810px) {
-  .content {
+  :global(.content):has(.vocabulary-container) {
     padding: 0px;
   }
   .vocabulary-container {
@@ -1726,7 +1820,7 @@
 }
 
 @media (max-width: 750px) {
-  .content {
+  :global(.content):has(.vocabulary-container) {
     padding: 0px;
   }
   .vocabulary-container {

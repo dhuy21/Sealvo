@@ -1,3 +1,71 @@
+:global(.dark) .recognized-text {
+  color: #01f34e !important;
+}
+
+:global(.dark) .recognized-text:not(:empty)::before {
+  color: #ffffff !important;
+}
+
+:global(.dark) .feedback-text.feedback-success {
+  color: #34d399 !important;
+}
+
+:global(.dark) .feedback-text.feedback-info {
+  color: #60a5fa !important;
+}
+
+:global(.dark) .feedback-text.feedback-warning {
+  color: #fbbf24 !important;
+}
+
+:global(.dark) .feedback-text.feedback-error {
+  color: #f87171 !important;
+}
+
+:global(.dark) .feedback-text.feedback-neutral {
+  color: #d1d5db !important;
+}
+
+:global(.dark) .pre-game-screen h2 {
+  color: #8b5cf6 !important;
+}
+:global(.dark) .error-box p {
+  color: #191818 !important;
+}
+
+:global(.dark) .game-info h3 {
+  color: black !important;
+}
+
+:global(.dark) .game-info p {
+  color: rgb(108, 107, 110) !important;
+}
+
+:global(.dark) .stat-box span,
+:global(.dark) .stat-box p,
+:global(.dark) .game-area h3,
+:global(.dark) .game-area p,
+:global(.dark) .game-area h4,
+:global(.dark) .game-area h5,
+:global(.dark) .game-area h6,
+:global(.dark) .game-area span,
+:global(.dark) .game-area li {
+  color: black !important;
+}
+
+:global(.dark) .pre-game-screen p,
+:global(.dark) .pre-game-screen h4,
+:global(.dark) .pre-game-screen h5,
+:global(.dark) .pre-game-screen h6,
+:global(.dark) .pre-game-screen span,
+:global(.dark) .pre-game-screen li {
+  color: black !important;
+}
+
+:global(.dark) .word-item span {
+  color: rgb(73, 1, 82) !important;
+}
+
 /*=======================================
    Test Pronunciation Game - Modern & Elegant Design
    ======================================== */
@@ -708,7 +776,7 @@
 }
 
 /* Enhanced Timer Warning Animation */
-#timer.warning {
+:global(#timer).warning {
   color: #e53e3e;
   animation:
     pulse 1s infinite,

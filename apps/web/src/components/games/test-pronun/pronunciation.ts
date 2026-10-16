@@ -1,5 +1,7 @@
 import type { GameWord } from '@/hooks/use-games';
-import api from '@/lib/api';
+import { AudioPlaybackError, playTts } from '@/lib/tts';
+
+export type FeedbackType = 'success' | 'info' | 'warning' | 'error' | 'neutral';
 
 export function formatTime(ms: number): string {
   const seconds = Math.floor(ms / 1000);
@@ -104,20 +106,26 @@ export function calculatePronunciationAccuracy(spoken: string, target: string, c
   return Math.round(finalAccuracy);
 }
 
-export async function playWordAudio(word: GameWord): Promise<void> {
+/**
+ * Plays the word and reports the old feedback texts while it plays, when done, and on failure.
+ * Aborting `signal` stops the audio silently.
+ */
+export async function playWordAudio(
+  word: GameWord,
+  setFeedback: (text: string, type?: FeedbackType) => void,
+  signal: AbortSignal,
+): Promise<void> {
+  setFeedback('Lecture en cours...', 'info');
   try {
-    const response = await api.post('/tts/generate', {
-      text: word.word,
-      language: word.language_code || 'en-US',
-    }, { responseType: 'blob' });
-
-    const audioUrl = URL.createObjectURL(response.data);
-    const audio = new Audio(audioUrl);
-    audio.volume = 0.8;
-    audio.onended = () => URL.revokeObjectURL(audioUrl);
-    audio.onerror = () => URL.revokeObjectURL(audioUrl);
-    await audio.play();
+    await playTts(word.word, word.language_code || 'en-US', signal);
+    if (!signal.aborted) setFeedback('', 'neutral');
   } catch (err) {
-    console.error('TTS error:', err);
+    if (signal.aborted) return;
+    if (err instanceof AudioPlaybackError) {
+      setFeedback('Erreur de lecture audio.', 'error');
+    } else {
+      console.error('TTS error:', err);
+      setFeedback('Erreur de synthèse vocale. Vérifiez votre connexion.', 'error');
+    }
   }
 }

@@ -1,88 +1,93 @@
 import type { GameWord } from '@/hooks/use-games';
-import { formatTime, playWordAudio } from './pronunciation';
-
-export type FeedbackType = 'success' | 'info' | 'warning' | 'error' | 'neutral';
+import { formatTime } from './pronunciation';
+import type { Feedback } from './use-feedback';
+import { cx } from '@/lib/css-module';
+import styles from '@/styles/games/test-pronun.module.css';
 
 export function PronunciationBoard({
   currentWord,
   completedWords,
   elapsed,
   accuracy,
+  meterWidth,
+  speaking,
+  wordFadeIn,
   isListening,
   speechSupported,
   recognizedText,
-  feedbackText,
-  feedbackType,
-  onStartListening,
-  onStopListening,
+  feedback,
+  onPlay,
+  onToggleRecording,
   onSkip,
 }: {
   currentWord: GameWord;
   completedWords: number;
   elapsed: number;
   accuracy: number;
+  meterWidth: number;
+  speaking: boolean;
+  wordFadeIn: boolean;
   isListening: boolean;
   speechSupported: boolean;
   recognizedText: string;
-  feedbackText: string;
-  feedbackType: FeedbackType;
-  onStartListening: () => void;
-  onStopListening: () => void;
+  feedback: Feedback;
+  onPlay: () => void;
+  onToggleRecording: () => void;
   onSkip: () => void;
 }) {
   return (
-    <div className="active-game-screen active">
-      <div className="game-info">
-        <div className="words-display">
-          <span className="words-label">Mots complétés</span>
-          <span className="words-value">{completedWords}</span>
+    <div className={cx(styles, 'active-game-screen', 'active')}>
+      <div className={cx(styles, 'game-info')}>
+        <div className={cx(styles, 'words-display')}>
+          <span className={cx(styles, 'words-label')}>Mots complétés</span>
+          <span className={cx(styles, 'words-value')}>{completedWords}</span>
         </div>
-        <div className="timer-display">
-          <span className="timer-label">Temps</span>
-          <span className="timer-value">{formatTime(elapsed)}</span>
+        <div className={cx(styles, 'timer-display')}>
+          <span className={cx(styles, 'timer-label')}>Temps</span>
+          <span className={cx(styles, 'timer-value')}>{formatTime(elapsed)}</span>
         </div>
-        <div className="accuracy-display">
-          <span className="accuracy-label">Précision</span>
-          <span className="accuracy-value">{accuracy}%</span>
+        <div className={cx(styles, 'accuracy-display')}>
+          <span className={cx(styles, 'accuracy-label')}>Précision</span>
+          <span className={cx(styles, 'accuracy-value')}>{Math.round(accuracy)}%</span>
         </div>
       </div>
 
       <div className="game-board">
-        <div className={`word-display ${isListening ? 'speaking' : ''}`}>
-          <h2 className="current-word">{currentWord.word}</h2>
-          <p className="phonetic-text">{currentWord.pronunciation}</p>
+        <div className={cx(styles, 'word-display', speaking && 'speaking')}>
+          <h2 className={cx(styles, 'current-word', wordFadeIn && 'fadeIn')}>{currentWord.word}</h2>
+          <p className={cx(styles, 'phonetic-text')}>{currentWord.pronunciation}</p>
         </div>
 
-        <div className="pronunciation-controls">
-          <button
-            className="control-btn"
-            onClick={() => playWordAudio(currentWord)}
-          >
+        <div className={cx(styles, 'pronunciation-controls')}>
+          <button className={cx(styles, 'control-btn')} onClick={onPlay}>
             <i className="fas fa-play"></i> Écouter
           </button>
-          <button
-            className={`control-btn ${isListening ? 'recording' : ''}`}
-            onClick={() => (isListening ? onStopListening() : onStartListening())}
-            disabled={!speechSupported}
-          >
-            <i className={`fas ${isListening ? 'fa-stop' : 'fa-microphone'}`}></i>
-            {isListening ? 'Arrêter' : 'Enregistrer'}
-          </button>
-          <button className="control-btn" onClick={onSkip}>
-            <i className="fas fa-forward"></i> Passer
+          {speechSupported ? (
+            <button
+              className={cx(styles, 'control-btn', isListening && 'recording')}
+              onClick={onToggleRecording}
+            >
+              <i className={`fas ${isListening ? 'fa-stop' : 'fa-microphone'}`}></i>{' '}
+              {isListening ? 'Arrêter' : 'Enregistrer'}
+            </button>
+          ) : (
+            <button className={cx(styles, 'control-btn')} disabled>
+              <i className="fas fa-exclamation-triangle"></i> Non supporté
+            </button>
+          )}
+          <button className={cx(styles, 'control-btn')} onClick={onSkip}>
+            <i className="fas fa-forward"></i> Passer le mot
           </button>
         </div>
 
-        <div className="feedback-container">
-          <div className="accuracy-meter">
-            <div className="meter-fill" style={{ width: `${accuracy}%` }} />
+        <div className={cx(styles, 'feedback-container')}>
+          <div className={cx(styles, 'accuracy-meter')}>
+            <div className={cx(styles, 'meter-fill')} style={{ width: `${meterWidth}%` }} />
           </div>
-          {recognizedText && (
-            <div className="recognized-text">{recognizedText}</div>
-          )}
-          {feedbackText && (
-            <p className={`feedback-text feedback-${feedbackType}`}>{feedbackText}</p>
-          )}
+          <div className={cx(styles, 'recognized-text')}>{recognizedText}</div>
+          <p className={cx(styles, 'feedback-text', feedback.type && `feedback-${feedback.type}`)}>
+            {feedback.text}
+          </p>
         </div>
       </div>
     </div>

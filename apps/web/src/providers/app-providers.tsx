@@ -5,12 +5,14 @@ import { QueryProvider } from './query-provider';
 import { ThemeProvider } from './theme-provider';
 import { AuthInitializer } from './auth-initializer';
 import { Toaster } from 'react-hot-toast';
+import { JobWatcher } from '@/components/jobs/JobWatcher';
 
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <QueryProvider>
       <ThemeProvider>
         <AuthInitializer>{children}</AuthInitializer>
+        <JobWatcher />
         <Toaster
           position="top-right"
           toastOptions={{

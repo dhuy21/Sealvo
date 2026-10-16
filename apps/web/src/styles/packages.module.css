@@ -3,7 +3,7 @@
  * Cohérent avec le style general de l'application
  */
 
-:root {
+.packages-container {
   --primary-color: #4158d0;
   --secondary-color: #c850c0;
   --tertiary-color: #7c5cf5;
@@ -12,20 +12,98 @@
   --success-color: #10b981;
   --error-color: #ef4444;
   --warning-color: #f59e0b;
-  --bg-color: #fafafa;
-  --card-bg: #ffffff;
   --text-primary: #334155;
   --text-secondary: #64748b;
-  --border-color: #e2e8f0;
   --border-radius: 16px;
   --box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --transition: all 0.3s ease;
 }
 
-* {
+/* Light only: in dark mode the dark-mode.css values win, as in the old app */
+:global(:where(html):not(.dark)) .packages-container {
+  --bg-color: #fafafa;
+  --card-bg: #ffffff;
+  --border-color: #e2e8f0;
+}
+
+:where(.packages-container, .packages-container *) {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+:global(:where(html):not(.dark)) .modal-content {
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  border-color: var(--border-color);
+  transition:
+    background-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+:global(.dark) .modal-content {
+  background: var(--card-bg) !important;
+  box-shadow: var(--card-shadow);
+  border-color: var(--border-color);
+  transition:
+    background-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+:global(:where(html):not(.dark)) button.btn-primary,
+:global(:where(html):not(.dark)) a.btn-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+}
+
+:global(.dark) button.btn-primary,
+:global(.dark) a.btn-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+}
+
+:global(.dark) a.btn-primary {
+  color: inherit !important;
+}
+
+:global(.dark) .form-group label {
+  color: #e0e0e0 !important;
+}
+
+:global(.dark) .package-name {
+  color: #ffffff !important;
+}
+:global(.dark) .package-description {
+  color: #ffffff !important;
+}
+
+:global(.dark) .stat-card {
+  background: #2d2d2d !important;
+}
+
+:global(.dark) .stat-content h3,
+:global(.dark) .stat-content p {
+  color: #ffffff !important;
+}
+
+:global(.dark) .search-input {
+  background-color: #2d2d2d !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+:global(.dark) .search-input::placeholder {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+:global(.dark) .search-btn {
+  background: rgba(106, 17, 203, 0.3) !important;
+  color: #ffffff !important;
+}
+
+:global(.dark) .clear-search-btn {
+  background: #e02a2a !important;
+  color: #ffffff !important;
 }
 
 /* Container */

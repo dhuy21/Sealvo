@@ -9,6 +9,8 @@ import { z } from 'zod/v4';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/api-error';
+import { cx } from '@/lib/css-module';
+import styles from '@/styles/password-reset.module.css';
 
 const schema = z
   .object({
@@ -59,45 +61,45 @@ function ResetPasswordForm() {
 
   if (!token) {
     return (
-      <div className="reset-password-container">
-        <h1 className="reset-password-title">Reset Password</h1>
+      <div className={styles['reset-password-container']}>
+        <h1 className={styles['reset-password-title']}>Reset Password</h1>
         <p className="text-red-500">Lien de réinitialisation invalide.</p>
-        <Link href="/login" className="back-link">Back to Login</Link>
+        <Link href="/login" className={styles['back-link']}>Back to Login</Link>
       </div>
     );
   }
 
   return (
-    <div className="reset-password-container">
-      <h1 className="reset-password-title">Reset Password</h1>
+    <div className={styles['reset-password-container']}>
+      <h1 className={styles['reset-password-title']}>Reset Password</h1>
 
       {success ? (
-        <div className="alert alert-success" style={{ display: 'block' }}>
+        <div className={cx(styles, 'alert', 'alert-success')} style={{ display: 'block' }}>
           <p>Mot de passe réinitialisé ! Redirection vers la connexion...</p>
         </div>
       ) : (
-        <form className="reset-password-form" onSubmit={handleSubmit(onSubmit)}>
-          <div className="input-icon-wrapper">
+        <form className={styles['reset-password-form']} onSubmit={handleSubmit(onSubmit)}>
+          <div className={styles['input-icon-wrapper']}>
             <input
               type="password"
               placeholder="Nouveau mot de passe (min 8 caractères)"
               {...register('password')}
             />
-            <i className="input-icon fas fa-lock" />
-            <span className="focus-border" />
+            <i className={cx(styles, 'input-icon', 'fas', 'fa-lock')} />
+            <span className={styles['focus-border']} />
           </div>
           {errors.password && (
             <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
           )}
 
-          <div className="input-icon-wrapper">
+          <div className={styles['input-icon-wrapper']}>
             <input
               type="password"
               placeholder="Confirmer le mot de passe"
               {...register('confirmPassword')}
             />
-            <i className="input-icon fas fa-lock" />
-            <span className="focus-border" />
+            <i className={cx(styles, 'input-icon', 'fas', 'fa-lock')} />
+            <span className={styles['focus-border']} />
           </div>
           {errors.confirmPassword && (
             <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>
@@ -109,7 +111,7 @@ function ResetPasswordForm() {
         </form>
       )}
 
-      <Link href="/login" className="back-link">Back to Login</Link>
+      <Link href="/login" className={styles['back-link']}>Back to Login</Link>
     </div>
   );
 }

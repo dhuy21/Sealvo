@@ -3,21 +3,6 @@
 @import "../styles/main.css";
 @import "../styles/header.css";
 @import "../styles/footer.css";
-@import "../styles/auth.css";
-@import "../styles/dashboard.css";
-@import "../styles/packages.css";
-@import "../styles/vocabs.css";
-@import "../styles/learn.css";
-@import "../styles/games/flash-match.css";
-@import "../styles/games/vocab-quiz.css";
-@import "../styles/games/test-pronun.css";
-@import "../styles/games/word-scramble.css";
-@import "../styles/games/phrase-completion.css";
-@import "../styles/games/speed-vocab.css";
-@import "../styles/games/word-search.css";
-@import "../styles/aboutme.css";
-@import "../styles/feedback.css";
-@import "../styles/password-reset.css";
 
 @theme inline {
   --font-sans: var(--font-geist-sans);

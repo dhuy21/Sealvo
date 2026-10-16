@@ -51,6 +51,8 @@ const nextConfig: NextConfig = {
   turbopack: {
     rules: {
       '*.css': {
+        // `as: '*.css'` would turn CSS Modules into global CSS
+        condition: { not: { path: '*.module.css' } },
         loaders: ['@tailwindcss/turbopack'],
         as: '*.css',
       },

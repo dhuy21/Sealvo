@@ -18,6 +18,20 @@ api.interceptors.request.use((config) => {
 // ── Response interceptor: 401 → refresh → retry ──
 let refreshPromise: Promise<string | null> | null = null;
 
+/** Refresh after a 401, shared by every caller. Logs out when the refresh cookie is no longer valid. */
+export async function renewAccessToken(): Promise<string | null> {
+  // Deduplicate concurrent refresh calls
+  if (!refreshPromise) {
+    refreshPromise = refreshAccessToken().finally(() => {
+      refreshPromise = null;
+    });
+  }
+
+  const newToken = await refreshPromise;
+  if (!newToken) useAuthStore.getState().logout();
+  return newToken;
+}
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -35,18 +49,8 @@ api.interceptors.response.use(
 
     originalRequest._retry = true;
 
-    // Deduplicate concurrent refresh calls
-    if (!refreshPromise) {
-      refreshPromise = refreshAccessToken().finally(() => {
-        refreshPromise = null;
-      });
-    }
-
-    const newToken = await refreshPromise;
-    if (!newToken) {
-      useAuthStore.getState().logout();
-      return Promise.reject(error);
-    }
+    const newToken = await renewAccessToken();
+    if (!newToken) return Promise.reject(error);
 
     originalRequest.headers.Authorization = `Bearer ${newToken}`;
     return api(originalRequest);

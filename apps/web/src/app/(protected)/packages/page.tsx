@@ -18,6 +18,8 @@ import toast from 'react-hot-toast';
 import { PackageModal } from '@/components/packages/PackageModal';
 import { DeleteModal } from '@/components/packages/DeleteModal';
 import { PackageCard } from '@/components/packages/PackageCard';
+import styles from '@/styles/packages.module.css';
+import { cx } from '@/lib/css-module';
 
 type FilterType = 'my-packages' | 'all-public' | 'private' | 'public' | 'protected';
 
@@ -165,53 +167,58 @@ export default function PackagesPage() {
 
   if (loadingMine || loadingPublic) {
     return (
-      <div className="packages-container" style={{ textAlign: 'center', padding: '4rem' }}>
+      <div
+        className={cx(styles, 'packages-container')}
+        style={{ textAlign: 'center', padding: '4rem' }}
+      >
         <i className="fas fa-spinner fa-spin fa-2x"></i>
       </div>
     );
   }
 
   return (
-    <div className="packages-container">
+    <div className={cx(styles, 'packages-container')}>
       {/* Floating icons */}
-      <i className="fas fa-box-open floating-icons float-icon-1"></i>
-      <i className="fas fa-layer-group floating-icons float-icon-2"></i>
-      <i className="fas fa-bookmark floating-icons float-icon-3"></i>
+      <i className={cx(styles, 'fas', 'fa-box-open', 'floating-icons', 'float-icon-1')}></i>
+      <i className={cx(styles, 'fas', 'fa-layer-group', 'floating-icons', 'float-icon-2')}></i>
+      <i className={cx(styles, 'fas', 'fa-bookmark', 'floating-icons', 'float-icon-3')}></i>
 
       {/* Header */}
-      <div className="packages-header fade-in">
+      <div className={cx(styles, 'packages-header', 'fade-in')}>
         <h1>
           <i className="fas fa-box-open"></i> Mes Packages
         </h1>
-        <p className="header-subtitle">Organisez votre vocabulaire en packages thématiques</p>
+        <p className={cx(styles, 'header-subtitle')}>
+          Organisez votre vocabulaire en packages thématiques
+        </p>
       </div>
 
       {/* Action Bar — Stats */}
-      <div className="action-bar fade-in">
-        <div className="action-stats">
-          <div className="stat-card">
-            <div className="stat-icon">
+      <div className={cx(styles, 'action-bar', 'fade-in')}>
+        <div className={cx(styles, 'action-stats')}>
+          <div className={cx(styles, 'stat-card')}>
+            <div className={cx(styles, 'stat-icon')}>
               <i className="fas fa-box"></i>
             </div>
-            <div className="stat-content">
+            <div className={cx(styles, 'stat-content')}>
               <h3>{stats.total}</h3>
               <p>Packages</p>
             </div>
           </div>
-          <div className="stat-card">
-            <div className="stat-icon">
+          <div className={cx(styles, 'stat-card')}>
+            <div className={cx(styles, 'stat-icon')}>
               <i className="fas fa-users"></i>
             </div>
-            <div className="stat-content">
+            <div className={cx(styles, 'stat-content')}>
               <h3>{stats.public}</h3>
               <p>Publics</p>
             </div>
           </div>
-          <div className="stat-card">
-            <div className="stat-icon">
+          <div className={cx(styles, 'stat-card')}>
+            <div className={cx(styles, 'stat-icon')}>
               <i className="fas fa-lock"></i>
             </div>
-            <div className="stat-content">
+            <div className={cx(styles, 'stat-content')}>
               <h3>{stats.private}</h3>
               <p>Privés</p>
             </div>
@@ -220,37 +227,37 @@ export default function PackagesPage() {
       </div>
 
       {/* Search Bar */}
-      <div className="search-container fade-in">
-        <div className="search-form">
-          <div className="input-group">
+      <div className={cx(styles, 'search-container', 'fade-in')}>
+        <div className={cx(styles, 'search-form')}>
+          <div className={cx(styles, 'input-group')}>
             <input
               type="search"
               placeholder="Rechercher ..."
-              className="search-input"
+              className={cx(styles, 'search-input')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <button type="button" className="search-btn">
+            <button type="button" className={cx(styles, 'search-btn')}>
               <i className="fas fa-search"></i>
             </button>
           </div>
         </div>
         <button
-          className="continue-application"
+          className={cx(styles, 'continue-application')}
           onClick={() => {
             setEditPkg(null);
             setModalOpen(true);
           }}
         >
           <div>
-            <div className="pencil"></div>
-            <div className="folder">
-              <div className="top">
+            <div className={cx(styles, 'pencil')}></div>
+            <div className={cx(styles, 'folder')}>
+              <div className={cx(styles, 'top')}>
                 <svg viewBox="0 0 24 27">
                   <path d="M1,0 L23,0 C23.5522847,-1.01453063e-16 24,0.44771525 24,1 L24,8.17157288 C24,8.70200585 23.7892863,9.21071368 23.4142136,9.58578644 L20.5857864,12.4142136 C20.2107137,12.7892863 20,13.2979941 20,13.8284271 L20,26 C20,26.5522847 19.5522847,27 19,27 L1,27 C0.44771525,27 6.76353751e-17,26.5522847 0,26 L0,1 C-6.76353751e-17,0.44771525 0.44771525,1.01453063e-16 1,0 Z" />
                 </svg>
               </div>
-              <div className="paper"></div>
+              <div className={cx(styles, 'paper')}></div>
             </div>
           </div>
           <span>
@@ -260,12 +267,12 @@ export default function PackagesPage() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="filter-container fade-in">
-        <div className="filter-tabs">
+      <div className={cx(styles, 'filter-container', 'fade-in')}>
+        <div className={cx(styles, 'filter-tabs')}>
           {filterTabs.map((tab) => (
             <button
               key={tab.key}
-              className={`filter-tab${filter === tab.key ? ' active' : ''}`}
+              className={cx(styles, 'filter-tab', filter === tab.key && 'active')}
               onClick={() => setFilter(tab.key)}
             >
               <i className={`fas ${tab.icon}`}></i> {tab.label}
@@ -275,7 +282,7 @@ export default function PackagesPage() {
       </div>
 
       {/* Packages Grid */}
-      <div className="packages-grid fade-in">
+      <div className={cx(styles, 'packages-grid', 'fade-in')}>
         {filteredPackages.length > 0 ? (
           filteredPackages.map((pkg) => (
             <PackageCard
@@ -295,8 +302,8 @@ export default function PackagesPage() {
             />
           ))
         ) : (
-          <div className="empty-state">
-            <div className="empty-icon">
+          <div className={cx(styles, 'empty-state')}>
+            <div className={cx(styles, 'empty-icon')}>
               <i className={`fas ${isPublicView ? 'fa-globe' : 'fa-box-open'}`}></i>
             </div>
             <h3>{search ? 'Aucun résultat trouvé' : 'Aucun package trouvé'}</h3>
@@ -307,7 +314,7 @@ export default function PackagesPage() {
             </p>
             {!search && !isPublicView && (
               <button
-                className="btn btn-primary"
+                className={cx(styles, 'btn', 'btn-primary')}
                 onClick={() => {
                   setEditPkg(null);
                   setModalOpen(true);

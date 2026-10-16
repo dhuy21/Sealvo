@@ -34,6 +34,15 @@ test.describe('Registration page', () => {
     await expect(page).toHaveURL(/\/register$/);
   });
 
+  test('username longer than 50 characters is rejected client-side', async ({ page }) => {
+    await page.locator('input[name="username"]').fill('a'.repeat(51));
+    await page.locator('button[type="submit"]').click();
+    await expect(
+      page.getByText("Le nom d'utilisateur doit contenir entre 3 et 50 caractères"),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/\/register$/);
+  });
+
   test('page shows heading and terms link', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Inscription' })).toBeVisible();
     await expect(page.getByRole('link', { name: /conditions d'utilisation/i })).toHaveAttribute(

@@ -1,11 +1,10 @@
-:root {
+.learn-container {
   --primary-color: #7c5cf5;
   --secondary-color: #53a9ff;
   --success-color: #4ad991;
   --warning-color: #ff9f43;
   --danger-color: #ff6b6b;
   --bg-gradient: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-  --card-shadow: 0 10px 25px rgba(0, 0, 0, 0.08), 0 5px 15px rgba(0, 0, 0, 0.05);
   --card-radius: 18px;
   --transition-speed: 0.3s;
   --light-bg: #f9fafb;
@@ -14,6 +13,179 @@
   --pulse-shadow-success: 0 0 0 rgba(74, 217, 145, 0.4);
   --pulse-shadow-warning: 0 0 0 rgba(255, 159, 67, 0.4);
   --pulse-shadow-danger: 0 0 0 rgba(255, 107, 107, 0.4);
+}
+
+/* Light only: in dark mode the dark-mode.css values win, as in the old app */
+:global(:where(html):not(.dark)) .learn-container {
+  --card-shadow: 0 10px 25px rgba(0, 0, 0, 0.08), 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+:global(.dark) .flashcard-front {
+  background: #2d2d2d !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+:global(.dark) .flashcard-back {
+  background: linear-gradient(135deg, #6a11cb, #2575fc) !important;
+  color: #ffffff !important;
+}
+
+:global(.dark) .flashcard-front .card-content,
+:global(.dark) .flashcard-front .card-type,
+:global(.dark) .flashcard-front .card-prompt,
+:global(.dark) .flashcard-front .hint-text {
+  color: #ffffff !important;
+}
+
+:global(.dark) .flashcard-front .card-prompt {
+  background: rgba(45, 45, 45, 0.7) !important;
+  color: #e0e0e0 !important;
+}
+
+:global(.dark) .hint-btn {
+  background: linear-gradient(135deg, #4a5568 0%, #2d3748 50%, #1a202c 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
+}
+
+:global(.dark) .hint-btn::before {
+  color: #fbbf24 !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 4px rgba(251, 191, 36, 0.3)) !important;
+}
+
+:global(.dark) .hint-btn::after {
+  background: linear-gradient(135deg, #374151, #4b5563) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow:
+    0 1px 0 0 #1f2937,
+    0 2px 0 0 #111827,
+    0 3px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+:global(.dark) .hint-btn:hover {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%) !important;
+  box-shadow: 0 8px 20px rgba(251, 191, 36, 0.3) !important;
+}
+
+:global(.dark) .hint-btn:hover::before {
+  color: #1f2937 !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 8px rgba(251, 191, 36, 0.6)) !important;
+}
+
+:global(.dark) .hint-btn:hover::after {
+  background: linear-gradient(135deg, #6b7280, #9ca3af) !important;
+  box-shadow:
+    0 1px 0 0 #374151,
+    0 2px 0 0 #4b5563,
+    0 4px 6px rgba(0, 0, 0, 0.4) !important;
+}
+
+:global(.dark) .flashcard-front .hint-text {
+  background: rgba(45, 45, 45, 0.7) !important;
+  color: #e0e0e0 !important;
+}
+
+:global(.dark) .stat-card {
+  background: #2d2d2d !important;
+}
+
+:global(.dark) .stat-content h3,
+:global(.dark) .stat-content p {
+  color: #ffffff !important;
+}
+
+:global(.dark) .flashcard-filters,
+:global(.dark) .mode-selector,
+:global(.dark) .mode-vocab-selector {
+  background: #2d2d2d !important;
+  color: #ffffff !important;
+}
+
+:global(.dark) .filter-label,
+:global(.dark) .mode-label {
+  color: #ffffff !important;
+}
+
+:global(.dark) .custom-checkbox,
+:global(.dark) .custom-radio {
+  background-color: #1e1e1e !important;
+}
+
+:global(.dark) .nav-btn {
+  background: #2d2d2d !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+:global(.dark) .nav-btn:hover:not([disabled]) {
+  background: #3a3a3a !important;
+  color: #ffffff !important;
+}
+
+:global(.dark) .progress-container {
+  background: #2d2d2d !important;
+}
+
+:global(.dark) .progress-bar {
+  background: #1e1e1e !important;
+}
+
+:global(.dark) .progress-stat {
+  background: #3a3a3a !important;
+  color: #ffffff !important;
+}
+
+:global(.dark) .no-words {
+  background: #2d2d2d !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+:global(.dark) .no-words h3,
+:global(.dark) .no-words p {
+  color: #ffffff !important;
+}
+
+:global(.dark) .no-words i {
+  color: rgba(255, 255, 255, 0.2) !important;
+}
+
+:global(.dark) .hint-container span {
+  color: rgb(69, 4, 80) !important;
+}
+
+@keyframes darkLightbulbGlow {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 4px rgba(251, 191, 36, 0.3)) !important;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 8px rgba(251, 191, 36, 0.5)) !important;
+  }
+}
+
+:global(.dark) .hint-btn::before {
+  animation: darkLightbulbGlow 2s infinite ease-in-out !important;
+}
+
+:global(.dark) .remaining-words h4 {
+  color: #a0aec0 !important;
+}
+
+:global(.dark) .word-chip.chip-review {
+  background: rgba(231, 76, 60, 0.2);
+  color: #f87171 !important;
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+:global(.dark) .word-chip.chip-review:hover {
+  background: #e74c3c;
+  color: #fff !important;
 }
 
 .learn-container {
@@ -889,7 +1061,7 @@
   font-weight: 600;
 }
 
-#progress-text {
+.learn-container :global(#progress-text) {
   font-weight: 700;
   color: var(--primary-color);
   font-size: 1.1rem;
@@ -1916,7 +2088,7 @@
 }
 
 /* Add a subtle transition effect to all buttons */
-button,
+:where(.learn-container) button,
 .btn,
 .action-btn,
 .knowledge-btn,
@@ -1930,7 +2102,7 @@ button,
 }
 
 /* Global active button pressing effect */
-button:active,
+:where(.learn-container) button:active,
 .btn:active {
   transform: scale(0.97);
 }
@@ -2534,28 +2706,28 @@ input[name='mode'][value='meaning-to-word']:checked ~ .flashcard-container .card
   align-items: center;
   gap: 8px;
 }
-.dark .review-panel {
+:global(.dark) .review-panel {
   background: #1e293b;
   border-color: rgba(255, 255, 255, 0.05);
 }
-.dark .review-header h3 {
+:global(.dark) .review-header h3 {
   color: #e2e8f0;
 }
-.dark .review-item {
+:global(.dark) .review-item {
   border-color: #334155;
   background: #0f172a;
 }
-.dark .review-item.unseen {
+:global(.dark) .review-item.unseen {
   color: #94a3b8;
   background: #0f172a;
   border-color: #334155;
 }
-.dark .review-item.to-review {
+:global(.dark) .review-item.to-review {
   color: #f87171;
   background: #1c1111;
   border-color: #7f1d1d;
 }
-.dark .review-item.difficult {
+:global(.dark) .review-item.difficult {
   color: #fb923c;
   background: #1c1510;
   border-color: #7c2d12;

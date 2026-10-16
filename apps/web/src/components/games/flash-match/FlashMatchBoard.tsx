@@ -1,4 +1,6 @@
 import { formatTime } from '@/components/games/format-time';
+import { cx } from '@/lib/css-module';
+import styles from '@/styles/games/flash-match.module.css';
 
 export interface Card {
   pairId: number;
@@ -35,38 +37,38 @@ export function FlashMatchBoard({
             : 'grid-15';
 
   return (
-    <div className="active-game-screen active">
-      <div className="game-info">
-        <div className="moves-display">
-          <span className="moves-label">Coups</span>
-          <span className="moves-value">{moves}</span>
+    <div className={cx(styles, 'active-game-screen', 'active')}>
+      <div className={cx(styles, 'game-info')}>
+        <div className={cx(styles, 'moves-display')}>
+          <span className={cx(styles, 'moves-label')}>Coups</span>
+          <span className={cx(styles, 'moves-value')}>{moves}</span>
         </div>
-        <div className="timer-display">
-          <span className="timer-label">Temps</span>
-          <span className="timer-value">{formatTime(currentTime)}</span>
+        <div className={cx(styles, 'timer-display')}>
+          <span className={cx(styles, 'timer-label')}>Temps</span>
+          <span className={cx(styles, 'timer-value')}>{formatTime(currentTime)}</span>
         </div>
-        <div className="pairs-display">
-          <span className="pairs-label">Paires</span>
-          <span className="pairs-value">
+        <div className={cx(styles, 'pairs-display')}>
+          <span className={cx(styles, 'pairs-label')}>Paires</span>
+          <span className={cx(styles, 'pairs-value')}>
             {matchedPairs}/{totalPairs}
           </span>
         </div>
       </div>
 
-      <div className={`game-board ${gridClass}`}>
+      <div className={cx(styles, 'game-board', gridClass)}>
         {cards.map((card, i) => (
           <div
             key={i}
-            className={`card-container${card.flipped ? ' flipped' : ''}${card.matched ? ' matched' : ''}`}
+            className={cx(styles, 'card-container', card.flipped && 'flipped', card.matched && 'matched')}
             onClick={() => onFlip(i)}
           >
-            <div className="card-inner">
-              <div className="card-front"></div>
-              <div className="card-back">
+            <div className={cx(styles, 'card-inner')}>
+              <div className={cx(styles, 'card-front')}></div>
+              <div className={cx(styles, 'card-back')}>
                 {card.type === 'meaning' ? (
-                  <div className="meaning-card">{card.content}</div>
+                  <div className={cx(styles, 'meaning-card')}>{card.content}</div>
                 ) : (
-                  <div className="card-word">{card.content}</div>
+                  <div className={cx(styles, 'card-word')}>{card.content}</div>
                 )}
               </div>
             </div>

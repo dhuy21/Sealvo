@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { AppProviders } from '@/providers/app-providers';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -23,6 +23,10 @@ export const metadata: Metadata = {
   icons: { icon: '/images/logo.png', apple: '/images/logo.png' },
 };
 
+export const viewport: Viewport = {
+  themeColor: '#2575fc',
+};
+
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     <html
@@ -32,11 +36,13 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
     >
       <body className="min-h-full flex flex-col">
         <AppProviders>
-          <Header />
-          <main className="content flex-1">
-            <ErrorBoundary>{children}</ErrorBoundary>
-          </main>
-          <Footer />
+          <div className="app flex-1">
+            <Header />
+            <main className="content flex-1">
+              <ErrorBoundary>{children}</ErrorBoundary>
+            </main>
+            <Footer />
+          </div>
         </AppProviders>
       </body>
     </html>

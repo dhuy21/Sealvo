@@ -1,3 +1,40 @@
+:global(.dark) .pre-game-screen h2 {
+  color: #8b5cf6 !important;
+}
+:global(.dark) .error-box p {
+  color: #191818 !important;
+}
+
+:global(.dark) .game-info h3 {
+  color: black !important;
+}
+
+:global(.dark) .game-info p {
+  color: rgb(108, 107, 110) !important;
+}
+
+:global(.dark) .stat-box span,
+:global(.dark) .stat-box p {
+  color: black !important;
+}
+
+:global(.dark) .pre-game-screen p,
+:global(.dark) .pre-game-screen h4,
+:global(.dark) .pre-game-screen h5,
+:global(.dark) .pre-game-screen h6,
+:global(.dark) .pre-game-screen span,
+:global(.dark) .pre-game-screen li {
+  color: black !important;
+}
+
+:global(.dark) .phrase-container h2,
+:global(.dark) .phrase-container p {
+  color: black !important;
+}
+:global(.dark) .phrase-container span {
+  color: rgb(69, 4, 80) !important;
+}
+
 /* Phrase Completion Game - Modern Lovely Design with Cloud Effects */
 
 /* ========================================
@@ -1074,7 +1111,7 @@
   }
 }
 
-#timer.warning {
+.game-container :global(#timer).warning {
   background: linear-gradient(45deg, #ef4444, #f87171);
   background-clip: text;
   -webkit-background-clip: text;
@@ -1270,7 +1307,7 @@
 }
 
 /* Enhanced Input Animation */
-#word-input {
+.game-container :global(#word-input) {
   flex-grow: 1;
   padding: 1rem 1.2rem;
   border: 2px solid #e5e7eb;
@@ -1282,7 +1319,7 @@
   position: relative;
 }
 
-#word-input:focus {
+.game-container :global(#word-input):focus {
   outline: none;
   border-color: #6a11cb;
   box-shadow: 0 5px 20px rgba(106, 17, 203, 0.15);
@@ -1298,7 +1335,7 @@
   }
 }
 
-#word-input.correct {
+.game-container :global(#word-input).correct {
   border-color: #10b981;
   background-color: rgba(209, 250, 229, 0.3);
   animation: inputCorrectPulse 0.6s ease-out;
@@ -1319,7 +1356,7 @@
   }
 }
 
-#word-input.incorrect {
+.game-container :global(#word-input).incorrect {
   border-color: #f62828;
   background-color: rgba(254, 226, 226, 0.3);
   animation: inputIncorrectShake 0.4s ease-out;
@@ -1426,7 +1463,7 @@
   position: relative;
 }
 
-#word-input {
+.game-container :global(#word-input) {
   flex-grow: 1;
   padding: 1rem 1.2rem;
   border: 2px solid #e5e7eb;
@@ -1436,18 +1473,18 @@
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
 }
 
-#word-input:focus {
+.game-container :global(#word-input):focus {
   outline: none;
   border-color: #6a11cb;
   box-shadow: 0 5px 20px rgba(106, 17, 203, 0.15);
 }
 
-#word-input.correct {
+.game-container :global(#word-input).correct {
   border-color: #10b981;
   background-color: rgba(209, 250, 229, 0.3);
 }
 
-#word-input.incorrect {
+.game-container :global(#word-input).incorrect {
   border-color: #f62828;
   background-color: rgba(254, 226, 226, 0.3);
 }
@@ -2136,7 +2173,7 @@
     width: 100%;
   }
 
-  #word-input {
+  .game-container :global(#word-input) {
     padding: 1rem;
     border-radius: 12px;
     font-size: 1rem;
@@ -2281,7 +2318,7 @@
     width: 100%;
   }
 
-  #word-input {
+  .game-container :global(#word-input) {
     padding: 1rem;
     border-radius: 12px;
     font-size: 1rem;
@@ -2431,7 +2468,7 @@
     width: 100%;
   }
 
-  #word-input {
+  .game-container :global(#word-input) {
     padding: 1rem;
     border-radius: 12px;
     font-size: 1rem;
@@ -2586,7 +2623,7 @@
     width: 100%;
   }
 
-  #word-input {
+  .game-container :global(#word-input) {
     padding: 1rem;
     border-radius: 12px;
     font-size: 1rem;

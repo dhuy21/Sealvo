@@ -2,22 +2,34 @@
 
 import { Suspense, useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useGameData, useSaveScore, useTrackLevelProgress } from '@/hooks/use-games';
+import { useGameData, useSaveScore } from '@/hooks/use-games';
 import type { GameWord } from '@/hooks/use-games';
+import { useTimeouts } from '@/hooks/use-timeouts';
 import { shuffleArray } from '@/lib/shuffle';
+import { formatTypeMeaning } from '@/lib/word-type';
 import { GameDataStatus } from '@/components/games/GameDataStatus';
 import { GameStats } from '@/components/games/GameStats';
 import { GameFooter } from '@/components/games/GameFooter';
+import { useLevelTracking } from '@/components/games/use-level-tracking';
 import { FlashMatchRules } from '@/components/games/flash-match/FlashMatchRules';
 import { FlashMatchBoard, type Card } from '@/components/games/flash-match/FlashMatchBoard';
 import { FlashMatchSummary } from '@/components/games/flash-match/FlashMatchSummary';
+import { Bubbles } from '@/components/games/flash-match/Bubbles';
+import { cx } from '@/lib/css-module';
+import styles from '@/styles/games/flash-match.module.css';
 
 function generateCards(words: GameWord[]): Card[] {
-  const selected = words.slice(0, 15); // max 15 pairs
+  const selected = shuffleArray(words).slice(0, 15); // max 15 pairs
   const cards: Card[] = [];
   selected.forEach((w) => {
     cards.push({ pairId: w.detail_id, type: 'word', content: w.word, flipped: false, matched: false });
-    cards.push({ pairId: w.detail_id, type: 'meaning', content: w.meaning, flipped: false, matched: false });
+    cards.push({
+      pairId: w.detail_id,
+      type: 'meaning',
+      content: formatTypeMeaning(w.type, w.meaning),
+      flipped: false,
+      matched: false,
+    });
   });
   return shuffleArray(cards);
 }
@@ -33,7 +45,7 @@ function FlashMatchContent() {
 
   const { data: gameData, isLoading, error } = useGameData('flash_match', packageId || null);
   const saveScore = useSaveScore();
-  const trackProgress = useTrackLevelProgress();
+  const level = useLevelTracking('flash_match');
 
   const [screen, setScreen] = useState<Screen>('pre');
   const [cards, setCards] = useState<Card[]>([]);
@@ -46,6 +58,7 @@ function FlashMatchContent() {
   const [levelMessage, setLevelMessage] = useState<{ text: string; success: boolean } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const checkingRef = useRef(false);
+  const later = useTimeouts();
 
   const ready = !!gameData && !gameData.errorMessage;
 
@@ -91,7 +104,7 @@ function FlashMatchContent() {
         setMoves((m) => m + 1);
         checkingRef.current = true;
 
-        setTimeout(() => {
+        later(() => {
           const c1 = newCards[newSelected[0]];
           const c2 = newCards[newSelected[1]];
 
@@ -118,13 +131,9 @@ function FlashMatchContent() {
               });
 
               saveScore.mutate({ game_type: 'flash_match', score: newMatched });
-              trackProgress.mutate({
-                game_type: 'flash_match',
-                completed: isSuccessful,
-                packageId,
-              });
+              level.track(isSuccessful, packageId);
 
-              setTimeout(() => setScreen('post'), 1000);
+              later(() => setScreen('post'), 1000);
             }
           } else {
             // No match
@@ -139,34 +148,34 @@ function FlashMatchContent() {
         }, 1000);
       }
     },
-    [gameActive, cards, selected, matchedPairs, totalPairs, packageId, saveScore, trackProgress],
+    [gameActive, cards, selected, matchedPairs, totalPairs, packageId, saveScore, level, later],
   );
 
   if (!packageId) {
     return (
-      <div className="game-container" style={{ textAlign: 'center', padding: '4rem' }}>
+      <div className={cx(styles, 'game-container')} style={{ textAlign: 'center', padding: '4rem' }}>
         <p>Aucun package sélectionné.</p>
       </div>
     );
   }
 
   return (
-    <div className="game-container">
-      <div className="game-header">
-        <h1>Flash Match</h1>
-        <p className="game-description">Associez chaque mot avec sa définition</p>
+    <div className={cx(styles, 'game-container')}>
+      <div className={cx(styles, 'game-header')}>
+        <h1>Memory Match</h1>
+        <p className={cx(styles, 'game-description')}>Associez chaque mot avec sa définition</p>
       </div>
 
       {screen === 'pre' && (
-        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} />
+        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} styles={styles} />
       )}
 
       {gameData && (screen !== 'pre' || ready) && (
         <>
-          <GameStats wordCount={gameData.wordCount} />
+          <GameStats gameType="flash_match" wordCount={gameData.wordCount} styles={styles} />
 
-          <div className="game-area">
-            <div className="game-screen">
+          <div className={cx(styles, 'game-area')}>
+            <div className={cx(styles, 'game-screen')}>
               {screen === 'pre' && <FlashMatchRules onStart={startGame} />}
 
               {screen === 'active' && (
@@ -187,6 +196,8 @@ function FlashMatchContent() {
                   moves={moves}
                   levelMessage={levelMessage?.text ?? ''}
                   levelStatus={levelMessage ? (levelMessage.success ? 'completed' : 'failed') : ''}
+                  levelFinished={level.levelFinished}
+                  packageId={packageId}
                   onReplay={startGame}
                 />
               )}
@@ -195,7 +206,8 @@ function FlashMatchContent() {
         </>
       )}
 
-      <GameFooter packageId={packageId} nextGame="vocab-quiz" />
+      <GameFooter packageId={packageId} nextGame="speed-vocab" styles={styles} />
+      <Bubbles />
     </div>
   );
 }

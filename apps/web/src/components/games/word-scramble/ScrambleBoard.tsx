@@ -1,4 +1,6 @@
 import type { RefObject } from 'react';
+import { cx } from '@/lib/css-module';
+import styles from '@/styles/games/word-scramble.module.css';
 
 export interface ScrambledWord {
   word: string;
@@ -32,31 +34,31 @@ export function ScrambleBoard({
   onNext: () => void;
 }) {
   return (
-    <div className="active-game-screen active">
-      <div className="game-info">
-        <div className="score-display">
-          <span className="score-label">Score</span>
-          <span className="score-value">{score}</span>
+    <div className={cx(styles, 'active-game-screen', 'active')}>
+      <div className={cx(styles, 'game-info')}>
+        <div className={cx(styles, 'score-display')}>
+          <span className={cx(styles, 'score-label')}>Score</span>
+          <span className={cx(styles, 'score-value')}>{score}</span>
         </div>
-        <div className="timer-display">
-          <span className="timer-label">Temps</span>
-          <span className={`timer-value ${timer <= 30 ? 'warning' : ''}`}>{timer}</span>
+        <div className={cx(styles, 'timer-display')}>
+          <span className={cx(styles, 'timer-label')}>Temps</span>
+          <span className={cx(styles, 'timer-value', timer <= 30 && 'warning')}>{timer}</span>
         </div>
       </div>
 
-      <div className="scrambled-word-container">
-        <div className="scrambled-word">
+      <div className={cx(styles, 'scrambled-word-container')}>
+        <div className={cx(styles, 'scrambled-word')}>
           {resultType ? currentWord.word : currentWord.scrambled}
         </div>
-        <div className="word-meaning">{currentWord.meaning}</div>
+        <div className={cx(styles, 'word-meaning')}>{currentWord.meaning}</div>
       </div>
 
-      <div className="answer-container">
+      <div className={cx(styles, 'answer-container')}>
         <input
           ref={inputRef}
           type="text"
-          className="word-input"
-          placeholder="Votre réponse"
+          id="word-input"
+          className={cx(styles, 'word-input')}
           autoComplete="off"
           value={input}
           onChange={(e) => onInputChange(e.target.value)}
@@ -66,28 +68,26 @@ export function ScrambleBoard({
         />
       </div>
 
-      <div className="button-group">
-        <button className="submit-btn" onClick={onCheck}>
-          <div className="back"></div>
-          <div className="front">
+      <div className={cx(styles, 'button-group')}>
+        <button className={cx(styles, 'submit-btn')} onClick={onCheck}>
+          <div className={cx(styles, 'back')}></div>
+          <div className={cx(styles, 'front')}>
             <i className="fa-solid fa-wand-magic-sparkles"></i>
           </div>
         </button>
         <button
-          className="pass-btn"
+          className={cx(styles, 'pass-btn')}
           onClick={onNext}
           disabled={!canSkip}
         >
-          <div className="back"></div>
-          <div className="front">
+          <div className={cx(styles, 'back')}></div>
+          <div className={cx(styles, 'front')}>
             <i className="fas fa-play"></i>
           </div>
         </button>
       </div>
 
-      {resultMessage && (
-        <div className={`result-message ${resultType}`}>{resultMessage}</div>
-      )}
+      <div className={cx(styles, 'result-message', resultType)}>{resultMessage}</div>
     </div>
   );
 }

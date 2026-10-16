@@ -44,6 +44,15 @@ interface UpdateProfileResponse {
   pendingEmail?: string;
 }
 
+export function useTestReminder() {
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post<{ success: boolean; message: string }>('/reminder/test');
+      return data;
+    },
+  });
+}
+
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
 
@@ -54,7 +63,6 @@ export function useUpdateProfile() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      void queryClient.invalidateQueries({ queryKey: ['me'] });
     },
   });
 }

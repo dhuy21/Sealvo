@@ -1,5 +1,21 @@
+/* Dark-mode rules for this module's classes (dark-mode.css loads first): keep them above the page rules */
+:global(.dark) .profile-section p,
+:global(.dark) .skills-section p,
+:global(.dark) .skills-section span,
+:global(.dark) .timeline-section p,
+:global(.dark) .timeline-section span,
+:global(.dark) .timeline-section h3,
+:global(.dark) .timeline-section h2,
+:global(.dark) .contact-section h2,
+:global(.dark) .contact-section p,
+:global(.dark) .contact-section span,
+:global(.dark) .contact-section i,
+:global(.dark) .contact-section a {
+  color: black !important;
+}
+
 /* Styles généraux */
-body {
+:global(body):where(:has(.container)) {
   font-family: 'Arial', sans-serif;
   line-height: 1.6;
   color: #333 !important ;
@@ -13,7 +29,7 @@ body {
   padding: 20px;
 }
 
-h1 {
+:where(:global(body):has(.container)) h1 {
   text-align: center;
   margin-bottom: 2rem;
   font-weight: 800;
@@ -458,6 +474,19 @@ h1 {
   --index: 9;
 }
 
+/* learn.css (global) styles every button (transition, :active scale), which would cancel the
+   rotation of the clock buttons on click */
+.social-clock__button,
+.social-clock__trigger {
+  transition: none;
+}
+.social-clock__button:active {
+  transform: rotate(var(--angle));
+}
+.social-clock__trigger:active {
+  transform: none;
+}
+
 /* Bouton de retour */
 .home-cta {
   text-align: center;
@@ -476,6 +505,29 @@ h1 {
 }
 
 .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(37, 117, 252, 0.3);
+}
+
+/* Same look as .home-cta/.btn above under names no other stylesheet targets: every stylesheet
+   is global, and vocabs.css, auth.css, learn.css restyle .home-cta .btn for their own pages */
+.about-home-cta {
+  text-align: center;
+  margin-top: 40px;
+}
+
+.about-home-btn {
+  display: inline-block;
+  padding: 12px 30px;
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  color: white;
+  text-decoration: none;
+  border-radius: 25px;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 15px rgba(37, 117, 252, 0.2);
+}
+
+.about-home-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(37, 117, 252, 0.3);
 }

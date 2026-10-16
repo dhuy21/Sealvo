@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import type { Package } from '@/hooks/use-packages';
+import styles from '@/styles/packages.module.css';
+import { cx } from '@/lib/css-module';
 
 interface PackageModalProps {
   editPkg: Package | null;
@@ -32,19 +34,19 @@ function PackageModalContent({ editPkg, onClose, onSubmit, saving }: PackageModa
 
   return (
     <div
-      className="modal-overlay"
+      className={cx(styles, 'modal-overlay')}
       style={{ display: 'flex' }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="modal-content">
-        <div className="modal-header">
+      <div className={cx(styles, 'modal-content')}>
+        <div className={cx(styles, 'modal-header')}>
           <h3>
             <i className={`fas fa-${isEdit ? 'edit' : 'plus-circle'}`}></i>{' '}
             {isEdit ? 'Modifier le package' : 'Créer un package'}
           </h3>
-          <button className="modal-close" onClick={onClose}>
+          <button className={cx(styles, 'modal-close')} onClick={onClose}>
             <i className="fas fa-times"></i>
           </button>
         </div>
@@ -55,15 +57,15 @@ function PackageModalContent({ editPkg, onClose, onSubmit, saving }: PackageModa
             onSubmit({ package_name: name.trim(), package_description: description.trim(), mode });
           }}
         >
-          <div className="modal-body">
-            <div className="form-group">
+          <div className={cx(styles, 'modal-body')}>
+            <div className={cx(styles, 'form-group')}>
               <label htmlFor="packageName">
                 <i className="fas fa-tag"></i> Nom du package
               </label>
               <input
                 type="text"
                 id="packageName"
-                className="form-input"
+                className={cx(styles, 'form-input')}
                 placeholder="Ex: Vocabulaire Business"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -71,13 +73,13 @@ function PackageModalContent({ editPkg, onClose, onSubmit, saving }: PackageModa
               />
             </div>
 
-            <div className="form-group">
+            <div className={cx(styles, 'form-group')}>
               <label htmlFor="packageDescription">
                 <i className="fas fa-align-left"></i> Description
               </label>
               <textarea
                 id="packageDescription"
-                className="form-textarea"
+                className={cx(styles, 'form-textarea')}
                 placeholder="Décrivez brièvement le contenu de ce package..."
                 rows={4}
                 value={description}
@@ -86,13 +88,13 @@ function PackageModalContent({ editPkg, onClose, onSubmit, saving }: PackageModa
               />
             </div>
 
-            <div className="form-group">
+            <div className={cx(styles, 'form-group')}>
               <label htmlFor="packageMode">
                 <i className="fas fa-cog"></i> Mode de visibilité
               </label>
               <select
                 id="packageMode"
-                className="form-select"
+                className={cx(styles, 'form-select')}
                 value={mode}
                 onChange={(e) => setMode(e.target.value)}
               >
@@ -103,11 +105,11 @@ function PackageModalContent({ editPkg, onClose, onSubmit, saving }: PackageModa
             </div>
           </div>
 
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
+          <div className={cx(styles, 'modal-footer')}>
+            <button type="button" className={cx(styles, 'btn', 'btn-secondary')} onClick={onClose}>
               <i className="fas fa-times"></i> Annuler
             </button>
-            <button type="submit" className="btn btn-primary" disabled={saving}>
+            <button type="submit" className={cx(styles, 'btn', 'btn-primary')} disabled={saving}>
               {saving ? (
                 <i className="fas fa-spinner fa-spin"></i>
               ) : (

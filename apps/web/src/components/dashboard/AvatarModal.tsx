@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import styles from '@/styles/dashboard.module.css';
+import { cx } from '@/lib/css-module';
 
 interface AvatarModalProps {
   currentAva: number;
@@ -27,38 +29,38 @@ function AvatarModalContent({ currentAva, onClose, onSave, saving }: AvatarModal
 
   return (
     <div
-      className="avatar-modal"
+      className={cx(styles, 'avatar-modal')}
       style={{ display: 'block', opacity: 1 }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="avatar-modal-content">
-        <div className="avatar-modal-header">
+      <div className={cx(styles, 'avatar-modal-content')}>
+        <div className={cx(styles, 'avatar-modal-header')}>
           <h3>
             <i className="fas fa-user-circle"></i> Choisir un nouvel avatar
           </h3>
-          <span className="avatar-modal-close" onClick={onClose}>
+          <span className={cx(styles, 'avatar-modal-close')} onClick={onClose}>
             &times;
           </span>
         </div>
-        <div className="avatar-modal-body">
-          <div className="avatar-grid">
+        <div className={cx(styles, 'avatar-modal-body')}>
+          <div className={cx(styles, 'avatar-grid')}>
             {Array.from({ length: 11 }, (_, i) => i + 1).map((n) => (
               <div
                 key={n}
-                className={`avatar-option${selected === n ? ' selected' : ''}`}
+                className={cx(styles, 'avatar-option', selected === n && 'selected')}
                 data-avatar={n}
                 onClick={() => setSelected(n)}
               >
                 <img
                   src={`/images/avatars/${n}.png`}
                   alt={`Avatar ${n}`}
-                  className="avatar-selection"
+                  className={cx(styles, 'avatar-selection')}
                   loading="lazy"
                 />
                 {selected === n && (
-                  <div className="avatar-selected">
+                  <div className={cx(styles, 'avatar-selected')}>
                     <i className="fas fa-check"></i>
                   </div>
                 )}
@@ -66,9 +68,11 @@ function AvatarModalContent({ currentAva, onClose, onSave, saving }: AvatarModal
             ))}
           </div>
         </div>
-        <div className="avatar-modal-footer">
-          <button onClick={onClose}>Annuler</button>
-          <button onClick={() => onSave(selected)} disabled={saving}>
+        <div className={cx(styles, 'avatar-modal-footer')}>
+          <button id="cancelAvatarBtn" onClick={onClose}>
+            Annuler
+          </button>
+          <button id="saveAvatarBtn" onClick={() => onSave(selected)} disabled={saving}>
             {saving ? (
               <>
                 <i className="fas fa-spinner fa-spin"></i> Enregistrement...

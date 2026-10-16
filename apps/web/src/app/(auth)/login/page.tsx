@@ -12,7 +12,8 @@ import { getApiErrorMessage } from '@/lib/api-error';
 import { useAuthStore } from '@/stores/auth.store';
 import type { User } from '@/stores/auth.store';
 import { safeRedirect } from '@/lib/safe-redirect';
-import '@/styles/auth.css';
+import { cx } from '@/lib/css-module';
+import styles from '@/styles/auth.module.css';
 
 const loginSchema = z.object({
   username: z.string().min(1, 'Nom d\'utilisateur requis'),
@@ -70,76 +71,76 @@ function LoginForm() {
   };
 
   return (
-    <div className="auth-page">
-      <div className="floating-card card-1">
+    <div className={cx(styles, 'page', 'auth-page')}>
+      <div className={cx(styles, 'floating-card', 'card-1')}>
         <i className="fas fa-quote-left" />
         <span> 🌱 It always seems impossible until it&apos;s done.</span>
         <i className="fas fa-quote-right" />
       </div>
-      <div className="floating-card card-2">
+      <div className={cx(styles, 'floating-card', 'card-2')}>
         <i className="fas fa-quote-left" />
         <span> 🚀 Well done is better than well said.</span>
         <i className="fas fa-quote-right" />
       </div>
-      <div className="floating-card card-3">
+      <div className={cx(styles, 'floating-card', 'card-3')}>
         <i className="fas fa-quote-left" />
         <span> 🌍 Rejoignez la communauté</span>
         <i className="fas fa-quote-right" />
       </div>
-      <div className="floating-card card-4">
+      <div className={cx(styles, 'floating-card', 'card-4')}>
         <i className="fas fa-quote-left" />
         <span> 🌟 Act as if what you do makes a difference. It does.</span>
         <i className="fas fa-quote-right" />
       </div>
-      <div className="floating-card card-5">
+      <div className={cx(styles, 'floating-card', 'card-5')}>
         <i className="fas fa-quote-left" />
         <span> 💡 N&apos;oubliez pas de prendre des pauses!</span>
         <i className="fas fa-quote-right" />
       </div>
 
-      <div className="auth-container">
-        <div className="auth-header">
-          <div className="logo-icon">
+      <div className={styles['auth-container']}>
+        <div className={styles['auth-header']}>
+          <div className={styles['logo-icon']}>
             <i className="fas fa-graduation-cap" />
           </div>
           <h1>Connexion</h1>
-          <p className="auth-subtitle">Connectez-vous pour continuer votre apprentissage</p>
+          <p className={styles['auth-subtitle']}>Connectez-vous pour continuer votre apprentissage</p>
         </div>
 
         {googleError && (
-          <div className="alert alert-error">
+          <div className={cx(styles, 'alert', 'alert-error')}>
             <i className="fas fa-exclamation-circle" />
             {googleError}
           </div>
         )}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="auth-form">
-          <div className="form-group" data-delay="100">
-            <div className="input-icon-wrapper">
+        <form onSubmit={handleSubmit(onSubmit)} className={styles['auth-form']}>
+          <div className={styles['form-group']} data-delay="100">
+            <div className={styles['input-icon-wrapper']}>
               <input
                 type="text"
                 placeholder="Nom d'utilisateur"
                 autoComplete="username"
                 {...register('username')}
               />
-              <i className="input-icon fas fa-user" />
+              <i className={cx(styles, 'input-icon', 'fas', 'fa-user')} />
               <span className="focus-border" />
             </div>
             {errors.username && <span className="form-error">{errors.username.message}</span>}
           </div>
 
-          <div className="form-group" data-delay="200">
-            <div className="input-icon-wrapper">
+          <div className={styles['form-group']} data-delay="200">
+            <div className={styles['input-icon-wrapper']}>
               <input
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Mot de passe"
                 autoComplete="current-password"
                 {...register('password')}
               />
-              <i className="input-icon fas fa-lock" />
+              <i className={cx(styles, 'input-icon', 'fas', 'fa-lock')} />
               <button
                 type="button"
-                className="password-toggle"
+                className={styles['password-toggle']}
                 onClick={() => setShowPassword((v) => !v)}
               >
                 <i className={showPassword ? 'far fa-eye-slash' : 'far fa-eye'} />
@@ -149,30 +150,30 @@ function LoginForm() {
             {errors.password && <span className="form-error">{errors.password.message}</span>}
           </div>
 
-          <div className="form-options" data-delay="300">
-            <Link href="/forgot-password" className="forgot-password">
+          <div className={styles['form-options']} data-delay="300">
+            <Link href="/forgot-password" className={styles['forgot-password']}>
               Mot de passe oublié?
             </Link>
           </div>
 
-          <button type="submit" className="btn-submit" data-delay="400" disabled={isSubmitting}>
+          <button type="submit" className={styles['btn-submit']} data-delay="400" disabled={isSubmitting}>
             {isSubmitting ? 'Connexion...' : 'Se connecter'} <i className="fas fa-arrow-right" />
           </button>
         </form>
 
-        <div className="auth-separator" data-delay="500">
+        <div className={styles['auth-separator']} data-delay="500">
           <span>ou</span>
         </div>
 
-        <div className="social-login" data-delay="600">
-          <a href={`${api.defaults.baseURL}/auth/google`} className="social-btn google-btn">
+        <div className={styles['social-login']} data-delay="600">
+          <a href={`${api.defaults.baseURL}/auth/google`} className={cx(styles, 'social-btn', 'google-btn')}>
             <i className="fa-brands fa-google" /> Continuer avec Google
           </a>
         </div>
 
-        <div className="auth-footer">
+        <div className={styles['auth-footer']}>
           Pas encore de compte?{' '}
-          <Link href="/register" className="auth-link">
+          <Link href="/register" className={styles['auth-link']}>
             S&apos;inscrire
           </Link>
         </div>

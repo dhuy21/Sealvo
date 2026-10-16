@@ -5,7 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import api from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/api-error';
-import '@/styles/auth.css';
+import { useAuthStore, type User } from '@/stores/auth.store';
+import { cx } from '@/lib/css-module';
+import styles from '@/styles/auth.module.css';
 
 type Status = { type: 'success' | 'error'; message: string };
 
@@ -35,28 +37,45 @@ function VerifyEmailStatus() {
       );
   }, [token]);
 
+  // An email change only lands in the DB here: a signed-in user's store still holds the old address.
+  // Waits for AuthInitializer, whose own /auth/me may have run before the verification.
+  const isReady = useAuthStore((s) => s.isReady);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const setUser = useAuthStore((s) => s.setUser);
+  const userRefreshed = useRef(false);
+  const verified = result?.type === 'success';
+
+  useEffect(() => {
+    if (!verified || !isReady || !isAuthenticated || userRefreshed.current) return;
+    userRefreshed.current = true;
+    api
+      .get<User>('/auth/me')
+      .then((res) => setUser(res.data))
+      .catch(() => {});
+  }, [verified, isReady, isAuthenticated, setUser]);
+
   const status = token ? result : INVALID_TOKEN;
 
   return (
-    <div className="auth-page">
-      <div className="auth-container">
-        <div className="auth-header">
-          <div className="logo-icon">
+    <div className={cx(styles, 'page', 'auth-page')}>
+      <div className={styles['auth-container']}>
+        <div className={styles['auth-header']}>
+          <div className={styles['logo-icon']}>
             <i className="fas fa-envelope" />
           </div>
           <h1>Vérification de l&apos;email</h1>
-          {!status && <p className="auth-subtitle">Vérification en cours...</p>}
+          {!status && <p className={styles['auth-subtitle']}>Vérification en cours...</p>}
         </div>
 
         {status && (
-          <div className={`alert alert-${status.type}`}>
+          <div className={cx(styles, 'alert', `alert-${status.type}`)}>
             <i className={`fas fa-${status.type === 'success' ? 'check-circle' : 'exclamation-circle'}`} />
             {status.message}
           </div>
         )}
 
-        <div className="auth-footer">
-          <Link href="/login" className="auth-link">
+        <div className={styles['auth-footer']}>
+          <Link href="/login" className={styles['auth-link']}>
             Se connecter
           </Link>
         </div>

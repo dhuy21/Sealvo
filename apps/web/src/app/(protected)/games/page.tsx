@@ -7,7 +7,7 @@ import { Suspense } from 'react';
 const GAMES = [
   {
     slug: 'flash-match',
-    name: 'Flash Match',
+    name: 'Memory Match',
     description: 'Associez les mots à leur traduction en retournant les cartes.',
     icon: '🃏',
     level: 'x',
@@ -15,7 +15,7 @@ const GAMES = [
   },
   {
     slug: 'vocab-quiz',
-    name: 'Vocab Quiz',
+    name: 'Quiz de Vocabulaire',
     description: 'Testez vos connaissances avec des quiz à choix multiples.',
     icon: '❓',
     level: 'x',
@@ -23,7 +23,7 @@ const GAMES = [
   },
   {
     slug: 'test-pronun',
-    name: 'Test Pronun',
+    name: 'Défi Prononcial',
     description: 'Entraînez votre prononciation avec la reconnaissance vocale.',
     icon: '🎤',
     level: 'x',
@@ -31,7 +31,7 @@ const GAMES = [
   },
   {
     slug: 'word-scramble',
-    name: 'Word Scramble',
+    name: 'Mots Mélangés',
     description: 'Remettez les lettres dans le bon ordre.',
     icon: '🔤',
     level: '0',
@@ -39,7 +39,7 @@ const GAMES = [
   },
   {
     slug: 'phrase-completion',
-    name: 'Phrase Completion',
+    name: 'Complétion de Phrase',
     description: 'Complétez les phrases avec le bon mot.',
     icon: '📝',
     level: '0',
@@ -47,7 +47,7 @@ const GAMES = [
   },
   {
     slug: 'speed-vocab',
-    name: 'Speed Vocab',
+    name: 'Vitesse Vocab',
     description: 'Tapez les mots le plus vite possible.',
     icon: '⚡',
     level: '1',
@@ -55,7 +55,7 @@ const GAMES = [
   },
   {
     slug: 'word-search',
-    name: 'Word Search',
+    name: 'Mots Cachés',
     description: 'Trouvez les mots cachés dans la grille.',
     icon: '🔍',
     level: '2',

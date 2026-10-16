@@ -1,11 +1,14 @@
 'use client';
 
-import { Suspense, useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useGameData, useSaveScore, useTrackLevelProgress } from '@/hooks/use-games';
+import { useGameData, useSaveScore } from '@/hooks/use-games';
+import { useTimeouts } from '@/hooks/use-timeouts';
 import { shuffleArray } from '@/lib/shuffle';
+import { formatTypeMeaning } from '@/lib/word-type';
 import { launchSideCannons } from '@/components/games/confetti';
-import { levelCompletedMessage } from '@/components/games/level-progress';
+import { useCelebration } from '@/components/games/use-celebration';
+import { useLevelTracking } from '@/components/games/use-level-tracking';
 import { GameDataStatus } from '@/components/games/GameDataStatus';
 import { GameStats } from '@/components/games/GameStats';
 import { GameFooter } from '@/components/games/GameFooter';
@@ -14,6 +17,8 @@ import { MagicalBackground } from '@/components/games/word-scramble/MagicalBackg
 import { WordScrambleRules } from '@/components/games/word-scramble/WordScrambleRules';
 import { ScrambleBoard, type ScrambledWord } from '@/components/games/word-scramble/ScrambleBoard';
 import { WordScrambleSummary } from '@/components/games/word-scramble/WordScrambleSummary';
+import { cx } from '@/lib/css-module';
+import styles from '@/styles/games/word-scramble.module.css';
 
 /* ================================================================
    HELPERS
@@ -36,7 +41,7 @@ function WordScrambleInner() {
 
   const { data: gameData, isLoading, error } = useGameData('word_scramble', packageId);
   const saveScore = useSaveScore();
-  const trackLevel = useTrackLevelProgress();
+  const level = useLevelTracking('word_scramble');
 
   type Screen = 'pre' | 'active' | 'post';
   const [screen, setScreen] = useState<Screen>('pre');
@@ -55,19 +60,11 @@ function WordScrambleInner() {
 
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const later = useTimeouts();
+  const celebrate = useCelebration(launchSideCannons);
 
   const currentWord = words[currentIndex] ?? null;
   const ready = !!gameData && !gameData.errorMessage;
-
-  // Prepare scrambled words from game data
-  const scrambledWords = useMemo(() => {
-    if (!gameData) return [];
-    return gameData.words.map((w) => ({
-      word: w.word,
-      scrambled: scrambleWord(w.word),
-      meaning: w.meaning,
-    }));
-  }, [gameData]);
 
   // Timer countdown
   useEffect(() => {
@@ -86,12 +83,18 @@ function WordScrambleInner() {
   }, [screen, timer > 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function startGame() {
-    if (!ready || scrambledWords.length === 0) {
+    if (!gameData || gameData.errorMessage || gameData.words.length === 0) {
       setScreen('pre');
       return;
     }
 
-    const shuffled = shuffleArray(scrambledWords);
+    const shuffled = shuffleArray(
+      gameData.words.map((w) => ({
+        word: w.word,
+        scrambled: scrambleWord(w.word),
+        meaning: formatTypeMeaning(w.type, w.meaning),
+      })),
+    );
     setWords(shuffled);
     setCurrentIndex(0);
     setScore(0);
@@ -104,7 +107,7 @@ function WordScrambleInner() {
     setLevelMessage('');
     setLevelStatus('');
 
-    const gameTimer = 110 + scrambledWords.length * 9;
+    const gameTimer = 110 + shuffled.length * 9;
     setTimer(gameTimer);
     setScreen('active');
 
@@ -139,8 +142,6 @@ function WordScrambleInner() {
       nextIndex = Math.floor(Math.random() * words.length);
     }
     setCurrentIndex(nextIndex);
-
-    setTimeout(() => inputRef.current?.focus(), 50);
   }, [words.length, currentIndex]);
 
   function endGame() {
@@ -150,18 +151,7 @@ function WordScrambleInner() {
 
     saveScore.mutate({ game_type: 'word_scramble', score });
 
-    trackLevel.mutate(
-      { game_type: 'word_scramble', completed: isSuccessful, packageId: packageId! },
-      {
-        onSuccess: (data) => {
-          const message = levelCompletedMessage(data);
-          if (message) {
-            setLevelMessage(message);
-            setLevelStatus('completed');
-          }
-        },
-      },
-    );
+    level.track(isSuccessful, packageId!);
 
     if (isSuccessful) {
       setLevelMessage('Excellent travail ! Progressez les autres jeux de ce niveau 😍');
@@ -171,9 +161,9 @@ function WordScrambleInner() {
       setLevelStatus('failed');
     }
 
-    setTimeout(() => {
+    later(() => {
       setScreen('post');
-      launchSideCannons();
+      celebrate();
     }, 1000);
   }
 
@@ -191,8 +181,8 @@ function WordScrambleInner() {
 
   if (!packageId) {
     return (
-      <div className="game-container">
-        <div className="error-box">
+      <div className={cx(styles, 'game-container')}>
+        <div className={cx(styles, 'error-box')}>
           <i className="fas fa-exclamation-triangle"></i>
           <p>Aucun package sélectionné.</p>
         </div>
@@ -201,25 +191,25 @@ function WordScrambleInner() {
   }
 
   return (
-    <div className="game-container">
+    <div className={cx(styles, 'game-container')}>
       <MagicalBackground />
 
       {/* Header */}
-      <div className="game-header">
-        <h1>Word Scramble</h1>
-        <p className="game-description">Retrouvez les mots mélangés</p>
+      <div className={cx(styles, 'game-header')}>
+        <h1>Mots Mélangés</h1>
+        <p className={cx(styles, 'game-description')}>Retrouvez les mots mélangés</p>
       </div>
 
       {screen === 'pre' && (
-        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} />
+        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} styles={styles} />
       )}
 
       {gameData && (screen !== 'pre' || ready) && (
         <>
-          <GameStats wordCount={gameData.wordCount} />
+          <GameStats gameType="word_scramble" wordCount={gameData.wordCount} styles={styles} />
 
-          <div className="game-area">
-            <div className="game-screen">
+          <div className={cx(styles, 'game-area')}>
+            <div className={cx(styles, 'game-screen')}>
               {screen === 'pre' && <WordScrambleRules onStart={startGame} />}
 
               {screen === 'active' && currentWord && (
@@ -245,6 +235,8 @@ function WordScrambleInner() {
                   accuracy={finalAccuracy}
                   levelMessage={levelMessage}
                   levelStatus={levelStatus}
+                  levelFinished={level.levelFinished}
+                  packageId={packageId}
                   onReplay={startGame}
                 />
               )}
@@ -253,7 +245,7 @@ function WordScrambleInner() {
         </>
       )}
 
-      <GameFooter packageId={packageId} nextGame="phrase-completion" />
+      <GameFooter packageId={packageId} nextGame="flash-match" styles={styles} />
     </div>
   );
 }

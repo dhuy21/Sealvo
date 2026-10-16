@@ -11,9 +11,27 @@ export interface CellRef {
 
 export const cellKey = (r: number, c: number) => `${r},${c}`;
 
-export function generateGrid(wordList: string[]): { grid: string[][]; placedWords: string[] } {
+export const normalizeWord = (word: string) => word.toUpperCase().replace(/[^A-Z]/g, '');
+
+/** Cells of the first occurrence of `word` (already normalized) in the grid, scanning row by row. */
+export function findWordInGrid(grid: string[][], word: string): CellRef[] | null {
+  const size = grid.length;
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < size; col++) {
+      for (const [dx, dy] of DIRECTIONS) {
+        const endRow = row + dx * (word.length - 1);
+        const endCol = col + dy * (word.length - 1);
+        if (endRow < 0 || endRow >= size || endCol < 0 || endCol >= size) continue;
+        const cells = Array.from(word, (_, i) => ({ row: row + dx * i, col: col + dy * i }));
+        if (cells.every((c, i) => grid[c.row][c.col] === word[i])) return cells;
+      }
+    }
+  }
+  return null;
+}
+
+export function generateGrid(wordList: string[]): string[][] {
   const grid: string[][] = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(''));
-  const placedWords: string[] = [];
 
   function canPlace(word: string, row: number, col: number, dx: number, dy: number): boolean {
     const len = word.length;
@@ -27,7 +45,7 @@ export function generateGrid(wordList: string[]): { grid: string[][]; placedWord
   }
 
   for (const rawWord of wordList) {
-    const word = rawWord.toUpperCase().replace(/[^A-Z]/g, '');
+    const word = normalizeWord(rawWord);
     if (word.length <= 1 || word.length > GRID_SIZE) continue;
 
     let placed = false;
@@ -41,7 +59,6 @@ export function generateGrid(wordList: string[]): { grid: string[][]; placedWord
         for (let i = 0; i < word.length; i++) {
           grid[row + dx * i][col + dy * i] = word[i];
         }
-        placedWords.push(rawWord);
         placed = true;
       }
     }
@@ -56,5 +73,5 @@ export function generateGrid(wordList: string[]): { grid: string[][]; placedWord
     }
   }
 
-  return { grid, placedWords };
+  return grid;
 }

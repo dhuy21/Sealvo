@@ -15,7 +15,7 @@ test.describe('Login flow', () => {
 
   // toBeVisible() ignores opacity: auth.css starts these elements at opacity 0 until the reveal animation ends
   test('form is actually revealed (opacity 1)', async ({ page }) => {
-    for (const selector of ['.form-group', '.btn-submit']) {
+    for (const selector of ['form > div', 'button[type="submit"]']) {
       await expect(page.locator(selector).first()).toHaveCSS('opacity', '1');
     }
   });

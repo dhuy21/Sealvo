@@ -1,3 +1,32 @@
+:global(.dark) .pre-game-screen h2 {
+  color: #8b5cf6 !important;
+}
+:global(.dark) .error-box p {
+  color: #191818 !important;
+}
+
+:global(.dark) .game-info h3 {
+  color: black !important;
+}
+
+:global(.dark) .game-info p {
+  color: rgb(108, 107, 110) !important;
+}
+
+:global(.dark) .stat-box span,
+:global(.dark) .stat-box p {
+  color: black !important;
+}
+
+:global(.dark) .pre-game-screen p,
+:global(.dark) .pre-game-screen h4,
+:global(.dark) .pre-game-screen h5,
+:global(.dark) .pre-game-screen h6,
+:global(.dark) .pre-game-screen span,
+:global(.dark) .pre-game-screen li {
+  color: black !important;
+}
+
 /* Speed Vocab Game - Modern & Elegant Design - v2.3 - Compact Horizontal Buttons */
 
 /*===============================================
@@ -218,7 +247,7 @@
 }
 
 /* Enhanced Timer Warning Animation */
-#timer.warning {
+.game-container :global(#timer).warning {
   background: linear-gradient(45deg, #ef4444, #f87171);
   background-clip: text;
   -webkit-background-clip: text;
@@ -227,7 +256,7 @@
   position: relative;
 }
 
-#timer.warning::after {
+.game-container :global(#timer).warning::after {
   content: '';
   position: absolute;
   top: -5px;
@@ -1021,7 +1050,7 @@
   line-height: 1;
 }
 
-#timer.warning {
+.game-container :global(#timer).warning {
   background: linear-gradient(45deg, #ef4444, #f87171);
   background-clip: text;
   -webkit-background-clip: text;
@@ -1030,7 +1059,7 @@
   position: relative;
 }
 
-#timer.warning::after {
+.game-container :global(#timer).warning::after {
   content: '';
   position: absolute;
   top: -5px;
@@ -1086,7 +1115,7 @@
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
 }
 
-#word-display {
+.game-container :global(#word-display) {
   font-size: 3rem;
   font-weight: 700;
   color: #333;
@@ -1099,7 +1128,7 @@
   letter-spacing: 1px;
 }
 
-#word-display.fadeIn {
+.game-container :global(#word-display).fadeIn {
   animation: fadeInWord 0.8s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
@@ -1114,7 +1143,7 @@
   }
 }
 
-#meaning-display {
+.game-container :global(#meaning-display) {
   font-size: 1.2rem;
   color: #6b7280;
   font-style: italic;
@@ -1124,7 +1153,7 @@
   padding-top: 1rem;
 }
 
-#meaning-display:before {
+.game-container :global(#meaning-display):before {
   content: '';
   position: absolute;
   top: 0;
@@ -1144,7 +1173,7 @@
   position: relative;
 }
 
-#word-input {
+.game-container :global(#word-input) {
   width: 100%;
   padding: 1rem 1.2rem;
   font-size: 1.2rem;
@@ -1155,19 +1184,19 @@
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
 }
 
-#word-input:focus {
+.game-container :global(#word-input):focus {
   outline: none;
   border-color: #6a11cb;
   box-shadow: 0 5px 20px rgba(106, 17, 203, 0.15);
 }
 
-#word-input.correct {
+.game-container :global(#word-input).correct {
   border-color: #10b981;
   background-color: rgba(209, 250, 229, 0.3);
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
 }
 
-#word-input.incorrect {
+.game-container :global(#word-input).incorrect {
   border-color: #ef4444;
   background-color: rgba(254, 226, 226, 0.3);
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
@@ -1949,7 +1978,7 @@
     height: 7em;
   }
 
-  #word-display {
+  .game-container :global(#word-display) {
     font-size: 2.4rem;
   }
 
@@ -2162,7 +2191,7 @@
     height: 7em;
   }
 
-  #word-display {
+  .game-container :global(#word-display) {
     font-size: 2.1rem;
   }
 
@@ -2375,7 +2404,7 @@
     height: 7em;
   }
 
-  #word-display {
+  .game-container :global(#word-display) {
     font-size: 2.1rem;
   }
 
@@ -2469,4 +2498,8 @@
   75% {
     transform: translateX(-1px) translateY(2px);
   }
+}
+
+.game-container.screen-shake {
+  animation: screenShake 0.5s ease-in-out;
 }

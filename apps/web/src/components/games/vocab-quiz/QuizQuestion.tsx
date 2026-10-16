@@ -1,17 +1,35 @@
+import type { QuizScreenFlags } from './use-quiz-effects';
+import { cx } from '@/lib/css-module';
+import styles from '@/styles/games/vocab-quiz.module.css';
+
 export interface Question {
   word: string;
   options: string[];
   correctIndex: number[];
 }
 
+function optionClass(i: number, question: Question, selected: number[], lastSelected: number | null, answered: boolean) {
+  const isCorrect = question.correctIndex.includes(i);
+  let cls = 'option-btn';
+  if (i === lastSelected) cls += ' selected';
+  if (answered && isCorrect) cls += ' correct';
+  else if (answered && selected.includes(i)) cls += ' incorrect';
+  return cx(styles, ...cls.split(' '));
+}
+
+const withFlags = (base: string, flags: Record<string, boolean>) =>
+  cx(styles, ...base.split(' '), ...Object.entries(flags).filter(([, on]) => on).map(([cls]) => cls));
+
 export function QuizQuestion({
   question: currentQ,
   questionNumber,
   totalQuestions,
   score,
-  selectedOption,
+  selected,
+  lastSelected,
   answered,
   resultMsg,
+  flags,
   onAnswer,
   onNext,
 }: {
@@ -19,39 +37,46 @@ export function QuizQuestion({
   questionNumber: number;
   totalQuestions: number;
   score: number;
-  selectedOption: number | null;
+  selected: number[];
+  lastSelected: number | null;
   answered: boolean;
   resultMsg: { text: string; correct: boolean } | null;
+  flags: QuizScreenFlags;
   onAnswer: (optIdx: number) => void;
   onNext: () => void;
 }) {
   return (
-    <div className="active-game-screen active">
-      <div className="game-info">
-        <div className="score-display">
-          <span className="score-label">Score</span>
-          <span className="score-value">{score}</span>
+    <div
+      className={withFlags('active-game-screen active', {
+        'quiz-active': flags.quizActive,
+        'question-loading': flags.questionLoading,
+        'quiz-completion-glow': flags.completionGlow,
+      })}
+    >
+      <div className={cx(styles, 'game-info')}>
+        <div className={withFlags('score-display', { 'score-increase': flags.scoreIncrease })}>
+          <span className={cx(styles, 'score-label')}>Score</span>
+          <span className={cx(styles, 'score-value')}>{score}</span>
         </div>
-        <div className="progress-display">
-          <span className="progress-label">Question</span>
-          <span className="progress-value">
+        <div className={withFlags('progress-display', { updating: flags.progressUpdating })}>
+          <span className={cx(styles, 'progress-label')}>Question</span>
+          <span className={cx(styles, 'progress-value')}>
             {questionNumber}/{totalQuestions}
           </span>
         </div>
       </div>
 
-      <div className="quiz-question-container">
-        <div className="quiz-word-container">
-          <div className="quiz-word">{currentQ.word}</div>
+      <div className={cx(styles, 'quiz-question-container')}>
+        <div className={withFlags('quiz-word-container', { 'new-question': flags.questionLoading })}>
+          <div className={withFlags('quiz-word', { revealing: flags.revealing })}>{currentQ.word}</div>
         </div>
 
-        <div className="options-container">
+        <div className={cx(styles, 'options-container')}>
           {currentQ.options.map((opt, i) => (
             <button
               key={i}
-              className={`option-btn${selectedOption === i ? (currentQ.correctIndex.includes(i) ? ' correct' : ' incorrect') : ''}${answered && currentQ.correctIndex.includes(i) ? ' correct' : ''}`}
+              className={optionClass(i, currentQ, selected, lastSelected, answered)}
               onClick={() => onAnswer(i)}
-              disabled={answered}
             >
               {opt}
             </button>
@@ -60,14 +85,14 @@ export function QuizQuestion({
       </div>
 
       {resultMsg && (
-        <div className={`result-message ${resultMsg.correct ? 'correct' : 'incorrect'}`}>
+        <div className={cx(styles, 'result-message', resultMsg.correct ? 'correct' : 'incorrect')}>
           {resultMsg.text}
         </div>
       )}
 
-      <div className="quiz-footer">
-        <button className="next-btn" disabled={!answered} onClick={onNext}>
-          {questionNumber === totalQuestions ? 'Voir les résultats' : 'Question suivante'}
+      <div className={cx(styles, 'quiz-footer')}>
+        <button className={cx(styles, 'next-btn')} disabled={!answered} onClick={onNext}>
+          {answered && questionNumber === totalQuestions ? 'Voir les résultats' : 'Question suivante'}
         </button>
       </div>
     </div>

@@ -8,6 +8,8 @@ import { z } from 'zod/v4';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/api-error';
+import { cx } from '@/lib/css-module';
+import styles from '@/styles/password-reset.module.css';
 
 const schema = z.object({
   email: z.email('Adresse email invalide'),
@@ -34,23 +36,23 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="forgot-password-container">
-      <h1 className="forgot-password-title">Forgot Password</h1>
+    <div className={styles['forgot-password-container']}>
+      <h1 className={styles['forgot-password-title']}>Forgot Password</h1>
 
       {submitted ? (
-        <div className="alert alert-success" style={{ display: 'block' }}>
+        <div className={cx(styles, 'alert', 'alert-success')} style={{ display: 'block' }}>
           <p>Un email a été envoyé. Vérifiez votre boîte de réception.</p>
         </div>
       ) : (
-        <form className="forgot-password-form" onSubmit={handleSubmit(onSubmit)}>
-          <div className="input-icon-wrapper">
+        <form className={styles['forgot-password-form']} onSubmit={handleSubmit(onSubmit)}>
+          <div className={styles['input-icon-wrapper']}>
             <input
               type="email"
               placeholder="Adresse email"
               {...register('email')}
             />
-            <i className="input-icon fas fa-envelope" />
-            <span className="focus-border" />
+            <i className={cx(styles, 'input-icon', 'fas', 'fa-envelope')} />
+            <span className={styles['focus-border']} />
           </div>
           {errors.email && (
             <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
@@ -62,7 +64,7 @@ export default function ForgotPasswordPage() {
         </form>
       )}
 
-      <Link href="/login" className="back-link">
+      <Link href="/login" className={styles['back-link']}>
         Back to Login
       </Link>
     </div>

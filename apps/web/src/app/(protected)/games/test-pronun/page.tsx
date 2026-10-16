@@ -1,26 +1,28 @@
 'use client';
 
-import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useGameData, useSaveScore, useTrackLevelProgress, type GameWord } from '@/hooks/use-games';
-import { useIsClient } from '@/hooks/use-is-client';
+import { useGameData, useSaveScore, type GameWord } from '@/hooks/use-games';
+import { useTimeouts } from '@/hooks/use-timeouts';
+import { useUnmountSignal } from '@/hooks/use-unmount-signal';
 import { shuffleArray } from '@/lib/shuffle';
 import { launchFireworks } from '@/components/games/confetti';
-import { levelCompletedMessage } from '@/components/games/level-progress';
+import { useCelebration } from '@/components/games/use-celebration';
+import { useLevelTracking } from '@/components/games/use-level-tracking';
 import { GameDataStatus } from '@/components/games/GameDataStatus';
 import { GameStats } from '@/components/games/GameStats';
 import { GameFooter } from '@/components/games/GameFooter';
 import type { LevelStatus } from '@/components/games/TrackLevelMessage';
-import type {
-  SpeechRecognitionErrorEvent,
-  SpeechRecognitionEvent,
-  SpeechRecognitionInstance,
-} from '@/components/games/test-pronun/speech-recognition';
-import { calculatePronunciationAccuracy } from '@/components/games/test-pronun/pronunciation';
+import { useTransientFlag } from '@/components/games/use-transient-flag';
+import { calculatePronunciationAccuracy, playWordAudio } from '@/components/games/test-pronun/pronunciation';
+import { useFeedback } from '@/components/games/test-pronun/use-feedback';
+import { useSpeechRecognition } from '@/components/games/test-pronun/use-speech-recognition';
 import { SoundBackground } from '@/components/games/test-pronun/SoundBackground';
 import { TestPronunRules } from '@/components/games/test-pronun/TestPronunRules';
-import { PronunciationBoard, type FeedbackType } from '@/components/games/test-pronun/PronunciationBoard';
+import { PronunciationBoard } from '@/components/games/test-pronun/PronunciationBoard';
 import { TestPronunSummary } from '@/components/games/test-pronun/TestPronunSummary';
+import { cx } from '@/lib/css-module';
+import styles from '@/styles/games/test-pronun.module.css';
 
 /* ================================================================
    INNER COMPONENT (needs useSearchParams)
@@ -31,7 +33,7 @@ function TestPronunInner() {
 
   const { data: gameData, isLoading, error } = useGameData('test_pronun', packageId);
   const saveScore = useSaveScore();
-  const trackLevel = useTrackLevelProgress();
+  const level = useLevelTracking('test_pronun');
 
   // Game state
   type Screen = 'pre' | 'active' | 'post';
@@ -44,19 +46,18 @@ function TestPronunInner() {
   const [startTime, setStartTime] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [accuracy, setAccuracy] = useState(0);
+  const [meterWidth, setMeterWidth] = useState(0);
   const [recognizedText, setRecognizedText] = useState('');
-  const [feedbackText, setFeedbackText] = useState('');
-  const [feedbackType, setFeedbackType] = useState<FeedbackType>('neutral');
-  const [isListening, setIsListening] = useState(false);
-  const isClient = useIsClient();
-  const speechSupported =
-    isClient && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
+  const { feedback, setFeedback, getFeedbackText } = useFeedback();
+  const [speaking, triggerSpeaking] = useTransientFlag();
+  const [wordFadeIn, triggerWordFadeIn] = useTransientFlag();
   const [levelMessage, setLevelMessage] = useState('');
   const [levelStatus, setLevelStatus] = useState<LevelStatus>('');
 
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
-  const recognitionTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const later = useTimeouts();
+  const celebrate = useCelebration(launchFireworks);
+  const unmountSignal = useUnmountSignal();
 
   const WORDS_PER_GAME = 10;
   const currentWord = words[currentIndex] ?? null;
@@ -72,126 +73,52 @@ function TestPronunInner() {
     }
   }, [screen, startTime]);
 
-  const processResult = useCallback(
-    (spokenText: string, confidence: number) => {
-      if (!currentWord) return;
+  function processResult(spokenText: string, confidence: number) {
+    if (!currentWord) return;
 
-      const target = currentWord.word.toLowerCase().trim();
-      setRecognizedText(`"${spokenText}"`);
+    const target = currentWord.word.toLowerCase().trim();
+    setRecognizedText(`"${spokenText}"`);
 
-      const acc = calculatePronunciationAccuracy(spokenText, target, confidence);
-      setAccuracy(acc);
+    const acc = calculatePronunciationAccuracy(spokenText, target, confidence);
+    setAccuracy(acc);
+    setMeterWidth(acc);
 
-      let message: string;
-      let type: FeedbackType;
-      let isPerfect = false;
-
-      if (acc >= 90) {
-        message = 'Excellent ! Prononciation parfaite !';
-        type = 'success';
-        isPerfect = true;
-      } else if (acc >= 75) {
-        message = 'Très bien ! Bonne prononciation !';
-        type = 'success';
-      } else if (acc >= 60) {
-        message = 'Bien ! Prononciation correcte !';
-        type = 'info';
-      } else if (acc >= 40) {
-        message = 'Pas mal ! Continuez à vous entraîner !';
-        type = 'warning';
-      } else if (acc >= 20) {
-        message = 'Essayez encore ! Écoutez bien la prononciation.';
-        type = 'warning';
-      } else {
-        message = 'Mot incorrect. Réessayez en écoutant attentivement.';
-        type = 'error';
-      }
-
-      setFeedbackText(message);
-      setFeedbackType(type);
-
-      setTotalAccuracy((prev) => prev + acc);
-      setCompletedWords((prev) => prev + 1);
-      if (isPerfect) setPerfectCount((prev) => prev + 1);
-    },
-    [currentWord],
-  );
-
-  const startListening = useCallback(() => {
-    if (!speechSupported || !currentWord) return;
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
-
-    // Clean up previous
-    if (recognitionRef.current) {
-      try { recognitionRef.current.abort(); } catch { /* ignore */ }
+    let message: string;
+    if (acc >= 90) {
+      message = 'Excellent ! Prononciation parfaite !';
+      setPerfectCount((prev) => prev + 1);
+    } else if (acc >= 75) {
+      message = 'Très bien ! Bonne prononciation !';
+    } else if (acc >= 60) {
+      message = 'Bien ! Prononciation correcte !';
+    } else if (acc >= 40) {
+      message = 'Pas mal ! Continuez à vous entraîner !';
+    } else if (acc >= 20) {
+      message = 'Essayez encore ! Écoutez bien la prononciation.';
+    } else {
+      message = 'Mot incorrect. Réessayez en écoutant attentivement.';
     }
+    setFeedback(message);
 
-    const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = currentWord.language_code || 'en-US';
-    recognition.maxAlternatives = 1;
-    recognitionRef.current = recognition;
+    setTotalAccuracy((prev) => prev + acc);
+    setCompletedWords((prev) => prev + 1);
+  }
 
-    recognition.onstart = () => {
-      setIsListening(true);
-      setFeedbackText('Écoute en cours... Parlez maintenant.');
-      setFeedbackType('info');
+  const speech = useSpeechRecognition({
+    language: currentWord?.language_code || 'en-US',
+    onResult: processResult,
+    onListenStart: () => setRecognizedText(''),
+    setFeedback,
+    getFeedbackText,
+  });
 
-      recognitionTimeoutRef.current = setTimeout(() => {
-        try { recognition.stop(); } catch { /* ignore */ }
-      }, 10000);
-    };
-
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      if (recognitionTimeoutRef.current) clearTimeout(recognitionTimeoutRef.current);
-
-      const results = event.results[0];
-      if (results && results.length > 0) {
-        const spokenText = results[0].transcript.toLowerCase().trim();
-        const confidence = results[0].confidence || 0.5;
-        processResult(spokenText, confidence);
-      }
-    };
-
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      if (recognitionTimeoutRef.current) clearTimeout(recognitionTimeoutRef.current);
-      setIsListening(false);
-
-      const messages: Record<string, string> = {
-        'no-speech': 'Aucune parole détectée. Parlez plus fort.',
-        'audio-capture': "Impossible d'accéder au microphone.",
-        'not-allowed': 'Permission microphone refusée.',
-        'network': 'Erreur réseau.',
-      };
-
-      setFeedbackText(messages[event.error] || `Erreur: ${event.error}`);
-      setFeedbackType('error');
-    };
-
-    recognition.onend = () => {
-      if (recognitionTimeoutRef.current) clearTimeout(recognitionTimeoutRef.current);
-      setIsListening(false);
-    };
-
-    try {
-      recognition.start();
-    } catch (err) {
-      console.error('Speech recognition start error:', err);
-      setFeedbackText("Impossible de démarrer l'enregistrement.");
-      setFeedbackType('error');
-    }
-  }, [speechSupported, currentWord, processResult]);
-
-  const stopListening = useCallback(() => {
-    if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch { /* ignore */ }
-    }
-    if (recognitionTimeoutRef.current) clearTimeout(recognitionTimeoutRef.current);
-    setIsListening(false);
-  }, []);
+  function showWord(index: number) {
+    setCurrentIndex(index);
+    setMeterWidth(0);
+    setRecognizedText('');
+    setFeedback('');
+    triggerWordFadeIn(500);
+  }
 
   function startGame() {
     if (!gameData || gameData.errorMessage || gameData.words.length === 0) {
@@ -201,30 +128,26 @@ function TestPronunInner() {
 
     const shuffled = shuffleArray(gameData.words);
     setWords(shuffled);
-    setCurrentIndex(0);
     setCompletedWords(0);
     setTotalAccuracy(0);
     setPerfectCount(0);
     setAccuracy(0);
-    setRecognizedText('');
-    setFeedbackText('');
-    setFeedbackType('neutral');
     setLevelMessage('');
     setLevelStatus('');
     setStartTime(Date.now());
     setElapsed(0);
     setScreen('active');
+    showWord(Math.floor(Math.random() * shuffled.length));
+  }
+
+  function playCurrentWord() {
+    if (!currentWord) return;
+    triggerSpeaking(2000);
+    void playWordAudio(currentWord, setFeedback, unmountSignal());
   }
 
   function skipWord() {
-    let nextIndex = Math.floor(Math.random() * words.length);
-    while (nextIndex === currentIndex && words.length > 1) {
-      nextIndex = Math.floor(Math.random() * words.length);
-    }
-    setCurrentIndex(nextIndex);
-    setAccuracy(0);
-    setRecognizedText('');
-    setFeedbackText('');
+    showWord(Math.floor(Math.random() * words.length));
   }
 
   function endGame() {
@@ -236,18 +159,7 @@ function TestPronunInner() {
     saveScore.mutate({ game_type: 'test_pronun', score });
 
     const isSuccessful = avgAccuracy >= 70 && completedWords >= 5;
-    trackLevel.mutate(
-      { game_type: 'test_pronun', completed: isSuccessful, packageId: packageId! },
-      {
-        onSuccess: (data) => {
-          const message = levelCompletedMessage(data);
-          if (message) {
-            setLevelMessage(message);
-            setLevelStatus('completed');
-          }
-        },
-      },
-    );
+    level.track(isSuccessful, packageId!);
 
     if (isSuccessful) {
       setLevelMessage('Excellent travail ! Progressez les autres jeux de ce niveau 😍');
@@ -259,9 +171,9 @@ function TestPronunInner() {
 
     setElapsed(finalTime);
 
-    setTimeout(() => {
+    later(() => {
       setScreen('post');
-      launchFireworks();
+      celebrate();
     }, 1000);
   }
 
@@ -279,11 +191,7 @@ function TestPronunInner() {
       while (nextIndex === currentIndex && words.length > 1) {
         nextIndex = Math.floor(Math.random() * words.length);
       }
-      setCurrentIndex(nextIndex);
-      setAccuracy(0);
-      setRecognizedText('');
-      setFeedbackText('');
-      setFeedbackType('neutral');
+      showWord(nextIndex);
     }, 2000);
 
     return () => clearTimeout(timeout);
@@ -294,8 +202,8 @@ function TestPronunInner() {
 
   if (!packageId) {
     return (
-      <div className="game-container">
-        <div className="error-box">
+      <div className={cx(styles, 'game-container')}>
+        <div className={cx(styles, 'error-box')}>
           <i className="fas fa-exclamation-triangle"></i>
           <p>Aucun package sélectionné.</p>
         </div>
@@ -304,28 +212,30 @@ function TestPronunInner() {
   }
 
   return (
-    <div className="game-container">
-      <SoundBackground isListening={isListening} />
+    <div className={cx(styles, 'game-container')}>
+      <SoundBackground
+        mode={speech.isListening ? 'listening' : speech.hasListened ? 'normal' : 'idle'}
+      />
 
       {/* Header */}
-      <div className="game-header">
+      <div className={cx(styles, 'game-header')}>
         <h1>
           <i className="fas fa-bolt" style={{ color: '#e9e919' }}></i>
-          Test Prononciation
+          Défi Prononcial
         </h1>
-        <p className="game-description">Testez et améliorez votre prononciation</p>
+        <p className={cx(styles, 'game-description')}>Testez et améliorez votre prononciation</p>
       </div>
 
       {screen === 'pre' && (
-        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} />
+        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} styles={styles} />
       )}
 
       {gameData && (screen !== 'pre' || ready) && (
         <>
-          <GameStats wordCount={gameData.wordCount} />
+          <GameStats gameType="test_pronun" wordCount={gameData.wordCount} styles={styles} />
 
-          <div className="game-area">
-            <div className="game-screen">
+          <div className={cx(styles, 'game-area')}>
+            <div className={cx(styles, 'game-screen')}>
               {screen === 'pre' && <TestPronunRules onStart={startGame} />}
 
               {screen === 'active' && currentWord && (
@@ -334,13 +244,15 @@ function TestPronunInner() {
                   completedWords={completedWords}
                   elapsed={elapsed}
                   accuracy={accuracy}
-                  isListening={isListening}
-                  speechSupported={speechSupported}
+                  meterWidth={meterWidth}
+                  speaking={speaking}
+                  wordFadeIn={wordFadeIn}
+                  isListening={speech.isListening}
+                  speechSupported={speech.supported}
                   recognizedText={recognizedText}
-                  feedbackText={feedbackText}
-                  feedbackType={feedbackType}
-                  onStartListening={startListening}
-                  onStopListening={stopListening}
+                  feedback={feedback}
+                  onPlay={playCurrentWord}
+                  onToggleRecording={speech.toggle}
                   onSkip={skipWord}
                 />
               )}
@@ -352,6 +264,8 @@ function TestPronunInner() {
                   avgAccuracy={avgAccuracy}
                   levelMessage={levelMessage}
                   levelStatus={levelStatus}
+                  levelFinished={level.levelFinished}
+                  packageId={packageId}
                   onReplay={startGame}
                 />
               )}
@@ -360,7 +274,7 @@ function TestPronunInner() {
         </>
       )}
 
-      <GameFooter packageId={packageId} nextGame="word-scramble" />
+      <GameFooter packageId={packageId} nextGame="word-scramble" styles={styles} />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import type { GameData } from '@/hooks/use-games';
 import { getApiErrorMessage } from '@/lib/api-error';
+import { cx, type CssModule } from '@/lib/css-module';
 
 /** Loading / error state of `useGameData`; renders nothing once the game is playable. */
 export function GameDataStatus({
@@ -10,11 +11,13 @@ export function GameDataStatus({
   error,
   data,
   packageId,
+  styles,
 }: {
   isLoading: boolean;
   error: unknown;
   data: GameData | undefined;
   packageId: number;
+  styles: CssModule;
 }) {
   const router = useRouter();
 
@@ -28,7 +31,7 @@ export function GameDataStatus({
 
   if (!data && error) {
     return (
-      <div className="error-box">
+      <div className={cx(styles, 'error-box')}>
         <i className="fas fa-exclamation-triangle"></i>
         <p>{getApiErrorMessage(error, 'Impossible de charger les données du jeu.')}</p>
       </div>
@@ -37,10 +40,10 @@ export function GameDataStatus({
 
   if (data?.errorMessage) {
     return (
-      <div className="error-box">
+      <div className={cx(styles, 'error-box')}>
         <i className="fas fa-exclamation-triangle"></i>
         <p>{data.errorMessage}</p>
-        <button className="btn add-words-btn" onClick={() => router.push(`/words?package=${packageId}`)}>
+        <button className={cx(styles, 'btn', 'add-words-btn')} onClick={() => router.push(`/words?package=${packageId}`)}>
           Ajouter des mots
         </button>
       </div>

@@ -8,7 +8,9 @@ import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { useAuthStore } from '@/stores/auth.store';
-import '@/styles/feedback.css';
+import { cx } from '@/lib/css-module';
+import authStyles from '@/styles/auth.module.css';
+import feedbackStyles from '@/styles/feedback.module.css';
 
 const schema = z.object({
   type: z.enum(['suggestion', 'bug', 'question', 'appreciation', 'other']),
@@ -40,27 +42,27 @@ export default function FeedbackPage() {
   };
 
   return (
-    <div className="feedback-container">
-      <i className="fas fa-comment floating-icons float-icon-1" />
-      <i className="fas fa-lightbulb floating-icons float-icon-2" />
-      <i className="fas fa-star floating-icons float-icon-3" />
+    <div className={`${authStyles['page']} ${feedbackStyles['feedback-container']}`}>
+      <i className={cx(feedbackStyles, 'fas', 'fa-comment', 'floating-icons', 'float-icon-1')} />
+      <i className={cx(feedbackStyles, 'fas', 'fa-lightbulb', 'floating-icons', 'float-icon-2')} />
+      <i className={cx(feedbackStyles, 'fas', 'fa-star', 'floating-icons', 'float-icon-3')} />
 
       <div className="feedback-content">
-        <div className="feedback-header fade-in">
+        <div className={cx(feedbackStyles, 'feedback-header', 'fade-in')}>
           <h1>Donnez votre avis</h1>
-          <p className="feedback-description">
+          <p className={feedbackStyles['feedback-description']}>
             Votre opinion est importante pour nous améliorer. Partagez vos suggestions, signaler des
             problèmes ou dites-nous ce que vous aimez.
           </p>
         </div>
 
-        <div className="feedback-form-container fade-in">
+        <div className={cx(feedbackStyles, 'feedback-form-container', 'fade-in')}>
           <form className="feedback-form" onSubmit={handleSubmit(onSubmit)}>
-            <div className="form-group">
+            <div className={`${authStyles['form-group']} ${feedbackStyles['form-group']}`}>
               <label htmlFor="feedback-type">Type de feedback</label>
               <select
                 id="feedback-type"
-                className="form-control"
+                className={feedbackStyles['form-control']}
                 defaultValue=""
                 {...register('type')}
               >
@@ -78,13 +80,13 @@ export default function FeedbackPage() {
               )}
             </div>
 
-            <div className="form-group">
+            <div className={`${authStyles['form-group']} ${feedbackStyles['form-group']}`}>
               <label htmlFor="feedback-subject">Sujet</label>
               <input
                 type="text"
                 id="feedback-subject"
                 placeholder="Résumez votre feedback en quelques mots"
-                className="form-control"
+                className={feedbackStyles['form-control']}
                 {...register('subject')}
               />
               {errors.subject && (
@@ -92,13 +94,13 @@ export default function FeedbackPage() {
               )}
             </div>
 
-            <div className="form-group">
+            <div className={`${authStyles['form-group']} ${feedbackStyles['form-group']}`}>
               <label htmlFor="feedback-content">Détails</label>
               <textarea
                 id="feedback-content"
                 rows={5}
                 placeholder="Partagez les détails de votre feedback..."
-                className="form-control"
+                className={feedbackStyles['form-control']}
                 {...register('content')}
               />
               {errors.content && (
@@ -106,13 +108,13 @@ export default function FeedbackPage() {
               )}
             </div>
 
-            <div className="form-group">
+            <div className={`${authStyles['form-group']} ${feedbackStyles['form-group']}`}>
               <label htmlFor="feedback-email">Email (optionnel)</label>
               <input
                 type="email"
                 id="feedback-email"
                 placeholder="Votre email (optionnel) pour recevoir une réponse"
-                className="form-control"
+                className={feedbackStyles['form-control']}
                 {...register('email')}
               />
               {errors.email && (
@@ -120,13 +122,13 @@ export default function FeedbackPage() {
               )}
             </div>
 
-            <div className="feedback-actions">
-              <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+            <div className={feedbackStyles['feedback-actions']}>
+              <button type="submit" className={`${cx(authStyles, 'btn', 'btn-primary')} ${cx(feedbackStyles, 'btn', 'btn-primary')}`} disabled={isSubmitting}>
                 <i className="fas fa-paper-plane" /> {isSubmitting ? 'Envoi...' : 'Envoyer'}
               </button>
               <Link
                 href={user ? '/dashboard' : '/'}
-                className="btn btn-secondary btn-info"
+                className={`${cx(authStyles, 'btn', 'btn-secondary', 'btn-info')} ${feedbackStyles['btn']} ${feedbackStyles['btn-secondary']}`}
               >
                 <i className="fas fa-arrow-left" /> Sortie
               </Link>

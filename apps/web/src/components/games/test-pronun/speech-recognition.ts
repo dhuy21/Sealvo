@@ -1,5 +1,5 @@
 export interface SpeechRecognitionEvent {
-  results: { [index: number]: { transcript: string; confidence: number }[] };
+  results: { length: number; [index: number]: { transcript: string; confidence: number }[] };
 }
 
 export interface SpeechRecognitionErrorEvent {

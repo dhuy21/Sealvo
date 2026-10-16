@@ -29,10 +29,17 @@ export interface CreateWordPayload {
   antonyms?: string;
   example?: string;
   grammar?: string;
+  level?: string;
 }
 
-export interface UpdateWordPayload extends Partial<CreateWordPayload> {
-  level?: string;
+export type UpdateWordPayload = Partial<CreateWordPayload>;
+
+/** Reply of POST words / import: queued jobs (`async`) are followed by the global JobWatcher. */
+export interface WordsSubmitResponse {
+  success: boolean;
+  async: boolean;
+  jobId?: string;
+  message?: string;
 }
 
 export function useWords(packageId: number | null) {
@@ -46,14 +53,18 @@ export function useWords(packageId: number | null) {
   });
 }
 
-export function useAddWord(packageId: number) {
+export function useAddWords(packageId: number) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: CreateWordPayload) => {
-      const { data } = await api.post(`/packages/${packageId}/words`, [payload]);
+    mutationFn: async (payload: CreateWordPayload[]) => {
+      const { data } = await api.post<WordsSubmitResponse>(
+        `/packages/${packageId}/words`,
+        payload,
+      );
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data.async) return;
       void qc.invalidateQueries({ queryKey: ['words', packageId] });
       void qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
@@ -94,8 +105,8 @@ export function useDeleteAllWords(packageId: number) {
       const { data } = await api.delete(`/packages/${packageId}/words`);
       return data;
     },
+    // The words list is refetched by the caller once its exit animation has played
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['words', packageId] });
       void qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });

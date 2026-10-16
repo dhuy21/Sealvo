@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import styles from '@/styles/dashboard.module.css';
+import { cx } from '@/lib/css-module';
 
 export function EditableField({
   label,
@@ -57,19 +59,19 @@ export function EditableField({
   };
 
   return (
-    <div className={`info-row row-${fieldName === 'username' ? 'name' : 'email'}`}>
-      <div className="info-label">
+    <div className={cx(styles, 'info-row', `row-${fieldName === 'username' ? 'name' : 'email'}`)}>
+      <div className={cx(styles, 'info-label')}>
         <i className={icon} style={{ color: iconColor, width: 30, marginRight: 8 }}></i>
         {label}
       </div>
-      <div className="info-value">
+      <div className={cx(styles, 'info-value')}>
         {editing ? (
           <>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
               <input
                 ref={inputRef}
                 type="text"
-                className="edit-input"
+                className={cx(styles, 'edit-input')}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -78,7 +80,7 @@ export function EditableField({
                 <input
                   ref={passwordRef}
                   type="password"
-                  className="edit-input"
+                  className={cx(styles, 'edit-input')}
                   placeholder="Mot de passe actuel"
                   autoComplete="current-password"
                   value={password}
@@ -87,10 +89,10 @@ export function EditableField({
                 />
               )}
             </div>
-            <button className="save-btn" title="Valider" onClick={handleSave}>
+            <button className={cx(styles, 'save-btn')} title="Valider" onClick={handleSave}>
               <i className="fas fa-check"></i>
             </button>
-            <button className="cancel-btn" title="Annuler" onClick={handleCancel}>
+            <button className={cx(styles, 'cancel-btn')} title="Annuler" onClick={handleCancel}>
               <i className="fas fa-times"></i>
             </button>
           </>
@@ -98,7 +100,7 @@ export function EditableField({
           <>
             <div className={`${fieldName}-display`}>{value}</div>
             <button
-              className="edit-btn"
+              className={cx(styles, 'edit-btn')}
               title="Modifier"
               onClick={() => {
                 setInputValue(value);

@@ -1,11 +1,13 @@
 'use client';
 
-import { Suspense, useState, useEffect, useRef } from 'react';
+import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useGameData, useSaveScore, useTrackLevelProgress, type GameWord } from '@/hooks/use-games';
+import { useGameData, useSaveScore, type GameWord } from '@/hooks/use-games';
+import { useTimeouts } from '@/hooks/use-timeouts';
 import { shuffleArray } from '@/lib/shuffle';
 import { launchStars } from '@/components/games/confetti';
-import { levelCompletedMessage } from '@/components/games/level-progress';
+import { useCelebration } from '@/components/games/use-celebration';
+import { useLevelTracking } from '@/components/games/use-level-tracking';
 import { GameDataStatus } from '@/components/games/GameDataStatus';
 import { GameStats } from '@/components/games/GameStats';
 import { GameFooter } from '@/components/games/GameFooter';
@@ -14,6 +16,9 @@ import { StarryBackground } from '@/components/games/phrase-completion/StarryBac
 import { PhraseCompletionRules } from '@/components/games/phrase-completion/PhraseCompletionRules';
 import { PhraseBoard } from '@/components/games/phrase-completion/PhraseBoard';
 import { PhraseCompletionSummary } from '@/components/games/phrase-completion/PhraseCompletionSummary';
+import { useTypewriter } from '@/components/games/phrase-completion/use-typewriter';
+import { cx } from '@/lib/css-module';
+import styles from '@/styles/games/phrase-completion.module.css';
 
 /* ================================================================
    TYPES & HELPERS
@@ -28,20 +33,19 @@ interface Phrase {
   correctWords: string[];
 }
 
+/** One phrase per word; an example without `**…**` (or no example) gives a phrase with no blank. */
 function generatePhrases(words: GameWord[]): Phrase[] {
-  const phrases: Phrase[] = [];
-  for (const w of words) {
-    if (!w.example || !w.example.trim()) continue;
+  const phrases = words.map((w) => {
+    let phrase = '';
+    let correctWords: string[] = [];
 
-    let phrase = w.example;
-    const regex = /\*\*([^*]+)\*\*/g;
-    const correctWords = [...phrase.matchAll(regex)].map((m) => m[1]);
-    phrase = phrase.replace(regex, '_____');
-
-    if (correctWords.length > 0) {
-      phrases.push({ phrase, word: w.word, meaningWord: w.meaning, correctWords });
+    if (w.example && w.example.trim() !== '') {
+      const regex = /\*\*([^*]+)\*\*/g;
+      correctWords = [...w.example.matchAll(regex)].map((m) => m[1]);
+      phrase = w.example.replace(regex, '_____');
     }
-  }
+    return { phrase, word: w.word, meaningWord: w.meaning, correctWords };
+  });
   return shuffleArray(phrases);
 }
 
@@ -54,7 +58,7 @@ function PhraseCompletionInner() {
 
   const { data: gameData, isLoading, error } = useGameData('phrase_completion', packageId);
   const saveScore = useSaveScore();
-  const trackLevel = useTrackLevelProgress();
+  const level = useLevelTracking('phrase_completion');
 
   type Screen = 'pre' | 'active' | 'post';
   const [screen, setScreen] = useState<Screen>('pre');
@@ -73,13 +77,15 @@ function PhraseCompletionInner() {
   const [meaningText, setMeaningText] = useState('');
   const [levelMessage, setLevelMessage] = useState('');
   const [levelStatus, setLevelStatus] = useState<LevelStatus>('');
-  const [startNotice, setStartNotice] = useState('');
-
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const questionStartRef = useRef(0);
   const attemptsRef = useRef(0);
   const [totalQuestions, setTotalQuestions] = useState(0);
+  const showTypedText = useCallback((text: string) => setDisplayPhrase(escapeHtml(text)), []);
+  const typewriter = useTypewriter(showTypedText);
+  const later = useTimeouts();
+  const celebrate = useCelebration(launchStars);
 
   const currentPhrase = phrases[currentIndex] ?? null;
   const ready = !!gameData && !gameData.errorMessage;
@@ -104,16 +110,8 @@ function PhraseCompletionInner() {
     }
 
     const generated = generatePhrases(gameData.words);
-    if (generated.length === 0) {
-      setStartNotice(
-        'Aucun exemple ne contient de mot à compléter. Entourez le mot de ** dans vos exemples (ex : I **love** cats) pour jouer.',
-      );
-      setScreen('pre');
-      return;
-    }
-    setStartNotice('');
 
-    const availableWords = generated.length;
+    const availableWords = gameData.wordCount;
     const totalQ = Math.min(availableWords, 100) + Math.floor(0.5 * availableWords);
     setTotalQuestions(totalQ);
 
@@ -136,7 +134,7 @@ function PhraseCompletionInner() {
     setMeaningText('');
     setLevelMessage('');
     setLevelStatus('');
-    setDisplayPhrase(escapeHtml(extendedPhrases[0].phrase));
+    typewriter.type(extendedPhrases[0].phrase);
 
     const gameTimer = 200 + 4 * totalQ;
     setTimer(gameTimer);
@@ -168,6 +166,7 @@ function PhraseCompletionInner() {
       userInputs.every((val, i) => val === correctWordsLower[i]);
 
     setAnswered(true);
+    typewriter.stop();
     setMeaningText(`Signification: ${currentPhrase.meaningWord}`);
 
     if (isCorrect) {
@@ -189,7 +188,7 @@ function PhraseCompletionInner() {
       // Replace blanks with correct words in green
       let updated = escapeHtml(currentPhrase.phrase);
       for (const w of currentPhrase.correctWords) {
-        updated = updated.replace('_____', `<span class="blank correct">${escapeHtml(w)}</span>`);
+        updated = updated.replace('_____', `<span class="${cx(styles, 'blank', 'correct')}">${escapeHtml(w)}</span>`);
       }
       setDisplayPhrase(updated);
     } else {
@@ -200,7 +199,7 @@ function PhraseCompletionInner() {
 
       let updated = escapeHtml(currentPhrase.phrase);
       for (const w of currentPhrase.correctWords) {
-        updated = updated.replace('_____', `<span class="blank incorrect">${escapeHtml(w)}</span>`);
+        updated = updated.replace('_____', `<span class="${cx(styles, 'blank', 'incorrect')}">${escapeHtml(w)}</span>`);
       }
       setDisplayPhrase(updated);
     }
@@ -220,7 +219,7 @@ function PhraseCompletionInner() {
     setFeedbackType('');
     setAnswered(false);
     setMeaningText('');
-    setDisplayPhrase(escapeHtml(phrases[nextIdx]?.phrase ?? ''));
+    typewriter.type(phrases[nextIdx]?.phrase ?? '');
     questionStartRef.current = Date.now();
     attemptsRef.current = 0;
 
@@ -229,24 +228,14 @@ function PhraseCompletionInner() {
 
   function endGame() {
     clearInterval(timerRef.current);
+    typewriter.stop();
     const totalQ = totalQuestions;
     const accuracy = totalQ > 0 ? Math.round((correctAnswers / totalQ) * 100) : 0;
     const isSuccessful = accuracy >= 80;
 
     saveScore.mutate({ game_type: 'phrase_completion', score });
 
-    trackLevel.mutate(
-      { game_type: 'phrase_completion', completed: isSuccessful, packageId: packageId! },
-      {
-        onSuccess: (data) => {
-          const message = levelCompletedMessage(data);
-          if (message) {
-            setLevelMessage(message);
-            setLevelStatus('completed');
-          }
-        },
-      },
-    );
+    level.track(isSuccessful, packageId!);
 
     if (isSuccessful) {
       setLevelMessage('Excellent travail ! Progressez les autres jeux de ce niveau 😍');
@@ -256,9 +245,9 @@ function PhraseCompletionInner() {
       setLevelStatus('failed');
     }
 
-    setTimeout(() => {
+    later(() => {
       setScreen('post');
-      launchStars();
+      celebrate();
     }, 1000);
   }
 
@@ -272,8 +261,8 @@ function PhraseCompletionInner() {
 
   if (!packageId) {
     return (
-      <div className="game-container">
-        <div className="error-box">
+      <div className={cx(styles, 'game-container')}>
+        <div className={cx(styles, 'error-box')}>
           <i className="fas fa-exclamation-triangle"></i>
           <p>Aucun package sélectionné.</p>
         </div>
@@ -282,24 +271,24 @@ function PhraseCompletionInner() {
   }
 
   return (
-    <div className="game-container enhanced-starry-mode">
+    <div className={cx(styles, 'game-container', 'enhanced-starry-mode')}>
       <StarryBackground />
 
       {/* Header */}
-      <div className="game-header">
-        <h1>Phrase Completion</h1>
-        <p className="game-description">Complétez les phrases avec les mots appris</p>
+      <div className={cx(styles, 'game-header')}>
+        <h1>Complétion de Phrase</h1>
+        <p className={cx(styles, 'game-description')}>Complétez les phrases avec les mots appris</p>
       </div>
 
       {screen === 'pre' && (
-        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} />
+        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} styles={styles} />
       )}
 
       {gameData && (screen !== 'pre' || ready) && (
         <>
-          <GameStats wordCount={gameData.wordCount} />
+          <GameStats gameType="phrase_completion" wordCount={gameData.wordCount} styles={styles} />
 
-          {screen === 'pre' && <PhraseCompletionRules onStart={startGame} notice={startNotice} />}
+          {screen === 'pre' && <PhraseCompletionRules onStart={startGame} />}
 
           {screen === 'active' && currentPhrase && (
             <PhraseBoard
@@ -328,13 +317,15 @@ function PhraseCompletionInner() {
               bestStreak={bestStreak}
               levelMessage={levelMessage}
               levelStatus={levelStatus}
+              levelFinished={level.levelFinished}
+              packageId={packageId}
               onReplay={startGame}
             />
           )}
         </>
       )}
 
-      <GameFooter packageId={packageId} nextGame="speed-vocab" />
+      <GameFooter packageId={packageId} nextGame="word-search" styles={styles} />
     </div>
   );
 }

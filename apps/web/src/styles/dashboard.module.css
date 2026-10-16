@@ -7,7 +7,7 @@
 /* ============================ */
 /* CSS VARIABLES               */
 /* ============================ */
-:root {
+.home-container {
   --primary-color: #4158d0;
   --secondary-color: #c850c0;
   --tertiary-color: #7c5cf5;
@@ -15,8 +15,6 @@
   --accent-color: #ffcc70;
   --streak-color-primary: #f2960b;
   --streak-color-secondary: #fb6f24;
-  --bg-color: #fafafa;
-  --card-bg: #ffffff;
   --text-primary: #334155;
   --text-secondary: #64748b;
   --bg-gradient: linear-gradient(135deg, var(--tertiary-color) 0%, var(--quaternary-color) 100%);
@@ -33,6 +31,33 @@
   --icon-teal: #0ea5e9;
   --icon-yellow: #fbbf24;
   --icon-red: #ef4444;
+}
+
+/* Light only: in dark mode the dark-mode.css values win, as in the old app */
+:global(:where(html):not(.dark)) .home-container {
+  --bg-color: #fafafa;
+  --card-bg: #ffffff;
+}
+
+:global(.dark) .progress-container {
+  background: #2d2d2d !important;
+}
+
+:global(.dark) .avatar-modal-header h3,
+:global(.dark) .avatar-modal-header span {
+  color: black !important;
+}
+
+:global(.dark) .info-label {
+  color: #323232 !important;
+}
+
+:global(.dark) .user-info {
+  background-color: #918888 !important;
+}
+
+:global(.dark) .user-info i {
+  width: 20px;
 }
 
 /* ============================ */
@@ -559,7 +584,7 @@
   color: var(--text-secondary);
 }
 
-#progress-percentage {
+.home-container :global(#progress-percentage) {
   font-weight: 700;
   background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
   -webkit-background-clip: text;
@@ -768,12 +793,12 @@
 }
 
 /* Icon Styles */
-.fa-book-open,
-.fa-plus-circle,
-.fa-gamepad,
-.fa-graduation-cap,
-.fa-magic,
-.fa-dice {
+:where(.home-container) :global(.fa-book-open),
+:where(.home-container) :global(.fa-plus-circle),
+:where(.home-container) :global(.fa-gamepad),
+:where(.home-container) :global(.fa-graduation-cap),
+:where(.home-container) :global(.fa-magic),
+:where(.home-container) :global(.fa-dice) {
   font-size: 1.5rem;
   background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
   -webkit-background-clip: text;
@@ -1790,7 +1815,7 @@
   border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-#saveAvatarBtn {
+.home-container :global(#saveAvatarBtn) {
   background: linear-gradient(45deg, #9368e9, #6963db);
   color: white;
   border: none;
@@ -1802,12 +1827,12 @@
   box-shadow: 0 2px 5px rgba(105, 99, 219, 0.3);
 }
 
-#saveAvatarBtn:hover {
+.home-container :global(#saveAvatarBtn):hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(105, 99, 219, 0.4);
 }
 
-#cancelAvatarBtn {
+.home-container :global(#cancelAvatarBtn) {
   background: #f8f9fa;
   color: #6c757d;
   border: 1px solid #dee2e6;
@@ -1818,7 +1843,7 @@
   transition: all 0.2s ease;
 }
 
-#cancelAvatarBtn:hover {
+.home-container :global(#cancelAvatarBtn):hover {
   background-color: #e9ecef;
 }
 
@@ -2017,7 +2042,7 @@
   }
 
   /* Prevent all content from overflowing */
-  * {
+  :where(.home-container, .home-container *) {
     max-width: 100%;
     box-sizing: border-box;
   }
@@ -2207,7 +2232,7 @@
   }
 
   /* Prevent all content from overflowing */
-  * {
+  :where(.home-container, .home-container *) {
     max-width: 100%;
     box-sizing: border-box;
   }
@@ -2402,7 +2427,7 @@
   }
 
   /* Prevent all content from overflowing */
-  * {
+  :where(.home-container, .home-container *) {
     max-width: 100%;
     box-sizing: border-box;
   }
@@ -2601,7 +2626,7 @@
   }
 
   /* Prevent all content from overflowing */
-  * {
+  :where(.home-container, .home-container *) {
     max-width: 100%;
     box-sizing: border-box;
   }

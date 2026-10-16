@@ -1,3 +1,103 @@
+/* Dark-mode rules for this module's classes (dark-mode.css loads first): keep them above the page rules */
+:global(:where(html):not(.dark)) button.btn-primary,
+:global(:where(html):not(.dark)) a.btn-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+}
+
+:global(.dark) button.btn-primary,
+:global(.dark) a.btn-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+}
+
+:global(.dark) .animated-title {
+  color: #ffffff !important;
+}
+
+:global(.dark) .scroll-indicator .wheel {
+  background: #ffffff !important;
+}
+
+:global(.dark) .scroll-indicator .mouse {
+  border: 1px solid #ffffff !important;
+}
+
+:global(.dark) a.btn-primary {
+  color: inherit !important;
+}
+
+:global(.dark) .word-card-front {
+  background: #2d2d2d;
+  border: 1px solid rgba(106, 17, 203, 0.3);
+}
+
+:global(.dark) .word-card h3 {
+  background: linear-gradient(135deg, #8a2be2, #4169e1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+:global(.dark) .word-pronunciation {
+  color: #a0aec0;
+}
+
+:global(.dark) .word-card,
+:global(.dark) .word-card-front,
+:global(.dark) .testimonial,
+:global(.dark) .floating-element,
+:global(.dark) .feature-card {
+  background-color: #2d2d2d !important;
+  color: #ffffff !important;
+}
+
+:global(.dark) .testimonial p,
+:global(.dark) .author-name,
+:global(.dark) .word-card p,
+:global(.dark) .word-card span,
+:global(.dark) .feature p,
+:global(.dark) .counter-item p,
+:global(.dark) .counter-item span,
+:global(.dark) .counter-label {
+  color: #ffffff !important;
+}
+
+:global(.dark) .word-card-back {
+  background: #2d2d2d !important;
+  color: #ffffff !important;
+}
+
+:global(.dark) .login-container,
+:global(.dark) .auth-container,
+:global(.dark) .register-container,
+:global(.dark) .logout-container {
+  background: rgba(45, 45, 45, 0.95) !important;
+  color: #ffffff !important;
+}
+
+:global(.dark) .auth-form input {
+  background-color: #3a3a3a !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+:global(.dark) .login-container label,
+:global(.dark) .auth-container label,
+:global(.dark) .register-container label,
+:global(.dark) .form-group label,
+:global(.dark) .login-container p,
+:global(.dark) .auth-container p,
+:global(.dark) .register-container p {
+  color: #e0e0e0 !important;
+}
+
+:global(.dark) .floating-card {
+  background: #2d2d2d !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 /* Container styles */
 .container {
   background: rgba(255, 255, 255, 0.95);
@@ -60,7 +160,7 @@
   text-align: left;
 }
 
-label {
+:where(.page) label {
   display: inline-block;
 
   font-size: 15px;
@@ -68,7 +168,7 @@ label {
   font-weight: 500;
 }
 
-input {
+:where(.page) input {
   width: 100%;
   padding: 14px 16px;
   border: 2px solid #e6e6e6;
@@ -78,7 +178,7 @@ input {
   background-color: rgba(255, 255, 255, 0.9);
 }
 
-input:focus {
+:where(.page) input:focus {
   border-color: #2575fc;
   outline: none;
   box-shadow: 0 0 10px rgba(37, 117, 252, 0.2);
@@ -108,19 +208,19 @@ input:focus {
 
 /* Responsive styles */
 @media (max-width: 768px) {
-  header {
+  :where(:global(body):has(.page)) header {
     flex-direction: column;
     padding: 15px;
   }
 
-  header nav {
+  :where(:global(body):has(.page)) header nav {
     margin-top: 15px;
     width: 100%;
     justify-content: center;
     flex-wrap: wrap;
   }
 
-  header nav a {
+  :where(:global(body):has(.page)) header nav a {
     padding: 10px 15px;
     text-align: center;
   }
@@ -161,7 +261,7 @@ input:focus {
     top: 20px;
   }
 
-  header nav {
+  :where(:global(body):has(.page)) header nav {
     flex-direction: column;
     width: 100%;
     gap: 10px;
@@ -170,11 +270,11 @@ input:focus {
     transition: max-height 0.3s ease;
   }
 
-  header nav.active {
+  :where(:global(body):has(.page)) header nav:global(.active) {
     max-height: 300px;
   }
 
-  header nav a {
+  :where(:global(body):has(.page)) header nav a {
     width: 100%;
   }
 
@@ -1193,7 +1293,7 @@ input:focus {
 }
 
 /* Section Styles */
-section {
+:where(.page) section {
   padding: 100px 20px;
   width: 100%;
   max-width: 1200px;
@@ -1805,7 +1905,7 @@ section {
 }
 
 @media (max-width: 768px) {
-  section {
+  :where(.page) section {
     padding: 60px 20px;
   }
 
@@ -2051,13 +2151,13 @@ section {
     max-width: 160px;
   }
 
-  .logo-img {
+  :where(:global(body):has(.page)) :global(.logo-img) {
     width: 30px;
     height: 30px;
     margin-right: 5px;
   }
 
-  .brand-text {
+  :where(:global(body):has(.page)) :global(.brand-text) {
     max-width: 120px;
   }
 
@@ -2665,15 +2765,15 @@ section {
   }
 }
 
-[data-delay='100'] { animation-delay: 100ms; }
-[data-delay='200'] { animation-delay: 200ms; }
-[data-delay='300'] { animation-delay: 300ms; }
-[data-delay='400'] { animation-delay: 400ms; }
-[data-delay='500'] { animation-delay: 500ms; }
-[data-delay='550'] { animation-delay: 550ms; }
-[data-delay='600'] { animation-delay: 600ms; }
-[data-delay='700'] { animation-delay: 700ms; }
-[data-delay='800'] { animation-delay: 800ms; }
+:where(.page) [data-delay='100'] { animation-delay: 100ms; }
+:where(.page) [data-delay='200'] { animation-delay: 200ms; }
+:where(.page) [data-delay='300'] { animation-delay: 300ms; }
+:where(.page) [data-delay='400'] { animation-delay: 400ms; }
+:where(.page) [data-delay='500'] { animation-delay: 500ms; }
+:where(.page) [data-delay='550'] { animation-delay: 550ms; }
+:where(.page) [data-delay='600'] { animation-delay: 600ms; }
+:where(.page) [data-delay='700'] { animation-delay: 700ms; }
+:where(.page) [data-delay='800'] { animation-delay: 800ms; }
 
 /* Success and Error Messages */
 .alert {
