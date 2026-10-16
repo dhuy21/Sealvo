@@ -36,19 +36,23 @@ Source: `learning/constants.ts` (same values in `packages/shared/src/constants`)
 ## Games and promotion
 
 - Each game reads the **due words of its level** in one package (`GET /games/:type/data`,
-  owner/Admin only). It is playable only if the package has at least **6 words** at that level
+  owner only). It is playable only if the package has at least **6 words** at that level
   for Flash Match, **5** for the other games, **and** at least that many are due today; otherwise
-  the API returns a French `errorMessage` (`games/games.service.ts`).
+  the API returns a French `errorMessage` (`games/games.service.ts`). Vocab Quiz also needs
+  **6** due words in the web app (6 options per question, `vocab-quiz/generate-questions.ts`).
 - A game counts as "completed" (client-side thresholds, `apps/web/src/app/(protected)/games/*`):
-  Flash Match: all pairs found (max 15 pairs) · Vocab Quiz: ≥ 70 % correct · Test Pronun: average
+  Flash Match: the game only ends when every pair is found (max 15 pairs, no time limit), so a
+  finished game always counts · Vocab Quiz: ≥ 70 % correct · Test Pronun: average
   accuracy ≥ 70 % and ≥ 5 words · Word Scramble: ≥ 80 % · Phrase Completion: ≥ 80 % ·
   Speed Vocab: ≥ 70 % · Word Search: ≥ 70 % of the words found (max 30 words).
 - `POST /learning/level-progress/track` records completed games **per user and per level**
-  (not per package), in Redis (`lvlprog:<userId>`, 3 h TTL; lost if Redis restarts or expires —
-  accepted). When every game of a level is completed, all due words of that level **in the
-  package of that last request** move to the next level with `date_memorized = now`, and the
-  progress of that level is cleared (`learning/learning.service.ts`). Without Redis no progress is
-  kept between requests: only the single-game levels (`1`, `2`) can still be promoted.
+  (not per package), in a Redis hash (`cache:lvlprog:h:<userId>`, one field per game; 3 h TTL
+  reset on each recorded game; lost if Redis restarts or expires — accepted). When every game of
+  a level is completed, all due words of that level **in the package of that last request** move
+  to the next level with `date_memorized = now`, and the progress of that level is cleared. With
+  concurrent completions only the request whose `HDEL` removes every field promotes, so the
+  promotion runs once (`learning/learning.service.ts`). Without Redis no progress is kept between
+  requests: only the single-game levels (`1`, `2`) can still be promoted.
 - Scores: one best score and a play count per user and game (`user_best_scores`); a new score
   only replaces a lower one. Score range 0–1 000 000.
 
@@ -58,6 +62,8 @@ Source: `learning/constants.ts` (same values in `packages/shared/src/constants`)
 (`learning.service.ts` `checkAndUpdateStreak`):
 
 - already recorded today → unchanged · last activity yesterday → `+1` · older (or never) → `1`.
+- The write is a conditional `updateMany` (`streak_updated_at` null or before today): concurrent
+  requests of the same day count once.
 - A missed day is only detected at the next activity: the stored streak is not decreased in
   between, and the dashboard shows the stored value.
 
@@ -65,12 +71,13 @@ Source: `learning/constants.ts` (same values in `packages/shared/src/constants`)
 
 | Mode | Listed in "public" | Read (package + words) | Copy | Write (edit, delete, toggle, words, import, games, review) |
 |---|---|---|---|---|
-| `private` (default) | no | owner, Admin | no | owner, Admin |
-| `protected` | yes | any logged-in user | no | owner, Admin |
-| `public` | yes | any logged-in user | any logged-in user | owner, Admin |
+| `private` (default) | no | owner | no | owner |
+| `protected` | yes | any logged-in user | no | owner |
+| `public` | yes | any logged-in user | any logged-in user | owner |
 
-- Enforced by `auth/guards/package-ownership.guard.ts` (owner or `Admin` role) and
-  `package-read.guard.ts` (adds read for `public`/`protected`). Every package id sent (path,
+- Enforced by `auth/guards/package-ownership.guard.ts` (owner only) and
+  `package-read.guard.ts` (adds read for `public`/`protected`). The `Admin` role gives no extra
+  rights (as in the old app; the specs assert it is rejected). Every package id sent (path,
   query, body) must be the same, otherwise 403.
 - Creating a package as `public`, or switching it to `public`, **deactivates** it
   (`is_active = false`). Inactive packages are excluded from reminders and the dashboard review
@@ -89,12 +96,15 @@ Source: `learning/constants.ts` (same values in `packages/shared/src/constants`)
   of `VALID_LANGS` (en-US, en-GB, fr-FR, es-ES, de-DE, it-IT, ja-JP, zh-CN, zh-HK, zh-TW, pt-PT,
   ru-RU, vi-VN, ko-KR, id-ID, hi-IN, pl-PL, nl-NL); `type` one of noun, verb, adjective, adverb,
   ph.v, idiom, collocation; optional `level`.
+- Adding **3 or more** words at once (`POST /packages/:id/words`) goes through the worker like an
+  import when RabbitMQ and Redis are up; fewer words, or no queue, are saved in the request
+  (`import/bulk-words.service.ts`).
 - With `GEMINI_API_KEY`, examples are rewritten so the target word is wrapped in `**word**`
   (needed by Phrase Completion) on add, import and edit. Failures never block saving.
 
 ## Excel import
 
-`POST /packages/:id/import` (owner/Admin; `import/import.service.ts`):
+`POST /packages/:id/import` (owner only; `import/import.service.ts`):
 
 - `.xlsx` or `.xls` only, ≤ 5 MB, ≤ **500** word rows.
 - Columns in order: word, language, subject, type, pronunciation, meaning, example, synonyms,
@@ -102,19 +112,19 @@ Source: `learning/constants.ts` (same values in `packages/shared/src/constants`)
   rows with an empty first cell are skipped; text in parentheses in the language cell is removed.
 - All-or-nothing: if any row lacks word / meaning / subject or has an invalid language, type or
   level, nothing is imported and the 400 message lists the rows per error.
-- Processed by the worker through RabbitMQ when available (job status `GET /jobs/:id`, kept 1 h),
-  otherwise synchronously in the request.
+- Processed by the worker through RabbitMQ when RabbitMQ and Redis are available (job status
+  `GET /jobs/:id`, kept 1 h), otherwise synchronously in the request.
 
 ## Accounts, email and sessions
 
 | Item | Rule |
 |---|---|
-| Registration | username ≥ 3 chars (≤ 50 when changed later), unique; valid unique email; password ≥ 6 chars (bcrypt cost 12); avatar 1–11 |
+| Registration | username 3–50 chars (same rule when changed later), unique; valid unique email (trimmed and normalized with validator.js `normalizeEmail` defaults, also on forgot-password and profile); password ≥ 6 chars (bcrypt cost 12); avatar 1–11 |
 | Email verification | required before login; link token valid **3 h**, stored hashed, previous tokens revoked |
 | Access token | JWT, **15 min**, payload `{sub, username, role}`, kept in memory by the web app |
 | Refresh session | httpOnly cookie (`SameSite=Strict`, path `/auth`, `Secure` in production/staging); expires **7 days** after the last refresh; rotated on every refresh, the previous token stays valid **30 s** (concurrent tabs), replaying it later revokes the session |
 | Logout | revokes the current device's session only |
-| Password reset | link token valid **1 h**, stored hashed in DB; new password ≥ 8 chars; revokes every session of the user; `forgot-password` always answers the same message |
+| Password reset | link token valid **1 h**, stored hashed in DB; a new request replaces the previous token; new password ≥ 8 chars; revokes every session of the user; `forgot-password` always answers the same message |
 | Email change | needs the current password; the address changes only when the link sent to the new address (3 h) is opened |
 | Google login | creates a verified account; an existing **unverified** account with the same email is verified, its password replaced and its sessions revoked |
 | Feedback | type suggestion / bug / question / appreciation / other; subject and content required; reply email optional |
@@ -126,13 +136,17 @@ after a restart it catches up if the last run is older than 7 h (`scheduler.ts`)
 
 - emails every user who has due words in an **active** package (count + preview of 5 words +
   streak). Each run sends its own email: a user with due words can receive up to 4 a day.
+- `POST /reminder/test` (logged-in user, dashboard): the same email to the user's own address
+  only, if they have due words in an active package (`reminder/test-reminder.controller.ts`).
 - cleanup (`reminder/reminder.service.ts`): email verification tokens created ≥ 15 days ago and
   **never-verified accounts created ≥ 3 days ago** are deleted (calendar days:
   `DATE(created_at) + n <= today`), as well as expired refresh sessions and reset tokens.
 
 ## Rate limits
 
-Per client IP, stored in Redis (in-memory per instance if Redis is down), `@nestjs/throttler`:
+Per client IP, stored in Redis (in-memory per instance if Redis is down), `@nestjs/throttler`.
+A 429 carries the route's French message (`@ThrottleMessage`, e.g. "Trop de tentatives de
+connexion. Réessayez dans 15 minutes."), default "Trop de requêtes. Réessayez dans 1 minute.":
 
 | Route | Limit |
 |---|---|
@@ -143,5 +157,6 @@ Per client IP, stored in Redis (in-memory per instance if Redis is down), `@nest
 | `POST /auth/reset-password` | 10 / 15 min |
 | `POST /feedback` | 5 / h |
 | `POST /api/reminder` (cron secret) | 3 / h |
+| `POST /reminder/test` | 3 / h |
 | `POST /tts/generate` | 30 / min (text ≤ 200 chars) |
-| `/health`, `GET /jobs/:id` | not limited |
+| `GET /health`, `GET /health/deps`, `GET /jobs/:id` | not limited (`@SkipThrottle`) |
