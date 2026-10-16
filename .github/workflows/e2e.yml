@@ -31,11 +31,16 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: npm ci
-      - run: npx playwright install chromium --with-deps
+      - name: Install Playwright browser
+        run: npx playwright install chromium --with-deps
+        working-directory: apps/web
       - name: Run E2E
-        run: npx turbo test:e2e --filter=@sealvo/web
+        # An empty BASE_URL would make playwright.config.ts fall back to production
+        run: |
+          : "${BASE_URL:?BASE_URL is empty: set vars.STAGING_URL}"
+          npx turbo test:e2e --filter=@sealvo/web
         env:
-          BASE_URL: ${{ inputs.target == 'production' && vars.PRODUCTION_URL || vars.STAGING_URL }}
+          BASE_URL: ${{ inputs.target == 'production' && (vars.PRODUCTION_URL || 'https://www.sealvo.it.com') || vars.STAGING_URL }}
       - name: Upload report
         if: failure()
         uses: actions/upload-artifact@v4
