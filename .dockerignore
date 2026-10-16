@@ -1,0 +1,14 @@
+node_modules
+.git
+.github
+.husky
+.cursor
+*.md
+!README.md
+.env*
+!.env.example
+dist
+.next
+.turbo
+coverage
+playwright-report
