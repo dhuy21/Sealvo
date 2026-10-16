@@ -19,6 +19,7 @@ export class UpdateWordDto {
   @ApiProperty({ example: 'Daily', required: false })
   @IsOptional()
   @IsString()
+  @MinLength(1)
   @MaxLength(255)
   subject?: string;
 
@@ -30,6 +31,7 @@ export class UpdateWordDto {
   @ApiProperty({ example: 'a greeting', required: false })
   @IsOptional()
   @IsString()
+  @MinLength(1)
   @MaxLength(TEXT_MAX_LENGTH)
   meaning?: string;
 

@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import * as xlsx from 'xlsx';
 import { VALID_LANGS, VALID_LEVELS, VALID_TYPES } from '@sealvo/shared';
-import type { CreateWordDto } from '../words/dto/create-word.dto.js';
+import { TEXT_MAX_LENGTH, type CreateWordDto } from '../words/dto/create-word.dto.js';
 
 export const MAX_IMPORT_ROWS = 500;
 
@@ -34,7 +34,27 @@ const FIELD_INFO = {
   language_code: { label: 'Langue invalide', accepted: VALID_LANGS },
   type: { label: 'Type invalide', accepted: VALID_TYPES },
   level: { label: 'Niveau invalide', accepted: VALID_LEVELS },
+  word_length: { label: 'Mot trop long (255 caractères max)' },
+  subject_length: { label: 'Sujet trop long (255 caractères max)' },
+  pronunciation_length: { label: 'Prononciation trop longue (255 caractères max)' },
+  meaning_length: { label: `Signification trop longue (${TEXT_MAX_LENGTH} caractères max)` },
+  example_length: { label: `Exemple trop long (${TEXT_MAX_LENGTH} caractères max)` },
+  synonyms_length: { label: `Synonymes trop longs (${TEXT_MAX_LENGTH} caractères max)` },
+  antonyms_length: { label: `Antonymes trop longs (${TEXT_MAX_LENGTH} caractères max)` },
+  grammar_length: { label: `Grammaire trop longue (${TEXT_MAX_LENGTH} caractères max)` },
 } as const satisfies Record<string, { label: string; accepted?: readonly string[] }>;
+
+/** Matches the column sizes enforced by CreateWordDto (VARCHAR 255, TEXT capped at TEXT_MAX_LENGTH). */
+const FIELD_MAX: Partial<Record<keyof ParsedWord, { field: keyof typeof FIELD_INFO; max: number }>> = {
+  word: { field: 'word_length', max: 255 },
+  subject: { field: 'subject_length', max: 255 },
+  pronunciation: { field: 'pronunciation_length', max: 255 },
+  meaning: { field: 'meaning_length', max: TEXT_MAX_LENGTH },
+  example: { field: 'example_length', max: TEXT_MAX_LENGTH },
+  synonyms: { field: 'synonyms_length', max: TEXT_MAX_LENGTH },
+  antonyms: { field: 'antonyms_length', max: TEXT_MAX_LENGTH },
+  grammar: { field: 'grammar_length', max: TEXT_MAX_LENGTH },
+};
 
 const DB_LEVEL_TO_ENUM: Record<string, CreateWordDto['level']> = {
   x: 'x',
@@ -128,6 +148,10 @@ export class ImportService {
       if (!(VALID_TYPES as readonly string[]).includes(w.type)) push('type', w.type);
       if (w.level !== '' && !(VALID_LEVELS as readonly string[]).includes(w.level)) {
         push('level', w.level);
+      }
+      for (const [key, limit] of Object.entries(FIELD_MAX)) {
+        const value = w[key as keyof ParsedWord];
+        if (value.length > limit.max) push(limit.field, value.length);
       }
     });
     return errors;

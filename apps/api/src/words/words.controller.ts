@@ -3,19 +3,24 @@ import {
   Controller,
   Delete,
   Get,
+  HttpStatus,
   Param,
   ParseArrayPipe,
   ParseIntPipe,
   Patch,
   Post,
+  Res,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
+import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PackageOwnershipGuard } from '../auth/guards/package-ownership.guard.js';
 import { PackageReadGuard } from '../auth/guards/package-read.guard.js';
 import { InvalidateDashboardInterceptor } from '../packages/invalidate-dashboard.interceptor.js';
+import { BulkWordsService } from '../import/bulk-words.service.js';
 import { WordsService } from './words.service.js';
 import { CreateWordDto } from './dto/create-word.dto.js';
 import { UpdateWordDto } from './dto/update-word.dto.js';
@@ -26,7 +31,10 @@ import { UpdateWordDto } from './dto/update-word.dto.js';
 @UseInterceptors(InvalidateDashboardInterceptor)
 @ApiBearerAuth()
 export class WordsController {
-  constructor(private readonly wordsService: WordsService) {}
+  constructor(
+    private readonly wordsService: WordsService,
+    private readonly bulkWords: BulkWordsService,
+  ) {}
 
   @Get()
   @UseGuards(PackageReadGuard)
@@ -48,12 +56,27 @@ export class WordsController {
   @Post()
   @UseGuards(PackageOwnershipGuard)
   @ApiOperation({ summary: 'Add one or more words to a package' })
-  @ApiResponse({ status: 201, description: 'Words added' })
+  @ApiResponse({ status: 202, description: '3 words or more: queued (async via RabbitMQ)' })
+  @ApiResponse({ status: 200, description: 'Words added synchronously' })
   async addWords(
     @Param('packageId', ParseIntPipe) packageId: number,
+    @CurrentUser('id') userId: string,
     @Body(new ParseArrayPipe({ items: CreateWordDto })) dto: CreateWordDto[],
+    @Res({ passthrough: true }) res: Response,
   ) {
-    return this.wordsService.addWords(packageId, dto);
+    const result = await this.bulkWords.add('addWords', packageId, userId, dto);
+
+    if (result.async) {
+      res.status(HttpStatus.ACCEPTED);
+      return { success: true, jobId: result.jobId, async: true, message: 'Traitement en cours.' };
+    }
+
+    res.status(HttpStatus.OK);
+    return {
+      success: true,
+      async: false,
+      message: `${result.imported} mot(s) importé(s) avec succès.`,
+    };
   }
 
   @Patch(':detailId')

@@ -3,7 +3,7 @@ import { ForbiddenException } from '@nestjs/common';
 import { DashboardService } from './dashboard.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CacheService } from '../redis/cache.service.js';
-import { AuthService } from '../auth/auth.service.js';
+import { EmailVerificationService } from '../auth/email-verification.service.js';
 
 describe('DashboardService.updateProfile', () => {
   let service: DashboardService;
@@ -26,7 +26,7 @@ describe('DashboardService.updateProfile', () => {
         DashboardService,
         { provide: PrismaService, useValue: prisma },
         { provide: CacheService, useValue: { get: vi.fn(), set: vi.fn(), del: vi.fn() } },
-        { provide: AuthService, useValue: auth },
+        { provide: EmailVerificationService, useValue: auth },
       ],
     }).compile();
 

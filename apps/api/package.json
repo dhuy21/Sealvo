@@ -54,6 +54,7 @@
     "class-validator": "^0.15.1",
     "cookie-parser": "^1.4.7",
     "handlebars": "^4.7.10",
+    "helmet": "^8.3.0",
     "multer": "^2.4.0",
     "node-cron": "^4.6.0",
     "nodemailer": "^10.1.0",
@@ -63,6 +64,7 @@
     "redis": "^6.3.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "validator": "^13.15.35",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
@@ -80,6 +82,7 @@
     "@types/nodemailer": "^8.0.2",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^7.0.0",
+    "@types/validator": "^13.15.10",
     "@vitest/coverage-v8": "^4.1.2",
     "oxlint": "^1.58.0",
     "oxlint-tsgolint": "^7.0.2001",

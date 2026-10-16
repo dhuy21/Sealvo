@@ -58,6 +58,12 @@ describe('ImportService', () => {
     ]);
   });
 
+  it('should reject a cell longer than the column allows', () => {
+    expect(() => service.parseWords(workbook([HEADER, row({ 0: 'a'.repeat(256) })]))).toThrow(
+      'Mot trop long (255 caractères max) (1) : lignes 1',
+    );
+  });
+
   it('should reject a file with no words', () => {
     expect(() => service.parseWords(workbook([HEADER]))).toThrow('Le fichier ne contient aucun mot valide.');
   });

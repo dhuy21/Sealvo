@@ -40,7 +40,7 @@ export class JobController {
   @ApiResponse({ status: 404, description: 'Job not found' })
   async getJob(@Param('id') id: string, @CurrentUser('id') userId: string) {
     const job = await this.jobTracker.get(id);
-    if (!job) throw new NotFoundException('Job not found');
+    if (!job) throw new NotFoundException('Job not found.');
     if (job.meta?.userId !== userId) throw new ForbiddenException();
     return { success: true, job };
   }
@@ -54,7 +54,7 @@ export class JobController {
   ) {
     const job = await this.jobTracker.get(id);
     if (!job) {
-      res.status(404).json({ success: false, message: 'Job not found' });
+      res.status(404).json({ success: false, message: 'Job not found.' });
       return;
     }
     if (job.meta?.userId !== userId) {
@@ -80,7 +80,7 @@ export class JobController {
     const subscriber = await this.redis.createSubscriber();
     if (!subscriber) {
       res.write(
-        `data: ${JSON.stringify({ status: 'stream_unavailable', error: 'Real-time streaming unavailable.' })}\n\n`,
+        `data: ${JSON.stringify({ status: 'stream_unavailable', error: 'Le streaming en temps réel est indisponible. Veuillez rafraîchir la page.' })}\n\n`,
       );
       return res.end();
     }

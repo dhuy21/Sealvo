@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import { AppModule } from './app.module.js';
 
 async function bootstrap() {
@@ -13,6 +14,8 @@ async function bootstrap() {
     app.set('trust proxy', 1);
   }
 
+  // Default CSP already fits Swagger UI: its init script is a same-origin file, inline styles are allowed
+  app.use(helmet());
   app.enableCors({
     origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
     credentials: true,

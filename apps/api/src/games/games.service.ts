@@ -10,6 +10,31 @@ const MIN_WORDS: Record<string, number> = {
 };
 const DEFAULT_MIN_WORDS = 5;
 
+/** Source: WordSearchController.js + learning.js getRandomUserWords() */
+const WORD_SEARCH_MAX_WORDS = 30;
+/** The old query filtered with MySQL LENGTH(), which counts bytes, not characters */
+const WORD_SEARCH_MAX_BYTES = 13;
+/** Source: PhraseCompletionController.js getPhrasesForCompletion() */
+const PHRASE_ANSWER = /\*\*([^*]+)\*\*/g;
+const PHRASE_BLANK = '_____';
+
+function shuffle<T>(items: T[]): T[] {
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  return items;
+}
+
+/** Each `**answer**` of the example becomes a blank; an empty example gives an empty phrase */
+function toPhrase(example: string | null): { phrase: string; correctWords: string[] } {
+  if (!example || example.trim() === '') return { phrase: '', correctWords: [] };
+  return {
+    phrase: example.replace(PHRASE_ANSWER, PHRASE_BLANK),
+    correctWords: [...example.matchAll(PHRASE_ANSWER)].map((m) => m[1]),
+  };
+}
+
 @Injectable()
 export class GamesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -55,13 +80,14 @@ export class GamesService {
       word_id: e.word_details.word_id,
       word: e.word_details.words.word,
       language_code: e.word_details.words.language_code,
+      type: e.word_details.type,
       meaning: e.word_details.meaning,
       pronunciation: e.word_details.pronunciation,
       example: e.word_details.example,
       synonyms: e.word_details.synonyms,
     }));
 
-    return {
+    const result = {
       gameType,
       level,
       words,
@@ -69,6 +95,25 @@ export class GamesService {
       totalAtLevel,
       errorMessage,
     };
+
+    if (gameType === 'word_search') {
+      // The minimum checks above count every due word, before this filter (as the old game page did)
+      const playable = shuffle(
+        words.filter((w) => Buffer.byteLength(w.word) <= WORD_SEARCH_MAX_BYTES),
+      ).slice(0, WORD_SEARCH_MAX_WORDS);
+      return {
+        ...result,
+        words: playable,
+        errorMessage:
+          errorMessage ?? (playable.length === 0 ? 'Aucun mot trouvé dans votre vocabulaire.' : null),
+      };
+    }
+
+    if (gameType === 'phrase_completion') {
+      return { ...result, words: shuffle(words.map((w) => ({ ...w, ...toPhrase(w.example) }))) };
+    }
+
+    return result;
   }
 
   /**

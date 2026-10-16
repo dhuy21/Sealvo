@@ -1,12 +1,10 @@
 import { Module } from '@nestjs/common';
-import { GeminiModule } from '../gemini/gemini.module.js';
+import { ImportModule } from '../import/import.module.js';
+import { WordsCoreModule } from './words-core.module.js';
 import { WordsController } from './words.controller.js';
-import { WordsService } from './words.service.js';
 
 @Module({
-  imports: [GeminiModule],
+  imports: [WordsCoreModule, ImportModule],
   controllers: [WordsController],
-  providers: [WordsService],
-  exports: [WordsService],
 })
 export class WordsModule {}

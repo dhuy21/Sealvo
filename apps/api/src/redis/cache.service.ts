@@ -44,6 +44,41 @@ export class CacheService {
     }
   }
 
+  /** HSET one field and refresh the key's TTL in a single MULTI */
+  async hSet(key: string, field: string, value: string, ttlSeconds: number): Promise<boolean> {
+    if (!this.redis.isReady()) return false;
+    try {
+      await this.redis
+        .getClient()!
+        .multi()
+        .hSet(PREFIX + key, field, value)
+        .expire(PREFIX + key, ttlSeconds)
+        .exec();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async hGetAll(key: string): Promise<Record<string, string> | null> {
+    if (!this.redis.isReady()) return null;
+    try {
+      return await this.redis.getClient()!.hGetAll(PREFIX + key);
+    } catch {
+      return null;
+    }
+  }
+
+  /** Number of fields actually removed; null when Redis is unavailable or errors */
+  async hDel(key: string, fields: string[]): Promise<number | null> {
+    if (!this.redis.isReady()) return null;
+    try {
+      return await this.redis.getClient()!.hDel(PREFIX + key, fields);
+    } catch {
+      return null;
+    }
+  }
+
   async del(keys: string | string[]): Promise<boolean> {
     if (!this.redis.isReady()) return false;
     try {

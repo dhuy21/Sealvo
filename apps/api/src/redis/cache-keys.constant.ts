@@ -7,8 +7,11 @@ export const CACHE_KEYS = {
   packagesShared: 'pkgs:shared',
   words: (packageId: number) => `words:${packageId}`,
   highScore: (userId: string, gameType: string) => `highscore:${userId}:${gameType}`,
-  levelProgress: (userId: string) => `lvlprog:${userId}`,
+  // Redis hash: must not reuse `lvlprog:` where older code stored a JSON string (WRONGTYPE)
+  levelProgress: (userId: string) => `lvlprog:h:${userId}`,
   emailDedup: (messageId: string) => `email:dedup:${messageId}`,
+  ttsAudio: (language: string, hash: string) => `tts:audio:${language}:${hash}`,
+  ttsVoices: (language: string) => `tts:voices:${language}`,
 } as const;
 
 /**

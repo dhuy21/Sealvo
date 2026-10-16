@@ -1,0 +1,115 @@
+import { randomBytes } from 'crypto';
+import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as bcrypt from 'bcryptjs';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { TokenService } from './token.service.js';
+import { createUser } from './create-user.js';
+
+const USERNAME_MIN_LENGTH = 3; // RegisterDto / UpdateProfileDto
+const USERNAME_MAX_ATTEMPTS = 5;
+
+@Injectable()
+export class GoogleAuthService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
+    private readonly tokens: TokenService,
+  ) {}
+
+  getGoogleAuthUrl(state: string): string {
+    const params = new URLSearchParams({
+      client_id: this.config.getOrThrow<string>('GOOGLE_CLIENT_ID'),
+      redirect_uri: this.config.getOrThrow<string>('GOOGLE_REDIRECT_URI'),
+      response_type: 'code',
+      scope: 'email profile',
+      access_type: 'offline',
+      prompt: 'consent',
+      state,
+    });
+    return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+  }
+
+  async googleLogin(code: string) {
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      body: new URLSearchParams({
+        code,
+        client_id: this.config.getOrThrow<string>('GOOGLE_CLIENT_ID'),
+        client_secret: this.config.getOrThrow<string>('GOOGLE_CLIENT_SECRET'),
+        redirect_uri: this.config.getOrThrow<string>('GOOGLE_REDIRECT_URI'),
+        grant_type: 'authorization_code',
+      }),
+    });
+    if (!tokenResponse.ok) {
+      throw new UnauthorizedException(
+        `Échec de l'échange du code d'autorisation Google (${tokenResponse.status})`,
+      );
+    }
+    const { access_token } = (await tokenResponse.json()) as { access_token: string };
+
+    const profileResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
+    if (!profileResponse.ok) {
+      throw new UnauthorizedException(
+        `Impossible de récupérer le profil Google (${profileResponse.status})`,
+      );
+    }
+    const profile = (await profileResponse.json()) as {
+      email: string;
+      name: string;
+      verified_email: boolean;
+    };
+
+    // Accounts are matched by email, so an unverified Google email would allow account takeover
+    if (!profile.verified_email) {
+      throw new UnauthorizedException("Votre adresse email Google n'est pas vérifiée");
+    }
+
+    let user = await this.prisma.users.findUnique({ where: { email: profile.email } });
+    if (!user) {
+      user = await createUser(this.prisma, {
+        email: profile.email,
+        username: await this.generateUsername(profile.name, profile.email),
+        password: await bcrypt.hash(randomBytes(16).toString('hex'), 12),
+        is_verified: true,
+      });
+    } else if (!user.is_verified) {
+      // Whoever registered this unverified account may not own the email: drop their password and sessions
+      await this.prisma.$transaction([
+        this.prisma.users.update({
+          where: { id: user.id },
+          data: { is_verified: true, password: await bcrypt.hash(randomBytes(32).toString('hex'), 12) },
+        }),
+        this.prisma.refresh_sessions.deleteMany({ where: { user_id: user.id } }),
+        this.prisma.email_verification.updateMany({
+          where: { user_id: user.id, status: 'pending' },
+          data: { status: 'revoked' },
+        }),
+      ]);
+    }
+
+    return this.tokens.issueTokens(user);
+  }
+
+  private async generateUsername(name: string | undefined, email: string) {
+    const sanitize = (value: string) =>
+      value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9_.-]/g, '')
+        .slice(0, 40);
+    const base =
+      [sanitize(name ?? ''), sanitize(email.split('@')[0])].find(
+        (candidate) => candidate.length >= USERNAME_MIN_LENGTH,
+      ) ?? 'user';
+
+    for (let attempt = 0; attempt < USERNAME_MAX_ATTEMPTS; attempt++) {
+      const username = attempt === 0 ? base : `${base}_${randomBytes(3).toString('hex')}`;
+      const taken = await this.prisma.users.findUnique({ where: { username }, select: { id: true } });
+      if (!taken) return username;
+    }
+    throw new InternalServerErrorException('Une erreur est survenue. Veuillez réessayer plus tard.');
+  }
+}

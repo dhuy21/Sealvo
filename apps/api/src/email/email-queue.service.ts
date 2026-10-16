@@ -14,6 +14,7 @@ const FAILED_QUEUE = 'email.failed';
 const ROUTING_KEY = 'email';
 const RETRY_TTL = 10_000;
 const MAX_RETRIES = 2;
+const DIRECT_SEND_RETRIES = 2;
 
 export interface EmailPayload {
   to: string;
@@ -78,8 +79,10 @@ export class EmailQueueService {
   async enqueue(payload: EmailPayload): Promise<boolean> {
     if (this.rabbitmq.isReady()) return this.publish(payload);
 
-    // Fallback: send directly
-    return this.emailService.sendEmail(payload.to, payload.content, payload.subject);
+    // Fallback: send directly, without the queue's retries
+    return this.emailService.sendEmail(payload.to, payload.content, payload.subject, {
+      retries: DIRECT_SEND_RETRIES,
+    });
   }
 
   /** Start consuming email jobs (called in worker process) */

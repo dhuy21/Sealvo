@@ -1,12 +1,16 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, Reflector } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { RabbitmqModule } from './rabbitmq/rabbitmq.module.js';
 import { RedisModule } from './redis/redis.module.js';
 import { RedisService } from './redis/redis.service.js';
 import { RedisThrottlerStorage } from './common/throttler/redis-throttler.storage.js';
+import {
+  DEFAULT_THROTTLE_MESSAGE,
+  THROTTLE_MESSAGE,
+} from './common/decorators/throttle-message.decorator.js';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter.js';
 import { EmailModule } from './email/email.module.js';
 import { ImportModule } from './import/import.module.js';
@@ -30,10 +34,13 @@ import { AppService } from './app.service.js';
       envFilePath: '../../.env',
     }),
     ThrottlerModule.forRootAsync({
-      inject: [RedisService],
-      useFactory: (redis: RedisService) => ({
+      inject: [RedisService, Reflector],
+      useFactory: (redis: RedisService, reflector: Reflector) => ({
         throttlers: [{ ttl: 60_000, limit: 100 }],
         storage: new RedisThrottlerStorage(redis),
+        errorMessage: (context) =>
+          reflector.get<string>(THROTTLE_MESSAGE, context.getHandler()) ??
+          DEFAULT_THROTTLE_MESSAGE,
       }),
     }),
     PrismaModule,

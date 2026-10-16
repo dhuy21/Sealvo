@@ -7,6 +7,10 @@ import handlebars from 'handlebars';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { isTransientError, withRetry, withTimeout } from '@sealvo/shared';
+
+const SEND_TIMEOUT_MS = 10_000;
+const SEND_RETRY_DELAY_MS = 1_000;
 
 // Same depth from src/email (tests) and dist/email (runtime), independent of the process cwd
 const TEMPLATES_DIR = fileURLToPath(new URL('../../templates/mails/', import.meta.url));
@@ -50,6 +54,7 @@ export class EmailService {
     userEmail: string,
     htmlContent: string,
     subject = 'Révision quotidienne - SealVo',
+    { retries = 0 }: { retries?: number } = {},
   ): Promise<boolean> {
     try {
       const { to, intercepted, original } = this.resolveRecipient(userEmail);
@@ -57,12 +62,20 @@ export class EmailService {
         ? `[STAGING → ${original}] ${subject}`
         : subject;
 
-      const result = await this.transporter.sendMail({
-        from: this.fromAddress,
-        to,
-        subject: resolvedSubject,
-        html: htmlContent,
-      });
+      const result = await withRetry(
+        () =>
+          withTimeout(
+            () =>
+              this.transporter.sendMail({
+                from: this.fromAddress,
+                to,
+                subject: resolvedSubject,
+                html: htmlContent,
+              }),
+            SEND_TIMEOUT_MS,
+          ),
+        { retries, delay: SEND_RETRY_DELAY_MS, shouldRetry: isTransientError },
+      );
 
       if (result?.messageId) {
         if (intercepted) {

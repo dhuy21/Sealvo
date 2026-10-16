@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { TextToSpeechClient } from '@google-cloud/text-to-speech';
 import * as crypto from 'crypto';
+import { CACHE_KEYS, CACHE_TTL } from '../redis/cache-keys.constant.js';
 import { RedisService } from '../redis/redis.service.js';
 
 @Injectable()
@@ -90,7 +91,7 @@ export class TtsService implements OnModuleInit {
     }
 
     // Get available voices (cached)
-    const voicesKey = `tts:voices:${language}`;
+    const voicesKey = CACHE_KEYS.ttsVoices(language);
     const cachedVoices = await this.cacheGet(voicesKey);
     let voices: { name: string }[];
 
@@ -110,7 +111,7 @@ export class TtsService implements OnModuleInit {
         );
       }
 
-      await this.cacheSet(voicesKey, JSON.stringify(voices), 86400);
+      await this.cacheSet(voicesKey, JSON.stringify(voices), CACHE_TTL.TTS_VOICES);
     }
 
     const voiceName = this.selectVoice(voices, text, language);
@@ -127,7 +128,7 @@ export class TtsService implements OnModuleInit {
 
     const audioBuffer = Buffer.from(response.audioContent as Uint8Array);
 
-    await this.cacheSet(aKey, audioBuffer.toString('base64'), 86400);
+    await this.cacheSet(aKey, audioBuffer.toString('base64'), CACHE_TTL.TTS_AUDIO);
 
     return audioBuffer;
   }

@@ -106,7 +106,11 @@ export class ImportQueueService {
         await this.jobTracker.update(jobId, {
           status: 'completed',
           progress: { current: wordsData.length, total: wordsData.length, phase: 'done' },
-          result: { imported: result.successCount, total: wordsData.length },
+          result: {
+            imported: result.successCount,
+            errors: wordsData.length - result.successCount,
+            total: wordsData.length,
+          },
         });
 
         // Invalidate cache

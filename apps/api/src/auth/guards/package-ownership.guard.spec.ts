@@ -45,6 +45,14 @@ describe('PackageOwnershipGuard', () => {
     );
   });
 
+  it('rejects an admin acting on a package owned by someone else', async () => {
+    await expect(
+      guard.canActivate(
+        contextFor({ user: { id: 'me', role: 'Admin' }, params: { packageId: String(OTHER_PACKAGE) } }),
+      ),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
   it('rejects an own id in the query combined with a foreign id in the body', async () => {
     await expect(
       guard.canActivate(

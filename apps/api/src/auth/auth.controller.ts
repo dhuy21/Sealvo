@@ -16,8 +16,12 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import { ThrottleMessage } from '../common/decorators/throttle-message.decorator.js';
 import type { CookieOptions, Request, Response } from 'express';
 import { AuthService } from './auth.service.js';
+import { EmailVerificationService } from './email-verification.service.js';
+import { PasswordResetService } from './password-reset.service.js';
+import { GoogleAuthService } from './google-auth.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
@@ -37,6 +41,9 @@ export class AuthController {
 
   constructor(
     private readonly authService: AuthService,
+    private readonly emailVerificationService: EmailVerificationService,
+    private readonly passwordResetService: PasswordResetService,
+    private readonly googleAuthService: GoogleAuthService,
     private readonly config: ConfigService,
   ) {}
 
@@ -44,18 +51,35 @@ export class AuthController {
     return ['production', 'staging'].includes(this.config.get<string>('NODE_ENV') ?? '');
   }
 
-  private get cookieOptions(): CookieOptions {
+  // clearCookie must receive the same attributes as cookie, otherwise some browsers keep the cookie
+  private get refreshCookieOptions(): CookieOptions {
+    return { httpOnly: true, secure: this.secureCookies, sameSite: 'strict', path: '/auth' };
+  }
+
+  private get googleStateCookieOptions(): CookieOptions {
     return {
       httpOnly: true,
       secure: this.secureCookies,
-      sameSite: 'strict',
-      path: '/auth',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      // Strict cookies are not sent on Google's cross-site redirect back to the callback
+      sameSite: 'lax',
+      path: GOOGLE_STATE_PATH,
     };
+  }
+
+  private setRefreshCookie(res: Response, refreshToken: string) {
+    res.cookie(REFRESH_COOKIE, refreshToken, {
+      ...this.refreshCookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+  }
+
+  private clearRefreshCookie(res: Response) {
+    res.clearCookie(REFRESH_COOKIE, this.refreshCookieOptions);
   }
 
   @Post('register')
   @Throttle({ default: { ttl: 15 * 60_000, limit: 5 } })
+  @ThrottleMessage("Trop de tentatives d'inscription. Réessayez dans 15 minutes.")
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
   @ApiResponse({ status: 409, description: 'Username or email already taken' })
@@ -65,13 +89,14 @@ export class AuthController {
 
   @Post('login')
   @Throttle({ default: { ttl: 15 * 60_000, limit: 10 } })
+  @ThrottleMessage('Trop de tentatives de connexion. Réessayez dans 15 minutes.')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login with username and password' })
   @ApiResponse({ status: 200, description: 'Login successful, returns access token' })
   @ApiResponse({ status: 401, description: 'Invalid credentials or unverified account' })
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const { accessToken, refreshToken } = await this.authService.login(dto);
-    res.cookie(REFRESH_COOKIE, refreshToken, this.cookieOptions);
+    this.setRefreshCookie(res, refreshToken);
     return { accessToken };
   }
 
@@ -85,10 +110,10 @@ export class AuthController {
       const { accessToken, refreshToken } = await this.authService.refreshTokens(
         req.cookies?.[REFRESH_COOKIE],
       );
-      res.cookie(REFRESH_COOKIE, refreshToken, this.cookieOptions);
+      this.setRefreshCookie(res, refreshToken);
       return { accessToken };
     } catch (error) {
-      res.clearCookie(REFRESH_COOKIE, { path: '/auth' });
+      this.clearRefreshCookie(res);
       throw error;
     }
   }
@@ -99,14 +124,19 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout: revokes this device session and clears the refresh cookie' })
   @ApiResponse({ status: 200, description: 'Logged out' })
-  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    await this.authService.logout(req.cookies?.[REFRESH_COOKIE]);
-    res.clearCookie(REFRESH_COOKIE, { path: '/auth' });
-    return { message: 'Logged out' };
+  async logout(
+    @CurrentUser('id') userId: string,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    await this.authService.logout(userId, req.cookies?.[REFRESH_COOKIE]);
+    this.clearRefreshCookie(res);
+    return { message: 'Vous avez été déconnecté' };
   }
 
   @Post('forgot-password')
   @Throttle({ default: { ttl: 60 * 60_000, limit: 3 } })
+  @ThrottleMessage('Trop de demandes de réinitialisation. Réessayez dans 1 heure.')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Send password reset email' })
   @ApiResponse({
@@ -114,17 +144,18 @@ export class AuthController {
     description: 'Generic message; the email is only sent if the account exists',
   })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
-    return this.authService.forgotPassword(dto.email);
+    return this.passwordResetService.forgotPassword(dto.email);
   }
 
   @Post('reset-password')
   @Throttle({ default: { ttl: 15 * 60_000, limit: 10 } })
+  @ThrottleMessage('Trop de tentatives de connexion. Réessayez dans 15 minutes.')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset password with token' })
   @ApiResponse({ status: 200, description: 'Password reset successful' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
   async resetPassword(@Body() dto: ResetPasswordDto) {
-    return this.authService.resetPassword(dto.token, dto.password);
+    return this.passwordResetService.resetPassword(dto.token, dto.password);
   }
 
   @Post('verify-email')
@@ -134,7 +165,7 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Invalid, expired or already used token' })
   @ApiResponse({ status: 409, description: 'Email change: the new address was taken meanwhile' })
   async verifyEmail(@Body() dto: VerifyEmailDto) {
-    return this.authService.verifyEmail(dto.token);
+    return this.emailVerificationService.verifyEmail(dto.token);
   }
 
   @Get('google')
@@ -144,14 +175,10 @@ export class AuthController {
   googleAuth(@Res({ passthrough: true }) res: Response) {
     const state = randomBytes(16).toString('hex');
     res.cookie(GOOGLE_STATE_COOKIE, state, {
-      httpOnly: true,
-      secure: this.secureCookies,
-      // Strict cookies are not sent on Google's cross-site redirect back to the callback
-      sameSite: 'lax',
-      path: GOOGLE_STATE_PATH,
+      ...this.googleStateCookieOptions,
       maxAge: 10 * 60 * 1000, // 10 minutes
     });
-    return { url: this.authService.getGoogleAuthUrl(state) };
+    return { url: this.googleAuthService.getGoogleAuthUrl(state) };
   }
 
   @Get('google/callback')
@@ -166,7 +193,7 @@ export class AuthController {
   ) {
     const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
     const expectedState: unknown = req.cookies?.[GOOGLE_STATE_COOKIE];
-    res.clearCookie(GOOGLE_STATE_COOKIE, { path: GOOGLE_STATE_PATH });
+    res.clearCookie(GOOGLE_STATE_COOKIE, this.googleStateCookieOptions);
 
     if (!code) {
       return { url: `${frontendUrl}/login?error=google_no_code` };
@@ -176,8 +203,8 @@ export class AuthController {
       if (!state || state !== expectedState) {
         throw new Error('OAuth state mismatch');
       }
-      const { refreshToken } = await this.authService.googleLogin(code);
-      res.cookie(REFRESH_COOKIE, refreshToken, this.cookieOptions);
+      const { refreshToken } = await this.googleAuthService.googleLogin(code);
+      this.setRefreshCookie(res, refreshToken);
       return { url: `${frontendUrl}/dashboard` };
     } catch (error) {
       this.logger.error(

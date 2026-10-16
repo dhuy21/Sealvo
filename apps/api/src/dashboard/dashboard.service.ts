@@ -1,6 +1,6 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { AuthService } from '../auth/auth.service.js';
+import { EmailVerificationService } from '../auth/email-verification.service.js';
 import { CacheService } from '../redis/cache.service.js';
 import { CACHE_KEYS, CACHE_TTL } from '../redis/cache-keys.constant.js';
 import { dueWhereConditions } from '../learning/spaced-repetition.js';
@@ -26,7 +26,7 @@ export class DashboardService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cache: CacheService,
-    private readonly auth: AuthService,
+    private readonly emailVerification: EmailVerificationService,
   ) {}
 
   async getStats(userId: string): Promise<DashboardStats> {
@@ -59,7 +59,7 @@ export class DashboardService {
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto): Promise<{ pendingEmail?: string }> {
-    // Check uniqueness if username changed (email uniqueness: AuthService.requestEmailChange)
+    // Check uniqueness if username changed (email uniqueness: EmailVerificationService.requestEmailChange)
     if (dto.username) {
       const existing = await this.prisma.users.findUnique({ where: { username: dto.username } });
       if (existing && existing.id !== userId) {
@@ -74,7 +74,7 @@ export class DashboardService {
         select: { email: true },
       });
       if (dto.email !== user?.email) {
-        await this.auth.requestEmailChange(userId, dto.email, dto.current_password);
+        await this.emailVerification.requestEmailChange(userId, dto.email, dto.current_password);
         pendingEmail = dto.email;
       }
     }

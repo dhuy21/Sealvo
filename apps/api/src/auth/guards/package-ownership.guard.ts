@@ -9,7 +9,6 @@ export class PackageOwnershipGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const userId: string = request.user?.id;
-    const userRole: string = request.user?.role;
     // Handlers read the id from different places (params, query or body): every id sent must be
     // the same, otherwise a request could pass the check with one id and act on another
     const ids = [request.params?.packageId, request.query?.packageId, request.body?.packageId]
@@ -18,7 +17,7 @@ export class PackageOwnershipGuard implements CanActivate {
     const packageId = ids[0];
 
     if (!userId || ids.length === 0 || ids.some((id) => isNaN(id) || id !== packageId)) {
-      throw new ForbiddenException('Missing user or package identifier');
+      throw new ForbiddenException('Identifiant du package manquant ou invalide');
     }
 
     const pkg = await this.prisma.packages.findUnique({
@@ -27,18 +26,17 @@ export class PackageOwnershipGuard implements CanActivate {
     });
 
     if (!pkg) {
-      throw new NotFoundException('Package not found');
+      throw new NotFoundException('Package non trouvé');
     }
 
-    // Read by InvalidateDashboardInterceptor: the stale dashboard is the owner's, not an admin's
+    // Read by InvalidateDashboardInterceptor: the stale dashboard is the owner's
     request.packageOwnerId = pkg.user_id;
 
-    // Admin can access any package
-    if (userRole === 'Admin' || pkg.user_id === userId || this.allowsNonOwner(pkg.mode)) {
+    if (pkg.user_id === userId || this.allowsNonOwner(pkg.mode)) {
       return true;
     }
 
-    throw new ForbiddenException('You do not own this package');
+    throw new ForbiddenException("Vous n'êtes pas autorisé à accéder à ce package");
   }
 
   protected allowsNonOwner(_mode: packages_mode): boolean {

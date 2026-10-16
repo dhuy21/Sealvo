@@ -45,7 +45,7 @@ export class PackagesService {
     });
 
     if (!pkg) {
-      throw new NotFoundException('Package not found');
+      throw new NotFoundException('Package non trouvé');
     }
 
     const { user_id, users, ...rest } = pkg;
@@ -68,8 +68,8 @@ export class PackagesService {
     return {
       packageId: pkg.package_id,
       message: isPublic
-        ? 'Package created. Auto-deactivated because it is public.'
-        : 'Package created successfully',
+        ? 'Package créé avec succès. Il a été automatiquement désactivé car il est public.'
+        : 'Package créé avec succès',
     };
   }
 
@@ -91,8 +91,8 @@ export class PackagesService {
 
     return {
       message: isPublic
-        ? 'Package updated. Auto-deactivated because it is now public.'
-        : 'Package updated successfully',
+        ? 'Package modifié avec succès. Il a été automatiquement désactivé car il est maintenant public.'
+        : 'Package modifié avec succès',
     };
   }
 
@@ -112,7 +112,7 @@ export class PackagesService {
       });
     }, TX_OPTIONS);
 
-    return { message: 'Package deleted successfully' };
+    return { message: 'Package supprimé avec succès' };
   }
 
   async toggleActivation(packageId: number) {
@@ -122,7 +122,7 @@ export class PackagesService {
     });
 
     if (!pkg) {
-      throw new NotFoundException('Package not found');
+      throw new NotFoundException('Package non trouvé');
     }
 
     const newStatus = !pkg.is_active;
@@ -133,7 +133,7 @@ export class PackagesService {
     });
 
     return {
-      message: `Package ${newStatus ? 'activated' : 'deactivated'} successfully`,
+      message: `Package ${newStatus ? 'activé' : 'désactivé'} avec succès`,
       isActive: newStatus,
     };
   }
@@ -144,11 +144,11 @@ export class PackagesService {
     });
 
     if (!source) {
-      throw new NotFoundException('Package not found');
+      throw new NotFoundException('Package non trouvé');
     }
 
     if (source.mode !== 'public') {
-      throw new ForbiddenException('This package is not public');
+      throw new ForbiddenException("Ce package n'est pas public");
     }
 
     // Get all words linked to this package (via learning → word_details)
@@ -201,7 +201,7 @@ export class PackagesService {
 
       return {
         packageId: newPkg.package_id,
-        message: 'Package copied successfully',
+        message: 'Package copié avec succès',
       };
     }, TX_OPTIONS);
   }

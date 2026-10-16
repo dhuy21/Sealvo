@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { learning_level, word_details_type } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -24,6 +24,17 @@ interface DueSummary {
   preview: { detailId: number; level: learning_level }[];
 }
 
+interface ReminderUser {
+  id: string;
+  email: string;
+  username: string;
+  streak: number;
+}
+
+type PreviewDetail = Parameters<ReminderService['toTemplateWord']>[0];
+
+const USER_SELECT = { id: true, email: true, username: true, streak: true } as const;
+
 @Injectable()
 export class ReminderService {
   private readonly logger = new Logger(ReminderService.name);
@@ -44,7 +55,7 @@ export class ReminderService {
     const [users, details] = await Promise.all([
       this.prisma.users.findMany({
         where: { id: { in: [...dueByUser.keys()] } },
-        select: { id: true, email: true, username: true, streak: true },
+        select: USER_SELECT,
       }),
       this.prisma.word_details.findMany({
         where: { detail_id: { in: previewIds } },
@@ -56,27 +67,7 @@ export class ReminderService {
     let sent = 0;
     let failed = 0;
     for (const user of users) {
-      const summary = dueByUser.get(user.id)!;
-      const words = summary.preview.flatMap(({ detailId, level }) => {
-        const detail = detailsById.get(detailId);
-        return detail ? [this.toTemplateWord(detail, level)] : [];
-      });
-
-      const content = this.emailService.compileTemplate('mail.hbs', {
-        user: { username: user.username },
-        wordCount: summary.total,
-        wordsShown: words.length,
-        hasMoreWords: summary.total > PREVIEW_LIMIT,
-        words,
-        streak: this.toTemplateStreak(user.streak, summary.total),
-        baseUrl: this.config.get<string>('FRONTEND_URL'),
-      });
-
-      const ok = await this.emailQueue.enqueue({
-        to: user.email,
-        content,
-        subject: 'Révision quotidienne - SealVo',
-      });
+      const ok = await this.enqueueReminder(user, dueByUser.get(user.id)!, detailsById);
       if (ok) {
         sent++;
       } else {
@@ -86,6 +77,29 @@ export class ReminderService {
     }
 
     return { sent, failed };
+  }
+
+  /** Email the current user their own reminder (source: ReminderController.testEmail) */
+  async sendTestReminder(userId: string): Promise<{ message: string }> {
+    const summary = (await this.findDueWordsByUser(userId)).get(userId);
+    if (!summary) return { message: "Aucun mot à réviser aujourd'hui" };
+
+    const [user, details] = await Promise.all([
+      this.prisma.users.findUniqueOrThrow({ where: { id: userId }, select: USER_SELECT }),
+      this.prisma.word_details.findMany({
+        where: { detail_id: { in: summary.preview.map((p) => p.detailId) } },
+        include: { words: true },
+      }),
+    ]);
+
+    const ok = await this.enqueueReminder(
+      user,
+      summary,
+      new Map(details.map((d) => [d.detail_id, d])),
+    );
+    if (!ok) throw new InternalServerErrorException("Échec de l'envoi de l'email");
+
+    return { message: "L'email a été envoyé pour tester" };
   }
 
   /** Delete stale verification tokens and never-verified accounts (source: ReminderController._runCleanup) */
@@ -108,9 +122,36 @@ export class ReminderService {
     }
   }
 
-  private async findDueWordsByUser(): Promise<Map<string, DueSummary>> {
+  private enqueueReminder(
+    user: ReminderUser,
+    summary: DueSummary,
+    detailsById: Map<number, PreviewDetail>,
+  ): Promise<boolean> {
+    const words = summary.preview.flatMap(({ detailId, level }) => {
+      const detail = detailsById.get(detailId);
+      return detail ? [this.toTemplateWord(detail, level)] : [];
+    });
+
+    const content = this.emailService.compileTemplate('mail.hbs', {
+      user: { username: user.username },
+      wordCount: summary.total,
+      wordsShown: words.length,
+      hasMoreWords: summary.total > PREVIEW_LIMIT,
+      words,
+      streak: this.toTemplateStreak(user.streak, summary.total),
+      baseUrl: this.config.get<string>('FRONTEND_URL'),
+    });
+
+    return this.emailQueue.enqueue({
+      to: user.email,
+      content,
+      subject: 'Révision quotidienne - SealVo',
+    });
+  }
+
+  private async findDueWordsByUser(userId?: string): Promise<Map<string, DueSummary>> {
     const rows = await this.prisma.learning.findMany({
-      where: { packages: { is_active: true }, OR: dueWhereConditions() },
+      where: { packages: { is_active: true, user_id: userId }, OR: dueWhereConditions() },
       select: { detail_id: true, level: true, packages: { select: { user_id: true } } },
     });
 

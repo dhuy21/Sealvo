@@ -1,15 +1,16 @@
 import { Module } from '@nestjs/common';
-import { WordsModule } from '../words/words.module.js';
+import { WordsCoreModule } from '../words/words-core.module.js';
 import { JobTrackerService } from './job-tracker.service.js';
 import { ImportQueueService } from './import-queue.service.js';
+import { BulkWordsService } from './bulk-words.service.js';
 import { JobController } from './job.controller.js';
 import { ImportController } from './import.controller.js';
 import { ImportService } from './import.service.js';
 
 @Module({
-  imports: [WordsModule],
+  imports: [WordsCoreModule],
   controllers: [JobController, ImportController],
-  providers: [JobTrackerService, ImportQueueService, ImportService],
-  exports: [JobTrackerService, ImportQueueService],
+  providers: [JobTrackerService, ImportQueueService, BulkWordsService, ImportService],
+  exports: [JobTrackerService, ImportQueueService, BulkWordsService],
 })
 export class ImportModule {}

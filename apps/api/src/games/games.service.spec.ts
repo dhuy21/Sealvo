@@ -70,6 +70,63 @@ describe('GamesService', () => {
       expect(result.words.length).toBe(8);
       expect(result.gameType).toBe('flash_match');
     });
+
+    const entry = (i: number, word: string, example: string | null = null) => ({
+      detail_id: i,
+      date_memorized: new Date(2020, 0, 1),
+      word_details: {
+        word_id: i,
+        type: 'ph_v',
+        meaning: `meaning ${i}`,
+        pronunciation: null,
+        example,
+        synonyms: null,
+        words: { word, language_code: 'en-US' },
+      },
+    });
+
+    it('should include the word type', async () => {
+      prisma.learning.findMany.mockResolvedValue([entry(1, 'look up')]);
+
+      const result = await service.getWordsForGame(1, 'vocab_quiz');
+      expect(result.words[0]).toMatchObject({ word: 'look up', type: 'ph_v' });
+    });
+
+    it('word_search: keeps at most 30 words under 14 bytes, checking the minimum before the filter', async () => {
+      const long = Array.from({ length: 5 }, (_, i) => entry(i + 1, 'extraordinarily'));
+      prisma.learning.findMany.mockResolvedValue(long);
+
+      const onlyLong = await service.getWordsForGame(1, 'word_search');
+      expect(onlyLong.words).toHaveLength(0);
+      expect(onlyLong.wordCount).toBe(5);
+      expect(onlyLong.errorMessage).toBe('Aucun mot trouvé dans votre vocabulaire.');
+
+      const short = Array.from({ length: 40 }, (_, i) => entry(i + 10, `word${i}`));
+      prisma.learning.findMany.mockResolvedValue([...long, entry(99, 'éléphantéé'), ...short]);
+
+      const mixed = await service.getWordsForGame(1, 'word_search');
+      expect(mixed.errorMessage).toBeNull();
+      expect(mixed.words).toHaveLength(30);
+      expect(mixed.words.every((w) => Buffer.byteLength(w.word) < 14)).toBe(true);
+      expect(mixed.words.some((w) => w.word === 'éléphantéé')).toBe(false);
+    });
+
+    it('phrase_completion: blanks every **answer** of the example', async () => {
+      prisma.learning.findMany.mockResolvedValue([
+        entry(1, 'run', 'I **run** and she **runs**.'),
+        entry(2, 'eat', 'No markers here'),
+        entry(3, 'go', '  '),
+      ]);
+
+      const result = await service.getWordsForGame(1, 'phrase_completion');
+      const byWord = Object.fromEntries(result.words.map((w) => [w.word, w]));
+      expect(byWord.run).toMatchObject({
+        phrase: 'I _____ and she _____.',
+        correctWords: ['run', 'runs'],
+      });
+      expect(byWord.eat).toMatchObject({ phrase: 'No markers here', correctWords: [] });
+      expect(byWord.go).toMatchObject({ phrase: '', correctWords: [] });
+    });
   });
 
   describe('saveScore', () => {

@@ -40,11 +40,11 @@ describe('PackageReadGuard', () => {
     await expect(guard.canActivate(contextFor('3').context)).resolves.toBe(true);
   });
 
-  it("rejects another user's private package, unless admin", async () => {
+  it("rejects another user's private package, even for an admin", async () => {
     await expect(guard.canActivate(contextFor('4').context)).rejects.toThrow(ForbiddenException);
     await expect(
       guard.canActivate(contextFor('4', { user: { id: 'me', role: 'Admin' } }).context),
-    ).resolves.toBe(true);
+    ).rejects.toThrow(ForbiddenException);
   });
 
   it('rejects an unknown package', async () => {

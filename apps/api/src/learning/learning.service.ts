@@ -8,6 +8,9 @@ import { isDue, startOfToday } from './spaced-repetition.js';
 
 const LEVEL_PROGRESS_TTL = 3 * 60 * 60; // 3 hours
 
+/** Hash field of the level-progress key: one per completed game */
+const progressField = (level: string, gameType: string) => `${level}:${gameType}`;
+
 @Injectable()
 export class LearningService {
   constructor(
@@ -27,38 +30,41 @@ export class LearningService {
   ) {
     const currentLevel = GAME_LEVEL[gameType];
     if (!currentLevel) {
-      throw new BadRequestException(`Unknown game type: ${gameType}`);
+      throw new BadRequestException('Type de jeu non reconnu');
     }
 
     if (!completed) {
-      return { success: true, level_completed: false, message: 'Game not completed, no progress change' };
+      return { success: true, level_completed: false, message: 'Partie non terminée, aucun changement de progression' };
     }
 
-    // Update progress
+    const key = CACHE_KEYS.levelProgress(userId);
+    await this.cache.hSet(key, progressField(currentLevel, gameType), '1', LEVEL_PROGRESS_TTL);
+
     const progress = await this.getUserProgress(userId);
-    if (!progress[currentLevel]) {
-      progress[currentLevel] = {};
-    }
-    progress[currentLevel][gameType] = true;
-    await this.setUserProgress(userId, progress);
+    progress[currentLevel] = { ...progress[currentLevel], [gameType]: true };
 
     // Check if all required games are done
     const requiredGames = LEVEL_GAMES[currentLevel];
     const allCompleted = requiredGames.every((g) => progress[currentLevel]?.[g]);
 
     if (allCompleted) {
-      // Promote words: find due words at this level, move to next level
-      const dueWords = await this.findWordsDueByLevel(packageId, currentLevel);
-      const detailIds = dueWords.map((w) => w.detail_id);
+      // Concurrent completions can all see the level complete: only the request whose HDEL
+      // removed the whole set promotes (null = no Redis, nothing to race on)
+      const removed = await this.cache.hDel(
+        key,
+        requiredGames.map((g) => progressField(currentLevel, g)),
+      );
 
       let updatedCount = 0;
-      if (detailIds.length > 0) {
-        updatedCount = await this.batchUpdateLevel(packageId, detailIds, currentLevel);
-      }
+      if (removed === null || removed === requiredGames.length) {
+        // Promote words: find due words at this level, move to next level
+        const dueWords = await this.findWordsDueByLevel(packageId, currentLevel);
+        const detailIds = dueWords.map((w) => w.detail_id);
 
-      // Reset progress for this level
-      delete progress[currentLevel];
-      await this.setUserProgress(userId, progress);
+        if (detailIds.length > 0) {
+          updatedCount = await this.batchUpdateLevel(packageId, detailIds, currentLevel);
+        }
+      }
 
       return {
         success: true,
@@ -88,10 +94,11 @@ export class LearningService {
    * Reset level progress for a specific level
    */
   async resetLevelProgress(userId: string, level: string) {
-    const progress = await this.getUserProgress(userId);
-    delete progress[level];
-    await this.setUserProgress(userId, progress);
-    return { message: `Progress for level ${level} reset` };
+    await this.cache.hDel(
+      CACHE_KEYS.levelProgress(userId),
+      LEVEL_GAMES[level].map((g) => progressField(level, g)),
+    );
+    return { message: `Progression du niveau ${level} réinitialisée` };
   }
 
   /**
@@ -109,45 +116,36 @@ export class LearningService {
     }
 
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const today = startOfToday();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
 
-    if (user.streak_updated_at) {
-      const lastUpdate = new Date(user.streak_updated_at);
-      const lastUpdateDay = new Date(lastUpdate.getFullYear(), lastUpdate.getMonth(), lastUpdate.getDate());
-
-      // Already updated today
-      if (lastUpdateDay.getTime() === today.getTime()) {
-        return { updated: false, streak: user.streak, reason: 'Already updated today' };
-      }
-
-      // Check if yesterday (consecutive)
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-
-      if (lastUpdateDay.getTime() === yesterday.getTime()) {
-        // Consecutive day → increment
-        const newStreak = user.streak + 1;
-        await this.prisma.users.update({
-          where: { id: userId },
-          data: { streak: newStreak, streak_updated_at: now },
-        });
-        return { updated: true, streak: newStreak };
-      }
-
-      // Streak broken → reset to 1
-      await this.prisma.users.update({
-        where: { id: userId },
-        data: { streak: 1, streak_updated_at: now },
-      });
-      return { updated: true, streak: 1 };
+    const last = user.streak_updated_at;
+    if (last && last >= today) {
+      return { updated: false, streak: user.streak, reason: "Déjà mis à jour aujourd'hui" };
     }
 
-    // First ever activity
-    await this.prisma.users.update({
-      where: { id: userId },
-      data: { streak: 1, streak_updated_at: now },
+    // Consecutive day → increment; first ever activity or streak broken → 1
+    const newStreak = last && last >= yesterday ? user.streak + 1 : 1;
+
+    // Only one of several concurrent requests of the day may write
+    const { count } = await this.prisma.users.updateMany({
+      where: {
+        id: userId,
+        OR: [{ streak_updated_at: null }, { streak_updated_at: { lt: today } }],
+      },
+      data: { streak: newStreak, streak_updated_at: now },
     });
-    return { updated: true, streak: 1 };
+
+    if (count === 0) {
+      const current = await this.prisma.users.findUnique({
+        where: { id: userId },
+        select: { streak: true },
+      });
+      return { updated: false, streak: current?.streak ?? 0, reason: "Déjà mis à jour aujourd'hui" };
+    }
+
+    return { updated: true, streak: newStreak };
   }
 
   /**
@@ -191,11 +189,12 @@ export class LearningService {
   }
 
   private async getUserProgress(userId: string): Promise<Record<string, Record<string, boolean>>> {
-    const cached = await this.cache.get<Record<string, Record<string, boolean>>>(CACHE_KEYS.levelProgress(userId));
-    return cached ?? {};
-  }
-
-  private async setUserProgress(userId: string, progress: Record<string, Record<string, boolean>>): Promise<void> {
-    await this.cache.set(CACHE_KEYS.levelProgress(userId), progress, LEVEL_PROGRESS_TTL);
+    const fields = (await this.cache.hGetAll(CACHE_KEYS.levelProgress(userId))) ?? {};
+    const progress: Record<string, Record<string, boolean>> = {};
+    for (const field of Object.keys(fields)) {
+      const [level, gameType] = field.split(':');
+      progress[level] = { ...progress[level], [gameType]: true };
+    }
+    return progress;
   }
 }

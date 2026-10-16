@@ -9,19 +9,20 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { ThrottleMessage } from '../common/decorators/throttle-message.decorator.js';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { TtsService } from './tts.service.js';
 import { IsString, IsNotEmpty, MaxLength, Matches } from 'class-validator';
 
 export class GenerateAudioDto {
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(200)
+  @IsString({ message: 'Le texte est requis' })
+  @IsNotEmpty({ message: 'Le texte est requis' })
+  @MaxLength(200, { message: 'Le texte ne doit pas dépasser 200 caractères' })
   text!: string;
 
-  @IsString()
-  @Matches(/^[a-z]{2,3}-[A-Z]{2}$/, { message: 'language must be a code like en-US' })
+  @IsString({ message: 'La langue est requise' })
+  @Matches(/^[a-z]{2,3}-[A-Z]{2}$/, { message: 'Langue invalide. Format attendu : en-US' })
   language!: string;
 }
 
@@ -34,6 +35,7 @@ export class TtsController {
 
   @Post('generate')
   @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  @ThrottleMessage('Trop de requêtes TTS. Réessayez dans 1 minute.')
   async generateAudio(
     @Body() dto: GenerateAudioDto,
     @Res() res: Response,

@@ -1,5 +1,6 @@
 import { IsEmail, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { NormalizeEmail } from '../../common/decorators/normalize-email.decorator.js';
 
 export class UpdateProfileDto {
   @ApiPropertyOptional({ minLength: 3, maxLength: 50 })
@@ -11,6 +12,7 @@ export class UpdateProfileDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @NormalizeEmail()
   @IsEmail()
   email?: string;
 

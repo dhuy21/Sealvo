@@ -177,7 +177,7 @@ export class WordsService {
     }, TX_OPTIONS);
 
     return {
-      message: `${successCount} word(s) added successfully`,
+      message: `${successCount} mot(s) ajouté(s) avec succès`,
       successCount,
     };
   }
@@ -193,7 +193,7 @@ export class WordsService {
     });
 
     if (!entry) {
-      throw new NotFoundException('Word not found in this package');
+      throw new NotFoundException('Mot introuvable');
     }
 
     if (dto.example !== undefined) await this.enrichWithGemini([dto]);
@@ -265,7 +265,7 @@ export class WordsService {
       return targetId;
     });
 
-    return { message: 'Word updated successfully', detailId: targetId };
+    return { message: 'Mot modifié avec succès', detailId: targetId };
   }
 
   /**
@@ -278,7 +278,7 @@ export class WordsService {
     });
 
     if (!entry) {
-      throw new NotFoundException('Word not found in this package');
+      throw new NotFoundException('Mot introuvable');
     }
 
     await this.prisma.$transaction(async (tx) => {
@@ -297,7 +297,7 @@ export class WordsService {
       }
     });
 
-    return { message: 'Word deleted successfully' };
+    return { message: 'Mot supprimé avec succès' };
   }
 
   /**
@@ -313,7 +313,7 @@ export class WordsService {
     const detailIds = entries.map((e) => e.detail_id);
 
     if (detailIds.length === 0) {
-      return { message: 'No words to delete', count: 0 };
+      return { message: 'Aucun mot à supprimer', count: 0 };
     }
 
     await this.prisma.$transaction([
@@ -325,6 +325,6 @@ export class WordsService {
       }),
     ]);
 
-    return { message: `${detailIds.length} word(s) deleted successfully`, count: detailIds.length };
+    return { message: 'Le(s) mot(s) supprimé(s) avec succès', count: detailIds.length };
   }
 }
