@@ -2,98 +2,14 @@
 
 import { Suspense, useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import { useWords } from '@/hooks/use-words';
-import type { Word } from '@/hooks/use-words';
-
-const LEVELS = ['x', 'level_0', 'level_1', 'level_2', 'v'] as const;
-
-function levelLabel(level: string): string {
-  if (level === 'x') return 'x';
-  if (level === 'v') return 'v';
-  return level.replace('level_', '');
-}
-
-function shuffleArray<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-}
-
-/* ─── Flashcard ─── */
-function Flashcard({
-  word,
-  mode,
-  onKnow,
-  onReview,
-}: {
-  word: Word;
-  mode: 'word-to-meaning' | 'meaning-to-word';
-  onKnow: () => void;
-  onReview: () => void;
-}) {
-  const [flipped, setFlipped] = useState(false);
-
-  const front = mode === 'word-to-meaning' ? word.word : word.meaning;
-  const back = mode === 'word-to-meaning' ? word.meaning : word.word;
-
-  return (
-    <>
-      <div className={`flashcard${flipped ? ' flipped' : ''}`} onClick={() => setFlipped(!flipped)}>
-        <div className="flashcard-inner">
-          <div className="flashcard-front">
-            <span className="card-type">{word.type}</span>
-            <h2 className="card-content">{front}</h2>
-            <p className="card-prompt">Cliquez pour voir la traduction</p>
-          </div>
-          <div className="flashcard-back">
-            <span className="card-type">{word.type}</span>
-            <h2 className="card-content">{back}</h2>
-            <div className="card-details">
-              {word.example && (
-                <div className="example-text">
-                  <strong>Exemple:</strong> {word.example}
-                </div>
-              )}
-              {word.pronunciation && (
-                <div className="pronunciation-text">
-                  <strong>Prononciation:</strong> {word.pronunciation}
-                </div>
-              )}
-              {word.synonyms && (
-                <p>
-                  <strong>Synonymes:</strong> {word.synonyms}
-                </p>
-              )}
-              {word.antonyms && (
-                <p>
-                  <strong>Antonymes:</strong> {word.antonyms}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="knowledge-buttons">
-        <button className="knowledge-btn" onClick={onReview}>
-          <i className="fas fa-redo"></i> À revoir
-        </button>
-        <button className="knowledge-btn" onClick={onKnow}>
-          <i className="fas fa-check"></i> Appris
-        </button>
-      </div>
-    </>
-  );
-}
+import { useRecordStreak } from '@/hooks/use-learning';
+import { shuffleArray } from '@/lib/shuffle';
+import { Flashcard, type LearnMode } from '@/components/learn/Flashcard';
+import { LearnStats } from '@/components/learn/LearnStats';
+import { LearnControls } from '@/components/learn/LearnControls';
+import { LearnProgress } from '@/components/learn/LearnProgress';
 
 /* ═══════════════════════════ */
 /* LEARN PAGE CONTENT          */
@@ -103,11 +19,12 @@ function LearnContent() {
   const router = useRouter();
   const packageId = Number(searchParams.get('package'));
   const { data: words, isLoading } = useWords(packageId || null);
+  const recordStreak = useRecordStreak();
 
   const [selectedLevels, setSelectedLevels] = useState<Set<string>>(
     new Set(['x', 'level_0', 'level_1', 'level_2']),
   );
-  const [mode, setMode] = useState<'word-to-meaning' | 'meaning-to-word'>('word-to-meaning');
+  const [mode, setMode] = useState<LearnMode>('word-to-meaning');
   const [vocabMode, setVocabMode] = useState<'today-words' | 'all-words'>('today-words');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [known, setKnown] = useState<Set<number>>(new Set());
@@ -115,13 +32,17 @@ function LearnContent() {
   const [sessionTime, setSessionTime] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const [started, setStarted] = useState(false);
+  const [shuffleKey, setShuffleKey] = useState(0);
+  const streakRecordedRef = useRef(false);
 
   // Filter words
   const filteredWords = useMemo(() => {
     if (!words) return [];
     const list = words.filter((w) => selectedLevels.has(w.level));
     return shuffleArray(list);
-  }, [words, selectedLevels]);
+    // shuffleKey is bumped by "Mélanger" to draw a new order.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [words, selectedLevels, shuffleKey]);
 
   // Timer
   useEffect(() => {
@@ -131,6 +52,12 @@ function LearnContent() {
     }
   }, [started, filteredWords.length]);
 
+  const resetSession = () => {
+    setCurrentIndex(0);
+    setKnown(new Set());
+    setReview(new Set());
+  };
+
   const toggleLevel = (level: string) => {
     setSelectedLevels((prev) => {
       const next = new Set(prev);
@@ -138,24 +65,62 @@ function LearnContent() {
       else next.add(level);
       return next;
     });
+    resetSession();
   };
+
+  /** Every card of the session is known: record today's activity for the streak. */
+  const finishSession = useCallback(() => {
+    const summary = `${filteredWords.length}/${filteredWords.length} mots maîtrisés`;
+    const showSessionDone = () => toast.success(`Session terminée ! ${summary}`, { duration: 5000 });
+    recordStreak.mutate(undefined, {
+      onSuccess: (data) => {
+        if (data.updated) {
+          toast.success(`🔥 Série de ${data.streak} jour(s) !\n${summary}`, {
+            duration: 6000,
+            style: { whiteSpace: 'pre-line' },
+          });
+        } else {
+          showSessionDone();
+        }
+      },
+      onError: showSessionDone,
+    });
+  }, [filteredWords.length, recordStreak]);
 
   const handleKnow = useCallback(() => {
     const w = filteredWords[currentIndex];
-    if (w) setKnown((prev) => new Set(prev).add(w.detail_id));
+    if (w) {
+      const nextKnown = new Set(known).add(w.detail_id);
+      setKnown(nextKnown);
+      setReview((prev) => {
+        const next = new Set(prev);
+        next.delete(w.detail_id);
+        return next;
+      });
+      if (!streakRecordedRef.current && filteredWords.every((fw) => nextKnown.has(fw.detail_id))) {
+        streakRecordedRef.current = true;
+        finishSession();
+      }
+    }
     if (currentIndex < filteredWords.length - 1) setCurrentIndex((i) => i + 1);
-  }, [currentIndex, filteredWords]);
+  }, [currentIndex, filteredWords, known, finishSession]);
 
   const handleReview = useCallback(() => {
     const w = filteredWords[currentIndex];
-    if (w) setReview((prev) => new Set(prev).add(w.detail_id));
+    if (w) {
+      setReview((prev) => new Set(prev).add(w.detail_id));
+      setKnown((prev) => {
+        const next = new Set(prev);
+        next.delete(w.detail_id);
+        return next;
+      });
+    }
     if (currentIndex < filteredWords.length - 1) setCurrentIndex((i) => i + 1);
   }, [currentIndex, filteredWords]);
 
   const handleShuffle = () => {
-    setCurrentIndex(0);
-    setKnown(new Set());
-    setReview(new Set());
+    setShuffleKey((k) => k + 1);
+    resetSession();
   };
 
   if (!packageId) {
@@ -194,88 +159,22 @@ function LearnContent() {
   }
 
   const currentWord = filteredWords[currentIndex];
-  const progress = filteredWords.length > 0 ? ((known.size / filteredWords.length) * 100).toFixed(0) : '0';
+  const knownCount = filteredWords.filter((w) => known.has(w.detail_id)).length;
+  const reviewCount = filteredWords.filter((w) => review.has(w.detail_id)).length;
+  const progress = filteredWords.length > 0 ? ((knownCount / filteredWords.length) * 100).toFixed(0) : '0';
 
   return (
     <div className="learn-container">
       <h1 className="learn-title">Apprendre mon vocabulaire</h1>
 
-      <div className="dashboard-stats">
-        <div className="stat-card">
-          <div className="stat-icon">
-            <i className="fas fa-book"></i>
-          </div>
-          <div className="stat-content">
-            <h3>{filteredWords.length}</h3>
-            <p>Mots disponibles</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">
-            <i className="fas fa-check-circle"></i>
-          </div>
-          <div className="stat-content">
-            <h3>{known.size}</h3>
-            <p>Mots maîtrisés</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">
-            <i className="fas fa-stopwatch"></i>
-          </div>
-          <div className="stat-content">
-            <h3>{formatTime(sessionTime)}</h3>
-            <p>Temps de session</p>
-          </div>
-        </div>
-      </div>
+      <LearnStats available={filteredWords.length} known={knownCount} sessionTime={sessionTime} />
 
-      {/* Controls */}
-      <div className="flashcard-controls">
-        <div className="flashcard-filters">
-          <h3>Niveaux</h3>
-          <div className="filter-options">
-            <div className="filter-row">
-              {LEVELS.filter((l) => l !== 'v').map((level) => (
-                <label key={level} className="filter-label">
-                  <input
-                    type="checkbox"
-                    checked={selectedLevels.has(level)}
-                    onChange={() => toggleLevel(level)}
-                  />
-                  <span className="custom-checkbox"></span>
-                  Niveau {levelLabel(level)}
-                </label>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="mode-selector">
-          <h3>Mode d&apos;apprentissage</h3>
-          <div className="mode-options">
-            <label className="mode-label">
-              <input
-                type="radio"
-                name="mode"
-                checked={mode === 'word-to-meaning'}
-                onChange={() => setMode('word-to-meaning')}
-              />
-              <span className="custom-radio"></span>
-              Mot → Signification
-            </label>
-            <label className="mode-label">
-              <input
-                type="radio"
-                name="mode"
-                checked={mode === 'meaning-to-word'}
-                onChange={() => setMode('meaning-to-word')}
-              />
-              <span className="custom-radio"></span>
-              Signification → Mot
-            </label>
-          </div>
-        </div>
-      </div>
+      <LearnControls
+        selectedLevels={selectedLevels}
+        onToggleLevel={toggleLevel}
+        mode={mode}
+        onModeChange={setMode}
+      />
 
       {/* Flashcard */}
       {filteredWords.length > 0 && currentWord ? (
@@ -328,30 +227,7 @@ function LearnContent() {
         </div>
       )}
 
-      {/* Progress */}
-      <div className="progress-container">
-        <div className="progress-header">
-          <h3>Votre progression</h3>
-          <span>{progress}%</span>
-        </div>
-        <div className="progress-bar">
-          <div className="progress" style={{ width: `${progress}%` }}></div>
-        </div>
-        <div className="progress-stats">
-          <div className="progress-stat">
-            <span className="stat-icon red">
-              <i className="fas fa-redo"></i>
-            </span>
-            <span>{review.size}</span>
-          </div>
-          <div className="progress-stat">
-            <span className="stat-icon green">
-              <i className="fas fa-check"></i>
-            </span>
-            <span>{known.size}</span>
-          </div>
-        </div>
-      </div>
+      <LearnProgress progress={progress} reviewCount={reviewCount} knownCount={knownCount} />
 
       {/* Actions */}
       <div className="flashcard-actions">

@@ -1,33 +1,16 @@
 'use client';
 
 import { Suspense, useState, useCallback, useEffect, useRef } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useGameData, useSaveScore, useTrackLevelProgress } from '@/hooks/use-games';
 import type { GameWord } from '@/hooks/use-games';
-import toast from 'react-hot-toast';
-
-interface Card {
-  pairId: number;
-  type: 'word' | 'meaning';
-  content: string;
-  flipped: boolean;
-  matched: boolean;
-}
-
-function shuffleArray<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-}
+import { shuffleArray } from '@/lib/shuffle';
+import { GameDataStatus } from '@/components/games/GameDataStatus';
+import { GameStats } from '@/components/games/GameStats';
+import { GameFooter } from '@/components/games/GameFooter';
+import { FlashMatchRules } from '@/components/games/flash-match/FlashMatchRules';
+import { FlashMatchBoard, type Card } from '@/components/games/flash-match/FlashMatchBoard';
+import { FlashMatchSummary } from '@/components/games/flash-match/FlashMatchSummary';
 
 function generateCards(words: GameWord[]): Card[] {
   const selected = words.slice(0, 15); // max 15 pairs
@@ -46,10 +29,9 @@ type Screen = 'pre' | 'active' | 'post';
 /* ═══════════════════════════ */
 function FlashMatchContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const packageId = Number(searchParams.get('package'));
 
-  const { data: gameData, isLoading } = useGameData('flash_match', packageId || null);
+  const { data: gameData, isLoading, error } = useGameData('flash_match', packageId || null);
   const saveScore = useSaveScore();
   const trackProgress = useTrackLevelProgress();
 
@@ -65,6 +47,8 @@ function FlashMatchContent() {
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const checkingRef = useRef(false);
 
+  const ready = !!gameData && !gameData.errorMessage;
+
   // Timer
   useEffect(() => {
     if (gameActive) {
@@ -74,7 +58,10 @@ function FlashMatchContent() {
   }, [gameActive]);
 
   const startGame = useCallback(() => {
-    if (!gameData?.words?.length) return;
+    if (!gameData?.words?.length || gameData.errorMessage) {
+      setScreen('pre');
+      return;
+    }
     const newCards = generateCards(gameData.words);
     setCards(newCards);
     setTotalPairs(newCards.length / 2);
@@ -155,46 +142,10 @@ function FlashMatchContent() {
     [gameActive, cards, selected, matchedPairs, totalPairs, packageId, saveScore, trackProgress],
   );
 
-  const gridClass =
-    totalPairs <= 4
-      ? 'grid-4'
-      : totalPairs <= 8
-        ? 'grid-8'
-        : totalPairs <= 10
-          ? 'grid-10'
-          : totalPairs <= 12
-            ? 'grid-12'
-            : 'grid-15';
-
   if (!packageId) {
     return (
       <div className="game-container" style={{ textAlign: 'center', padding: '4rem' }}>
         <p>Aucun package sélectionné.</p>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="game-container" style={{ textAlign: 'center', padding: '4rem' }}>
-        <i className="fas fa-spinner fa-spin fa-2x"></i>
-      </div>
-    );
-  }
-
-  if (gameData?.errorMessage) {
-    return (
-      <div className="game-container">
-        <div className="game-header">
-          <h1>Flash Match</h1>
-        </div>
-        <div className="error-box">
-          <i className="fas fa-exclamation-triangle"></i>
-          <p>{gameData.errorMessage}</p>
-          <button className="btn add-words-btn" onClick={() => router.push(`/words?package=${packageId}`)}>
-            Ajouter des mots
-          </button>
-        </div>
       </div>
     );
   }
@@ -206,125 +157,45 @@ function FlashMatchContent() {
         <p className="game-description">Associez chaque mot avec sa définition</p>
       </div>
 
-      {gameData && (
-        <div className="game-stats">
-          <div className="stat-box">
-            <span className="stat-label">Mots disponibles</span>
-            <span className="stat-value">{gameData.wordCount}</span>
-          </div>
-        </div>
+      {screen === 'pre' && (
+        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} />
       )}
 
-      <div className="game-area">
-        <div className="game-screen">
-          {/* Pre-game */}
-          {screen === 'pre' && (
-            <div className="pre-game-screen active">
-              <h2>
-                <i className="fas fa-bolt" style={{ color: '#e9e919' }}></i> Règles du jeu
-              </h2>
-              <ul className="rules-list">
-                <li>Associez chaque mot avec sa définition</li>
-                <li>Moins vous faites de tentatives, plus votre score sera élevé</li>
-                <li>Le temps est également pris en compte dans le calcul du score</li>
-                <li>Trouvez toutes les paires pour terminer le jeu</li>
-              </ul>
-              <button className="start-btn" onClick={startGame}>
-                <i className="fas fa-play"></i> Commencer
-              </button>
-            </div>
-          )}
+      {gameData && (screen !== 'pre' || ready) && (
+        <>
+          <GameStats wordCount={gameData.wordCount} />
 
-          {/* Active game */}
-          {screen === 'active' && (
-            <div className="active-game-screen active">
-              <div className="game-info">
-                <div className="moves-display">
-                  <span className="moves-label">Coups</span>
-                  <span className="moves-value">{moves}</span>
-                </div>
-                <div className="timer-display">
-                  <span className="timer-label">Temps</span>
-                  <span className="timer-value">{formatTime(currentTime)}</span>
-                </div>
-                <div className="pairs-display">
-                  <span className="pairs-label">Paires</span>
-                  <span className="pairs-value">
-                    {matchedPairs}/{totalPairs}
-                  </span>
-                </div>
-              </div>
+          <div className="game-area">
+            <div className="game-screen">
+              {screen === 'pre' && <FlashMatchRules onStart={startGame} />}
 
-              <div className={`game-board ${gridClass}`}>
-                {cards.map((card, i) => (
-                  <div
-                    key={i}
-                    className={`card-container${card.flipped ? ' flipped' : ''}${card.matched ? ' matched' : ''}`}
-                    onClick={() => flipCard(i)}
-                  >
-                    <div className="card-inner">
-                      <div className="card-front"></div>
-                      <div className="card-back">
-                        {card.type === 'meaning' ? (
-                          <div className="meaning-card">{card.content}</div>
-                        ) : (
-                          <div className="card-word">{card.content}</div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Post-game */}
-          {screen === 'post' && (
-            <div className="post-game-screen active">
-              <div className="final-score-container">
-                <div className="final-score-label">Paires trouvées</div>
-                <span className="final-score">{matchedPairs}</span>
-              </div>
-              <div className="game-summary">
-                <div className="summary-item">
-                  <div className="summary-icon">⏱️ Temps</div>
-                  <span className="summary-value">{formatTime(currentTime)}</span>
-                </div>
-                <div className="summary-item">
-                  <div className="summary-icon">🎯 Coups</div>
-                  <span className="summary-value">{moves}</span>
-                </div>
-              </div>
-
-              {levelMessage && (
-                <div
-                  className={`track-level-message ${levelMessage.success ? 'level-completed' : 'level-failed'}`}
-                >
-                  {levelMessage.text}
-                </div>
+              {screen === 'active' && (
+                <FlashMatchBoard
+                  cards={cards}
+                  moves={moves}
+                  currentTime={currentTime}
+                  matchedPairs={matchedPairs}
+                  totalPairs={totalPairs}
+                  onFlip={flipCard}
+                />
               )}
 
-              <div className="action-buttons">
-                <button className="play-again-btn" onClick={startGame}>
-                  <i className="fas fa-redo"></i> Rejouer
-                </button>
-              </div>
+              {screen === 'post' && (
+                <FlashMatchSummary
+                  matchedPairs={matchedPairs}
+                  currentTime={currentTime}
+                  moves={moves}
+                  levelMessage={levelMessage?.text ?? ''}
+                  levelStatus={levelMessage ? (levelMessage.success ? 'completed' : 'failed') : ''}
+                  onReplay={startGame}
+                />
+              )}
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
 
-      <div className="game-footer">
-        <button className="btn learn-btn" onClick={() => router.push(`/learn?package=${packageId}`)}>
-          <i className="fas fa-arrow-left"></i> Apprendre
-        </button>
-        <button
-          className="btn next-btn"
-          onClick={() => router.push(`/games/vocab-quiz?package=${packageId}`)}
-        >
-          <i className="fas fa-arrow-right"></i> Jeu suivant
-        </button>
-      </div>
+      <GameFooter packageId={packageId} nextGame="vocab-quiz" />
     </div>
   );
 }

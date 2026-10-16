@@ -1,30 +1,16 @@
 'use client';
 
 import { Suspense, useState, useCallback, useEffect, useRef } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useGameData, useSaveScore, useTrackLevelProgress } from '@/hooks/use-games';
 import type { GameWord } from '@/hooks/use-games';
-
-function shuffleArray<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-}
-
-interface Question {
-  word: string;
-  options: string[];
-  correctIndex: number[];
-}
+import { shuffleArray } from '@/lib/shuffle';
+import { GameDataStatus } from '@/components/games/GameDataStatus';
+import { GameStats } from '@/components/games/GameStats';
+import { GameFooter } from '@/components/games/GameFooter';
+import { VocabQuizRules } from '@/components/games/vocab-quiz/VocabQuizRules';
+import { QuizQuestion, type Question } from '@/components/games/vocab-quiz/QuizQuestion';
+import { VocabQuizSummary } from '@/components/games/vocab-quiz/VocabQuizSummary';
 
 function generateQuestions(words: GameWord[]): Question[] {
   const questions: Question[] = [];
@@ -53,10 +39,9 @@ type Screen = 'pre' | 'active' | 'post';
 
 function VocabQuizContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const packageId = Number(searchParams.get('package'));
 
-  const { data: gameData, isLoading } = useGameData('vocab_quiz', packageId || null);
+  const { data: gameData, isLoading, error } = useGameData('vocab_quiz', packageId || null);
   const saveScore = useSaveScore();
   const trackProgress = useTrackLevelProgress();
 
@@ -72,6 +57,8 @@ function VocabQuizContent() {
   const [levelMessage, setLevelMessage] = useState<{ text: string; success: boolean } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
+  const ready = !!gameData && !gameData.errorMessage;
+
   useEffect(() => {
     if (screen === 'active') {
       timerRef.current = setInterval(() => setCurrentTime((t) => t + 1), 1000);
@@ -80,7 +67,10 @@ function VocabQuizContent() {
   }, [screen]);
 
   const startGame = useCallback(() => {
-    if (!gameData?.words?.length) return;
+    if (!gameData?.words?.length || gameData.errorMessage) {
+      setScreen('pre');
+      return;
+    }
     const qs = generateQuestions(gameData.words);
     setQuestions(qs);
     setCurrentIdx(0);
@@ -149,31 +139,6 @@ function VocabQuizContent() {
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="game-container" style={{ textAlign: 'center', padding: '4rem' }}>
-        <i className="fas fa-spinner fa-spin fa-2x"></i>
-      </div>
-    );
-  }
-
-  if (gameData?.errorMessage) {
-    return (
-      <div className="game-container">
-        <div className="game-header">
-          <h1>Vocab Quiz</h1>
-        </div>
-        <div className="error-box">
-          <i className="fas fa-exclamation-triangle"></i>
-          <p>{gameData.errorMessage}</p>
-          <button className="btn add-words-btn" onClick={() => router.push(`/words?package=${packageId}`)}>
-            Ajouter des mots
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const currentQ = questions[currentIdx];
 
   return (
@@ -183,131 +148,48 @@ function VocabQuizContent() {
         <p className="game-description">Choisissez la bonne définition pour chaque mot</p>
       </div>
 
-      {gameData && (
-        <div className="game-stats">
-          <div className="stat-box">
-            <span className="stat-label">Mots disponibles</span>
-            <span className="stat-value">{gameData.wordCount}</span>
-          </div>
-        </div>
+      {screen === 'pre' && (
+        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} />
       )}
 
-      <div className="game-area">
-        <div className="game-screen">
-          {/* Pre-game */}
-          {screen === 'pre' && (
-            <div className="pre-game-screen active">
-              <h2>
-                <i className="fas fa-bolt" style={{ color: '#e9e919' }}></i> Règles du jeu
-              </h2>
-              <ul className="rules-list">
-                <li>Choisissez la bonne définition pour chaque mot</li>
-                <li>Obtenez 10 points pour chaque bonne réponse</li>
-                <li>Perdez 5 points pour chaque réponse erronée</li>
-                <li>Répondez à toutes les questions pour terminer le quiz</li>
-              </ul>
-              <button className="start-btn" onClick={startGame}>
-                <i className="fas fa-play"></i> Commencer
-              </button>
-            </div>
-          )}
+      {gameData && (screen !== 'pre' || ready) && (
+        <>
+          <GameStats wordCount={gameData.wordCount} />
 
-          {/* Active game */}
-          {screen === 'active' && currentQ && (
-            <div className="active-game-screen active">
-              <div className="game-info">
-                <div className="score-display">
-                  <span className="score-label">Score</span>
-                  <span className="score-value">{score}</span>
-                </div>
-                <div className="progress-display">
-                  <span className="progress-label">Question</span>
-                  <span className="progress-value">
-                    {currentIdx + 1}/{questions.length}
-                  </span>
-                </div>
-              </div>
+          <div className="game-area">
+            <div className="game-screen">
+              {screen === 'pre' && <VocabQuizRules onStart={startGame} />}
 
-              <div className="quiz-question-container">
-                <div className="quiz-word-container">
-                  <div className="quiz-word">{currentQ.word}</div>
-                </div>
-
-                <div className="options-container">
-                  {currentQ.options.map((opt, i) => (
-                    <button
-                      key={i}
-                      className={`option-btn${selectedOption === i ? (currentQ.correctIndex.includes(i) ? ' correct' : ' incorrect') : ''}${answered && currentQ.correctIndex.includes(i) ? ' correct' : ''}`}
-                      onClick={() => handleAnswer(i)}
-                      disabled={answered}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {resultMsg && (
-                <div className={`result-message ${resultMsg.correct ? 'correct' : 'incorrect'}`}>
-                  {resultMsg.text}
-                </div>
+              {screen === 'active' && currentQ && (
+                <QuizQuestion
+                  question={currentQ}
+                  questionNumber={currentIdx + 1}
+                  totalQuestions={questions.length}
+                  score={score}
+                  selectedOption={selectedOption}
+                  answered={answered}
+                  resultMsg={resultMsg}
+                  onAnswer={handleAnswer}
+                  onNext={nextQuestion}
+                />
               )}
 
-              <div className="quiz-footer">
-                <button className="next-btn" disabled={!answered} onClick={nextQuestion}>
-                  {currentIdx + 1 === questions.length ? 'Voir les résultats' : 'Question suivante'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Post-game */}
-          {screen === 'post' && (
-            <div className="post-game-screen active">
-              <div className="final-score-container">
-                <div className="final-score-label">Score final</div>
-                <span className="final-score">{score}</span>
-              </div>
-              <div className="game-summary">
-                <div className="summary-item">
-                  <div className="summary-icon">☘️Corrects</div>
-                  <span className="summary-value">{correctCount}</span>
-                </div>
-                <div className="summary-item">
-                  <div className="summary-icon">⏰Temps</div>
-                  <span className="summary-value">{formatTime(currentTime)}</span>
-                </div>
-              </div>
-
-              {levelMessage && (
-                <div
-                  className={`track-level-message ${levelMessage.success ? 'level-completed' : 'level-failed'}`}
-                >
-                  {levelMessage.text}
-                </div>
+              {screen === 'post' && (
+                <VocabQuizSummary
+                  score={score}
+                  correctCount={correctCount}
+                  currentTime={currentTime}
+                  levelMessage={levelMessage?.text ?? ''}
+                  levelStatus={levelMessage ? (levelMessage.success ? 'completed' : 'failed') : ''}
+                  onReplay={startGame}
+                />
               )}
-
-              <div className="action-buttons">
-                <button className="play-again-btn" onClick={startGame}>
-                  <i className="fas fa-redo"></i> Rejouer
-                </button>
-              </div>
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
 
-      <div className="game-footer">
-        <button className="btn learn-btn" onClick={() => router.push(`/learn?package=${packageId}`)}>
-          <i className="fas fa-arrow-left"></i> Apprendre
-        </button>
-        <button
-          className="btn next-btn"
-          onClick={() => router.push(`/games/test-pronun?package=${packageId}`)}
-        >
-          <i className="fas fa-arrow-right"></i> Jeu suivant
-        </button>
-      </div>
+      <GameFooter packageId={packageId} nextGame="test-pronun" />
     </div>
   );
 }

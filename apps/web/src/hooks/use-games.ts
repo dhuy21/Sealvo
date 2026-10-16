@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 
 export interface GameWord {
@@ -43,11 +43,27 @@ export function useSaveScore() {
   });
 }
 
+/** Levels are Prisma enum names: `x`, `level_0`, `level_1`, `level_2`, `v`. */
+export interface TrackLevelProgressResult {
+  success: boolean;
+  level_completed: boolean;
+  words_updated?: number;
+  from_level?: string;
+  to_level?: string;
+  missing_games?: string[];
+}
+
 export function useTrackLevelProgress() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { game_type: string; completed: boolean; packageId: number }) => {
-      const { data } = await api.post('/learning/level-progress/track', payload);
+      const { data } = await api.post<TrackLevelProgressResult>('/learning/level-progress/track', payload);
       return data;
+    },
+    onSuccess: (_data, { packageId }) => {
+      void qc.invalidateQueries({ queryKey: ['game'] });
+      void qc.invalidateQueries({ queryKey: ['words', packageId] });
+      void qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }

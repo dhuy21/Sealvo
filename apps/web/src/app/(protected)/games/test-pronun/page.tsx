@@ -1,198 +1,35 @@
 'use client';
 
 import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useGameData, useSaveScore, useTrackLevelProgress, type GameWord } from '@/hooks/use-games';
 import { useIsClient } from '@/hooks/use-is-client';
-import api from '@/lib/api';
-import confetti from 'canvas-confetti';
-
-/* ================================================================
-   TYPES
-   ================================================================ */
-interface SpeechRecognitionEvent {
-  results: { [index: number]: { transcript: string; confidence: number }[] };
-}
-
-interface SpeechRecognitionErrorEvent {
-  error: string;
-}
-
-interface SpeechRecognitionInstance {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  maxAlternatives: number;
-  start(): void;
-  stop(): void;
-  abort(): void;
-  onstart: (() => void) | null;
-  onresult: ((event: SpeechRecognitionEvent) => void) | null;
-  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
-  onend: (() => void) | null;
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition?: new () => SpeechRecognitionInstance;
-    webkitSpeechRecognition?: new () => SpeechRecognitionInstance;
-  }
-}
-
-/* ================================================================
-   HELPERS
-   ================================================================ */
-function formatTime(ms: number): string {
-  const seconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes.toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
-}
-
-function calculateLevenshteinSimilarity(str1: string, str2: string): number {
-  if (str1 === str2) return 1.0;
-  if (str1.length === 0 || str2.length === 0) return 0.0;
-
-  const len1 = str1.length;
-  const len2 = str2.length;
-  const matrix: number[][] = [];
-
-  for (let i = 0; i <= len1; i++) matrix[i] = [i];
-  for (let j = 0; j <= len2; j++) matrix[0][j] = j;
-
-  for (let i = 1; i <= len1; i++) {
-    for (let j = 1; j <= len2; j++) {
-      const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
-      matrix[i][j] = Math.min(
-        matrix[i - 1][j] + 1,
-        matrix[i][j - 1] + 1,
-        matrix[i - 1][j - 1] + cost,
-      );
-    }
-  }
-
-  return 1 - matrix[len1][len2] / Math.max(len1, len2);
-}
-
-function getPhoneticVariants(word: string): string[] {
-  const variants = [word];
-  const rules: [RegExp, string][] = [
-    [/ph/g, 'f'],
-    [/ck$/g, 'k'],
-    [/ll/g, 'l'],
-    [/ss/g, 's'],
-    [/tt/g, 't'],
-    [/c([aou])/g, 'k$1'],
-  ];
-
-  for (const [pattern, replacement] of rules) {
-    if (pattern.test(word)) {
-      const variant = word.replace(pattern, replacement);
-      if (variant !== word && !variants.includes(variant)) {
-        variants.push(variant);
-      }
-    }
-  }
-  return variants;
-}
-
-function calculatePronunciationAccuracy(spoken: string, target: string, confidence: number): number {
-  const normalizedSpoken = spoken.toLowerCase().replace(/[^\w\s]/g, '').trim();
-  const normalizedTarget = target.toLowerCase().replace(/[^\w\s]/g, '').trim();
-
-  if (normalizedSpoken === normalizedTarget) {
-    return Math.min(95 + confidence * 5, 100);
-  }
-
-  if (normalizedSpoken.includes(normalizedTarget) || normalizedTarget.includes(normalizedSpoken)) {
-    return Math.round(Math.min(75 + confidence * 15, 85));
-  }
-
-  const similarity = calculateLevenshteinSimilarity(normalizedSpoken, normalizedTarget);
-
-  if (similarity < 0.6) {
-    return Math.max(10, Math.round(similarity * 30));
-  }
-
-  if (similarity >= 0.7) {
-    const variants = getPhoneticVariants(normalizedTarget);
-    for (const variant of variants) {
-      if (normalizedSpoken === variant) {
-        return Math.min(80 + confidence * 10, 90);
-      }
-    }
-  }
-
-  let baseAccuracy = similarity * 70;
-
-  if (similarity >= 0.5 && normalizedSpoken.length > 2 && normalizedTarget.length > 2) {
-    const startMatch = normalizedSpoken.substring(0, 2) === normalizedTarget.substring(0, 2);
-    const endMatch = normalizedSpoken.slice(-2) === normalizedTarget.slice(-2);
-    if (startMatch || endMatch) baseAccuracy += 5;
-  }
-
-  const lengthDifference = Math.abs(normalizedSpoken.length - normalizedTarget.length);
-  const maxLength = Math.max(normalizedSpoken.length, normalizedTarget.length);
-  if (1 - lengthDifference / maxLength < 0.7) baseAccuracy *= 0.7;
-
-  let finalAccuracy = Math.min(baseAccuracy + confidence * 10, 75);
-
-  if (normalizedSpoken.length > 0 && similarity >= 0.3) {
-    finalAccuracy = Math.max(finalAccuracy, 15);
-  } else {
-    finalAccuracy = Math.max(finalAccuracy, 5);
-  }
-
-  return Math.round(finalAccuracy);
-}
-
-/* ================================================================
-   CONFETTI
-   ================================================================ */
-function launchConfetti() {
-  const duration = 15 * 1000;
-  const animationEnd = Date.now() + duration;
-  const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-  const interval = setInterval(() => {
-    const timeLeft = animationEnd - Date.now();
-    if (timeLeft <= 0) return clearInterval(interval);
-
-    const particleCount = 50 * (timeLeft / duration);
-    confetti({ ...defaults, particleCount, origin: { x: Math.random() * 0.2 + 0.1, y: Math.random() - 0.2 } });
-    confetti({ ...defaults, particleCount, origin: { x: Math.random() * 0.2 + 0.7, y: Math.random() - 0.2 } });
-  }, 250);
-}
-
-/* ================================================================
-   TTS
-   ================================================================ */
-async function playWordAudio(word: GameWord): Promise<void> {
-  try {
-    const response = await api.post('/tts/generate', {
-      text: word.word,
-      language: word.language_code || 'en-US',
-    }, { responseType: 'blob' });
-
-    const audioUrl = URL.createObjectURL(response.data);
-    const audio = new Audio(audioUrl);
-    audio.volume = 0.8;
-    audio.onended = () => URL.revokeObjectURL(audioUrl);
-    audio.onerror = () => URL.revokeObjectURL(audioUrl);
-    await audio.play();
-  } catch (err) {
-    console.error('TTS error:', err);
-  }
-}
+import { shuffleArray } from '@/lib/shuffle';
+import { launchFireworks } from '@/components/games/confetti';
+import { levelCompletedMessage } from '@/components/games/level-progress';
+import { GameDataStatus } from '@/components/games/GameDataStatus';
+import { GameStats } from '@/components/games/GameStats';
+import { GameFooter } from '@/components/games/GameFooter';
+import type { LevelStatus } from '@/components/games/TrackLevelMessage';
+import type {
+  SpeechRecognitionErrorEvent,
+  SpeechRecognitionEvent,
+  SpeechRecognitionInstance,
+} from '@/components/games/test-pronun/speech-recognition';
+import { calculatePronunciationAccuracy } from '@/components/games/test-pronun/pronunciation';
+import { SoundBackground } from '@/components/games/test-pronun/SoundBackground';
+import { TestPronunRules } from '@/components/games/test-pronun/TestPronunRules';
+import { PronunciationBoard, type FeedbackType } from '@/components/games/test-pronun/PronunciationBoard';
+import { TestPronunSummary } from '@/components/games/test-pronun/TestPronunSummary';
 
 /* ================================================================
    INNER COMPONENT (needs useSearchParams)
    ================================================================ */
 function TestPronunInner() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const packageId = searchParams.get('package') ? Number(searchParams.get('package')) : null;
 
-  const { data: gameData } = useGameData('test_pronun', packageId);
+  const { data: gameData, isLoading, error } = useGameData('test_pronun', packageId);
   const saveScore = useSaveScore();
   const trackLevel = useTrackLevelProgress();
 
@@ -209,13 +46,13 @@ function TestPronunInner() {
   const [accuracy, setAccuracy] = useState(0);
   const [recognizedText, setRecognizedText] = useState('');
   const [feedbackText, setFeedbackText] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'info' | 'warning' | 'error' | 'neutral'>('neutral');
+  const [feedbackType, setFeedbackType] = useState<FeedbackType>('neutral');
   const [isListening, setIsListening] = useState(false);
   const isClient = useIsClient();
   const speechSupported =
     isClient && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
   const [levelMessage, setLevelMessage] = useState('');
-  const [levelStatus, setLevelStatus] = useState<'completed' | 'failed' | ''>('');
+  const [levelStatus, setLevelStatus] = useState<LevelStatus>('');
 
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
@@ -223,6 +60,7 @@ function TestPronunInner() {
 
   const WORDS_PER_GAME = 10;
   const currentWord = words[currentIndex] ?? null;
+  const ready = !!gameData && !gameData.errorMessage;
 
   // Timer
   useEffect(() => {
@@ -245,7 +83,7 @@ function TestPronunInner() {
       setAccuracy(acc);
 
       let message: string;
-      let type: 'success' | 'info' | 'warning' | 'error' | 'neutral';
+      let type: FeedbackType;
       let isPerfect = false;
 
       if (acc >= 90) {
@@ -356,9 +194,12 @@ function TestPronunInner() {
   }, []);
 
   function startGame() {
-    if (!gameData || gameData.words.length === 0) return;
+    if (!gameData || gameData.errorMessage || gameData.words.length === 0) {
+      setScreen('pre');
+      return;
+    }
 
-    const shuffled = [...gameData.words].sort(() => Math.random() - 0.5);
+    const shuffled = shuffleArray(gameData.words);
     setWords(shuffled);
     setCurrentIndex(0);
     setCompletedWords(0);
@@ -375,6 +216,17 @@ function TestPronunInner() {
     setScreen('active');
   }
 
+  function skipWord() {
+    let nextIndex = Math.floor(Math.random() * words.length);
+    while (nextIndex === currentIndex && words.length > 1) {
+      nextIndex = Math.floor(Math.random() * words.length);
+    }
+    setCurrentIndex(nextIndex);
+    setAccuracy(0);
+    setRecognizedText('');
+    setFeedbackText('');
+  }
+
   function endGame() {
     clearInterval(timerRef.current);
     const finalTime = Date.now() - startTime;
@@ -387,9 +239,10 @@ function TestPronunInner() {
     trackLevel.mutate(
       { game_type: 'test_pronun', completed: isSuccessful, packageId: packageId! },
       {
-        onSuccess: (data: { level_completed?: boolean; words_updated?: number; to_level?: string }) => {
-          if (data.level_completed && data.words_updated && data.words_updated > 0) {
-            setLevelMessage(`Niveau terminé! ${data.words_updated} mots sont passés au niveau ${data.to_level}`);
+        onSuccess: (data) => {
+          const message = levelCompletedMessage(data);
+          if (message) {
+            setLevelMessage(message);
             setLevelStatus('completed');
           }
         },
@@ -408,7 +261,7 @@ function TestPronunInner() {
 
     setTimeout(() => {
       setScreen('post');
-      launchConfetti();
+      launchFireworks();
     }, 1000);
   }
 
@@ -452,26 +305,7 @@ function TestPronunInner() {
 
   return (
     <div className="game-container">
-      {/* Sound Waves Background */}
-      <div className="sound-waves">
-        {Array.from({ length: 7 }, (_, i) => (
-          <div key={i} className="sound-wave" />
-        ))}
-      </div>
-
-      {/* Audio Visualizer Background */}
-      <div className="audio-visualizer">
-        {Array.from({ length: 25 }, (_, i) => (
-          <div key={i} className="visualizer-bar" />
-        ))}
-      </div>
-
-      {/* Recording Waves */}
-      <div className={`recording-waves ${isListening ? 'active' : ''}`}>
-        {Array.from({ length: 3 }, (_, i) => (
-          <div key={i} className="recording-ring" />
-        ))}
-      </div>
+      <SoundBackground isListening={isListening} />
 
       {/* Header */}
       <div className="game-header">
@@ -482,168 +316,51 @@ function TestPronunInner() {
         <p className="game-description">Testez et améliorez votre prononciation</p>
       </div>
 
-      {/* Error */}
-      {gameData?.errorMessage && (
-        <div className="error-box">
-          <i className="fas fa-exclamation-triangle"></i>
-          <p>{gameData.errorMessage}</p>
-        </div>
+      {screen === 'pre' && (
+        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} />
       )}
 
-      {/* Stats */}
-      {gameData && !gameData.errorMessage && (
-        <div className="game-stats">
-          <div className="stat-box">
-            <span className="stat-label">Mots disponibles</span>
-            <span className="stat-value">{gameData.wordCount}</span>
+      {gameData && (screen !== 'pre' || ready) && (
+        <>
+          <GameStats wordCount={gameData.wordCount} />
+
+          <div className="game-area">
+            <div className="game-screen">
+              {screen === 'pre' && <TestPronunRules onStart={startGame} />}
+
+              {screen === 'active' && currentWord && (
+                <PronunciationBoard
+                  currentWord={currentWord}
+                  completedWords={completedWords}
+                  elapsed={elapsed}
+                  accuracy={accuracy}
+                  isListening={isListening}
+                  speechSupported={speechSupported}
+                  recognizedText={recognizedText}
+                  feedbackText={feedbackText}
+                  feedbackType={feedbackType}
+                  onStartListening={startListening}
+                  onStopListening={stopListening}
+                  onSkip={skipWord}
+                />
+              )}
+
+              {screen === 'post' && (
+                <TestPronunSummary
+                  perfectCount={perfectCount}
+                  elapsed={elapsed}
+                  avgAccuracy={avgAccuracy}
+                  levelMessage={levelMessage}
+                  levelStatus={levelStatus}
+                  onReplay={startGame}
+                />
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
 
-      {/* Game Area */}
-      {gameData && !gameData.errorMessage && (
-        <div className="game-area">
-          <div className="game-screen">
-            {/* PRE-GAME */}
-            {screen === 'pre' && (
-              <div className="pre-game-screen active">
-                <h2>
-                  <i className="fas fa-bolt" style={{ color: '#e9e919' }}></i>
-                  Règles du jeu
-                </h2>
-                <ul className="rules-list">
-                  <li>Écoutez attentivement la prononciation du mot</li>
-                  <li>Cliquez sur le bouton microphone pour enregistrer votre prononciation</li>
-                  <li>Utilisez le microphone pour bien prononcer</li>
-                </ul>
-                <button className="start-btn" onClick={startGame}>
-                  <i className="fas fa-play"></i> Commencer
-                </button>
-              </div>
-            )}
-
-            {/* ACTIVE GAME */}
-            {screen === 'active' && currentWord && (
-              <div className="active-game-screen active">
-                <div className="game-info">
-                  <div className="words-display">
-                    <span className="words-label">Mots complétés</span>
-                    <span className="words-value">{completedWords}</span>
-                  </div>
-                  <div className="timer-display">
-                    <span className="timer-label">Temps</span>
-                    <span className="timer-value">{formatTime(elapsed)}</span>
-                  </div>
-                  <div className="accuracy-display">
-                    <span className="accuracy-label">Précision</span>
-                    <span className="accuracy-value">{accuracy}%</span>
-                  </div>
-                </div>
-
-                <div className="game-board">
-                  <div className={`word-display ${isListening ? 'speaking' : ''}`}>
-                    <h2 className="current-word">{currentWord.word}</h2>
-                    <p className="phonetic-text">{currentWord.pronunciation}</p>
-                  </div>
-
-                  <div className="pronunciation-controls">
-                    <button
-                      className="control-btn"
-                      onClick={() => playWordAudio(currentWord)}
-                    >
-                      <i className="fas fa-play"></i> Écouter
-                    </button>
-                    <button
-                      className={`control-btn ${isListening ? 'recording' : ''}`}
-                      onClick={() => (isListening ? stopListening() : startListening())}
-                      disabled={!speechSupported}
-                    >
-                      <i className={`fas ${isListening ? 'fa-stop' : 'fa-microphone'}`}></i>
-                      {isListening ? 'Arrêter' : 'Enregistrer'}
-                    </button>
-                    <button
-                      className="control-btn"
-                      onClick={() => {
-                        let nextIndex = Math.floor(Math.random() * words.length);
-                        while (nextIndex === currentIndex && words.length > 1) {
-                          nextIndex = Math.floor(Math.random() * words.length);
-                        }
-                        setCurrentIndex(nextIndex);
-                        setAccuracy(0);
-                        setRecognizedText('');
-                        setFeedbackText('');
-                      }}
-                    >
-                      <i className="fas fa-forward"></i> Passer
-                    </button>
-                  </div>
-
-                  <div className="feedback-container">
-                    <div className="accuracy-meter">
-                      <div className="meter-fill" style={{ width: `${accuracy}%` }} />
-                    </div>
-                    {recognizedText && (
-                      <div className="recognized-text">{recognizedText}</div>
-                    )}
-                    {feedbackText && (
-                      <p className={`feedback-text feedback-${feedbackType}`}>{feedbackText}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* POST-GAME */}
-            {screen === 'post' && (
-              <div className="post-game-screen active">
-                <div className="final-score-container">
-                  <div className="final-score-label">Prononciations parfaites</div>
-                  <span className="final-score">{perfectCount}</span>
-                </div>
-
-                <div className="game-summary">
-                  <div className="summary-item">
-                    <div className="summary-icon">⏳ Temps</div>
-                    <span className="summary-value">{formatTime(elapsed)}</span>
-                  </div>
-                  <div className="summary-item">
-                    <div className="summary-icon">🌞 Précision moyenne</div>
-                    <span className="summary-value">{avgAccuracy}%</span>
-                  </div>
-                </div>
-
-                {levelMessage && (
-                  <div className={`track-level-message ${levelStatus ? `level-${levelStatus}` : ''}`}>
-                    {levelMessage}
-                  </div>
-                )}
-
-                <div className="action-buttons">
-                  <button className="play-again-btn" onClick={startGame}>
-                    <i className="fas fa-redo"></i> Réessayer
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Footer */}
-      <div className="game-footer">
-        <button
-          className="btn learn-btn"
-          onClick={() => router.push(`/learn?package=${packageId}`)}
-        >
-          <i className="fas fa-arrow-left"></i> Apprendre
-        </button>
-        <button
-          className="btn next-btn"
-          onClick={() => router.push(`/games/word-scramble?package=${packageId}`)}
-        >
-          <i className="fas fa-arrow-right"></i> Jeu suivant
-        </button>
-      </div>
+      <GameFooter packageId={packageId} nextGame="word-scramble" />
     </div>
   );
 }

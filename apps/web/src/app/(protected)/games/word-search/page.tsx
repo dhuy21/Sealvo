@@ -1,98 +1,27 @@
 'use client';
 
 import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { useGameData, useSaveScore, useTrackLevelProgress, type GameWord } from '@/hooks/use-games';
-import confetti from 'canvas-confetti';
-
-/* ================================================================
-   CONSTANTS & TYPES
-   ================================================================ */
-const GRID_SIZE = 15;
-const DIRECTIONS: [number, number][] = [
-  [0, 1], [1, 0], [1, 1], [1, -1],
-  [0, -1], [-1, 0], [-1, 1], [-1, -1],
-];
-
-interface CellRef {
-  row: number;
-  col: number;
-}
-
-/* ================================================================
-   GRID GENERATION
-   ================================================================ */
-function generateGrid(wordList: string[]): { grid: string[][]; placedWords: string[] } {
-  const grid: string[][] = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(''));
-  const placedWords: string[] = [];
-
-  function canPlace(word: string, row: number, col: number, dx: number, dy: number): boolean {
-    const len = word.length;
-    if (row + dx * (len - 1) < 0 || row + dx * (len - 1) >= GRID_SIZE) return false;
-    if (col + dy * (len - 1) < 0 || col + dy * (len - 1) >= GRID_SIZE) return false;
-    for (let i = 0; i < len; i++) {
-      const c = grid[row + dx * i][col + dy * i];
-      if (c !== '' && c !== word[i]) return false;
-    }
-    return true;
-  }
-
-  for (const rawWord of wordList) {
-    const word = rawWord.toUpperCase().replace(/[^A-Z]/g, '');
-    if (word.length <= 1 || word.length > GRID_SIZE) continue;
-
-    let placed = false;
-    for (let attempt = 0; attempt < 100 && !placed; attempt++) {
-      const dirIdx = Math.floor(Math.random() * DIRECTIONS.length);
-      const [dx, dy] = DIRECTIONS[dirIdx];
-      const row = Math.floor(Math.random() * GRID_SIZE);
-      const col = Math.floor(Math.random() * GRID_SIZE);
-
-      if (canPlace(word, row, col, dx, dy)) {
-        for (let i = 0; i < word.length; i++) {
-          grid[row + dx * i][col + dy * i] = word[i];
-        }
-        placedWords.push(rawWord);
-        placed = true;
-      }
-    }
-  }
-
-  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  for (let i = 0; i < GRID_SIZE; i++) {
-    for (let j = 0; j < GRID_SIZE; j++) {
-      if (grid[i][j] === '') {
-        grid[i][j] = letters.charAt(Math.floor(Math.random() * letters.length));
-      }
-    }
-  }
-
-  return { grid, placedWords };
-}
-
-function launchConfetti() {
-  const duration = 15 * 1000;
-  const animationEnd = Date.now() + duration;
-  const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-  const interval = setInterval(() => {
-    const timeLeft = animationEnd - Date.now();
-    if (timeLeft <= 0) return clearInterval(interval);
-    const particleCount = 50 * (timeLeft / duration);
-    confetti({ ...defaults, particleCount, origin: { x: Math.random() * 0.2 + 0.1, y: Math.random() - 0.2 } });
-    confetti({ ...defaults, particleCount, origin: { x: Math.random() * 0.2 + 0.7, y: Math.random() - 0.2 } });
-  }, 250);
-}
+import { useSearchParams } from 'next/navigation';
+import { useGameData, useSaveScore, useTrackLevelProgress } from '@/hooks/use-games';
+import { launchFireworks } from '@/components/games/confetti';
+import { levelCompletedMessage } from '@/components/games/level-progress';
+import { GameDataStatus } from '@/components/games/GameDataStatus';
+import { GameStats } from '@/components/games/GameStats';
+import { GameFooter } from '@/components/games/GameFooter';
+import type { LevelStatus } from '@/components/games/TrackLevelMessage';
+import { DIRECTIONS, cellKey, generateGrid, type CellRef } from '@/components/games/word-search/grid';
+import { WordSearchRules } from '@/components/games/word-search/WordSearchRules';
+import { WordSearchBoard } from '@/components/games/word-search/WordSearchBoard';
+import { WordSearchSummary } from '@/components/games/word-search/WordSearchSummary';
 
 /* ================================================================
    INNER COMPONENT
    ================================================================ */
 function WordSearchInner() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const packageId = searchParams.get('package') ? Number(searchParams.get('package')) : null;
 
-  const { data: gameData } = useGameData('word_search', packageId);
+  const { data: gameData, isLoading, error } = useGameData('word_search', packageId);
   const saveScoreMut = useSaveScore();
   const trackLevel = useTrackLevelProgress();
 
@@ -107,12 +36,15 @@ function WordSearchInner() {
   const [selectedCells, setSelectedCells] = useState<CellRef[]>([]);
   const [foundCells, setFoundCells] = useState<Set<string>>(new Set());
   const [levelMessage, setLevelMessage] = useState('');
-  const [levelStatus, setLevelStatus] = useState<'completed' | 'failed' | ''>('');
+  const [levelStatus, setLevelStatus] = useState<LevelStatus>('');
+  const [startNotice, setStartNotice] = useState('');
 
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const isSelectingRef = useRef(false);
   const gridRef = useRef<string[][]>([]);
   const gameActiveRef = useRef(false);
+
+  const ready = !!gameData && !gameData.errorMessage;
 
   // Timer
   useEffect(() => {
@@ -135,10 +67,21 @@ function WordSearchInner() {
   }, [foundWords.length]);
 
   function startGame() {
-    if (!gameData || gameData.words.length === 0) return;
+    if (!gameData || gameData.errorMessage || gameData.words.length === 0) {
+      setScreen('pre');
+      return;
+    }
 
     const wordStrings = gameData.words.slice(0, 30).map((w) => w.word);
     const { grid: newGrid, placedWords } = generateGrid(wordStrings);
+    if (placedWords.length === 0) {
+      setStartNotice(
+        'Aucun mot ne peut être placé dans la grille : seuls les mots de 2 à 15 lettres latines (A–Z) sont utilisables.',
+      );
+      setScreen('pre');
+      return;
+    }
+    setStartNotice('');
 
     setGrid(newGrid);
     gridRef.current = newGrid;
@@ -156,8 +99,6 @@ function WordSearchInner() {
     setTimer(gameTimer);
     setScreen('active');
   }
-
-  const cellKey = (r: number, c: number) => `${r},${c}`;
 
   const handleCellMouseDown = useCallback((row: number, col: number) => {
     if (!gameActiveRef.current) return;
@@ -275,9 +216,10 @@ function WordSearchInner() {
     trackLevel.mutate(
       { game_type: 'word_search', completed: isSuccessful, packageId: packageId! },
       {
-        onSuccess: (data: { level_completed?: boolean; words_updated?: number; to_level?: string }) => {
-          if (data.level_completed && data.words_updated && data.words_updated > 0) {
-            setLevelMessage(`Niveau terminé! ${data.words_updated} mots sont passés au niveau ${data.to_level}`);
+        onSuccess: (data) => {
+          const message = levelCompletedMessage(data);
+          if (message) {
+            setLevelMessage(message);
             setLevelStatus('completed');
           }
         },
@@ -294,7 +236,7 @@ function WordSearchInner() {
 
     setTimeout(() => {
       setScreen('post');
-      launchConfetti();
+      launchFireworks();
     }, 1000);
   }
 
@@ -328,169 +270,49 @@ function WordSearchInner() {
         <p className="game-description">Trouvez les mots cachés dans la grille</p>
       </div>
 
-      {/* Error */}
-      {gameData?.errorMessage && (
-        <div className="error-box">
-          <i className="fas fa-exclamation-triangle"></i>
-          <p>{gameData.errorMessage}</p>
-        </div>
+      {screen === 'pre' && (
+        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} />
       )}
 
-      {/* Stats */}
-      {gameData && !gameData.errorMessage && (
-        <div className="game-stats">
-          <div className="stat-box">
-            <span className="stat-label">Mots disponibles</span>
-            <span className="stat-value">{gameData.wordCount}</span>
+      {gameData && (screen !== 'pre' || ready) && (
+        <>
+          <GameStats wordCount={gameData.wordCount} />
+
+          <div className="game-screen" id="game-screen">
+            {screen === 'pre' && <WordSearchRules onStart={startGame} notice={startNotice} />}
+
+            {screen === 'active' && (
+              <WordSearchBoard
+                score={score}
+                timer={timer}
+                wordsToFind={wordsToFind}
+                foundWords={foundWords}
+                grid={grid}
+                foundCells={foundCells}
+                selectedSet={selectedSet}
+                onHint={showHint}
+                onCellMouseDown={handleCellMouseDown}
+                onCellMouseOver={handleCellMouseOver}
+                onSelectionEnd={handleSelectionEnd}
+                onTouchMove={handleTouchMove}
+              />
+            )}
+
+            {screen === 'post' && (
+              <WordSearchSummary
+                finalScore={score + (foundWords.length === wordsToFind.length ? 100 : 0)}
+                foundCount={foundWords.length}
+                accuracy={accuracy}
+                levelMessage={levelMessage}
+                levelStatus={levelStatus}
+                onReplay={startGame}
+              />
+            )}
           </div>
-        </div>
+        </>
       )}
 
-      {gameData && !gameData.errorMessage && (
-        <div className="game-screen" id="game-screen">
-          {/* PRE-GAME */}
-          {screen === 'pre' && (
-            <div className="screen pre-game-screen active">
-              <h2><i className="fas fa-bolt" style={{ color: '#e9e919' }}></i> Règles du jeu</h2>
-              <ul className="rules-list">
-                <li>Cliquez et faites glisser pour sélectionner les lettres qui forment un mot.</li>
-                <li>Lorsque vous trouvez un mot, il sera marqué dans la liste.</li>
-                <li>Pour un mot correct, vous gagnez 5 points par lettre.</li>
-                <li>Avec un score inférieur à 100 points, pas d&apos;indice.</li>
-              </ul>
-              <button className="start-btn" onClick={startGame}>
-                <i className="fas fa-play"></i> Commencer
-              </button>
-            </div>
-          )}
-
-          {/* ACTIVE GAME */}
-          {screen === 'active' && (
-            <div className="screen active-game-screen active">
-              <div className="game-info">
-                <div className="score-display">
-                  <div className="score-label">Score</div>
-                  <span className="score-value">{score}</span>
-                </div>
-                <div className="timer-display">
-                  <div className="timer-label">Temps</div>
-                  <span className={`timer-value ${timer <= 30 ? 'warning' : ''}`}>{timer}</span>
-                </div>
-                <div className="words-found-display">
-                  <div className="words-found-label">Mots trouvés</div>
-                  <span className="words-found-value">{foundWords.length}/{wordsToFind.length}</span>
-                </div>
-              </div>
-
-              <div className="game-board">
-                {/* Word List */}
-                <div className="word-list-container">
-                  <div className="word-list-title">
-                    <div className="eye-left"></div>
-                    <div className="eye-right"></div>
-                  </div>
-                  <div className="word-items-container" id="word-items-container">
-                    {[...wordsToFind].sort((a, b) => a.localeCompare(b)).map((word) => (
-                      <div
-                        key={word}
-                        className={`word-item ${foundWords.includes(word) ? 'found' : ''}`}
-                        data-word={word}
-                      >
-                        <span className="word-marker">
-                          <i className={`fas ${foundWords.includes(word) ? 'fa-check-circle' : 'fa-circle'}`}></i>
-                        </span>
-                        <span className="word-text">{word}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="help-btn-container">
-                    <button className="help-btn" onClick={showHint}>
-                      <div className="back"></div>
-                      <div className="front"><i className="fa-solid fa-hand-holding-heart"></i></div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Grid */}
-                <div className="word-search-grid-container" id="word-search-grid-container">
-                  <div
-                    className="word-search-grid"
-                    id="word-search-grid"
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
-                    }}
-                    onMouseUp={handleSelectionEnd}
-                    onTouchEnd={(e) => { e.preventDefault(); handleSelectionEnd(); }}
-                    onTouchMove={handleTouchMove}
-                  >
-                    {grid.map((row, i) =>
-                      row.map((letter, j) => {
-                        const key = cellKey(i, j);
-                        const isFound = foundCells.has(key);
-                        const isSelected = selectedSet.has(key);
-                        return (
-                          <div
-                            key={key}
-                            className={`grid-cell ${isFound ? 'found' : ''} ${isSelected ? 'selected' : ''}`}
-                            data-row={i}
-                            data-col={j}
-                            onMouseDown={() => handleCellMouseDown(i, j)}
-                            onMouseOver={() => handleCellMouseOver(i, j)}
-                            onTouchStart={(e) => { e.preventDefault(); handleCellMouseDown(i, j); }}
-                          >
-                            {letter}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* POST-GAME */}
-          {screen === 'post' && (
-            <div className="screen post-game-screen active">
-              <div className="final-score-container">
-                <div className="final-score-label">Score final</div>
-                <span className="final-score">{score + (foundWords.length === wordsToFind.length ? 100 : 0)}</span>
-              </div>
-
-              <div className="game-summary">
-                <div className="summary-item">
-                  <div className="summary-icon">⏰ Mots trouvés</div>
-                  <span className="summary-value">{foundWords.length}</span>
-                </div>
-                <div className="summary-item">
-                  <div className="summary-icon">👾 Précision</div>
-                  <span className="summary-value">{accuracy}%</span>
-                </div>
-              </div>
-
-              {levelMessage && (
-                <div className={`track-level-message ${levelStatus ? `level-${levelStatus}` : ''}`}>
-                  {levelMessage}
-                </div>
-              )}
-
-              <div className="action-buttons">
-                <button className="play-again-btn" onClick={startGame}>
-                  <i className="fas fa-redo"></i> Rejouer
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Footer */}
-      <div className="game-footer">
-        <button className="btn learn-btn" onClick={() => router.push(`/learn?package=${packageId}`)}>
-          <i className="fas fa-arrow-left"></i> Apprendre
-        </button>
-      </div>
+      <GameFooter packageId={packageId} />
     </div>
   );
 }

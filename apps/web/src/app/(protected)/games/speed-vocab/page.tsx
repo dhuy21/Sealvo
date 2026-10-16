@@ -1,38 +1,27 @@
 'use client';
 
 import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useGameData, useSaveScore, useTrackLevelProgress } from '@/hooks/use-games';
-import confetti from 'canvas-confetti';
-
-/* ================================================================
-   HELPERS
-   ================================================================ */
-function launchConfetti() {
-  const duration = 15 * 1000;
-  const animationEnd = Date.now() + duration;
-  const defaults = {
-    spread: 360, ticks: 100, gravity: 0, decay: 0.94, startVelocity: 30,
-    shapes: ['circle' as const],
-    colors: ['FF0000', 'FF7F00', 'FFFF00', 'FFA500', 'FF4500'],
-  };
-
-  const interval = setInterval(() => {
-    if (Date.now() >= animationEnd) return clearInterval(interval);
-    confetti({ ...defaults, particleCount: 50, scalar: 2 });
-    confetti({ ...defaults, particleCount: 25, scalar: 2 });
-  }, 600);
-}
+import { shuffleArray } from '@/lib/shuffle';
+import { launchEmbers } from '@/components/games/confetti';
+import { levelCompletedMessage } from '@/components/games/level-progress';
+import { GameDataStatus } from '@/components/games/GameDataStatus';
+import { GameStats } from '@/components/games/GameStats';
+import { GameFooter } from '@/components/games/GameFooter';
+import type { LevelStatus } from '@/components/games/TrackLevelMessage';
+import { SpeedVocabRules } from '@/components/games/speed-vocab/SpeedVocabRules';
+import { SpeedVocabBoard } from '@/components/games/speed-vocab/SpeedVocabBoard';
+import { SpeedVocabSummary } from '@/components/games/speed-vocab/SpeedVocabSummary';
 
 /* ================================================================
    INNER COMPONENT
    ================================================================ */
 function SpeedVocabInner() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const packageId = searchParams.get('package') ? Number(searchParams.get('package')) : null;
 
-  const { data: gameData } = useGameData('speed_vocab', packageId);
+  const { data: gameData, isLoading, error } = useGameData('speed_vocab', packageId);
   const saveScore = useSaveScore();
   const trackLevel = useTrackLevelProgress();
 
@@ -49,12 +38,13 @@ function SpeedVocabInner() {
   const [input, setInput] = useState('');
   const [inputFeedback, setInputFeedback] = useState<'correct' | 'incorrect' | ''>('');
   const [levelMessage, setLevelMessage] = useState('');
-  const [levelStatus, setLevelStatus] = useState<'completed' | 'failed' | ''>('');
+  const [levelStatus, setLevelStatus] = useState<LevelStatus>('');
 
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const currentWord = words[currentIndex] ?? null;
+  const ready = !!gameData && !gameData.errorMessage;
 
   // Timer countdown
   useEffect(() => {
@@ -70,10 +60,13 @@ function SpeedVocabInner() {
   }, [screen, timer > 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function startGame() {
-    if (!gameData || gameData.words.length === 0) return;
+    if (!gameData || gameData.errorMessage || gameData.words.length === 0) {
+      setScreen('pre');
+      return;
+    }
 
     const prepared = gameData.words.map((w) => ({ word: w.word, meaning: w.meaning }));
-    const shuffled = [...prepared].sort(() => Math.random() - 0.5);
+    const shuffled = shuffleArray(prepared);
     setWords(shuffled);
     setCurrentIndex(0);
     setScore(0);
@@ -154,9 +147,10 @@ function SpeedVocabInner() {
     trackLevel.mutate(
       { game_type: 'speed_vocab', completed: isSuccessful, packageId: packageId! },
       {
-        onSuccess: (data: { level_completed?: boolean; words_updated?: number; to_level?: string }) => {
-          if (data.level_completed && data.words_updated && data.words_updated > 0) {
-            setLevelMessage(`Niveau terminé! ${data.words_updated} mots sont passés au niveau ${data.to_level}`);
+        onSuccess: (data) => {
+          const message = levelCompletedMessage(data);
+          if (message) {
+            setLevelMessage(message);
             setLevelStatus('completed');
           }
         },
@@ -173,7 +167,7 @@ function SpeedVocabInner() {
 
     setTimeout(() => {
       setScreen('post');
-      launchConfetti();
+      launchEmbers();
     }, 1000);
   }
 
@@ -208,126 +202,47 @@ function SpeedVocabInner() {
         <p className="game-description">Tapez les mots le plus vite possible</p>
       </div>
 
-      {/* Error */}
-      {gameData?.errorMessage && (
-        <div className="error-box">
-          <i className="fas fa-exclamation-triangle"></i>
-          <p>{gameData.errorMessage}</p>
-        </div>
+      {screen === 'pre' && (
+        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} />
       )}
 
-      {/* Stats */}
-      {gameData && !gameData.errorMessage && (
-        <div className="game-stats">
-          <div className="stat-box">
-            <span className="stat-label">Mots disponibles</span>
-            <span className="stat-value">{gameData.wordCount}</span>
+      {gameData && (screen !== 'pre' || ready) && (
+        <>
+          <GameStats wordCount={gameData.wordCount} />
+
+          <div className="game-area">
+            <div className="game-screen">
+              {screen === 'pre' && <SpeedVocabRules onStart={startGame} />}
+
+              {screen === 'active' && currentWord && (
+                <SpeedVocabBoard
+                  currentWord={currentWord}
+                  score={score}
+                  streak={streak}
+                  timer={timer}
+                  input={input}
+                  inputRef={inputRef}
+                  inputFeedback={inputFeedback}
+                  onInput={handleInput}
+                />
+              )}
+
+              {screen === 'post' && (
+                <SpeedVocabSummary
+                  score={score}
+                  bestStreak={bestStreak}
+                  wpm={wpm}
+                  levelMessage={levelMessage}
+                  levelStatus={levelStatus}
+                  onReplay={startGame}
+                />
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
 
-      {gameData && !gameData.errorMessage && (
-        <div className="game-area">
-          <div className="game-screen">
-            {/* PRE-GAME */}
-            {screen === 'pre' && (
-              <div className="pre-game-screen active">
-                <h2><i className="fas fa-bolt"></i> Règles du jeu</h2>
-                <ul className="rules-list">
-                  <li>Un mot et sa signification s&apos;affichent</li>
-                  <li>Tapez le mot le plus vite possible</li>
-                  <li>10 points par mot + bonus de longueur et série</li>
-                  <li>Le temps est limité !</li>
-                </ul>
-                <button className="start-btn" onClick={startGame}>
-                  <i className="fas fa-play"></i> Commencer
-                </button>
-              </div>
-            )}
-
-            {/* ACTIVE GAME */}
-            {screen === 'active' && currentWord && (
-              <div className="active-game-screen active game-active">
-                <div className="game-info">
-                  <div className="score-display">
-                    <span className="score-label">Score</span>
-                    <span id="score" className="score-value">{score}</span>
-                  </div>
-                  <div className="streak-display">
-                    <span className="streak-label">Série</span>
-                    <span id="streak" className="streak-value">{streak}</span>
-                  </div>
-                  <div className="timer-display">
-                    <span className="timer-label">Temps</span>
-                    <span id="timer" className={`timer-value ${timer <= 50 ? 'warning' : ''}`}>{timer}</span>
-                  </div>
-                </div>
-
-                <div className="word-container">
-                  <div id="word-display" className="word-display">{currentWord.word}</div>
-                  <div id="meaning-display" className="meaning-display">{currentWord.meaning}</div>
-                </div>
-
-                <div className="input-container">
-                  <input
-                    ref={inputRef}
-                    id="word-input"
-                    type="text"
-                    className={`word-input ${inputFeedback}`}
-                    placeholder="Tapez le mot ici..."
-                    autoComplete="off"
-                    value={input}
-                    onChange={(e) => handleInput(e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* POST-GAME */}
-            {screen === 'post' && (
-              <div className="post-game-screen active">
-                <div className="final-score-container">
-                  <div className="final-score-label">Score final</div>
-                  <span id="final-score" className="final-score">{score}</span>
-                </div>
-
-                <div className="game-summary">
-                  <div className="summary-item">
-                    <div className="summary-icon">🔥 Meilleure série</div>
-                    <span id="best-streak" className="summary-value">{bestStreak}</span>
-                  </div>
-                  <div className="summary-item">
-                    <div className="summary-icon">⚡ Mots/min</div>
-                    <span id="wpm" className="summary-value">{wpm}</span>
-                  </div>
-                </div>
-
-                {levelMessage && (
-                  <div className={`track-level-message ${levelStatus ? `level-${levelStatus}` : ''}`}>
-                    {levelMessage}
-                  </div>
-                )}
-
-                <div id="play-again-container" className="action-buttons">
-                  <button id="play-again" className="play-again-btn" onClick={startGame}>
-                    <i className="fas fa-redo"></i> Rejouer
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Footer */}
-      <div className="game-footer">
-        <button className="btn learn-btn" onClick={() => router.push(`/learn?package=${packageId}`)}>
-          <i className="fas fa-arrow-left"></i> Apprendre
-        </button>
-        <button className="btn next-btn" onClick={() => router.push(`/games/word-search?package=${packageId}`)}>
-          <i className="fas fa-arrow-right"></i> Jeu suivant
-        </button>
-      </div>
+      <GameFooter packageId={packageId} nextGame="word-search" />
     </div>
   );
 }
