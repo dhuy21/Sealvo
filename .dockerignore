@@ -1,16 +1,21 @@
-node_modules
+# Patterns are anchored to the repo root: use **/ to match inside apps/* and packages/*
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/playwright-report
+**/*.tsbuildinfo
+**/*.md
 .git
 .github
 .husky
 .cursor
-*.md
-!README.md
-.env*
+.changeset
+**/.env*
 !.env.example
-dist
-.next
-.turbo
-coverage
-playwright-report
+docs/
+
+# Old Express app: only the email templates are used at runtime
 src/
 !src/app/views/mails/

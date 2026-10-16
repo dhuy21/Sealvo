@@ -53,27 +53,42 @@ Railway Project
 
 ## Environment Variables
 
-All 4 services need these variables (shared via Railway shared variables or per-service):
+The API, Worker and Scheduler all boot the same `AppModule`, so they need the **same variables**
+(use Railway shared variables). A missing "required" variable stops the process at startup.
 
-| Variable | Example | Services |
+| Variable | Required | Example / notes |
 |---|---|---|
-| `DATABASE_URL` | `mysql://user:pass@host:3306/db?connection_limit=8` (api=8, worker=4, scheduler=2) | api, worker, scheduler |
-| `REDIS_URL` | `redis://host:6379` | api, worker, scheduler |
-| `RABBITMQ_URL` | `amqp://user:pass@host:5672` | api, worker, scheduler |
-| `JWT_SECRET` | random 64 chars | api |
-| `JWT_REFRESH_SECRET` | random 64 chars | api |
-| `SESSION_SECRET` | random 64 chars | api |
-| `FRONTEND_URL` | `https://www.sealvo.it.com` | api |
-| `NEXT_PUBLIC_API_URL` | `https://api.sealvo.it.com` | web |
-| `AWS_ACCESS_KEY_ID` | ... | api, worker |
-| `AWS_SECRET_ACCESS_KEY` | ... | api, worker |
-| `AWS_REGION` | `eu-west-3` | api, worker |
-| `GOOGLE_APPLICATION_CREDENTIALS_JSON` | JSON string | api |
-| `GEMINI_API_KEY` | ... | api |
-| `USER_GMAIL` | email address | api |
-| `CRON_SECRET` | random string | api, scheduler |
-| `SCHEDULER_API_URL` | `https://api.sealvo.it.com` | scheduler |
-| `NODE_ENV` | `production` | all |
+| `NODE_ENV` | yes | `production` or `staging` (secure cookies, `trust proxy`, staging email intercept) |
+| `DATABASE_URL` | yes | `mysql://user:pass@host:3306/db?connection_limit=8` — use 8 (api), 4 (worker), 2 (scheduler) |
+| `JWT_ACCESS_SECRET` | yes | random 64 chars |
+| `JWT_REFRESH_SECRET` | yes | random 64 chars, different from the access secret |
+| `AWS_REGION` | yes | `eu-north-1` |
+| `AWS_ACCESS_KEY_ID` | yes | SES credentials |
+| `AWS_SECRET_ACCESS_KEY` | yes | SES credentials |
+| `AWS_SES_FROM` | yes | `no-reply@sealvo.it.com` |
+| `FRONTEND_URL` | yes | `https://www.sealvo.it.com` — CORS origin and links in emails |
+| `CRON_SECRET` | yes | random string, sent by the scheduler as `X-Cron-Secret` |
+| `SCHEDULER_API_URL` | scheduler | API base URL, e.g. `https://api.sealvo.it.com` (scheduler calls `/api/reminder`) |
+| `FEEDBACK_RECIPIENT_EMAIL` | for `/feedback` | where feedback emails are sent |
+| `REDIS_URL` | recommended | `redis://user:pass@host:6379` (or `REDIS_HOST`/`REDIS_PORT`/`REDIS_USER`/`REDIS_PASSWORD`). Without Redis: no cache, password reset is unavailable |
+| `RABBITMQ_URL` | recommended | `amqp://user:pass@host:5672` (or `RABBITMQ_HOST`/`RABBITMQ_PORT`/`RABBITMQ_USER`/`RABBITMQ_PASS`). Without it the API sends emails directly and the Worker exits |
+| `GOOGLE_TTS_PROJECT_ID`, `GOOGLE_TTS_CLIENT_EMAIL`, `GOOGLE_TTS_PRIVATE_KEY` | optional | TTS is disabled when missing |
+| `STAGING_EMAIL_INTERCEPT` | staging | every email is redirected to this address |
+| `PORT` | — | injected by Railway; the images default to `3000` |
+
+The Web service has **no runtime variables**: `NEXT_PUBLIC_API_URL` is baked in at build time
+(GitHub environment variable → Docker build arg).
+
+## First deploy on the existing production database
+
+The production schema was created by the old app, so Prisma has no migration history there.
+Run this **once** before the first deploy, otherwise `prisma migrate deploy` fails with `P3005`
+and the API restarts in a loop:
+
+```bash
+DATABASE_URL="<production url>" npx prisma migrate resolve --applied 001_baseline \
+  --schema=apps/api/prisma/schema.prisma
+```
 
 ## GitHub Secrets (for CI/CD workflow)
 
@@ -87,11 +102,15 @@ All 4 services need these variables (shared via Railway shared variables or per-
 
 ## GitHub Variables
 
+Define these as **environment variables** on both the `production` and `staging` GitHub
+environments (Settings → Environments), so each environment gets its own values:
+
 | Variable | Description |
 |---|---|
-| `API_URL` | Production API URL (e.g. `https://api.sealvo.it.com`) |
-| `STAGING_URL` | Staging URL |
-| `NEXT_PUBLIC_API_URL` | API URL baked into Next.js build (e.g. `https://api.sealvo.it.com`) |
+| `API_URL` | API base URL, used for the post-deploy health check (`$API_URL/health`) |
+| `NEXT_PUBLIC_API_URL` | API URL baked into the Next.js build |
+| `STAGING_URL` | Staging frontend URL (staging environment only) |
+| `PRODUCTION_URL` | Production frontend URL, used by the manual E2E workflow |
 
 ## Deploy Order
 

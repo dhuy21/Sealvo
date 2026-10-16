@@ -32,8 +32,11 @@ jobs:
       - run: npm ci
       - name: NPM audit (production deps)
         run: npm audit --audit-level=critical --omit=dev
+      # Type-aware lint and tests need the generated Prisma client types
+      - run: npx prisma generate --schema=apps/api/prisma/schema.prisma
       - run: npx turbo lint
       - run: npx turbo test
+      - run: npx turbo build
 
   # ── 2. BUILD, SCAN & PUSH ──────────────────────────────────
   docker-build-push:
@@ -42,6 +45,8 @@ jobs:
     needs: lint-and-test
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')
     timeout-minutes: 20
+    # Environment-scoped variables: NEXT_PUBLIC_API_URL differs between staging and production
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
     permissions:
       contents: read
       packages: write
@@ -83,8 +88,7 @@ jobs:
           file: ./apps/${{ matrix.app }}/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          build-args: |
-            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+          build-args: ${{ matrix.app == 'web' && format('NEXT_PUBLIC_API_URL={0}', vars.NEXT_PUBLIC_API_URL) || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -200,12 +204,14 @@ jobs:
         run: |
           sleep 30
           for i in 1 2 3 4 5; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ vars.STAGING_URL }}/api/health" || true)
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/health" || true)
             echo "Attempt $i: $STATUS"
             [ "$STATUS" = "200" ] && exit 0
             sleep 15
           done
           echo "Health check failed." && exit 1
+        env:
+          API_URL: ${{ vars.API_URL }}
 
       - name: Redeploy Web
         run: |
