@@ -32,6 +32,8 @@ lowercase). GHCR packages are private by default: add registry credentials in Ra
 | Backup | `…/backup` | _(image default — runs once and exits)_ | — | — |
 
 Only the API runs migrations; Worker and Scheduler override the start command and skip them.
+Keep the Worker restart policy on **On Failure**: when the RabbitMQ connection drops, the worker
+exits with code 1 so that a fresh process re-subscribes the consumers.
 Backup: set the cron schedule in the Railway dashboard (`0 2 * * *`, 02:00 UTC) — not in
 config-as-code, which would also run it on every deploy.
 
