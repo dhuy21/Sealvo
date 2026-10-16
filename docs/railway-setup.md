@@ -57,7 +57,7 @@ All 4 services need these variables (shared via Railway shared variables or per-
 
 | Variable | Example | Services |
 |---|---|---|
-| `DATABASE_URL` | `mysql://user:pass@host:3306/db` | api, worker, scheduler |
+| `DATABASE_URL` | `mysql://user:pass@host:3306/db?connection_limit=8` (api=8, worker=4, scheduler=2) | api, worker, scheduler |
 | `REDIS_URL` | `redis://host:6379` | api, worker, scheduler |
 | `RABBITMQ_URL` | `amqp://user:pass@host:5672` | api, worker, scheduler |
 | `JWT_SECRET` | random 64 chars | api |

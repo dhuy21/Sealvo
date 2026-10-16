@@ -18,7 +18,7 @@ export class FeedbackService {
 <p>Email: ${encode(dto.email || 'Non fourni')}</p>
 <p>Date: ${new Date().toISOString()}</p>`;
 
-    const toEmail = this.config.getOrThrow<string>('USER_GMAIL');
+    const toEmail = this.config.getOrThrow<string>('FEEDBACK_RECIPIENT_EMAIL');
     const sent = await this.emailQueue.enqueue({
       to: toEmail,
       content: htmlContent,

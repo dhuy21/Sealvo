@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { RabbitmqModule } from './rabbitmq/rabbitmq.module.js';
 import { RedisModule } from './redis/redis.module.js';
@@ -14,6 +16,7 @@ import { GamesModule } from './games/games.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 import { TtsModule } from './tts/tts.module.js';
 import { FeedbackModule } from './feedback/feedback.module.js';
+import { ReminderModule } from './reminder/reminder.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 
@@ -22,6 +25,9 @@ import { AppService } from './app.service.js';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '../../.env',
+    }),
+    ThrottlerModule.forRoot({
+      throttlers: [{ ttl: 60_000, limit: 60 }],
     }),
     PrismaModule,
     RabbitmqModule,
@@ -37,8 +43,9 @@ import { AppService } from './app.service.js';
     DashboardModule,
     TtsModule,
     FeedbackModule,
+    ReminderModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

@@ -99,6 +99,21 @@ export class RabbitmqService implements OnModuleInit, OnModuleDestroy {
     return this.channel;
   }
 
+  /** Create a dedicated channel with its own prefetch (for consumer isolation) */
+  async createChannel(prefetch = 1): Promise<amqp.ConfirmChannel | null> {
+    if (!this.connection) return null;
+    try {
+      const ch = await this.connection.createConfirmChannel();
+      await ch.prefetch(prefetch);
+      return ch;
+    } catch (err) {
+      this.logger.error(
+        `Failed to create channel: ${err instanceof Error ? err.message : err}`,
+      );
+      return null;
+    }
+  }
+
   isReady(): boolean {
     return this.ready;
   }
