@@ -9,6 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/api-error';
 import '@/styles/auth.css';
 
 const AVATARS = Array.from({ length: 11 }, (_, i) => i + 1);
@@ -58,10 +59,7 @@ export default function RegisterPage() {
       toast.success('Compte créé ! Vérifiez votre email.');
       router.push('/login');
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Erreur lors de l\'inscription';
-      toast.error(message);
+      toast.error(getApiErrorMessage(err, "Erreur lors de l'inscription"));
     }
   };
 

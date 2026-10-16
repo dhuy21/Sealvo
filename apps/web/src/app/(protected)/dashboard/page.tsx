@@ -5,39 +5,33 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth.store';
 import { useDashboard, useUpdateProfile } from '@/hooks/use-dashboard';
+import { getApiErrorMessage } from '@/lib/api-error';
 import toast from 'react-hot-toast';
 import type { PackageToReview } from '@/hooks/use-dashboard';
 
 /* ─── Avatar Modal ─── */
-function AvatarModal({
-  open,
-  currentAva,
-  onClose,
-  onSave,
-  saving,
-}: {
-  open: boolean;
+interface AvatarModalProps {
   currentAva: number;
   onClose: () => void;
   onSave: (ava: number) => void;
   saving: boolean;
-}) {
+}
+
+/** Content is unmounted while closed, so the selection restarts from `currentAva` on every open. */
+function AvatarModal({ open, ...props }: AvatarModalProps & { open: boolean }) {
+  return open ? <AvatarModalContent {...props} /> : null;
+}
+
+function AvatarModalContent({ currentAva, onClose, onSave, saving }: AvatarModalProps) {
   const [selected, setSelected] = useState(currentAva);
 
   useEffect(() => {
-    if (open) setSelected(currentAva);
-  }, [open, currentAva]);
-
-  useEffect(() => {
-    if (!open) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [open, onClose]);
-
-  if (!open) return null;
+  }, [onClose]);
 
   return (
     <div
@@ -181,23 +175,21 @@ function EditableField({
 
 /* ─── Typing Text ─── */
 function TypingText({ text, delay = 50 }: { text: string; delay?: number }) {
-  const [displayed, setDisplayed] = useState('');
+  const [typed, setTyped] = useState({ text, length: 0 });
+  // Restart when the text changes (state adjusted during render, not in an effect)
+  if (typed.text !== text) setTyped({ text, length: 0 });
 
   useEffect(() => {
-    setDisplayed('');
-    let i = 0;
+    let length = 0;
     const timer = setInterval(() => {
-      if (i < text.length) {
-        setDisplayed((prev) => prev + text.charAt(i));
-        i++;
-      } else {
-        clearInterval(timer);
-      }
+      length++;
+      setTyped({ text, length });
+      if (length >= text.length) clearInterval(timer);
     }, delay);
     return () => clearInterval(timer);
   }, [text, delay]);
 
-  return <span className="typing-text">{displayed}</span>;
+  return <span className="typing-text">{text.slice(0, typed.length)}</span>;
 }
 
 /* ─── Packages to Review ─── */
@@ -469,8 +461,8 @@ export default function DashboardPage() {
               setUser({ ...user, [fieldName]: newValue });
             }
           },
-          onError: (err: any) => {
-            toast.error(err?.response?.data?.message ?? 'Erreur lors de la modification');
+          onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Erreur lors de la modification'));
           },
         },
       );
@@ -490,8 +482,8 @@ export default function DashboardPage() {
               setUser({ ...user, ava });
             }
           },
-          onError: (err: any) => {
-            toast.error(err?.response?.data?.message ?? "Erreur lors de la modification de l'avatar");
+          onError: (err) => {
+            toast.error(getApiErrorMessage(err, "Erreur lors de la modification de l'avatar"));
           },
         },
       );

@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/api-error';
 import { useAuthStore } from '@/stores/auth.store';
 import '@/styles/feedback.css';
 
@@ -34,10 +35,7 @@ export default function FeedbackPage() {
       toast.success(res.data.message);
       reset();
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Une erreur est survenue';
-      toast.error(message);
+      toast.error(getApiErrorMessage(err, 'Une erreur est survenue'));
     }
   };
 

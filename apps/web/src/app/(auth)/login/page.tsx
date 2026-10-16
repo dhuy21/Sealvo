@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/api-error';
 import { useAuthStore } from '@/stores/auth.store';
 import type { User } from '@/stores/auth.store';
 import { safeRedirect } from '@/lib/safe-redirect';
@@ -58,10 +59,7 @@ function LoginForm() {
       toast.success('Connexion réussie !');
       router.push(safeRedirect(searchParams.get('redirect')));
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Identifiants invalides';
-      toast.error(message);
+      toast.error(getApiErrorMessage(err, 'Identifiants invalides'));
     }
   };
 

@@ -12,6 +12,7 @@ import {
 } from '@/hooks/use-words';
 import { useImportFile } from '@/hooks/use-import';
 import type { Word, CreateWordPayload, UpdateWordPayload } from '@/hooks/use-words';
+import { getApiErrorMessage } from '@/lib/api-error';
 import toast from 'react-hot-toast';
 
 const WORD_TYPES = [
@@ -502,7 +503,7 @@ function WordsContent() {
           toast.success('Mot ajouté avec succès');
           setAddModalOpen(false);
         },
-        onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erreur'),
+        onError: (err) => toast.error(getApiErrorMessage(err, 'Erreur')),
       });
     },
     [addWord],
@@ -514,7 +515,7 @@ function WordsContent() {
         { detailId, dto },
         {
           onSuccess: () => toast.success('Mot modifié avec succès'),
-          onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erreur'),
+          onError: (err) => toast.error(getApiErrorMessage(err, 'Erreur')),
         },
       );
     },
@@ -525,7 +526,7 @@ function WordsContent() {
     (detailId: number) => {
       deleteWord.mutate(detailId, {
         onSuccess: () => toast.success('Mot supprimé'),
-        onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erreur'),
+        onError: (err) => toast.error(getApiErrorMessage(err, 'Erreur')),
       });
     },
     [deleteWord],
@@ -537,7 +538,7 @@ function WordsContent() {
         toast.success('Tous les mots ont été supprimés');
         setDeleteAllOpen(false);
       },
-      onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erreur'),
+      onError: (err) => toast.error(getApiErrorMessage(err, 'Erreur')),
     });
   }, [deleteAll]);
 

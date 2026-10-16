@@ -13,46 +13,36 @@ import {
   useCopyPackage,
 } from '@/hooks/use-packages';
 import type { Package } from '@/hooks/use-packages';
+import { getApiErrorMessage } from '@/lib/api-error';
 import toast from 'react-hot-toast';
 
 type FilterType = 'my-packages' | 'all-public' | 'private' | 'public' | 'protected';
 
 /* ─── Package Modal ─── */
-function PackageModal({
-  open,
-  editPkg,
-  onClose,
-  onSubmit,
-  saving,
-}: {
-  open: boolean;
+interface PackageModalProps {
   editPkg: Package | null;
   onClose: () => void;
   onSubmit: (data: { package_name: string; package_description: string; mode: string }) => void;
   saving: boolean;
-}) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [mode, setMode] = useState('private');
+}
+
+/** Content is unmounted while closed, so the form restarts from `editPkg` on every open. */
+function PackageModal({ open, ...props }: PackageModalProps & { open: boolean }) {
+  return open ? <PackageModalContent {...props} /> : null;
+}
+
+function PackageModalContent({ editPkg, onClose, onSubmit, saving }: PackageModalProps) {
+  const [name, setName] = useState(editPkg?.package_name ?? '');
+  const [description, setDescription] = useState(editPkg?.package_description ?? '');
+  const [mode, setMode] = useState<string>(editPkg?.mode ?? 'private');
 
   useEffect(() => {
-    if (open) {
-      setName(editPkg?.package_name ?? '');
-      setDescription(editPkg?.package_description ?? '');
-      setMode(editPkg?.mode ?? 'private');
-    }
-  }, [open, editPkg]);
-
-  useEffect(() => {
-    if (!open) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [open, onClose]);
-
-  if (!open) return null;
+  }, [onClose]);
 
   const isEdit = !!editPkg;
 
@@ -423,7 +413,7 @@ export default function PackagesPage() {
               setModalOpen(false);
               setEditPkg(null);
             },
-            onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erreur'),
+            onError: (err) => toast.error(getApiErrorMessage(err, 'Erreur')),
           },
         );
       } else {
@@ -438,7 +428,7 @@ export default function PackagesPage() {
               toast.success('Package créé avec succès');
               setModalOpen(false);
             },
-            onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erreur'),
+            onError: (err) => toast.error(getApiErrorMessage(err, 'Erreur')),
           },
         );
       }
@@ -453,17 +443,17 @@ export default function PackagesPage() {
         toast.success('Package supprimé avec succès');
         setDeleteId(null);
       },
-      onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erreur'),
+      onError: (err) => toast.error(getApiErrorMessage(err, 'Erreur')),
     });
   }, [deleteId, deletePkg]);
 
   const handleToggle = useCallback(
     (id: number) => {
       togglePkg.mutate(id, {
-        onSuccess: (data: any) => {
-          toast.success(data.is_active ? 'Package activé' : 'Package désactivé');
+        onSuccess: (data) => {
+          toast.success(data.isActive ? 'Package activé' : 'Package désactivé');
         },
-        onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erreur'),
+        onError: (err) => toast.error(getApiErrorMessage(err, 'Erreur')),
       });
     },
     [togglePkg],
@@ -473,7 +463,7 @@ export default function PackagesPage() {
     (id: number) => {
       copyPkg.mutate(id, {
         onSuccess: () => toast.success('Package copié avec succès'),
-        onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erreur'),
+        onError: (err) => toast.error(getApiErrorMessage(err, 'Erreur')),
       });
     },
     [copyPkg],

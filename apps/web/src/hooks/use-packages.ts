@@ -88,7 +88,9 @@ export function useTogglePackage() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
-      const { data } = await api.patch(`/packages/${id}/toggle`);
+      const { data } = await api.patch<{ message: string; isActive: boolean }>(
+        `/packages/${id}/toggle`,
+      );
       return data;
     },
     onSuccess: () => {

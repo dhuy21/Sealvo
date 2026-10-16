@@ -1,11 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
+
+const subscribe = () => () => {};
+const getYear = () => new Date().getFullYear();
+// Prerendering (cacheComponents) rejects `new Date()`: the year is filled in on the client
+const getServerYear = () => null;
 
 export function Footer() {
-  const [year, setYear] = useState(2025);
-  useEffect(() => setYear(new Date().getFullYear()), []);
+  const year = useSyncExternalStore(subscribe, getYear, getServerYear);
 
   return (
     <footer className="site-footer" id="site-footer">

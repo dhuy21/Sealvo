@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import { useAuthStore } from '@/stores/auth.store';
+import { useIsClient } from '@/hooks/use-is-client';
 import api from '@/lib/api';
 
 export function Header() {
@@ -15,10 +16,8 @@ export function Header() {
   const { user, isAuthenticated, isReady, logout } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsClient();
   const dropdownRef = useRef<HTMLLIElement>(null);
-
-  useEffect(() => setMounted(true), []);
 
   // Close dropdown on outside click
   useEffect(() => {

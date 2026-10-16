@@ -42,8 +42,6 @@ function Flashcard({
 }) {
   const [flipped, setFlipped] = useState(false);
 
-  useEffect(() => setFlipped(false), [word]);
-
   const front = mode === 'word-to-meaning' ? word.word : word.meaning;
   const back = mode === 'word-to-meaning' ? word.meaning : word.word;
 
@@ -121,7 +119,7 @@ function LearnContent() {
   // Filter words
   const filteredWords = useMemo(() => {
     if (!words) return [];
-    let list = words.filter((w) => selectedLevels.has(w.level));
+    const list = words.filter((w) => selectedLevels.has(w.level));
     return shuffleArray(list);
   }, [words, selectedLevels]);
 
@@ -299,6 +297,7 @@ function LearnContent() {
             </button>
 
             <Flashcard
+              key={currentWord.detail_id}
               word={currentWord}
               mode={mode}
               onKnow={() => {

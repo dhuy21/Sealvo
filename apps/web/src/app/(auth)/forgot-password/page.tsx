@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/api-error';
 
 const schema = z.object({
   email: z.email('Adresse email invalide'),
@@ -28,10 +29,7 @@ export default function ForgotPasswordPage() {
       toast.success(res.data.message);
       setSubmitted(true);
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Une erreur est survenue';
-      toast.error(message);
+      toast.error(getApiErrorMessage(err, 'Une erreur est survenue'));
     }
   };
 

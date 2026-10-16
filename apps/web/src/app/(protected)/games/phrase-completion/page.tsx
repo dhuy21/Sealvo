@@ -8,6 +8,14 @@ import confetti from 'canvas-confetti';
 /* ================================================================
    TYPES & HELPERS
    ================================================================ */
+/** Randomized once per page load: decorations must not move on each timer re-render. */
+const CELESTIAL_STYLES = Array.from({ length: 10 }, () => ({
+  left: `${Math.random() * 100}%`,
+  top: `${Math.random() * 100}%`,
+  animationDelay: `${Math.random() * 8}s`,
+  animationDuration: `${6 + Math.random() * 4}s`,
+}));
+
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -90,7 +98,7 @@ function PhraseCompletionInner() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const questionStartRef = useRef(0);
   const attemptsRef = useRef(0);
-  const totalQuestionsRef = useRef(0);
+  const [totalQuestions, setTotalQuestions] = useState(0);
 
   const currentPhrase = phrases[currentIndex] ?? null;
 
@@ -107,14 +115,6 @@ function PhraseCompletionInner() {
     }
   }, [screen, timer > 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // End game when timer hits 0
-  useEffect(() => {
-    if (screen === 'active' && timer === 0 && phrases.length > 0) {
-      endGame();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timer, screen]);
-
   function startGame() {
     if (!gameData) return;
 
@@ -123,7 +123,7 @@ function PhraseCompletionInner() {
 
     const availableWords = generated.length;
     const totalQ = Math.min(availableWords, 100) + Math.floor(0.5 * availableWords);
-    totalQuestionsRef.current = totalQ;
+    setTotalQuestions(totalQ);
 
     // Extend phrases array to cover totalQ
     const extendedPhrases: Phrase[] = [];
@@ -217,7 +217,7 @@ function PhraseCompletionInner() {
   function goToNext() {
     const nextIdx = currentIndex + 1;
 
-    if (nextIdx >= totalQuestionsRef.current) {
+    if (nextIdx >= totalQuestions) {
       endGame();
       return;
     }
@@ -237,7 +237,7 @@ function PhraseCompletionInner() {
 
   function endGame() {
     clearInterval(timerRef.current);
-    const totalQ = totalQuestionsRef.current;
+    const totalQ = totalQuestions;
     const accuracy = totalQ > 0 ? Math.round((correctAnswers / totalQ) * 100) : 0;
     const isSuccessful = accuracy >= 80;
 
@@ -269,6 +269,14 @@ function PhraseCompletionInner() {
     }, 1000);
   }
 
+  // End game when timer hits 0
+  useEffect(() => {
+    if (screen === 'active' && timer === 0 && phrases.length > 0) {
+      endGame();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timer, screen]);
+
   if (!packageId) {
     return (
       <div className="game-container">
@@ -287,17 +295,8 @@ function PhraseCompletionInner() {
         <div key={`ring-${i}`} className="starry-focus-ring" style={{ animationDelay: `${i * 1.5}s` }} />
       ))}
       {/* Floating Celestial Elements */}
-      {Array.from({ length: 10 }, (_, i) => (
-        <div
-          key={`cel-${i}`}
-          className="floating-celestial-element"
-          style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            animationDelay: `${Math.random() * 8}s`,
-            animationDuration: `${6 + Math.random() * 4}s`,
-          }}
-        >
+      {CELESTIAL_STYLES.map((style, i) => (
+        <div key={`cel-${i}`} className="floating-celestial-element" style={style}>
           ⭐
         </div>
       ))}
@@ -356,7 +355,7 @@ function PhraseCompletionInner() {
                 <div className="progress-display">
                   <div className="progress-label">Question</div>
                   <span className="progress-value">
-                    {currentIndex + (answered ? 1 : 0)}/{totalQuestionsRef.current}
+                    {currentIndex + (answered ? 1 : 0)}/{totalQuestions}
                   </span>
                 </div>
                 <div className="timer-display">
@@ -399,7 +398,7 @@ function PhraseCompletionInner() {
                   >
                     <div className="back"></div>
                     <div className="front">
-                      {currentIndex + 1 >= totalQuestionsRef.current
+                      {currentIndex + 1 >= totalQuestions
                         ? <i className="fa-solid fa-medal"></i>
                         : <i className="fas fa-play"></i>
                       }
@@ -429,7 +428,7 @@ function PhraseCompletionInner() {
               <div className="game-summary">
                 <div className="summary-item">
                   <div className="summary-icon">👑 Corrects</div>
-                  <span className="summary-value">{correctAnswers}/{totalQuestionsRef.current}</span>
+                  <span className="summary-value">{correctAnswers}/{totalQuestions}</span>
                 </div>
                 <div className="summary-item">
                   <div className="summary-icon">🧠 Série</div>

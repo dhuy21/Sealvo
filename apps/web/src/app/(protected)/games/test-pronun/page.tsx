@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useGameData, useSaveScore, useTrackLevelProgress, type GameWord } from '@/hooks/use-games';
+import { useIsClient } from '@/hooks/use-is-client';
 import api from '@/lib/api';
 import confetti from 'canvas-confetti';
 
@@ -210,7 +211,9 @@ function TestPronunInner() {
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'info' | 'warning' | 'error' | 'neutral'>('neutral');
   const [isListening, setIsListening] = useState(false);
-  const [speechSupported, setSpeechSupported] = useState(false);
+  const isClient = useIsClient();
+  const speechSupported =
+    isClient && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
   const [levelMessage, setLevelMessage] = useState('');
   const [levelStatus, setLevelStatus] = useState<'completed' | 'failed' | ''>('');
 
@@ -230,14 +233,6 @@ function TestPronunInner() {
       return () => clearInterval(timerRef.current);
     }
   }, [screen, startTime]);
-
-  // Setup speech recognition
-  useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      setSpeechSupported(true);
-    }
-  }, []);
 
   const processResult = useCallback(
     (spokenText: string, confidence: number) => {
@@ -283,31 +278,6 @@ function TestPronunInner() {
     },
     [currentWord],
   );
-
-  // Move to next word when completedWords changes
-  useEffect(() => {
-    if (screen !== 'active' || completedWords === 0) return;
-
-    if (completedWords >= WORDS_PER_GAME) {
-      const timeout = setTimeout(() => endGame(), 2000);
-      return () => clearTimeout(timeout);
-    }
-
-    const timeout = setTimeout(() => {
-      let nextIndex = Math.floor(Math.random() * words.length);
-      while (nextIndex === currentIndex && words.length > 1) {
-        nextIndex = Math.floor(Math.random() * words.length);
-      }
-      setCurrentIndex(nextIndex);
-      setAccuracy(0);
-      setRecognizedText('');
-      setFeedbackText('');
-      setFeedbackType('neutral');
-    }, 2000);
-
-    return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [completedWords]);
 
   const startListening = useCallback(() => {
     if (!speechSupported || !currentWord) return;
@@ -441,6 +411,31 @@ function TestPronunInner() {
       launchConfetti();
     }, 1000);
   }
+
+  // Move to next word when completedWords changes
+  useEffect(() => {
+    if (screen !== 'active' || completedWords === 0) return;
+
+    if (completedWords >= WORDS_PER_GAME) {
+      const timeout = setTimeout(() => endGame(), 2000);
+      return () => clearTimeout(timeout);
+    }
+
+    const timeout = setTimeout(() => {
+      let nextIndex = Math.floor(Math.random() * words.length);
+      while (nextIndex === currentIndex && words.length > 1) {
+        nextIndex = Math.floor(Math.random() * words.length);
+      }
+      setCurrentIndex(nextIndex);
+      setAccuracy(0);
+      setRecognizedText('');
+      setFeedbackText('');
+      setFeedbackType('neutral');
+    }, 2000);
+
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completedWords]);
 
   const avgAccuracy = completedWords > 0 ? Math.round(totalAccuracy / completedWords) : 0;
 

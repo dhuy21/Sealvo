@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import api from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/api-error';
 import { useAuthStore } from '@/stores/auth.store';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -75,11 +76,11 @@ export function useImportFile(packageId: number) {
         };
 
         void poll();
-      } catch (err: any) {
+      } catch (err) {
         setJob({
           id: '',
           status: 'failed',
-          error: err?.response?.data?.message ?? "Erreur lors de l'import",
+          error: getApiErrorMessage(err, "Erreur lors de l'import"),
         });
       } finally {
         setUploading(false);

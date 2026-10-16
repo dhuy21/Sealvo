@@ -8,6 +8,25 @@ import confetti from 'canvas-confetti';
 /* ================================================================
    HELPERS
    ================================================================ */
+/** Randomized once per page load: decorations must not move on each timer re-render. */
+const ORB_STYLES = Array.from({ length: 14 }, () => ({
+  left: `${Math.random() * 100}%`,
+  top: `${Math.random() * 100}%`,
+  width: `${40 + Math.random() * 80}px`,
+  height: `${40 + Math.random() * 80}px`,
+  opacity: 0.3 + Math.random() * 0.5,
+  animationDuration: `${15 + Math.random() * 25}s`,
+}));
+
+const STAR_STYLES = Array.from({ length: 15 }, () => ({
+  left: `${Math.random() * 100}%`,
+  top: `${Math.random() * 100}%`,
+  fontSize: `${12 + Math.random() * 12}px`,
+  opacity: 0.3 + Math.random() * 0.7,
+  animationDelay: `${Math.random() * 8}s`,
+  animationDuration: `${2 + Math.random() * 6}s`,
+}));
+
 function scrambleWord(word: string): string {
   const letters = word.split('');
   let scrambled: string;
@@ -90,14 +109,6 @@ function WordScrambleInner() {
       return () => clearInterval(timerRef.current);
     }
   }, [screen, timer > 0]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // End game when timer hits 0
-  useEffect(() => {
-    if (screen === 'active' && timer === 0 && words.length > 0) {
-      endGame();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timer, screen]);
 
   function startGame() {
     if (scrambledWords.length === 0) return;
@@ -186,6 +197,16 @@ function WordScrambleInner() {
     }, 1000);
   }
 
+  // End game when timer hits 0
+  useEffect(() => {
+    if (screen === 'active' && timer === 0 && words.length > 0) {
+      // Reacting to the countdown interval reaching 0; the tick itself cannot see the final state
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      endGame();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timer, screen]);
+
   const finalAccuracy = totalAttempts > 0 ? Math.round((correctAnswers / totalAttempts) * 100) : 0;
 
   if (!packageId) {
@@ -203,33 +224,11 @@ function WordScrambleInner() {
     <div className="game-container">
       {/* Magical Background */}
       <div className="magical-background">
-        {Array.from({ length: 14 }, (_, i) => (
-          <div
-            key={`orb-${i}`}
-            className="magic-orb"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${40 + Math.random() * 80}px`,
-              height: `${40 + Math.random() * 80}px`,
-              opacity: 0.3 + Math.random() * 0.5,
-              animationDuration: `${15 + Math.random() * 25}s`,
-            }}
-          />
+        {ORB_STYLES.map((style, i) => (
+          <div key={`orb-${i}`} className="magic-orb" style={style} />
         ))}
-        {Array.from({ length: 15 }, (_, i) => (
-          <div
-            key={`star-${i}`}
-            className="magic-star"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              fontSize: `${12 + Math.random() * 12}px`,
-              opacity: 0.3 + Math.random() * 0.7,
-              animationDelay: `${Math.random() * 8}s`,
-              animationDuration: `${2 + Math.random() * 6}s`,
-            }}
-          >
+        {STAR_STYLES.map((style, i) => (
+          <div key={`star-${i}`} className="magic-star" style={style}>
             🌟
           </div>
         ))}

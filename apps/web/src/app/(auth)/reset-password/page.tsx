@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/api-error';
 
 const schema = z
   .object({
@@ -47,10 +48,7 @@ function ResetPasswordForm() {
       setSuccess(true);
       setTimeout(() => router.push('/login'), 3000);
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Une erreur est survenue';
-      toast.error(message);
+      toast.error(getApiErrorMessage(err, 'Une erreur est survenue'));
     }
   };
 

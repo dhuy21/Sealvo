@@ -69,14 +69,6 @@ function SpeedVocabInner() {
     }
   }, [screen, timer > 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // End game when timer hits 0
-  useEffect(() => {
-    if (screen === 'active' && timer === 0 && words.length > 0) {
-      endGame();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timer, screen]);
-
   function startGame() {
     if (!gameData || gameData.words.length === 0) return;
 
@@ -184,6 +176,16 @@ function SpeedVocabInner() {
       launchConfetti();
     }, 1000);
   }
+
+  // End game when timer hits 0
+  useEffect(() => {
+    if (screen === 'active' && timer === 0 && words.length > 0) {
+      // Reacting to the countdown interval reaching 0; the tick itself cannot see the final state
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      endGame();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timer, screen]);
 
   const wpm = Math.round((correctWords / 60) * 60);
 

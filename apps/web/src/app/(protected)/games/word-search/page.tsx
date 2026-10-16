@@ -127,14 +127,6 @@ function WordSearchInner() {
     }
   }, [screen, timer > 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // End when timer=0 or all found
-  useEffect(() => {
-    if (screen === 'active' && timer === 0 && wordsToFind.length > 0) {
-      endGame();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timer, screen]);
-
   useEffect(() => {
     if (screen === 'active' && foundWords.length > 0 && foundWords.length >= wordsToFind.length) {
       endGame();
@@ -305,6 +297,14 @@ function WordSearchInner() {
       launchConfetti();
     }, 1000);
   }
+
+  // End when timer=0 or all found
+  useEffect(() => {
+    if (screen === 'active' && timer === 0 && wordsToFind.length > 0) {
+      endGame();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timer, screen]);
 
   const accuracy = attempts > 0 ? Math.round((foundWords.length / attempts) * 100) : 0;
   const selectedSet = new Set(selectedCells.map((c) => cellKey(c.row, c.col)));
