@@ -98,7 +98,7 @@ export class EmailQueueService {
           1,
           CACHE_TTL.EMAIL_DEDUP,
         );
-        if (!isNew) {
+        if (isNew === false) {
           this.logger.warn(`Duplicate detected (${dedupId}) — skipping.`);
           return ch.ack(msg);
         }

@@ -1,10 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { RabbitmqModule } from './rabbitmq/rabbitmq.module.js';
 import { RedisModule } from './redis/redis.module.js';
+import { RedisService } from './redis/redis.service.js';
+import { RedisThrottlerStorage } from './common/throttler/redis-throttler.storage.js';
+import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter.js';
 import { EmailModule } from './email/email.module.js';
 import { ImportModule } from './import/import.module.js';
 import { HealthModule } from './health/health.module.js';
@@ -26,8 +29,12 @@ import { AppService } from './app.service.js';
       isGlobal: true,
       envFilePath: '../../.env',
     }),
-    ThrottlerModule.forRoot({
-      throttlers: [{ ttl: 60_000, limit: 100 }],
+    ThrottlerModule.forRootAsync({
+      inject: [RedisService],
+      useFactory: (redis: RedisService) => ({
+        throttlers: [{ ttl: 60_000, limit: 100 }],
+        storage: new RedisThrottlerStorage(redis),
+      }),
     }),
     PrismaModule,
     RabbitmqModule,
@@ -46,6 +53,10 @@ import { AppService } from './app.service.js';
     ReminderModule,
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [
+    AppService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_FILTER, useClass: PrismaExceptionFilter },
+  ],
 })
 export class AppModule {}

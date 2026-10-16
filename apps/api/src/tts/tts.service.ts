@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { TextToSpeechClient } from '@google-cloud/text-to-speech';
 import * as crypto from 'crypto';
 import { RedisService } from '../redis/redis.service.js';
@@ -100,8 +105,8 @@ export class TtsService implements OnModuleInit {
         .map((v) => ({ name: v.name! }));
 
       if (voices.length === 0) {
-        throw new Error(
-          `No Wavenet voices available for language: ${language}`,
+        throw new UnprocessableEntityException(
+          `Aucune voix disponible pour la langue : ${language}`,
         );
       }
 

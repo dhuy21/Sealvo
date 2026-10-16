@@ -5,27 +5,31 @@ import {
   Res,
   UseGuards,
   HttpException,
-  HttpStatus,
+  Logger,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { TtsService } from './tts.service.js';
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, Matches } from 'class-validator';
 
 export class GenerateAudioDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   text!: string;
 
   @IsString()
-  @IsNotEmpty()
+  @Matches(/^[a-z]{2,3}-[A-Z]{2}$/, { message: 'language must be a code like en-US' })
   language!: string;
 }
 
 @Controller('tts')
 @UseGuards(JwtAuthGuard)
 export class TtsController {
+  private readonly logger = new Logger(TtsController.name);
+
   constructor(private readonly ttsService: TtsService) {}
 
   @Post('generate')
@@ -45,9 +49,13 @@ export class TtsController {
       res.setHeader('Cache-Control', 'public, max-age=86400');
       res.send(audioBuffer);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'TTS synthesis failed';
-      throw new HttpException(message, HttpStatus.INTERNAL_SERVER_ERROR);
+      if (error instanceof HttpException) throw error;
+      this.logger.error(
+        `TTS synthesis failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      throw new ServiceUnavailableException(
+        'Le service de synthèse vocale est momentanément indisponible.',
+      );
     }
   }
 }

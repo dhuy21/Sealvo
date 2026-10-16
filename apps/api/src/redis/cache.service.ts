@@ -29,9 +29,9 @@ export class CacheService {
     }
   }
 
-  /** Set if not exists (for dedup / idempotence) */
-  async setNX(key: string, value: unknown, ttlSeconds: number): Promise<boolean> {
-    if (!this.redis.isReady()) return false;
+  /** Set if not exists (for dedup / idempotence); null when Redis is unavailable or errors */
+  async setNX(key: string, value: unknown, ttlSeconds: number): Promise<boolean | null> {
+    if (!this.redis.isReady()) return null;
     try {
       const result = await this.redis.getClient()!.set(
         PREFIX + key,
@@ -40,7 +40,7 @@ export class CacheService {
       );
       return result === 'OK';
     } catch {
-      return false;
+      return null;
     }
   }
 
@@ -50,27 +50,6 @@ export class CacheService {
       const list = Array.isArray(keys) ? keys : [keys];
       const prefixed = list.map((k) => PREFIX + k);
       await this.redis.getClient()!.del(prefixed);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async invalidatePattern(pattern: string): Promise<boolean> {
-    if (!this.redis.isReady()) return false;
-    try {
-      const client = this.redis.getClient()!;
-      let cursor = '0';
-      do {
-        const result = await client.scan(cursor, {
-          MATCH: PREFIX + pattern,
-          COUNT: 100,
-        });
-        cursor = String(result.cursor);
-        if (result.keys.length > 0) {
-          await client.del(result.keys);
-        }
-      } while (cursor !== '0');
       return true;
     } catch {
       return false;

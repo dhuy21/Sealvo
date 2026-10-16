@@ -27,18 +27,21 @@ async function bootstrap() {
   );
 
   // Swagger / OpenAPI
-  const config = new DocumentBuilder()
-    .setTitle('Sealvo API')
-    .setDescription('Sealvo — Vocabulary Learning Platform API')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  const swaggerEnabled = process.env.NODE_ENV !== 'production';
+  if (swaggerEnabled) {
+    const config = new DocumentBuilder()
+      .setTitle('Sealvo API')
+      .setDescription('Sealvo — Vocabulary Learning Platform API')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   const port = process.env.PORT ?? process.env.API_PORT ?? 3001;
   await app.listen(port);
   console.log(`🚀 API running on http://localhost:${port}`);
-  console.log(`📚 Swagger UI at http://localhost:${port}/api/docs`);
+  if (swaggerEnabled) console.log(`📚 Swagger UI at http://localhost:${port}/api/docs`);
 }
 await bootstrap();
