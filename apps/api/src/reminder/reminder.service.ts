@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
 
@@ -18,6 +19,7 @@ export class ReminderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly emailQueue: EmailQueueService,
+    private readonly config: ConfigService,
   ) {}
 
   /** Send reminder emails to all users who have words due today */
@@ -116,7 +118,7 @@ export class ReminderService {
   ${wordRows}
 </table>
 ${totalDue > preview.length ? `<p>...et ${totalDue - preview.length} de plus.</p>` : ''}
-<p><a href="${process.env.FRONTEND_URL ?? 'https://www.sealvo.it.com'}">Réviser maintenant →</a></p>`;
+<p><a href="${this.config.get<string>('FRONTEND_URL') ?? 'https://www.sealvo.it.com'}">Réviser maintenant →</a></p>`;
   }
 
   /** Cleanup: delete expired verification tokens + unverified users */
