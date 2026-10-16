@@ -72,6 +72,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
   CMD node -e "import('http').then(h=>h.default.get('http://127.0.0.1:'+(process.env.PORT||3000)+'/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1)))"
 
 ENV NODE_ENV=production
+ENV PORT=3000
 
 # Default: API process. Override CMD for worker/scheduler:
 #   worker:    CMD ["node", "dist/worker.js"]
