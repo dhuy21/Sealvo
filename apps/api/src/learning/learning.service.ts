@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import type { learning_level } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CacheService } from '../redis/cache.service.js';
+import { CACHE_KEYS } from '../redis/cache-keys.constant.js';
 import { GAME_LEVEL, LEVEL_GAMES, NEXT_LEVEL } from './constants.js';
 import { isDue, startOfToday } from './spaced-repetition.js';
 
@@ -190,11 +191,11 @@ export class LearningService {
   }
 
   private async getUserProgress(userId: string): Promise<Record<string, Record<string, boolean>>> {
-    const cached = await this.cache.get<Record<string, Record<string, boolean>>>(`level_progress:${userId}`);
+    const cached = await this.cache.get<Record<string, Record<string, boolean>>>(CACHE_KEYS.levelProgress(userId));
     return cached ?? {};
   }
 
   private async setUserProgress(userId: string, progress: Record<string, Record<string, boolean>>): Promise<void> {
-    await this.cache.set(`level_progress:${userId}`, progress, LEVEL_PROGRESS_TTL);
+    await this.cache.set(CACHE_KEYS.levelProgress(userId), progress, LEVEL_PROGRESS_TTL);
   }
 }

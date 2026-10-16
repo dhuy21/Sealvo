@@ -8,10 +8,15 @@ import type { CreateWordDto } from './dto/create-word.dto.js';
 describe('WordsService', () => {
   let service: WordsService;
   let gemini: GeminiService;
+  let prisma: {
+    $transaction: any;
+    learning: { findUnique: any; findMany: any; deleteMany: any };
+    word_details: { deleteMany: any };
+  };
   let tx: {
-    words: { findFirst: any; create: any };
-    word_details: { create: any };
-    learning: { create: any };
+    words: { upsert: any };
+    word_details: { create: any; update: any };
+    learning: { create: any; count: any; update: any };
   };
 
   const word = (overrides: Partial<CreateWordDto> = {}): CreateWordDto => ({
@@ -30,12 +35,19 @@ describe('WordsService', () => {
 
   beforeEach(async () => {
     tx = {
-      words: {
-        findFirst: vi.fn().mockResolvedValue(null),
-        create: vi.fn().mockResolvedValue({ word_id: 1 }),
+      words: { upsert: vi.fn().mockResolvedValue({ word_id: 1 }) },
+      word_details: {
+        create: vi.fn().mockResolvedValue({ detail_id: 1 }),
+        update: vi.fn(),
       },
-      word_details: { create: vi.fn().mockResolvedValue({ detail_id: 1 }) },
-      learning: { create: vi.fn() },
+      learning: { create: vi.fn(), count: vi.fn(), update: vi.fn() },
+    };
+    prisma = {
+      $transaction: vi.fn((arg: unknown) =>
+        typeof arg === 'function' ? arg(tx) : Promise.all(arg as Promise<unknown>[]),
+      ),
+      learning: { findUnique: vi.fn(), findMany: vi.fn(), deleteMany: vi.fn() },
+      word_details: { deleteMany: vi.fn() },
     };
 
     const module = await Test.createTestingModule({
@@ -43,12 +55,7 @@ describe('WordsService', () => {
         WordsService,
         GeminiService,
         { provide: ConfigService, useValue: { get: () => undefined } },
-        {
-          provide: PrismaService,
-          useValue: {
-            $transaction: vi.fn((fn: (t: typeof tx) => unknown) => fn(tx)),
-          },
-        },
+        { provide: PrismaService, useValue: prisma },
       ],
     }).compile();
 
@@ -97,6 +104,96 @@ describe('WordsService', () => {
       expect(result.successCount).toBe(2);
       expect(savedExamples()).toEqual(['', 'A cat.']);
       expect(onPhase.mock.calls).toEqual([['gemini'], ['saving']]);
+    });
+
+    it('should upsert the base word on its unique key with a long transaction timeout', async () => {
+      await service.addWords(1, [word()]);
+
+      expect(tx.words.upsert).toHaveBeenCalledWith({
+        where: { word_subject_language_code: { word: 'cat', subject: 'Daily', language_code: 'en-US' } },
+        update: {},
+        create: { word: 'cat', subject: 'Daily', language_code: 'en-US' },
+      });
+      expect(prisma.$transaction).toHaveBeenCalledWith(
+        expect.any(Function),
+        expect.objectContaining({ timeout: expect.any(Number), maxWait: expect.any(Number) }),
+      );
+    });
+  });
+
+  describe('updateWord', () => {
+    const detail = {
+      detail_id: 7,
+      word_id: 1,
+      type: 'noun',
+      meaning: 'chat',
+      pronunciation: '',
+      synonyms: '',
+      antonyms: '',
+      example: 'A **cat**.',
+      grammar: '',
+      words: { word: 'cat', subject: 'Daily', language_code: 'en-US' },
+    };
+
+    beforeEach(() => {
+      prisma.learning.findUnique.mockResolvedValue({ detail_id: 7, package_id: 2, word_details: detail });
+    });
+
+    it('should clone a word_details row shared with another package before editing it', async () => {
+      tx.learning.count.mockResolvedValue(2);
+      tx.word_details.create.mockResolvedValue({ detail_id: 42 });
+
+      const result = await service.updateWord(2, 7, { meaning: 'félin', level: 'level_0' });
+
+      const { detail_id: _, words: __, ...fields } = detail;
+      expect(tx.word_details.create).toHaveBeenCalledWith({ data: fields });
+      expect(tx.learning.update).toHaveBeenCalledWith({
+        where: { detail_id_package_id: { detail_id: 7, package_id: 2 } },
+        data: { detail_id: 42 },
+      });
+      expect(tx.word_details.update).toHaveBeenCalledWith({
+        where: { detail_id: 42 },
+        data: { meaning: 'félin' },
+      });
+      expect(tx.learning.update).toHaveBeenLastCalledWith({
+        where: { detail_id_package_id: { detail_id: 42, package_id: 2 } },
+        data: { level: 'level_0' },
+      });
+      expect(result.detailId).toBe(42);
+    });
+
+    it('should edit an unshared word_details row in place', async () => {
+      tx.learning.count.mockResolvedValue(1);
+
+      const result = await service.updateWord(2, 7, { meaning: 'félin' });
+
+      expect(tx.word_details.create).not.toHaveBeenCalled();
+      expect(tx.word_details.update).toHaveBeenCalledWith({
+        where: { detail_id: 7 },
+        data: { meaning: 'félin' },
+      });
+      expect(result.detailId).toBe(7);
+    });
+
+    it('should not clone when only the level changes', async () => {
+      await service.updateWord(2, 7, { level: 'v' });
+
+      expect(tx.learning.count).not.toHaveBeenCalled();
+      expect(tx.word_details.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteAllWords', () => {
+    it('should delete orphaned word_details in a single query', async () => {
+      prisma.learning.findMany.mockResolvedValue([{ detail_id: 1 }, { detail_id: 2 }]);
+
+      const result = await service.deleteAllWords(3);
+
+      expect(prisma.word_details.deleteMany).toHaveBeenCalledTimes(1);
+      expect(prisma.word_details.deleteMany).toHaveBeenCalledWith({
+        where: { detail_id: { in: [1, 2] }, learning: { none: {} } },
+      });
+      expect(result.count).toBe(2);
     });
   });
 });

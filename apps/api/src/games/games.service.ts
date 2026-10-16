@@ -19,10 +19,11 @@ export class GamesService {
    * Source: GameController.js showGame() + learning.js findWordsWithDetailsByLevel()
    */
   async getWordsForGame(packageId: number, gameType: string) {
-    const level = GAME_LEVEL[gameType];
-    if (!level) {
-      throw new BadRequestException(`Unknown game type: ${gameType}`);
+    if (!Object.hasOwn(GAME_LEVEL, gameType)) {
+      throw new BadRequestException(`Type de jeu inconnu : ${gameType}`);
     }
+    const level = GAME_LEVEL[gameType];
+    const dbLevel = level.replace('level_', '');
 
     // Get all words at this level in the package
     const entries = await this.prisma.learning.findMany({
@@ -44,9 +45,9 @@ export class GamesService {
 
     let errorMessage: string | null = null;
     if (totalAtLevel < minRequired) {
-      errorMessage = `You need at least ${minRequired} words at level ${level} to play this game.`;
+      errorMessage = `Vous devez avoir au moins ${minRequired} mots au niveau ${dbLevel} dans votre vocabulaire pour jouer à ce jeu.`;
     } else if (dueWords.length < minRequired) {
-      errorMessage = `Not enough words due for review at level ${level} today. Come back when your words are ready.`;
+      errorMessage = `Aujourd'hui, vous n'avez pas assez de mots à réviser au niveau ${dbLevel} pour jouer. Revenez quand vos mots seront prêts pour la révision.`;
     }
 
     const words = dueWords.map((e) => ({

@@ -34,11 +34,18 @@ describe('GamesService', () => {
         .rejects.toThrow(BadRequestException);
     });
 
+    it('should throw on prototype keys used as game type', async () => {
+      await expect(service.getWordsForGame(1, 'constructor')).rejects.toThrow(BadRequestException);
+      await expect(service.getWordsForGame(1, '__proto__')).rejects.toThrow(BadRequestException);
+    });
+
     it('should return error message when not enough words', async () => {
       prisma.learning.findMany.mockResolvedValue([]);
 
-      const result = await service.getWordsForGame(1, 'flash_match');
-      expect(result.errorMessage).toBeTruthy();
+      const result = await service.getWordsForGame(1, 'word_scramble');
+      expect(result.errorMessage).toBe(
+        'Vous devez avoir au moins 5 mots au niveau 0 dans votre vocabulaire pour jouer à ce jeu.',
+      );
       expect(result.words).toHaveLength(0);
     });
 

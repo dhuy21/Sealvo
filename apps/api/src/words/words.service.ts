@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { learning_level, word_details_type } from '@prisma/client';
+import type { learning_level, Prisma, word_details_type } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { GeminiService, type ExamplePayload } from '../gemini/gemini.service.js';
 import { isDue, startOfToday } from '../learning/spaced-repetition.js';
@@ -7,6 +7,8 @@ import type { CreateWordDto } from './dto/create-word.dto.js';
 import type { UpdateWordDto } from './dto/update-word.dto.js';
 
 const GEMINI_BATCH_SIZE = 25;
+/** Prisma's default 5 s interactive transaction timeout is too short for large imports */
+const TX_OPTIONS = { maxWait: 10_000, timeout: 60_000 };
 
 function chunk<T>(arr: T[], size: number): T[][] {
   const chunks: T[][] = [];
@@ -14,6 +16,18 @@ function chunk<T>(arr: T[], size: number): T[][] {
     chunks.push(arr.slice(i, i + size));
   }
   return chunks;
+}
+
+/** Find or create the base word on its (word, subject, language_code) unique key */
+function upsertWord(
+  tx: Prisma.TransactionClient,
+  key: { word: string; subject: string; language_code: string },
+) {
+  return tx.words.upsert({
+    where: { word_subject_language_code: key },
+    update: {},
+    create: key,
+  });
 }
 
 @Injectable()
@@ -129,24 +143,11 @@ export class WordsService {
 
     await this.prisma.$transaction(async (tx) => {
       for (const wordData of wordsData) {
-        // Find or create the base word (fix #56: use all 3 fields)
-        let wordRecord = await tx.words.findFirst({
-          where: {
-            word: wordData.word,
-            subject: wordData.subject,
-            language_code: wordData.language_code,
-          },
+        const wordRecord = await upsertWord(tx, {
+          word: wordData.word,
+          subject: wordData.subject,
+          language_code: wordData.language_code,
         });
-
-        if (!wordRecord) {
-          wordRecord = await tx.words.create({
-            data: {
-              word: wordData.word,
-              subject: wordData.subject,
-              language_code: wordData.language_code,
-            },
-          });
-        }
 
         const detail = await tx.word_details.create({
           data: {
@@ -173,7 +174,7 @@ export class WordsService {
 
         successCount++;
       }
-    });
+    }, TX_OPTIONS);
 
     return {
       message: `${successCount} word(s) added successfully`,
@@ -197,9 +198,10 @@ export class WordsService {
 
     if (dto.example !== undefined) await this.enrichWithGemini([dto]);
 
-    await this.prisma.$transaction(async (tx) => {
+    const targetId = await this.prisma.$transaction(async (tx) => {
       const current = entry.word_details;
       const currentWord = current.words;
+      let targetId = detailId;
 
       // Check if base word changed (all 3 fields form unique key: word + subject + language_code)
       const wordChanged =
@@ -222,24 +224,32 @@ export class WordsService {
         const newLang = dto.language_code ?? currentWord.language_code;
         const newSubject = dto.subject ?? currentWord.subject;
 
-        // Find or create the new base word (fix #56: include subject)
-        let wordRecord = await tx.words.findFirst({
-          where: { word: newWord, subject: newSubject, language_code: newLang },
+        const wordRecord = await upsertWord(tx, {
+          word: newWord,
+          subject: newSubject,
+          language_code: newLang,
         });
-
-        if (!wordRecord) {
-          wordRecord = await tx.words.create({
-            data: { word: newWord, subject: newSubject, language_code: newLang },
-          });
-        }
 
         detailUpdate.word_id = wordRecord.word_id;
       }
 
-      // Single word_details update (merged word_id + fields)
       if (Object.keys(detailUpdate).length > 0) {
+        // Packages copied by the old app share word_details rows: give this package its own copy
+        // before editing, so other packages keep their version
+        const refs = await tx.learning.count({ where: { detail_id: detailId } });
+        if (refs > 1) {
+          const { detail_id: _, words: __, ...fields } = current;
+          const clone = await tx.word_details.create({ data: fields });
+          await tx.learning.update({
+            where: { detail_id_package_id: { detail_id: detailId, package_id: packageId } },
+            data: { detail_id: clone.detail_id },
+          });
+          targetId = clone.detail_id;
+        }
+
+        // Single word_details update (merged word_id + fields)
         await tx.word_details.update({
-          where: { detail_id: detailId },
+          where: { detail_id: targetId },
           data: detailUpdate,
         });
       }
@@ -247,13 +257,15 @@ export class WordsService {
       // Update level if provided
       if (dto.level !== undefined) {
         await tx.learning.update({
-          where: { detail_id_package_id: { detail_id: detailId, package_id: packageId } },
+          where: { detail_id_package_id: { detail_id: targetId, package_id: packageId } },
           data: { level: dto.level as learning_level },
         });
       }
+
+      return targetId;
     });
 
-    return { message: 'Word updated successfully' };
+    return { message: 'Word updated successfully', detailId: targetId };
   }
 
   /**
@@ -304,18 +316,14 @@ export class WordsService {
       return { message: 'No words to delete', count: 0 };
     }
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction([
       // Delete all learning entries for this package
-      await tx.learning.deleteMany({ where: { package_id: packageId } });
-
+      this.prisma.learning.deleteMany({ where: { package_id: packageId } }),
       // Fix #47: clean up orphaned word_details
-      for (const detailId of detailIds) {
-        const remaining = await tx.learning.count({ where: { detail_id: detailId } });
-        if (remaining === 0) {
-          await tx.word_details.delete({ where: { detail_id: detailId } });
-        }
-      }
-    });
+      this.prisma.word_details.deleteMany({
+        where: { detail_id: { in: detailIds }, learning: { none: {} } },
+      }),
+    ]);
 
     return { message: `${detailIds.length} word(s) deleted successfully`, count: detailIds.length };
   }

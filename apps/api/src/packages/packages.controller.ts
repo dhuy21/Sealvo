@@ -8,17 +8,21 @@ import {
   Patch,
   Post,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PackageOwnershipGuard } from '../auth/guards/package-ownership.guard.js';
+import { PackageReadGuard } from '../auth/guards/package-read.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { PackagesService } from './packages.service.js';
 import { CreatePackageDto } from './dto/create-package.dto.js';
 import { UpdatePackageDto } from './dto/update-package.dto.js';
+import { InvalidateDashboardInterceptor } from './invalidate-dashboard.interceptor.js';
 
 @ApiTags('Packages')
 @Controller('packages')
+@UseInterceptors(InvalidateDashboardInterceptor)
 export class PackagesController {
   constructor(private readonly packagesService: PackagesService) {}
 
@@ -38,6 +42,20 @@ export class PackagesController {
   @ApiResponse({ status: 200, description: 'List of public packages' })
   async findPublic() {
     return this.packagesService.findPublicPackages();
+  }
+
+  @Get(':packageId')
+  @UseGuards(JwtAuthGuard, PackageReadGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get a package (owner, or anyone for public/protected)' })
+  @ApiResponse({ status: 200, description: 'Package with owner username and isOwner flag' })
+  @ApiResponse({ status: 403, description: 'Private package of another user' })
+  @ApiResponse({ status: 404, description: 'Package not found' })
+  async findOne(
+    @Param('packageId', ParseIntPipe) packageId: number,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.packagesService.findOne(packageId, userId);
   }
 
   @Post()

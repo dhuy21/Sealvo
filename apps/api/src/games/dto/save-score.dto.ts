@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsInt, Min } from 'class-validator';
+import { IsEnum, IsInt, Max, Min } from 'class-validator';
 
 export class SaveScoreDto {
   @ApiProperty({
@@ -27,5 +27,6 @@ export class SaveScoreDto {
   @ApiProperty({ example: 150 })
   @IsInt()
   @Min(0)
+  @Max(1_000_000)
   score!: number;
 }

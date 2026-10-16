@@ -1,8 +1,9 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PackageOwnershipGuard } from '../auth/guards/package-ownership.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
+import { InvalidateDashboardInterceptor } from '../packages/invalidate-dashboard.interceptor.js';
 import { LearningService } from './learning.service.js';
 import { TrackGameDto } from './dto/track-game.dto.js';
 import { ResetLevelDto } from './dto/reset-level.dto.js';
@@ -15,6 +16,7 @@ export class LearningController {
   constructor(private readonly learningService: LearningService) {}
 
   @Post('streak')
+  @UseInterceptors(InvalidateDashboardInterceptor)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Check and update daily streak' })
   @ApiResponse({ status: 200, description: 'Streak status' })
@@ -24,6 +26,7 @@ export class LearningController {
 
   @Post('level-progress/track')
   @UseGuards(PackageOwnershipGuard)
+  @UseInterceptors(InvalidateDashboardInterceptor)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Track game completion for level progress' })
   @ApiResponse({ status: 200, description: 'Progress tracked' })

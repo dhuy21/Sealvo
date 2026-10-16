@@ -7,6 +7,9 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import type { CreatePackageDto } from './dto/create-package.dto.js';
 import type { UpdatePackageDto } from './dto/update-package.dto.js';
 
+/** Prisma's default 5 s interactive transaction timeout is too short for large copies */
+const TX_OPTIONS = { maxWait: 10_000, timeout: 60_000 };
+
 @Injectable()
 export class PackagesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -19,11 +22,34 @@ export class PackagesService {
   }
 
   async findPublicPackages() {
-    return this.prisma.packages.findMany({
+    const packages = await this.prisma.packages.findMany({
       where: { mode: { in: ['public', 'protected'] } },
       include: { users: { select: { username: true } } },
       orderBy: { created_at: 'desc' },
     });
+    return packages.map(({ users, ...pkg }) => ({ ...pkg, username: users.username }));
+  }
+
+  async findOne(packageId: number, userId: string) {
+    const pkg = await this.prisma.packages.findUnique({
+      where: { package_id: packageId },
+      select: {
+        package_id: true,
+        package_name: true,
+        package_description: true,
+        mode: true,
+        is_active: true,
+        user_id: true,
+        users: { select: { username: true } },
+      },
+    });
+
+    if (!pkg) {
+      throw new NotFoundException('Package not found');
+    }
+
+    const { user_id, users, ...rest } = pkg;
+    return { ...rest, username: users.username, isOwner: user_id === userId };
   }
 
   async create(userId: string, dto: CreatePackageDto) {
@@ -71,9 +97,20 @@ export class PackagesService {
   }
 
   async delete(packageId: number) {
-    await this.prisma.packages.delete({
-      where: { package_id: packageId },
-    });
+    await this.prisma.$transaction(async (tx) => {
+      const entries = await tx.learning.findMany({
+        where: { package_id: packageId },
+        select: { detail_id: true },
+      });
+
+      // Cascades to the package's learning rows
+      await tx.packages.delete({ where: { package_id: packageId } });
+
+      // Fix #47: clean up word_details no other package references
+      await tx.word_details.deleteMany({
+        where: { detail_id: { in: entries.map((e) => e.detail_id) }, learning: { none: {} } },
+      });
+    }, TX_OPTIONS);
 
     return { message: 'Package deleted successfully' };
   }
@@ -166,6 +203,6 @@ export class PackagesService {
         packageId: newPkg.package_id,
         message: 'Package copied successfully',
       };
-    });
+    }, TX_OPTIONS);
   }
 }

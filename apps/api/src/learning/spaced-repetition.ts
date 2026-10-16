@@ -18,8 +18,9 @@ export function dueCutoff(level: string, today = startOfToday()): Date {
   return cutoff;
 }
 
+/** A null `date_memorized` is never due (the old SQL comparison with NULL was never true). */
 export function isDue(level: string, dateMemorized: Date | null, today = startOfToday()): boolean {
-  return (dateMemorized ?? today) < dueCutoff(level, today);
+  return dateMemorized !== null && dateMemorized < dueCutoff(level, today);
 }
 
 /** Prisma `OR` clause matching every learning row that is due today, across all levels. */
