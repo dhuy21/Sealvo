@@ -106,15 +106,18 @@ jobs:
 
       # Pinned by digest (aquasec/trivy:0.76.0). The container only gets the registry
       # credentials, through the environment, to pull the image it scans.
+      # Lists CRITICAL and HIGH, then fails the job (and so blocks the deploy) on fixable CRITICAL only
       - name: Trivy vulnerability scan
-        continue-on-error: true
         run: |
-          docker run --rm \
-            --cap-drop ALL --security-opt no-new-privileges \
-            -e TRIVY_USERNAME -e TRIVY_PASSWORD \
-            aquasec/trivy:0.76.0@sha256:2416d1f74045b57274df1a340eee6b510cacd73c66a6ccb8da092b117eb7d222 image \
-              --severity CRITICAL,HIGH --ignore-unfixed --exit-code 0 --format table \
-              "$IMAGE"
+          trivy() {
+            docker run --rm \
+              --cap-drop ALL --security-opt no-new-privileges \
+              -e TRIVY_USERNAME -e TRIVY_PASSWORD \
+              aquasec/trivy:0.76.0@sha256:2416d1f74045b57274df1a340eee6b510cacd73c66a6ccb8da092b117eb7d222 image \
+                --ignore-unfixed --format table "$@" "$IMAGE"
+          }
+          trivy --severity CRITICAL,HIGH --exit-code 0
+          trivy --severity CRITICAL --exit-code 1 --quiet
         env:
           IMAGE: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}/${{ matrix.image }}@${{ steps.build.outputs.digest }}
           TRIVY_USERNAME: ${{ github.actor }}

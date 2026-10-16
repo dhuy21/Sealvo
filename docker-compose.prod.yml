@@ -14,13 +14,19 @@ x-service-network: &service-network
   RABBITMQ_URL: ''
   RABBITMQ_HOST: rabbitmq
   SCHEDULER_API_URL: http://api:3000
+  # Wins over the NODE_ENV of .env, which is often the development one
+  NODE_ENV: production
+
+# api, worker and scheduler run the same image: each needs `build`, or Compose tries to pull it
+x-api-image: &api-image
+  build:
+    context: .
+    dockerfile: apps/api/Dockerfile
+  image: sealvo-api
 
 services:
   api:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
-    image: sealvo-api
+    <<: *api-image
     ports:
       - '${API_PORT:-3001}:3000'
     env_file: .env
@@ -55,7 +61,7 @@ services:
 
   # Worker and scheduler: no HTTP server, the image HEALTHCHECK (GET /health) does not apply
   worker:
-    image: sealvo-api
+    <<: *api-image
     command: ['node', 'dist/worker.js']
     env_file: .env
     environment: *service-network
@@ -74,7 +80,7 @@ services:
         condition: service_healthy
 
   scheduler:
-    image: sealvo-api
+    <<: *api-image
     command: ['node', 'dist/scheduler.js']
     env_file: .env
     environment: *service-network
