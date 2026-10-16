@@ -47,7 +47,6 @@ The API, Worker and Scheduler all boot the same `AppModule`, so they need the **
 | `NODE_ENV` | yes | `production` or `staging` (secure cookies, `trust proxy`, staging email intercept) |
 | `DATABASE_URL` | yes | `mysql://user:pass@host:3306/db?connection_limit=8` — use 8 (api), 4 (worker), 2 (scheduler) |
 | `JWT_ACCESS_SECRET` | yes | random 64 chars |
-| `JWT_REFRESH_SECRET` | yes | random 64 chars, different from the access secret |
 | `AWS_REGION` | yes | `eu-north-1` |
 | `AWS_ACCESS_KEY_ID` | yes | SES credentials |
 | `AWS_SECRET_ACCESS_KEY` | yes | SES credentials |
@@ -91,6 +90,10 @@ and the API restarts in a loop:
 DATABASE_URL="<production url>" npx prisma migrate resolve --applied 001_baseline \
   --schema=apps/api/prisma/schema.prisma
 ```
+
+Migration `002` (applied automatically by the API on startup) only adds the `refresh_sessions`
+and `password_reset_tokens` tables. Refresh tokens are now server-side sessions, so refresh
+cookies issued before this release are rejected: **every user logs in once again** after the deploy.
 
 ## GitHub Secrets (for CI/CD workflow)
 

@@ -184,11 +184,7 @@ Same Docker image, different CMD:
 
 ### Status summary (Oct 16, 2026)
 
-Verified against the code on `fix/full-project-audit` (10 commits ahead of `develop`, not merged): **71 ✅ Done · 15 🟡 Partial · 9 🔲 Open · 10 ➖ N/A** (N/A = made obsolete by a design decision, or "chosen: …" another tool). Open/Partial items that matter for production:
-- **#75** Excel import parses user files with npm `xlsx@0.18.5` (known prototype-pollution/ReDoS CVEs; old app used CDN 0.20.3)
-- **#103** Password reset tokens Redis-only → 500 when Redis is down
-- **#6/#26** Email templates still read from the old `src/app/views/mails` (blocks deleting `src/`), re-read + recompiled on every send
-- **#49** Refresh tokens are stateless: logout does not revoke them (valid 7 days)
+Verified against the code on `fix/full-project-audit` (not merged into `develop` yet): **76 ✅ Done · 13 🟡 Partial · 6 🔲 Open · 10 ➖ N/A** (N/A = made obsolete by a design decision, or "chosen: …" another tool). Open/Partial items that matter for production:
 - **#33** Throttler storage in memory (per instance, reset on restart)
 - **#19** CSP is static with `script-src 'unsafe-inline'`
 - **#24** Level progress Redis-only with 3h TTL (lost on Redis restart/expiry)
@@ -212,7 +208,7 @@ Verified against the code on `fix/full-project-audit` (10 commits ahead of `deve
 | 3 | 🟡 | No CORS configuration in plan | Add CORS in NestJS main.ts | ✅ Done — `enableCors` (FRONTEND_URL, credentials) in `main.ts` |
 | 4 | 🟠 | Prisma migration conflicts with existing schema | Use `prisma db pull` → baseline → migrate | ✅ Done — `001_baseline` + resolve step in `railway-setup.md` |
 | 5 | 🟠 | importFile.js SRP not addressed | Split into ImportController + ImportService + FileUploadPipe | 🟡 Partial — Excel parsing inline in `import.controller.ts`; rows not validated |
-| 6 | 🟡 | Email templates location unclear | @nestjs-modules/mailer with Handlebars adapter | 🟡 Partial — plain Handlebars; templates still read from old `src/app/views/mails` |
+| 6 | 🟡 | Email templates location unclear | @nestjs-modules/mailer with Handlebars adapter | ✅ Done — chosen: plain Handlebars; templates in `apps/api/templates/mails` |
 | 7 | 🟠 | Role column not implemented in plan | Add RolesGuard with @Roles('Admin') decorator | ✅ Done — `RolesGuard` + `@Roles` exist (unused); Admin bypass in ownership guard |
 | 8 | 🟡 | Health endpoint has 2 versions (/ and /deps) | Both in HealthModule via @nestjs/terminus | ✅ Done — `/health` + `/health/deps` (custom checks, no terminus) |
 | 9 | 🔴 | RabbitMQ topology won't work with @nestjs/microservices | Use amqplib directly in RabbitmqService | ✅ Done — amqplib topology in queue services |
@@ -237,7 +233,7 @@ Verified against the code on `fix/full-project-audit` (10 commits ahead of `deve
 | 23 | 🔴 | GoogleAuthController hardcodes `http://` in redirect URI | Use `${BASE_URL}/auth/google/callback` | ✅ Done — `GOOGLE_REDIRECT_URI` from config |
 | 24 | 🟡 | Level progress stored only in Redis (TTL 3h) | Keep Redis, increase TTL | 🟡 Partial — still Redis-only, TTL still 3h |
 | 25 | 🟠 | GeminiService creates new client per request | Singleton via onModuleInit() | ✅ Done — one lazily created client in `gemini.service.ts` |
-| 26 | 🟠 | MailersendService reads templates with fs.readFileSync every call | Pre-compile templates at module init | 🔲 Open — `compileTemplate` reads + compiles on every call |
+| 26 | 🟠 | MailersendService reads templates with fs.readFileSync every call | Pre-compile templates at module init | ✅ Done — each template compiled once and cached (`EmailService`) |
 | 27 | 🟠 | ReminderController N+1 queries (ALL users → words per user → details per word) | Batch queries (2-3 total) | ✅ Done — 3 queries in `reminder.service.ts` |
 | 28 | 🟡 | Interval SQL duplicated 5 times in learning.js | Reusable query builder / Prisma scope | ✅ Done — `learning/spaced-repetition.ts` |
 | 29 | 🟠 | Sanitization migration not addressed | Custom SanitizationPipe | 🔲 Open — no SanitizationPipe; relies on React/Handlebars output escaping |
@@ -270,7 +266,7 @@ Verified against the code on `fix/full-project-audit` (10 commits ahead of `deve
 | 46 | 🔴 | Package copy shares word_details via batchStockWords → cross-user data mutation | Clone word_details during copy (new detail_ids) | ✅ Done — `copyPublicPackage` clones `word_details` |
 | 47 | 🔴 | deleteWord only deletes from learning table → orphaned word_details | Check refs after delete, clean up if zero | ✅ Done — orphan cleanup in `deleteWord` / `deleteAllWords` |
 | 48 | 🟠 | User ID generation (7-char hex) has race condition (check-then-insert) | Retry on Prisma P2002 unique constraint violation | ✅ Done — `createUser` retries on PRIMARY P2002 (5 attempts) |
-| 49 | 🟠 | JWT implementation details missing from plan | Full flow: access 15min, refresh 7d, rotation, Axios interceptor | 🟡 Partial — 15m/7d + Axios interceptor; refresh tokens not revocable |
+| 49 | 🟠 | JWT implementation details missing from plan | Full flow: access 15min, refresh 7d, rotation, Axios interceptor | ✅ Done — opaque refresh sessions in DB: rotation, reuse detection, 30 s leeway, revoked on logout/reset |
 | 50 | 🟠 | Logging strategy missing | NestJS Logger or nestjs-pino | ✅ Done — NestJS Logger (worker/scheduler use console) |
 
 ### Round 6: CI/CD, Security, Config (#51-55)
@@ -321,7 +317,7 @@ Verified against the code on `fix/full-project-audit` (10 commits ahead of `deve
 | 72 | 🔴 | Dockerfile runs migrations on startup → 3 processes race | Only API runs `prisma migrate deploy`; worker/scheduler skip | ✅ Done — default CMD migrates; worker/scheduler override command |
 | 73 | 🟡 | Google OAuth duplicates session setup logic | Eliminated by JWT (single AuthService) | ✅ Done — shared `generateTokens` in `AuthService` |
 | 74 | 🟠 | addWordSchema doesn't validate body (only query param) | Separate CreateWordDto with class-validator | ✅ Done — `ParseArrayPipe({ items: CreateWordDto })` |
-| 75 | 🟡 | xlsx dependency loaded from CDN tarball, not npm | Replace with exceljs from npm | 🔲 Open — npm `xlsx@0.18.5` has known CVEs (old app: CDN 0.20.3) |
+| 75 | 🟡 | xlsx dependency loaded from CDN tarball, not npm | Replace with exceljs from npm | ✅ Done — chosen: official SheetJS 0.20.3 tarball (keeps .xls; exceljs cannot read it), audit clean |
 
 ### Round 11: IDOR — Games (#76-80)
 
@@ -379,7 +375,7 @@ Verified against the code on `fix/full-project-audit` (10 commits ahead of `deve
 |---|---|---|---|---|
 | 101 | 🟠 | forgotPasswordPost + changePasswordPost — 90% duplicate | Single requestReset(email) service method | ✅ Done — one `forgotPassword`; dashboard links to `/forgot-password` |
 | 102 | 🟡 | EmailVerificationController bypasses setFlash() helper | N/A with JWT/SPA (toast notifications) | ➖ N/A — no flash with JWT/SPA (toasts) |
-| 103 | 🟡 | resetPass.js — Redis-only, no fallback if Redis down | Store tokens in DB (PasswordResetToken table) | 🔲 Open — reset tokens still Redis-only; 500 when Redis down |
+| 103 | 🟡 | resetPass.js — Redis-only, no fallback if Redis down | Store tokens in DB (PasswordResetToken table) | ✅ Done — `password_reset_tokens` table (migration 002) |
 | 104 | 🟡 | feedbackPost — inline HTML instead of template | Create feedback email template | 🔲 Open — still inline (escaped) HTML in `feedback.service.ts` |
 | 105 | 🟢 | USER_GMAIL env var — misleading name | Rename to FEEDBACK_RECIPIENT_EMAIL | ✅ Done — `FEEDBACK_RECIPIENT_EMAIL` (code, `.env.example`, docs) |
 
