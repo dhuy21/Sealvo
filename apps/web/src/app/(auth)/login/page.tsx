@@ -21,6 +21,11 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
+const GOOGLE_ERRORS = new Map([
+  ['google_no_code', 'No code provided'],
+  ['google_failed', 'Authentication failed'],
+]);
+
 export default function LoginPage() {
   return (
     <Suspense>
@@ -36,6 +41,7 @@ function LoginForm() {
   const isReady = useAuthStore((s) => s.isReady);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [showPassword, setShowPassword] = useState(false);
+  const googleError = GOOGLE_ERRORS.get(searchParams.get('error') ?? '');
 
   useEffect(() => {
     if (isReady && isAuthenticated) {
@@ -100,8 +106,15 @@ function LoginForm() {
           <p className="auth-subtitle">Connectez-vous pour continuer votre apprentissage</p>
         </div>
 
+        {googleError && (
+          <div className="alert alert-error">
+            <i className="fas fa-exclamation-circle" />
+            {googleError}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit(onSubmit)} className="auth-form">
-          <div className="form-group">
+          <div className="form-group" data-delay="100">
             <div className="input-icon-wrapper">
               <input
                 type="text"
@@ -115,7 +128,7 @@ function LoginForm() {
             {errors.username && <span className="form-error">{errors.username.message}</span>}
           </div>
 
-          <div className="form-group">
+          <div className="form-group" data-delay="200">
             <div className="input-icon-wrapper">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -136,16 +149,26 @@ function LoginForm() {
             {errors.password && <span className="form-error">{errors.password.message}</span>}
           </div>
 
-          <div className="form-options">
+          <div className="form-options" data-delay="300">
             <Link href="/forgot-password" className="forgot-password">
               Mot de passe oublié?
             </Link>
           </div>
 
-          <button type="submit" className="btn-submit" disabled={isSubmitting}>
+          <button type="submit" className="btn-submit" data-delay="400" disabled={isSubmitting}>
             {isSubmitting ? 'Connexion...' : 'Se connecter'} <i className="fas fa-arrow-right" />
           </button>
         </form>
+
+        <div className="auth-separator" data-delay="500">
+          <span>ou</span>
+        </div>
+
+        <div className="social-login" data-delay="600">
+          <a href={`${api.defaults.baseURL}/auth/google`} className="social-btn google-btn">
+            <i className="fa-brands fa-google" /> Continuer avec Google
+          </a>
+        </div>
 
         <div className="auth-footer">
           Pas encore de compte?{' '}

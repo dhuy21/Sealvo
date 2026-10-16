@@ -101,7 +101,7 @@ export default function RegisterPage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="auth-form">
-          <div className="form-group">
+          <div className="form-group" data-delay="100">
             <div className="input-icon-wrapper">
               <input type="text" placeholder="Nom d'utilisateur" autoComplete="username" {...register('username')} />
               <i className="input-icon fas fa-user" />
@@ -110,7 +110,7 @@ export default function RegisterPage() {
             {errors.username && <span className="form-error">{errors.username.message}</span>}
           </div>
 
-          <div className="form-group">
+          <div className="form-group" data-delay="200">
             <div className="input-icon-wrapper">
               <input type="email" placeholder="Adresse email" autoComplete="email" {...register('email')} />
               <i className="input-icon fas fa-envelope" />
@@ -119,7 +119,7 @@ export default function RegisterPage() {
             {errors.email && <span className="form-error">{errors.email.message}</span>}
           </div>
 
-          <div className="form-group">
+          <div className="form-group" data-delay="300">
             <div className="input-icon-wrapper">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -136,7 +136,7 @@ export default function RegisterPage() {
             {errors.password && <span className="form-error">{errors.password.message}</span>}
           </div>
 
-          <div className="form-group">
+          <div className="form-group" data-delay="400">
             <div className="input-icon-wrapper">
               <input
                 type={showConfirm ? 'text' : 'password'}
@@ -153,7 +153,7 @@ export default function RegisterPage() {
             {errors.password2 && <span className="form-error">{errors.password2.message}</span>}
           </div>
 
-          <div className="form-options">
+          <div className="form-options" data-delay="500">
             <div className="terms-check">
               <input type="checkbox" id="terms" {...register('terms')} />
               <label htmlFor="terms">
@@ -163,7 +163,7 @@ export default function RegisterPage() {
             {errors.terms && <span className="form-error">{errors.terms.message}</span>}
           </div>
 
-          <div className="form-group avatar-selection">
+          <div className="form-group avatar-selection" data-delay="550">
             <label className="avatar-label">Choisissez votre avatar</label>
             <div className="avatars-container">
               {AVATARS.map((num) => (
@@ -182,10 +182,20 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <button type="submit" className="btn-submit" disabled={isSubmitting}>
+          <button type="submit" className="btn-submit" data-delay="600" disabled={isSubmitting}>
             {isSubmitting ? 'Inscription...' : 'S\'inscrire'} <i className="fas fa-arrow-right" />
           </button>
         </form>
+
+        <div className="auth-separator" data-delay="700">
+          <span>ou</span>
+        </div>
+
+        <div className="social-login" data-delay="800">
+          <a href={`${api.defaults.baseURL}/auth/google`} className="social-btn google-btn">
+            <i className="fa-brands fa-google" /> Continuer avec Google
+          </a>
+        </div>
 
         <div className="auth-footer">
           Déjà un compte?{' '}

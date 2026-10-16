@@ -2646,21 +2646,34 @@ section {
   color: #888;
 }
 
-/* Form animations */
+/* Form animations: staggered reveal on mount. CSS-only (the old auth.js added an
+   .animate-in class, which React would drop whenever it re-renders className).
+   `backwards` keeps the hidden state only during the delay, so hover transforms still apply. */
 .form-group,
 .form-options,
 .btn-submit,
 .auth-separator,
 .social-login {
-  opacity: 0;
-  transform: translateY(20px);
   transition: all 0.4s ease;
+  animation: auth-reveal 0.4s ease backwards;
 }
 
-.animate-in {
-  opacity: 1;
-  transform: translateY(0);
+@keyframes auth-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
 }
+
+[data-delay='100'] { animation-delay: 100ms; }
+[data-delay='200'] { animation-delay: 200ms; }
+[data-delay='300'] { animation-delay: 300ms; }
+[data-delay='400'] { animation-delay: 400ms; }
+[data-delay='500'] { animation-delay: 500ms; }
+[data-delay='550'] { animation-delay: 550ms; }
+[data-delay='600'] { animation-delay: 600ms; }
+[data-delay='700'] { animation-delay: 700ms; }
+[data-delay='800'] { animation-delay: 800ms; }
 
 /* Success and Error Messages */
 .alert {

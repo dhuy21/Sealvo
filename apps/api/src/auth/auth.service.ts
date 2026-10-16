@@ -21,6 +21,8 @@ const RESET_TOKEN_PREFIX = 'reset:';
 const RESET_EMAIL_PREFIX = 'reset:email:';
 const RESET_TOKEN_TTL = 3600; // 1 hour
 const USER_ID_MAX_ATTEMPTS = 5;
+const VERIFICATION_TOKEN_TTL_MS = 3 * 60 * 60 * 1000; // 3 hours, stated in mailVerification.hbs
+const VERIFICATION_TOKEN_MAX_ATTEMPTS = 5;
 
 @Injectable()
 export class AuthService {
@@ -45,31 +47,45 @@ export class AuthService {
       throw new ConflictException(`This ${field} is already taken`);
     }
 
-    const hashedPassword = await bcrypt.hash(dto.password, 12);
+    const user = await this.createUser({
+      username: dto.username,
+      email: dto.email,
+      password: await bcrypt.hash(dto.password, 12),
+      ava: dto.avatar ?? 1,
+    });
 
-    // Random 7-char IDs can collide: retry on a primary-key conflict (fix #48)
-    for (let attempt = 0; attempt < USER_ID_MAX_ATTEMPTS; attempt++) {
-      try {
-        const user = await this.prisma.users.create({
-          data: {
-            id: randomBytes(4).toString('hex').substring(0, 7),
-            username: dto.username,
-            email: dto.email,
-            password: hashedPassword,
-            ava: dto.avatar ?? 1,
-          },
-        });
+    await this.sendVerificationEmail(user);
 
-        return { id: user.id, username: user.username, email: user.email };
-      } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-          if (error.meta?.target === 'PRIMARY') continue;
-          throw new ConflictException('Username or email is already taken');
-        }
-        throw new InternalServerErrorException();
-      }
+    return { id: user.id, username: user.username, email: user.email };
+  }
+
+  async verifyEmail(token: string): Promise<{ message: string }> {
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const verification = await this.prisma.email_verification.findFirst({
+      where: {
+        token_hash: tokenHash,
+        status: 'pending',
+        used_at: null,
+        expires_at: { gt: new Date() },
+      },
+    });
+
+    if (!verification) {
+      throw new BadRequestException("Le jeton de vérification de l'email n'est pas valide");
     }
-    throw new InternalServerErrorException('Could not allocate a user id');
+
+    await this.prisma.$transaction([
+      this.prisma.email_verification.update({
+        where: { id: verification.id },
+        data: { status: 'used', used_at: new Date() },
+      }),
+      this.prisma.users.update({
+        where: { id: verification.user_id },
+        data: { is_verified: true },
+      }),
+    ]);
+
+    return { message: 'Votre email a été vérifié avec succès' };
   }
 
   async login(dto: LoginDto) {
@@ -199,6 +215,137 @@ export class AuthService {
     await client.del([RESET_TOKEN_PREFIX + tokenHash, RESET_EMAIL_PREFIX + email]);
 
     return { message: 'Votre mot de passe a été réinitialisé avec succès' };
+  }
+
+  getGoogleAuthUrl(state: string): string {
+    const params = new URLSearchParams({
+      client_id: this.config.getOrThrow<string>('GOOGLE_CLIENT_ID'),
+      redirect_uri: this.config.getOrThrow<string>('GOOGLE_REDIRECT_URI'),
+      response_type: 'code',
+      scope: 'email profile',
+      access_type: 'offline',
+      prompt: 'consent',
+      state,
+    });
+    return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+  }
+
+  async googleLogin(code: string) {
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      body: new URLSearchParams({
+        code,
+        client_id: this.config.getOrThrow<string>('GOOGLE_CLIENT_ID'),
+        client_secret: this.config.getOrThrow<string>('GOOGLE_CLIENT_SECRET'),
+        redirect_uri: this.config.getOrThrow<string>('GOOGLE_REDIRECT_URI'),
+        grant_type: 'authorization_code',
+      }),
+    });
+    if (!tokenResponse.ok) {
+      throw new UnauthorizedException(`Google token exchange failed (${tokenResponse.status})`);
+    }
+    const { access_token } = (await tokenResponse.json()) as { access_token: string };
+
+    const profileResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
+    if (!profileResponse.ok) {
+      throw new UnauthorizedException(`Google profile request failed (${profileResponse.status})`);
+    }
+    const profile = (await profileResponse.json()) as {
+      email: string;
+      name: string;
+      verified_email: boolean;
+    };
+
+    // Accounts are matched by email, so an unverified Google email would allow account takeover
+    if (!profile.verified_email) {
+      throw new UnauthorizedException('Google email is not verified');
+    }
+
+    const user =
+      (await this.prisma.users.findUnique({ where: { email: profile.email } })) ??
+      (await this.createUser({
+        email: profile.email,
+        username: profile.name,
+        password: await bcrypt.hash(randomBytes(16).toString('hex'), 12),
+        is_verified: true,
+      }));
+
+    await this.prisma.users.update({
+      where: { id: user.id },
+      data: { last_login: new Date() },
+    });
+
+    return this.generateTokens(user.id, user.username, user.role);
+  }
+
+  private async createUser(data: Omit<Prisma.usersCreateInput, 'id'>) {
+    // Random 7-char IDs can collide: retry on a primary-key conflict (fix #48)
+    for (let attempt = 0; attempt < USER_ID_MAX_ATTEMPTS; attempt++) {
+      try {
+        return await this.prisma.users.create({
+          data: { id: randomBytes(4).toString('hex').substring(0, 7), ...data },
+        });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+          if (error.meta?.target === 'PRIMARY') continue;
+          throw new ConflictException('Username or email is already taken');
+        }
+        throw new InternalServerErrorException();
+      }
+    }
+    throw new InternalServerErrorException('Could not allocate a user id');
+  }
+
+  private async generateVerificationToken() {
+    for (let attempt = 0; attempt < VERIFICATION_TOKEN_MAX_ATTEMPTS; attempt++) {
+      const token = randomBytes(32).toString('hex');
+      const tokenHash = createHash('sha256').update(token).digest('hex');
+      const existing = await this.prisma.email_verification.findFirst({
+        where: { token_hash: tokenHash },
+        select: { id: true },
+      });
+      if (!existing) return { token, tokenHash };
+    }
+    throw new InternalServerErrorException('Could not generate a verification token');
+  }
+
+  private async sendVerificationEmail(user: { id: string; username: string; email: string }) {
+    const { token, tokenHash } = await this.generateVerificationToken();
+
+    await this.prisma.$transaction([
+      this.prisma.email_verification.updateMany({
+        where: { user_id: user.id },
+        data: { status: 'revoked' },
+      }),
+      this.prisma.email_verification.create({
+        data: {
+          id: randomBytes(32).toString('hex'),
+          user_id: user.id,
+          token_hash: tokenHash,
+          expires_at: new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS),
+        },
+      }),
+    ]);
+
+    const baseUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+    const htmlContent = this.emailService.compileTemplate('mailVerification.hbs', {
+      username: user.username,
+      verificationLink: `${baseUrl}/verify-email?token=${token}`,
+    });
+
+    const sent = await this.emailQueue.enqueue({
+      to: user.email,
+      content: htmlContent,
+      subject: 'Vérification de votre email',
+    });
+
+    if (!sent) {
+      throw new InternalServerErrorException(
+        "Une erreur est survenue lors de l'envoi de l'email de vérification.",
+      );
+    }
   }
 
   private generateTokens(userId: string, username: string, role: users_role) {
