@@ -18,7 +18,7 @@
     },
     "test:e2e": {
       "cache": false,
-      "env": ["BASE_URL"],
+      "env": ["BASE_URL", "E2E_USERNAME", "E2E_PASSWORD"],
       "passThroughEnv": ["PLAYWRIGHT_*"]
     }
   }

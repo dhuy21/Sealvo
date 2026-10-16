@@ -21,7 +21,17 @@
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "backup:db": "node scripts/backup-db.mjs",
-    "restore:db": "node scripts/restore-db.mjs"
+    "restore:db": "node scripts/restore-db.mjs",
+    "db:seed": "prisma db seed"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.mjs"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "prettier --write --ignore-path ../../.prettierignore",
+      "oxlint --type-aware"
+    ]
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1152.0",

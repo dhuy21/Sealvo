@@ -26,9 +26,6 @@
     "turbo": "^2.11.7"
   },
   "lint-staged": {
-    "apps/**/*.{ts,tsx}": [
-      "prettier --write"
-    ],
     "packages/**/*.ts": [
       "prettier --write"
     ]
