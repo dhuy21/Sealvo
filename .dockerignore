@@ -12,3 +12,5 @@ dist
 .turbo
 coverage
 playwright-report
+src/
+!src/app/views/mails/
