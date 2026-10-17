@@ -5,6 +5,8 @@ import { SessionService } from './session.service.js';
 import { TokenService } from './token.service.js';
 import { EmailVerificationService } from './email-verification.service.js';
 import { createUser } from './create-user.js';
+import { hashPassword } from './crypto.js';
+import { errorMessage } from '../common/utils/error-message.js';
 import type { RegisterDto } from './dto/register.dto.js';
 import type { LoginDto } from './dto/login.dto.js';
 
@@ -35,7 +37,7 @@ export class AuthService {
     }
 
     // Hashed before the email lookup so both outcomes below take the same time
-    const password = await bcrypt.hash(dto.password, 12);
+    const password = await hashPassword(dto.password);
 
     // No user enumeration: a taken email gets the same response, its owner is emailed instead.
     // Never a verification link, even for an unverified account: whoever registered it first knows
@@ -101,9 +103,7 @@ export class AuthService {
     try {
       await this.prisma.users.update({ where: { id: userId }, data: { last_login: new Date() } });
     } catch (error) {
-      this.logger.error(
-        `Failed to update last login for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.logger.error(`Failed to update last login for user ${userId}: ${errorMessage(error)}`);
     }
     await this.sessions.revoke(userId, refreshToken);
   }

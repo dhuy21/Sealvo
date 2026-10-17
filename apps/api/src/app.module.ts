@@ -32,8 +32,6 @@ import { DashboardModule } from './dashboard/dashboard.module.js';
 import { TtsModule } from './tts/tts.module.js';
 import { FeedbackModule } from './feedback/feedback.module.js';
 import { ReminderModule } from './reminder/reminder.module.js';
-import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
 
 @Module({
   imports: [
@@ -79,9 +77,7 @@ import { AppService } from './app.service.js';
     FeedbackModule,
     ReminderModule,
   ],
-  controllers: [AppController],
   providers: [
-    AppService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_FILTER, useClass: PrismaExceptionFilter },
   ],

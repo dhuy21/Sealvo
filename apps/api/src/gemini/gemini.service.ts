@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { GoogleGenAI } from '@google/genai';
 import { CircuitBreaker, isTransientError, withRetry, withTimeout } from '@sealvo/shared';
 import { geminiConfig, type GeminiConfig } from '../config/gemini.config.js';
+import { errorMessage } from '../common/utils/error-message.js';
 
 const GENERATE_TIMEOUT_MS = 30_000;
 const MODIFY_TIMEOUT_MS = 15_000;
@@ -67,8 +68,6 @@ const modifyPrompt = (words: ExamplePayload[]) => `
 
             Words: 
             ${JSON.stringify(words, null, 2)}`;
-
-const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
 @Injectable()
 export class GeminiService {

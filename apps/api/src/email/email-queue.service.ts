@@ -5,6 +5,7 @@ import { RabbitmqService } from '../rabbitmq/rabbitmq.service.js';
 import { CacheService } from '../redis/cache.service.js';
 import { EmailService } from './email.service.js';
 import { CACHE_KEYS, CACHE_TTL } from '../redis/cache-keys.constants.js';
+import { errorMessage } from '../common/utils/error-message.js';
 
 const EXCHANGE = 'email.direct';
 const RETRY_EXCHANGE = 'email.retry.direct';
@@ -117,14 +118,12 @@ export class EmailQueueService implements OnModuleInit {
       const retries = this.getRetryCount(msg);
       if (retries >= MAX_RETRIES) {
         this.logger.error(
-          `Giving up after ${retries} retries — moving to ${FAILED_QUEUE}: ${err instanceof Error ? err.message : String(err)}`,
+          `Giving up after ${retries} retries — moving to ${FAILED_QUEUE}: ${errorMessage(err)}`,
         );
         ch.sendToQueue(FAILED_QUEUE, msg.content, { persistent: true });
         ch.ack(msg);
       } else {
-        this.logger.warn(
-          `Send failed (retry ${retries + 1}/${MAX_RETRIES}): ${err instanceof Error ? err.message : String(err)}`,
-        );
+        this.logger.warn(`Send failed (retry ${retries + 1}/${MAX_RETRIES}): ${errorMessage(err)}`);
         ch.nack(msg, false, false);
       }
       return;

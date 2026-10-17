@@ -5,11 +5,11 @@ import {
   InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
-import * as bcrypt from 'bcryptjs';
 import { AUTH_LIMITS } from '@sealvo/shared';
 import { normalizeEmail } from '../common/decorators/normalize-email.decorator.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { TokenService } from './token.service.js';
+import { hashPassword, newToken } from './crypto.js';
 import { createUser } from './create-user.js';
 import { authConfig, type AuthConfig } from '../config/auth.config.js';
 
@@ -82,7 +82,7 @@ export class GoogleAuthService {
       user = await createUser(this.prisma, {
         email,
         username: await this.generateUsername(profile.name, profile.email),
-        password: await bcrypt.hash(randomBytes(16).toString('hex'), 12),
+        password: await hashPassword(newToken()),
         is_verified: true,
       });
     } else if (!user.is_verified) {
@@ -92,7 +92,7 @@ export class GoogleAuthService {
           where: { id: user.id },
           data: {
             is_verified: true,
-            password: await bcrypt.hash(randomBytes(32).toString('hex'), 12),
+            password: await hashPassword(newToken()),
           },
         }),
         this.prisma.refresh_sessions.deleteMany({ where: { user_id: user.id } }),

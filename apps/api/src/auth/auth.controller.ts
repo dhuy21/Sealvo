@@ -23,6 +23,7 @@ import { PasswordResetService } from './password-reset.service.js';
 import { GoogleAuthService } from './google-auth.service.js';
 import { SESSION_TTL_MS } from './auth.constants.js';
 import { appConfig, type AppConfig } from '../config/app.config.js';
+import { errorMessage } from '../common/utils/error-message.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
@@ -227,9 +228,7 @@ export class AuthController {
       this.setRefreshCookie(res, refreshToken);
       return { url: `${frontendUrl}/dashboard` };
     } catch (error) {
-      this.logger.error(
-        `Google authentication error: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.logger.error(`Google authentication error: ${errorMessage(error)}`);
       return { url: `${frontendUrl}/login?error=google_failed` };
     }
   }

@@ -13,6 +13,7 @@ import * as crypto from 'crypto';
 import { CACHE_KEYS, CACHE_TTL } from '../redis/cache-keys.constants.js';
 import { CacheService } from '../redis/cache.service.js';
 import { ttsConfig, type TtsConfig } from '../config/tts.config.js';
+import { errorMessage } from '../common/utils/error-message.js';
 
 /** Resilience settings from the old app's config/resilience.js tts defaults */
 const VOICES_TIMEOUT_MS = 8000;
@@ -87,9 +88,7 @@ export class TtsService implements OnModuleInit {
       return await this.generate(text, language);
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      this.logger.error(
-        `TTS synthesis failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.logger.error(`TTS synthesis failed: ${errorMessage(error)}`);
       throw new ServiceUnavailableException(
         'Le service de synthèse vocale est momentanément indisponible.',
       );

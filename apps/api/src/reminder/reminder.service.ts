@@ -8,6 +8,7 @@ import { EmailQueueService } from '../email/email-queue.service.js';
 import { CacheService } from '../redis/cache.service.js';
 import { CACHE_KEYS, CACHE_TTL } from '../redis/cache-keys.constants.js';
 import { dueWhereConditions, startOfToday } from '../learning/spaced-repetition.js';
+import { errorMessage } from '../common/utils/error-message.js';
 
 const PREVIEW_LIMIT = 5;
 const UNVERIFIED_USER_RETENTION_DAYS = 3;
@@ -129,7 +130,7 @@ export class ReminderService {
         where: { created_at: { lt: this.retentionCutoff(APPLIED_JOB_RETENTION_DAYS) } },
       });
     } catch (err) {
-      this.logger.error(`Cleanup failed: ${err instanceof Error ? err.message : String(err)}`);
+      this.logger.error(`Cleanup failed: ${errorMessage(err)}`);
     }
   }
 

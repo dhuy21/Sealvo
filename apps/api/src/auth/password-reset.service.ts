@@ -1,9 +1,9 @@
-import { createHash, randomBytes } from 'crypto';
 import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
-import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { appConfig, type AppConfig } from '../config/app.config.js';
+import { errorMessage } from '../common/utils/error-message.js';
 import { formatDuration } from '../common/utils/format-duration.js';
+import { hashPassword, hashToken, newToken } from './crypto.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
 import { EmailService } from '../email/email.service.js';
 
@@ -30,17 +30,15 @@ export class PasswordResetService {
     // Not awaited: the response time must not tell whether the account exists
     if (user) {
       void this.sendResetLink(user).catch((error: unknown) =>
-        this.logger.error(
-          `Password reset link failed for user ${user.id}: ${error instanceof Error ? error.message : String(error)}`,
-        ),
+        this.logger.error(`Password reset link failed for user ${user.id}: ${errorMessage(error)}`),
       );
     }
     return { message: FORGOT_PASSWORD_MESSAGE };
   }
 
   private async sendResetLink(user: { id: string; username: string; email: string }) {
-    const token = randomBytes(32).toString('hex');
-    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const token = newToken();
+    const tokenHash = hashToken(token);
 
     // A new request replaces the previous token (#103: stored in DB, not only in Redis)
     await this.prisma.$transaction([
@@ -74,14 +72,14 @@ export class PasswordResetService {
   }
 
   async resetPassword(token: string, password: string): Promise<{ message: string }> {
-    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const tokenHash = hashToken(token);
     const resetToken = await this.prisma.password_reset_tokens.findFirst({
       where: { token_hash: tokenHash, expires_at: { gt: new Date() } },
     });
     if (!resetToken) throw new BadRequestException(INVALID_TOKEN_MESSAGE);
 
     const userId = resetToken.user_id;
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await hashPassword(password);
 
     // New password: consume the token and log out every device (RFC 9700 §4.14.2). A pending email
     // change may come from whoever forced this reset: its confirmation link must stop working too.

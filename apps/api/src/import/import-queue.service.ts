@@ -6,6 +6,7 @@ import { WordsService } from '../words/words.service.js';
 import { JobTrackerService } from './job-tracker.service.js';
 import { CACHE_KEYS } from '../redis/cache-keys.constants.js';
 import type { CreateWordDto } from '../words/dto/create-word.dto.js';
+import { errorMessage } from '../common/utils/error-message.js';
 
 const EXCHANGE = 'import.direct';
 const RETRY_EXCHANGE = 'import.retry.direct';
@@ -32,8 +33,6 @@ const isImportPayload = (value: unknown): value is ImportPayload => {
     Array.isArray(payload.wordsData)
   );
 };
-
-const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
 @Injectable()
 export class ImportQueueService implements OnModuleInit {

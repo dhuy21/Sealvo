@@ -1,15 +1,14 @@
-import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'crypto';
+import { randomUUID, timingSafeEqual } from 'crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SESSION_TTL_MS } from './auth.constants.js';
+import { hashToken as hash, newToken as newSecret } from './crypto.js';
 
 /** A refresh whose response was lost, or concurrent ones from a browser without Web Locks, present the token just rotated. */
 const ROTATION_LEEWAY_MS = 10_000;
 const MAX_ROTATION_ATTEMPTS = 3;
 
-const hash = (secret: string) => createHash('sha256').update(secret).digest('hex');
 const sameHash = (a: string, b: string) => timingSafeEqual(Buffer.from(a), Buffer.from(b));
-const newSecret = () => randomBytes(32).toString('hex');
 const expiry = () => new Date(Date.now() + SESSION_TTL_MS);
 
 /** Refresh token format: `<sessionId>.<secret>` (opaque, only the secret's hash is stored). */

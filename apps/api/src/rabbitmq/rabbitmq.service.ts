@@ -8,6 +8,7 @@ import {
 import { rabbitmqConfig, type RabbitmqConfig } from '../config/rabbitmq.config.js';
 import amqp from 'amqplib';
 import { withTimeout } from '@sealvo/shared';
+import { errorMessage } from '../common/utils/error-message.js';
 
 type ChannelReadyHandler = (channel: amqp.ConfirmChannel) => Promise<void>;
 /** Acks or nacks the message on the channel it was delivered on */
@@ -94,7 +95,7 @@ export class RabbitmqService implements OnApplicationBootstrap, OnModuleDestroy 
       this.ready = true;
       this.logger.log('Connected to RabbitMQ.');
     } catch (err) {
-      this.logger.error(`Failed to connect: ${err instanceof Error ? err.message : err}`);
+      this.logger.error(`Failed to connect: ${errorMessage(err)}`);
       this.ready = false;
       conn?.close().catch(() => {
         /* already closed */
@@ -163,9 +164,7 @@ export class RabbitmqService implements OnApplicationBootstrap, OnModuleDestroy 
       );
       return true;
     } catch (err) {
-      this.logger.warn(
-        `Publish to ${exchange} failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      this.logger.warn(`Publish to ${exchange} failed: ${errorMessage(err)}`);
       return false;
     }
   }
@@ -194,9 +193,7 @@ export class RabbitmqService implements OnApplicationBootstrap, OnModuleDestroy 
       if (!msg) return lost('cancelled by the broker');
       const run = handler(msg, channel)
         .catch((err: unknown) => {
-          this.logger.error(
-            `Unhandled error on ${queue}: ${err instanceof Error ? err.message : String(err)}`,
-          );
+          this.logger.error(`Unhandled error on ${queue}: ${errorMessage(err)}`);
           try {
             channel.nack(msg, false, false);
           } catch {

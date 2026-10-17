@@ -1,6 +1,7 @@
 import { Logger, OnApplicationShutdown } from '@nestjs/common';
 import { ThrottlerStorageService, type ThrottlerStorage } from '@nestjs/throttler';
 import { RedisService } from '../../redis/redis.service.js';
+import { errorMessage } from '../utils/error-message.js';
 
 const PREFIX = 'throttle:';
 
@@ -62,9 +63,7 @@ export class RedisThrottlerStorage implements ThrottlerStorage, OnApplicationShu
         timeToBlockExpire: Math.ceil(timeToBlockExpire / 1000),
       };
     } catch (err) {
-      this.logger.warn(
-        `Redis unavailable, using in-memory throttling: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      this.logger.warn(`Redis unavailable, using in-memory throttling: ${errorMessage(err)}`);
       return this.fallback.increment(key, ttl, limit, blockDuration, throttlerName);
     }
   }

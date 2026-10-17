@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { isTransientError, TimeoutError, withRetry, withTimeout } from '@sealvo/shared';
+import { errorMessage } from '../common/utils/error-message.js';
 
 const SEND_TIMEOUT_MS = 10_000;
 const SEND_RETRY_DELAY_MS = 1_000;
@@ -84,7 +85,7 @@ export class EmailService {
         this.logger.warn(`Email possibly sent, not retrying: ${error.message}`);
         return true;
       }
-      this.logger.error(`Failed to send email: ${error instanceof Error ? error.message : error}`);
+      this.logger.error(`Failed to send email: ${errorMessage(error)}`);
       return false;
     }
   }

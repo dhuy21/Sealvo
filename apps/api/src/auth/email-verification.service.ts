@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'crypto';
+import { randomBytes } from 'crypto';
 import {
   BadRequestException,
   ConflictException,
@@ -14,9 +14,11 @@ import {
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { appConfig, type AppConfig } from '../config/app.config.js';
+import { errorMessage } from '../common/utils/error-message.js';
 import { formatDuration } from '../common/utils/format-duration.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
 import { EmailService } from '../email/email.service.js';
+import { hashToken, newToken } from './crypto.js';
 
 const VERIFICATION_TOKEN_TTL_MS = 3 * 60 * 60 * 1000;
 const VERIFICATION_TOKEN_MAX_ATTEMPTS = 5;
@@ -37,7 +39,7 @@ export class EmailVerificationService {
   ) {}
 
   async verifyEmail(token: string): Promise<{ message: string }> {
-    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const tokenHash = hashToken(token);
     const verification = await this.prisma.email_verification.findFirst({
       where: {
         token_hash: tokenHash,
@@ -134,7 +136,7 @@ export class EmailVerificationService {
         await this.sendVerificationEmail(user);
       } catch (error) {
         this.logger.error(
-          `Verification email could not be resent to user ${user.id}: ${error instanceof Error ? error.message : String(error)}`,
+          `Verification email could not be resent to user ${user.id}: ${errorMessage(error)}`,
         );
       }
     }
@@ -208,8 +210,8 @@ export class EmailVerificationService {
 
   private async generateVerificationToken() {
     for (let attempt = 0; attempt < VERIFICATION_TOKEN_MAX_ATTEMPTS; attempt++) {
-      const token = randomBytes(32).toString('hex');
-      const tokenHash = createHash('sha256').update(token).digest('hex');
+      const token = newToken();
+      const tokenHash = hashToken(token);
       const existing = await this.prisma.email_verification.findFirst({
         where: { token_hash: tokenHash },
         select: { id: true },
