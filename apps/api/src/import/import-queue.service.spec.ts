@@ -1,4 +1,5 @@
-import { ImportQueueService } from './import-queue.service.js';
+import { ConflictException } from '@nestjs/common';
+import { IMPORT_FAILED_MESSAGE, ImportQueueService } from './import-queue.service.js';
 
 describe('ImportQueueService publishing', () => {
   let rabbitmq: { publish: any; onChannelReady: any };
@@ -191,6 +192,28 @@ describe('ImportQueueService consumer', () => {
       'job-1',
       expect.objectContaining({ status: 'failed' }),
     );
+  });
+
+  it('shows the user a generic message, not the internal error', async () => {
+    wordsService.addWords.mockRejectedValue(new Error('Invalid `tx.learning.create()` invocation'));
+
+    await run(message(3));
+
+    expect(jobTracker.update).toHaveBeenLastCalledWith('job-1', {
+      status: 'retrying',
+      error: IMPORT_FAILED_MESSAGE,
+    });
+  });
+
+  it('keeps the message of an HTTP error', async () => {
+    wordsService.addWords.mockRejectedValue(new ConflictException('Ces données sont modifiées'));
+
+    await run(message(3));
+
+    expect(jobTracker.update).toHaveBeenLastCalledWith('job-1', {
+      status: 'retrying',
+      error: 'Ces données sont modifiées',
+    });
   });
 
   it('writes the final status after every progress update, even slow ones', async () => {

@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { HttpException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import type { ConfirmChannel, ConsumeMessage } from 'amqplib';
 import { RabbitmqService } from '../rabbitmq/rabbitmq.service.js';
 import { RetryQueue } from '../rabbitmq/retry-queue.js';
@@ -15,6 +15,9 @@ const QUEUE = new RetryQueue({
   retryTtl: 30_000,
   maxRetries: 1,
 });
+
+/** Shown to the user: the raw error (e.g. Prisma's) stays in the logs */
+export const IMPORT_FAILED_MESSAGE = "L'import a échoué. Réessayez.";
 
 export interface ImportPayload {
   jobId: string;
@@ -151,7 +154,8 @@ export class ImportQueueService implements OnModuleInit {
     err: unknown,
   ): Promise<void> {
     const status = QUEUE.exhausted(msg) ? 'failed' : 'retrying';
-    await this.jobTracker.update(jobId, { status, error: errorMessage(err) });
+    const error = err instanceof HttpException ? err.message : IMPORT_FAILED_MESSAGE;
+    await this.jobTracker.update(jobId, { status, error });
     await QUEUE.reject(msg, ch);
   }
 }

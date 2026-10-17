@@ -36,7 +36,8 @@ export class ImportController {
   @UseInterceptors(
     InvalidateDashboardInterceptor,
     FileInterceptor('file', {
-      limits: { fileSize: IMPORT_MAX_FILE_BYTES },
+      // One file and nothing else: multer would otherwise buffer any number of 1 MB text fields
+      limits: { fileSize: IMPORT_MAX_FILE_BYTES, files: 1, fields: 0, parts: 1 },
       fileFilter: (_req, file, cb) => {
         const ext = file.originalname.toLowerCase();
         if (ext.endsWith('.xlsx') || ext.endsWith('.xls')) {
