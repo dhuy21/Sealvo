@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { isRecommendedBrowser } from './browser-check';
+import { useDialog } from '@/hooks/use-dialog';
 import { useIsClient } from '@/hooks/use-is-client';
 import { useTimeouts } from '@/hooks/use-timeouts';
 import { cx } from '@/lib/css-module';
@@ -20,19 +21,12 @@ export function BrowserWarningModal() {
 
   const visible = isClient && state !== 'closed' && !isRecommendedBrowser(navigator.userAgent);
 
-  const close = useCallback(() => {
+  function close() {
     setState('closing');
     later(() => setState('closed'), EXIT_ANIMATION_MS);
-  }, [later]);
+  }
 
-  useEffect(() => {
-    if (!visible) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close();
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [visible, close]);
+  const dialogRef = useDialog<HTMLDivElement>(visible, close);
 
   if (!visible) return null;
 
@@ -53,10 +47,12 @@ export function BrowserWarningModal() {
 
   return createPortal(
     <div
+      ref={dialogRef}
       className={cx(styles, 'browser-modal', state === 'closing' && 'modal-exit')}
       role="dialog"
       aria-modal="true"
       aria-labelledby="browser-modal-title"
+      tabIndex={-1}
     >
       <div className={cx(styles, 'browser-content')}>
         <div className={cx(styles, 'modal-header')}>

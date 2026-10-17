@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useId, useState } from 'react';
+import { useDialog } from '@/hooks/use-dialog';
 import { AVATAR_COUNT } from '@sealvo/shared';
 import styles from '@/styles/dashboard.module.css';
 import { cx } from '@/lib/css-module';
@@ -20,13 +21,8 @@ export function AvatarModal({ open, ...props }: AvatarModalProps & { open: boole
 function AvatarModalContent({ currentAva, onClose, onSave, saving }: AvatarModalProps) {
   const [selected, setSelected] = useState(currentAva);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
+  const dialogRef = useDialog<HTMLDivElement>(true, onClose);
+  const titleId = useId();
 
   return (
     <div
@@ -36,9 +32,16 @@ function AvatarModalContent({ currentAva, onClose, onSave, saving }: AvatarModal
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className={cx(styles, 'avatar-modal-content')}>
+      <div
+        ref={dialogRef}
+        className={cx(styles, 'avatar-modal-content')}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+      >
         <div className={cx(styles, 'avatar-modal-header')}>
-          <h3>
+          <h3 id={titleId}>
             <i className="fas fa-user-circle"></i> Choisir un nouvel avatar
           </h3>
           <span className={cx(styles, 'avatar-modal-close')} onClick={onClose}>

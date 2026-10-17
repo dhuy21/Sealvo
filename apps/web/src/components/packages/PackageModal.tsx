@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useId, useState } from 'react';
+import { useDialog } from '@/hooks/use-dialog';
 import type { Package } from '@/hooks/use-packages';
 import styles from '@/styles/packages.module.css';
 import { cx } from '@/lib/css-module';
@@ -22,13 +23,8 @@ function PackageModalContent({ editPkg, onClose, onSubmit, saving }: PackageModa
   const [description, setDescription] = useState(editPkg?.package_description ?? '');
   const [mode, setMode] = useState<string>(editPkg?.mode ?? 'private');
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
+  const dialogRef = useDialog<HTMLDivElement>(true, onClose);
+  const titleId = useId();
 
   const isEdit = !!editPkg;
 
@@ -40,13 +36,20 @@ function PackageModalContent({ editPkg, onClose, onSubmit, saving }: PackageModa
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className={cx(styles, 'modal-content')}>
+      <div
+        ref={dialogRef}
+        className={cx(styles, 'modal-content')}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+      >
         <div className={cx(styles, 'modal-header')}>
-          <h3>
+          <h3 id={titleId}>
             <i className={`fas fa-${isEdit ? 'edit' : 'plus-circle'}`}></i>{' '}
             {isEdit ? 'Modifier le package' : 'Créer un package'}
           </h3>
-          <button className={cx(styles, 'modal-close')} onClick={onClose}>
+          <button className={cx(styles, 'modal-close')} aria-label="Fermer" onClick={onClose}>
             <i className="fas fa-times"></i>
           </button>
         </div>

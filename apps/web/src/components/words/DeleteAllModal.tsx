@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
+import { useDialog } from '@/hooks/use-dialog';
 import styles from '@/styles/vocabs.module.css';
 import { cx } from '@/lib/css-module';
 
@@ -34,14 +35,8 @@ export function DeleteAllModal({
 
   const shown = open && entered;
 
-  useEffect(() => {
-    if (!open) return;
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handleKeyPress);
-    return () => document.removeEventListener('keydown', handleKeyPress);
-  }, [open, onClose]);
+  const dialogRef = useDialog<HTMLDivElement>(open, onClose);
+  const titleId = useId();
 
   if (!mounted) return null;
 
@@ -54,7 +49,14 @@ export function DeleteAllModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className={cx(styles, 'modal-content')}>
+      <div
+        ref={dialogRef}
+        className={cx(styles, 'modal-content')}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+      >
         <button className={cx(styles, 'close-modal-btn')} aria-label="Fermer" onClick={onClose}>
           <i className="fas fa-times"></i>
         </button>
@@ -63,7 +65,7 @@ export function DeleteAllModal({
           <div className={cx(styles, 'warning-icon')}>
             <i className="fas fa-exclamation-triangle"></i>
           </div>
-          <h2>Supprimer tous les mots</h2>
+          <h2 id={titleId}>Supprimer tous les mots</h2>
         </div>
 
         <div className={cx(styles, 'modal-body')}>

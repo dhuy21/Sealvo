@@ -1,5 +1,7 @@
 'use client';
 
+import { useId } from 'react';
+import { useDialog } from '@/hooks/use-dialog';
 import styles from '@/styles/packages.module.css';
 import { cx } from '@/lib/css-module';
 
@@ -14,6 +16,8 @@ export function DeleteModal({
   onConfirm: () => void;
   saving: boolean;
 }) {
+  const dialogRef = useDialog<HTMLDivElement>(open, onClose);
+  const titleId = useId();
   if (!open) return null;
 
   return (
@@ -24,12 +28,19 @@ export function DeleteModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className={cx(styles, 'modal-content', 'modal-danger')}>
+      <div
+        ref={dialogRef}
+        className={cx(styles, 'modal-content', 'modal-danger')}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+      >
         <div className={cx(styles, 'modal-header')}>
-          <h3>
+          <h3 id={titleId}>
             <i className="fas fa-exclamation-triangle"></i> Confirmer la suppression
           </h3>
-          <button className={cx(styles, 'modal-close')} onClick={onClose}>
+          <button className={cx(styles, 'modal-close')} aria-label="Fermer" onClick={onClose}>
             <i className="fas fa-times"></i>
           </button>
         </div>
