@@ -112,23 +112,24 @@ sealvo/
 │   │   │   ├── app.module.ts
 │   │   │   ├── worker.module.ts, scheduler.module.ts  # modules booted by worker / scheduler
 │   │   │   ├── config/         # env.validation.ts (one schema per process) + one registerAs factory per domain
-│   │   │   ├── auth/           # AuthModule (JWT, refresh sessions, Google OAuth, guards)
+│   │   │   ├── auth/           # AuthModule (JWT, refresh sessions, Google OAuth, email verification and change, guards)
+│   │   │   ├── account/        # AccountModule (PATCH /account/profile)
 │   │   │   ├── packages/       # PackagesModule
 │   │   │   ├── words/          # WordsModule (controller) + WordsCoreModule (WordsService, WordsEnrichmentService); orphan-details.ts
 │   │   │   ├── learning/       # LearningModule
 │   │   │   ├── games/          # GamesModule (single GamesService + GAME_LEVEL map)
-│   │   │   ├── dashboard/      # DashboardModule
+│   │   │   ├── dashboard/      # DashboardModule (stats only)
 │   │   │   ├── reminder/       # ReminderModule
 │   │   │   ├── maintenance/    # MaintenanceModule (expired-row cleanup, run with the reminders)
-│   │   │   ├── scheduler/      # SchedulerService (catch-up + cron, booted by scheduler.ts)
+│   │   │   ├── scheduler/      # SchedulerService (catch-up + cron, booted by scheduler.ts), daily-schedule.ts
 │   │   │   ├── tts/            # TtsModule
 │   │   │   ├── gemini/         # GeminiModule
 │   │   │   ├── feedback/       # FeedbackModule
 │   │   │   ├── email/          # EmailModule (queue + SES)
 │   │   │   ├── import/         # ImportModule (queue + Excel parsing + jobs)
 │   │   │   ├── health/         # HealthModule (/health + /health/deps, custom checks, no terminus)
-│   │   │   ├── prisma/ redis/ rabbitmq/  # global PrismaModule (+ tx-options.constants.ts), RedisModule (every key in cache-keys.constants.ts), RabbitmqModule (+ retry-queue.ts)
-│   │   │   └── common/         # PrismaExceptionFilter, RedisThrottlerStorage, InvalidateDashboardInterceptor, @ThrottleMessage, @NormalizeEmail, @Trim, @IsOptionalDefined, domain/spaced-repetition.ts, utils/error-message.ts (guards: auth/guards)
+│   │   │   ├── prisma/ redis/ rabbitmq/  # global PrismaModule (+ tx-options.constants.ts, deadlock.ts), RedisModule (every key in cache-keys.constants.ts), RabbitmqModule (+ retry-queue.ts)
+│   │   │   └── common/         # PrismaExceptionFilter, RedisThrottlerStorage + throttle-policies.ts (@Throttled), InvalidateDashboardInterceptor, @ThrottleMessage, @NormalizeEmail, @IsAccountEmail, @Trim, @IsOptionalDefined, constants/field-lengths.constants.ts, domain/spaced-repetition.ts, utils/ (error-message, format-duration, normalize-email) (guards: auth/guards)
 │   │   ├── prisma/
 │   │   │   ├── schema.prisma
 │   │   │   ├── migrations/
@@ -141,7 +142,7 @@ sealvo/
 │   └── web/                    # Next.js 16 frontend
 │       ├── src/
 │       │   ├── app/            # App Router pages ((auth), (protected) route groups)
-│       │   ├── components/     # React components (91 .tsx + 62 .ts hooks/helpers, tests excluded)
+│       │   ├── components/     # React components (92 .tsx + 63 .ts hooks/helpers, tests excluded)
 │       │   ├── hooks/          # React Query hooks (auth, packages, words, games, import, feedback, …)
 │       │   ├── lib/            # API client, query keys, job watcher, cx(), utils
 │       │   ├── providers/ stores/  # app providers, Zustand auth store
@@ -171,7 +172,8 @@ What `main.ts` / `app.module.ts` actually register (Express middleware → NestJ
 
 ```
 Request → Express: trust proxy (production/staging), helmet (default headers), CORS (FRONTEND_URL,
-                 credentials), cookie-parser
+                 credentials), cookie-parser, JSON body parser (100 KB; 6 MB on
+                 POST /packages/:packageId/words only)
        → Guards: ThrottlerGuard (global APP_GUARD, Redis storage, in-memory fallback; 429 message
                  per route from @ThrottleMessage)
                  → SameOriginGuard (login, register, refresh, logout)
@@ -185,6 +187,8 @@ Request → Express: trust proxy (production/staging), helmet (default headers),
        → Interceptors (after): InvalidateDashboardInterceptor deletes the owner's cached dashboard
                  after a successful non-GET request
        → Exception filters: PrismaExceptionFilter (global: P2002 / P2003 → 409, P2025 → 404, P2000 → 400,
+                 deadlock (P2034, or P2010 with MySQL 1213) → 409 "Ces données sont modifiées par une
+                 autre opération, réessayez.",
                  CHECK violation and PrismaClientValidationError → 400 "Données invalides."), then Nest's built-in filter
 ```
 
@@ -220,7 +224,7 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 - 429 messages per route, in French: `@ThrottleMessage` (`common/decorators/throttle-message.decorator.ts`), read by the throttler `errorMessage` in `app.module.ts`; default "Trop de requêtes. Réessayez dans 1 minute."
 - `helmet()` (default options) on the API in `main.ts`.
 - Level progress: Redis hash `cache:lvlprog:h:<userId>` (`CACHE_KEYS.levelProgress`, `cache:` added by `CacheService`), one field per game (`HSET` + `EXPIRE` 3 h); only the request whose `HDEL` removes every field of the level promotes. Streak: conditional `updateMany` (`streak_updated_at` null or before today), so concurrent requests count once (`learning/learning.service.ts`).
-- `AuthService` split: `TokenService` (access JWT + new session), `EmailVerificationService`, `PasswordResetService`, `GoogleAuthService`, `create-user.ts` (id retry, #48); `AuthService` keeps register / login / refresh / logout / me.
+- `AuthService` split: `TokenService` (access JWT + new session), `EmailVerificationService`, `PasswordResetService`, `GoogleAuthService`, `create-user.ts` (id retry, #48), and since the fourth pass `EmailChangeService`; `AuthService` keeps register / login / refresh / logout / me.
 - Email: every SES send wrapped in `withTimeout` (10 s) inside `withRetry` (transient errors only); the direct fallback when RabbitMQ is down retries 2 times, 1 s apart (`email.service.ts`, `email-queue.service.ts`), like the old `mailersend.js`.
 - `docker-compose.prod.yml`: shared `x-api-image` anchor (`build` + `image: sealvo-api`) for api, worker and scheduler: worker/scheduler had only `image`, so Compose tried to pull `sealvo-api` and failed. `NODE_ENV: production` forced in the shared environment (api, worker, scheduler, backup), over the `.env` value.
 - CI: Trivy lists fixable CRITICAL + HIGH, then fails the job (and so the deploy) on fixable CRITICAL only (`--ignore-unfixed`).
@@ -231,8 +235,8 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 - Level progress: with Redis up, the current game only counts once its `HSET` succeeded (a failed write no longer lets the `HDEL` wipe the saved games without promoting).
 - Email: a send that times out is not retried (it may still be delivered) and counts as sent; other transient errors are retried as before.
 - Env validation at boot, one class per process (`config/env.validation.ts`): API (`app.module.ts`), worker and scheduler fail fast on a missing required variable. Google OAuth (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`) and `FEEDBACK_RECIPIENT_EMAIL` are required by the API; TTS and Gemini are optional.
-- Config layer: only `apps/api/src/config/` reads `process.env`. The schema checks types (URLs, emails, ports, `NODE_ENV` enum, the three `GOOGLE_TTS_*` together), applies the defaults and lists every problem at once; typed factories (`app`, `auth`, `mail`, `redis`, `rabbitmq`, `gemini`, `tts`, `scheduler`) are injected with `@Inject(xConfig.KEY)`. Each process loads only the factories it needs; the `.env` path no longer depends on the cwd. Fixes the daily reminder links (`undefined/...` without `FRONTEND_URL`). Web: `apps/web/src/env.ts` is the only reader of `API_URL`, read at runtime (server: `process.env`; browser: `/env.js`), so one web image runs in any environment. Token lifetimes, Gemini timeouts and rate limits are constants (`auth/auth.constants.ts`, `gemini.service.ts`, `common/throttler/throttle-policies.ts`), not variables; `JWT_REFRESH_SECRET`, `JWT_*_EXPIRES_IN`, `GEMINI_*` tuning and three unused `GOOGLE_TTS_*` were dropped.
-- Dependent values written once: 429 messages built from each policy's `ttl` (`@Throttled`, `formatDuration`); the verification and reset emails receive their link lifetime (`{{expiresIn}}`) from the token TTL constants; the scheduler derives its cron and catch-up gap from `REMINDER_HOURS` (`daily-schedule.ts`); local `.env` URLs reuse `${API_PORT}` / `${WEB_PORT}` (`expandVariables`), and `docker-compose.dev.yml` takes the MySQL / RabbitMQ credentials and ports from `.env`.
+- Config layer: only `apps/api/src/config/` reads `process.env`. The schema checks types (URLs, emails, ports, `NODE_ENV` enum, the three `GOOGLE_TTS_*` together), applies the defaults and lists every problem at once; typed factories (`app`, `auth`, `build`, `mail`, `redis`, `rabbitmq`, `gemini`, `tts`, `scheduler`) are injected with `@Inject(xConfig.KEY)`. Each process loads only the factories it needs; the `.env` path no longer depends on the cwd. Fixes the daily reminder links (`undefined/...` without `FRONTEND_URL`). Web: `apps/web/src/env.ts` is the only reader of `API_URL`, read at runtime (server: `process.env`; browser: `/env.js`), so one web image runs in any environment. Token lifetimes, Gemini timeouts and rate limits are constants (sessions in `auth/auth.constants.ts`, the verification link in `email-verification.service.ts`, the reset link in `password-reset.service.ts`; `gemini.service.ts`, `common/throttler/throttle-policies.ts`), not variables; `JWT_REFRESH_SECRET`, `JWT_*_EXPIRES_IN`, `GEMINI_*` tuning and three unused `GOOGLE_TTS_*` were dropped.
+- Dependent values written once: 429 messages built from each policy's `ttl` (`@Throttled`, `formatDuration`); the verification and reset emails receive their link lifetime (`{{expiresIn}}`) from the token TTL constants; the scheduler derives its cron and catch-up gap from `REMINDER_HOURS` (`scheduler/daily-schedule.ts`); local `.env` URLs reuse `${API_PORT}` / `${WEB_PORT}` (`expandVariables`), and `docker-compose.dev.yml` takes the MySQL / RabbitMQ credentials and ports from `.env`.
 - Constants: API/web contracts in `@sealvo/shared` (`IMPORT_MAX_FILE_BYTES`, `JOB_TTL_SECONDS`); column lengths in `common/constants/field-lengths.constants.ts`; files named `*.constants.ts`.
 - `WorkerModule` / `SchedulerModule` (`worker.module.ts`, `scheduler.module.ts`): the worker and scheduler boot only the modules they use instead of the whole `AppModule`. `app.enableShutdownHooks()` in `main.ts`.
 - `@sealvo/shared` is the single source for levels, word types and game types (DTOs, `learning/learning.constants.ts`, web hooks, stores and components); its unused/incorrect `api.ts` types were removed.
@@ -260,7 +264,7 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 - Web: the API URL is runtime configuration (`API_URL`, `/env.js`, `proxy.ts` CSP); a missing or invalid value makes `/health` answer 503 instead of every page failing; in a production build the browser never falls back to `localhost`.
 - Open redirect: `safeRedirect` resolves the target against a placeholder origin and keeps only same-origin paths (tab / CR / LF / backslash tricks such as `/\t/evil.com` are rejected).
 - Fresh clone: `db:generate` (prisma generate) runs before `build`, `dev`, `lint` and `test` in the turbo graph.
-- Password reset: the token is consumed atomically (a second concurrent request gets 400) and also revokes pending email changes; email change requests limited to 3 per hour; `PATCH /dashboard/profile` throttled (10 / 15 min). Passwords over 72 bytes are rejected (bcrypt would ignore the rest).
+- Password reset: the token is consumed atomically (a second concurrent request gets 400) and also revokes pending email changes; email change requests limited to 3 per hour; `PATCH /dashboard/profile` (now `PATCH /account/profile`) throttled (10 / 15 min). Passwords over 72 bytes are rejected (bcrypt would ignore the rest).
 - Logout only revokes a session of the caller; JWT pinned to HS256 (sign and verify); Google OAuth no longer asks for offline access and consent on every login; `/health/deps` (secret-protected) is throttled.
 - `FRONTEND_URL` is required in staging and production (no silent `localhost`), trailing `/` removed.
 - Deployed environments (staging, production): `JWT_ACCESS_SECRET` and `CRON_SECRET` must be at least 32 characters (startup fails otherwise); staging also requires `STAGING_EMAIL_INTERCEPT` (API and worker), so no real user is emailed from staging; Swagger is off.
@@ -286,14 +290,30 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 - Import: only columns A–K are read and blank rows skipped, so a small `.xlsx` declaring the range `A1:XFD1048576` no longer blocks the worker.
 - Registration: any taken email (verified or not) gets the account-exists email, never a verification link (whoever registered first knows the password); a password reset verifies the email. Register / profile emails must match the `users_email_format` CHECK. TTS trims the text; only transient Google errors open the breaker.
 - Words: migration `006_words_case_accent_sensitive` (`utf8mb4_0900_as_cs` on `word` / `subject`): `résumé` no longer reuses the `resume` row (pre-check SELECT in `docs/railway-setup.md`). `addWords` upserts each distinct word once in sorted order and both word transactions rerun on a deadlock (MySQL 1213 / P2034); a lasting one, or P2003, answers 409.
-- API: JSON body limit 6 MB (500 words at the longest fields); a redelivered import whose transaction committed is completed, not failed; an unconfirmed publish gives up after 5 s; `forgot-password` answers before the token and email work; `POST /packages/:id/copy` 20 / h; `SCHEDULER_API_URL` loses its trailing `/`.
+- API: JSON body limit 6 MB (500 words at the longest fields; since the fourth pass only on `POST /packages/:packageId/words`); a redelivered import whose transaction committed is completed, not failed; an unconfirmed publish gives up after 5 s; `forgot-password` answers before the token and email work; `POST /packages/:id/copy` 20 / h; `SCHEDULER_API_URL` loses its trailing `/`.
 - Backup: Oracle MySQL 8.0 client (utf8mb4 dumps), Railway `MYSQL*` variables, bucket keys from the bucket's own variable set, retention limited to this database's dumps, streamed restore.
 - Web: the session survives an API outage (logout only when the refresh is rejected, 401 / 403); an explicit `Authorization` header is kept; toggle / copy / profile saves use `mutateAsync` so every call gets its toast, and the profile never stores an unconfirmed email; editing a word refreshes the dashboard; Word Search drops accents and non-letters and times only the hidden words; Phrase Completion skips words without a `**blank**`; Vocab Quiz shows 6 distinct options and ignores clicks once answered; Flash Match celebrates with fireworks; Test Pronun ignores the result of a previous word; Playwright defaults to `http://localhost:3000`.
 - Login: an unverified account is reported with `code: ACCOUNT_UNVERIFIED` (`API_ERROR_CODES` in `@sealvo/shared`), so the web no longer matches the French message. `LoginDto` caps the username at 255 characters (the column) and the password at 1 KB, above anything an old account (no length rules) can hold.
 - CI/CD: a deploy fails before moving tags when a setting is missing and puts the environment tag back when a step fails; a commit the branch moved past is skipped; worker / scheduler must report the commit for 60 s (heartbeat TTL 45 s); runs on `main` / `staging` no longer queue behind each other, builds of one commit take turns; `main` reuses a staging image only after E2E Staging passed, and rescans it; E2E runs only after an actual staging deploy; `rollback.yml` lists the migrations the database keeps (expand / contract in `docs/railway-setup.md`); actions pinned by SHA, base images by digest, Dependabot; the API image exits on SIGTERM during the migration; dev compose binds to `127.0.0.1`; `.gitignore` covers `.env*` and `out/`; API lint type-checks the specs.
-- Dependencies: vitest 4.1.11 with `@vitest/coverage-v8`, TypeScript 5.9 in every workspace, API `@types/node` 22.
+- Dependencies: vitest 4.1.11 (`@vitest/coverage-v8` in the API only), TypeScript 5.9 in every workspace, API `@types/node` 22.
 - API structure: scaffold `AppController` / `AppService` (`GET /`) removed; `auth/crypto.ts` (token and password hashing), `common/utils/error-message.ts`; `ParseGameTypePipe`; due-date rules in `common/domain/spaced-repetition.ts` (`daysCutoff` shared with the cleanup); `MAX_IMPORT_ROWS` in `@sealvo/shared`; `rabbitmq/retry-queue.ts` (one retry / dead-letter topology for the email and import queues); `MaintenanceService` (cleanup out of `ReminderService`, each table deleted on its own); `SchedulerService` (`scheduler.ts` only boots it); every Redis key in `redis/cache-keys.constants.ts` (`CACHE_KEYS`, `REDIS_KEYS`, `CACHE_TTL.LEVEL_PROGRESS`).
 - Web structure: `invalidate` / `invalidateWords` in `lib/query-keys.ts`; `usePackageIdParam` (`hooks/use-package-id-param.ts`) for the `?package=` id.
+
+### Changes Oct 17, 2026 — fourth audit pass
+
+- Sessions: a refresh clears the cookie only when the session is rejected (401), not on a database outage; a session slides 7 days per refresh but ends 30 days after the login (`SESSION_MAX_AGE_MS`, from `created_at`). Web startup (`lib/restore-session.ts`, `AuthInitializer`): when the API is unreachable (network, 429, 5xx) guarded pages keep a spinner and the refresh is retried after 2, 5, 10 then every 30 s.
+- Email links: `verifyEmail` consumes the token with a conditional update inside the transaction (a link works once); an address taken in the meantime answers 409. Google token / profile requests time out after 10 s.
+- `CRON_SECRET` required in staging and production (env schema).
+- Words and packages: every text field of the word and package DTOs is trimmed (`@Trim`, as the old app did). The 6 MB JSON limit applies only to `POST /packages/:packageId/words`; every other body keeps 100 KB. `express` pinned to the version `@nestjs/platform-express` uses (bump them together).
+- Resilience: the reminder cleanup runs in `finally`; `amqp.connect` times out after 10 s; a half-open `CircuitBreaker` lets one probe through (`@sealvo/shared` now has Vitest); full SHA-256 for the TTS audio cache key; SES throttling and 5xx are retried; a message parked in the failed queue is acked only after the broker confirmed it; typed job meta.
+- Package toggle in one statement (`UPDATE … SET is_active = NOT is_active` and the read in the same transaction): two concurrent toggles no longer cancel into one.
+- API structure: `EmailVerificationService` keeps verification only; the email change moved to `auth/email-change.service.ts`, the account-exists email to `AuthService`; `EmailQueueService.enqueueOrFail` (500 with the caller's message when nothing could be queued or sent). Profile in a new `account/` module: `PATCH /account/profile` replaces `PATCH /dashboard/profile` (removed: a web page loaded before the deploy gets a 404 until reloaded), `DashboardModule` no longer imports `AuthModule`. `normalizeEmail` in `common/utils/`, `daily-schedule.ts` in `scheduler/`, `JwtPayload` from `@sealvo/shared`, unused `TtsModule` export dropped, `config/testing.ts` excluded from the build.
+- Web, old behaviour restored: Word Scramble scoring (each correct check scores, the attempt counts on the next word, so accuracy can exceed 100 %); Test Pronun scores each word once and skipping the last word ends the game; Phrase Completion falling stars, star particles and constellation glow (`phrase-effects.ts`, paused while the tab is hidden); Learn browser warning for browsers other than Chrome / Edge / Safari (`BrowserWarningModal`, copy link, open in Edge); the element ids the ported CSS targets (`#word-input`, `#timer`, `#progress-text`, `#no-search-results`).
+- Web fixes: confirmation before leaving the add-words form or a started learn session (`use-leave-confirmation.ts`; reload, tab close, in-app links; not the browser back button); the deleted row spins then fades out before the words are refetched; found words updated functionally (Word Search), quiz particles cancelled on unmount, logout disabled while pending, games hub hover in CSS; modals have `role="dialog"`, `aria-modal`, a label, Escape and focus handling (`hooks/use-dialog.ts`); the import picker offers `.xlsx` / `.xls` only.
+- CI/CD: the environment tag is restored on cancel or timeout too (not by `rollback.yml`); `RAILWAY_TOKEN` scoped to the steps that use it, checkout without persisted credentials; only a not-found registry answer triggers a build; a `main` commit that is on staging always needs E2E Staging green; pull requests build and Trivy-scan the three images; `e2e.yml` takes an optional version that web and API must report before and after the tests.
+- Build: the backup image verifies the MySQL signing key; prod compose binds to `127.0.0.1`; turbo local cache capped; API tests run in `Europe/Paris`. `docs/railway-setup.md`: API draining seconds, recovery from a half-applied migration (P3009).
+- Not ported, on purpose: the Speed Vocab ripple (the old code appended it inside an `<input>`, so it never showed). `BulkWordsService` stays in `ImportModule` (moving it to `WordsModule` would create a module cycle). Next.js 16 dev-only "instant navigation" warnings come from `AuthGuard` and are unchanged.
+- Manual actions: Railway draining 60 s on the API service; `CRON_SECRET` (≥ 32 characters) on staging and production before deploying.
 
 ### Legend
 
@@ -355,8 +375,8 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 | --- | -------- | ----------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 35  | 🟡       | `editVocabs.hbs` referenced in code but file doesn't exist  | Don't port dead reference                    | ✅ Done — not ported                                                                                                                                                                                                                                                                                                                              |
 | 36  | 🔴       | Google OAuth creates user without `is_verified=true`        | Set `is_verified: true` for OAuth users      | ✅ Done — `is_verified: true` in `googleLogin`                                                                                                                                                                                                                                                                                                    |
-| 37  | 🟠       | 52 unit + 5 e2e tests with no migration strategy            | Jest + @nestjs/testing + Playwright          | ✅ Done — Vitest (352 API tests in 49 files, incl. guards and DTOs; 123 web unit tests in 22 files) + 31 Playwright (26 public + 5 protected with the seeded account, #58); E2E runs on staging after each staging deploy                                                                                                                         |
-| 38  | 🟠       | 22 JS files (~5500 lines) not 6 as initially estimated      | Full decomposition into ~40 React components | ✅ Done — 91 `.tsx` components + 62 `.ts` hooks/helpers in `components/`, tests excluded (about, auth, dashboard, games ×7, home, jobs, layout, learn, packages, words); largest pages: test-pronun 242, phrase-completion 238, word-search 232, speed-vocab 221, register 205, other games 179–193, words 149, dashboard 130, packages 110 lines |
+| 37  | 🟠       | 52 unit + 5 e2e tests with no migration strategy            | Jest + @nestjs/testing + Playwright          | ✅ Done — Vitest (392 API tests in 56 files, incl. guards and DTOs; 138 web unit tests in 24 files; 3 in `@sealvo/shared`) + 31 Playwright (26 public + 5 protected with the seeded account, #58); E2E runs on staging after each staging deploy                                                                                                  |
+| 38  | 🟠       | 22 JS files (~5500 lines) not 6 as initially estimated      | Full decomposition into ~40 React components | ✅ Done — 92 `.tsx` components + 63 `.ts` hooks/helpers in `components/`, tests excluded (about, auth, dashboard, games ×7, home, jobs, layout, learn, packages, words); largest pages: test-pronun 272, phrase-completion 264, word-search 256, register 244, speed-vocab 229, other games 188–205, words 167, dashboard 131, packages 110 lines |
 | 39  | 🟡       | theme-init.js FOUC prevention                               | Cookie-based theme detection in Next.js      | ✅ Done — `next-themes` inline script (localStorage, not cookie)                                                                                                                                                                                                                                                                                  |
 | 40  | 🟡       | /update-streak orphan route (registered on app, not router) | Move into LearningController                 | ✅ Done — `POST /learning/streak`                                                                                                                                                                                                                                                                                                                 |
 | 41  | 🟡       | Dockerfile.backup missing from migration plan               | Add to Docker Compose with backup profile    | ✅ Done — `Dockerfile.backup` + compose `backup` profile + CI image                                                                                                                                                                                                                                                                               |
@@ -373,7 +393,7 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 | 47  | 🔴       | deleteWord only deletes from learning table → orphaned word_details             | Check refs after delete, clean up if zero                        | ✅ Done — orphan cleanup in `deleteWord` / `deleteAllWords`                                              |
 | 48  | 🟠       | User ID generation (7-char hex) has race condition (check-then-insert)          | Retry on Prisma P2002 unique constraint violation                | ✅ Done — `createUser` retries on PRIMARY P2002 (5 attempts)                                             |
 | 49  | 🟠       | JWT implementation details missing from plan                                    | Full flow: access 15min, refresh 7d, rotation, Axios interceptor | ✅ Done — opaque refresh sessions in DB: rotation, reuse detection, 10 s leeway, revoked on logout/reset |
-| 50  | 🟠       | Logging strategy missing                                                        | NestJS Logger or nestjs-pino                                     | ✅ Done — NestJS Logger (worker/scheduler use console)                                                   |
+| 50  | 🟠       | Logging strategy missing                                                        | NestJS Logger or nestjs-pino                                     | ✅ Done — NestJS Logger (only `worker.ts` uses console)                                                  |
 
 ### Round 6: CI/CD, Security, Config (#51-55)
 
@@ -397,13 +417,13 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 
 ### Round 8: Cross-cutting Concerns (#61-65)
 
-| #   | Severity | Issue                                                            | Fix                                                        | Status                                                                                                                                                                                                                                                                                                                                 |
-| --- | -------- | ---------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 61  | 🟠       | Cache keys fragmented across controllers (no registry)           | Centralized CacheKeys constant + CacheInvalidationService  | ✅ Done — `CACHE_KEYS` / `CACHE_TTL` hold only the keys in use (dashboard, level progress, email dedup, TTS audio 24h and voices 6h; `CacheService` prefixes `cache:`). Invalidation stays an explicit `del` of a known key (`InvalidateDashboardInterceptor`, import queue); a SCAN-based invalidation service was removed on purpose |
-| 62  | 🟠       | GameScores.saveScore has redundant query + TOCTOU race           | Remove pre-query; determine isHighScore from single upsert | ✅ Done — `createMany(skipDuplicates)` + conditional `updateMany`                                                                                                                                                                                                                                                                      |
-| 63  | 🟠       | saveWords inserts sequentially (100 words = 100 transactions)    | Wrap in single Prisma $transaction()                       | ✅ Done — single `$transaction` in `addWords`                                                                                                                                                                                                                                                                                          |
-| 64  | 🟠       | NestJS execution order differs from Express — must document      | Map Express middleware → NestJS lifecycle                  | ✅ Done — section 2 "NestJS Execution Order" lists what is registered (guards, pipes, interceptors, filter, throttler) and what was not ported                                                                                                                                                                                         |
-| 65  | 🟡       | email_verification.generateToken() recursive without depth limit | Loop with max 5 attempts                                   | ✅ Done — `generateVerificationToken` loop, max 5                                                                                                                                                                                                                                                                                      |
+| #   | Severity | Issue                                                            | Fix                                                        | Status                                                                                                                                                                                                                                                                                                                                                  |
+| --- | -------- | ---------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 61  | 🟠       | Cache keys fragmented across controllers (no registry)           | Centralized CacheKeys constant + CacheInvalidationService  | ✅ Done — `CACHE_KEYS` / `CACHE_TTL` hold only the keys in use (dashboard, level progress, email dedup, TTS audio 24h and voices 6h, reminder run 2h; `CacheService` prefixes `cache:`). Invalidation stays an explicit `del` of a known key (`InvalidateDashboardInterceptor`, import queue); a SCAN-based invalidation service was removed on purpose |
+| 62  | 🟠       | GameScores.saveScore has redundant query + TOCTOU race           | Remove pre-query; determine isHighScore from single upsert | ✅ Done — `createMany(skipDuplicates)` + conditional `updateMany`                                                                                                                                                                                                                                                                                       |
+| 63  | 🟠       | saveWords inserts sequentially (100 words = 100 transactions)    | Wrap in single Prisma $transaction()                       | ✅ Done — single `$transaction` in `addWords`                                                                                                                                                                                                                                                                                                           |
+| 64  | 🟠       | NestJS execution order differs from Express — must document      | Map Express middleware → NestJS lifecycle                  | ✅ Done — section 2 "NestJS Execution Order" lists what is registered (guards, pipes, interceptors, filter, throttler) and what was not ported                                                                                                                                                                                                          |
+| 65  | 🟡       | email_verification.generateToken() recursive without depth limit | Loop with max 5 attempts                                   | ✅ Done — `generateVerificationToken` loop, max 5                                                                                                                                                                                                                                                                                                       |
 
 ### Round 9: Timezone, API Contract, Degradation (#66-70)
 
@@ -440,20 +460,20 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 | #   | Severity | Issue                                                                  | Fix                              | Status                                                                                |
 | --- | -------- | ---------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------- |
 | 81  | 🔴🔴🔴   | SYSTEMIC IDOR: 13 endpoints NO check + 4 partial check = 17 vulnerable | Global PackageOwnershipGuard     | ✅ Done — per-route guard on every package-id endpoint; ids must match across sources |
-| 82  | 🔴🔴🔴   | deleteAllWords — zero authorization, deletes ANY package's words       | PackageOwnershipGuard            | ✅ Done — controller-level guard on `DELETE …/words`                                  |
-| 83  | 🔴🔴     | addWordPost — inject words into other users' packages                  | PackageOwnershipGuard            | ✅ Done — controller-level guard on `POST …/words`                                    |
+| 82  | 🔴🔴🔴   | deleteAllWords — zero authorization, deletes ANY package's words       | PackageOwnershipGuard            | ✅ Done — route-level guard on `DELETE …/words`                                       |
+| 83  | 🔴🔴     | addWordPost — inject words into other users' packages                  | PackageOwnershipGuard            | ✅ Done — route-level guard on `POST …/words`                                         |
 | 84  | 🔴       | deleteWord/editWord partial check (word↔pkg but NOT pkg↔user)          | Add pkg→user check               | ✅ Done — guard + composite `(detail_id, package_id)` lookup                          |
 | 85  | 🟡       | findUsersByWordId — misleading name (returns learning row)             | Rename to findLearningByDetailId | ✅ Done — not ported; direct Prisma `learning` queries                                |
 
 ### Round 13: Docker, Uploads, Dead Code (#86-90)
 
-| #   | Severity | Issue                                                                 | Fix                                       | Status                                                                                                                                                   |
-| --- | -------- | --------------------------------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 86  | 🟠       | Docker Compose builds same image 3 times                              | Build once, reference by image name       | ✅ Done — compose: api/worker/scheduler share the `x-api-image` anchor (same `build` + `image: sealvo-api`); CI builds the api image once                |
-| 87  | 🟡       | uploads_data volume unnecessary with memoryStorage                    | Remove volume, use memoryStorage()        | ✅ Done — no uploads volume; memory storage                                                                                                              |
-| 88  | 🟡       | cache.invalidatePattern — exported but never called                   | Note as dead code; port if needed         | ✅ Done — dead `invalidatePattern` removed from `cache.service.ts`                                                                                       |
-| 89  | 🟡       | secrets.js must add JWT secrets                                       | Add JWT_ACCESS_SECRET, JWT_REFRESH_SECRET | ✅ Done — `JWT_ACCESS_SECRET` required by the env schema (`config/auth.config.ts`); `JWT_REFRESH_SECRET` no longer needed (opaque refresh sessions, #49) |
-| 90  | 🟢       | Email template CSS uses hover/transitions — stripped by email clients | Remove animation CSS from email templates | ✅ Done — hover/transition/animation CSS removed from `apps/api/templates/mails`                                                                         |
+| #   | Severity | Issue                                                                 | Fix                                       | Status                                                                                                                                                      |
+| --- | -------- | --------------------------------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 86  | 🟠       | Docker Compose builds same image 3 times                              | Build once, reference by image name       | ✅ Done — compose: api/worker/scheduler share the `x-api-image` anchor (same `build` + `image: sealvo-api`); CI builds the api image once                   |
+| 87  | 🟡       | uploads_data volume unnecessary with memoryStorage                    | Remove volume, use memoryStorage()        | ✅ Done — no uploads volume; memory storage                                                                                                                 |
+| 88  | 🟡       | cache.invalidatePattern — exported but never called                   | Note as dead code; port if needed         | ✅ Done — dead `invalidatePattern` removed from `cache.service.ts`                                                                                          |
+| 89  | 🟡       | secrets.js must add JWT secrets                                       | Add JWT_ACCESS_SECRET, JWT_REFRESH_SECRET | ✅ Done — `JWT_ACCESS_SECRET` required by the env schema (`config/env.validation.ts`); `JWT_REFRESH_SECRET` no longer needed (opaque refresh sessions, #49) |
+| 90  | 🟢       | Email template CSS uses hover/transitions — stripped by email clients | Remove animation CSS from email templates | ✅ Done — hover/transition/animation CSS removed from `apps/api/templates/mails`                                                                            |
 
 ### Round 14: Test Config, Sanitization (#91-95)
 
@@ -528,7 +548,8 @@ AppModule (+ ThrottlerGuard APP_GUARD, PrismaExceptionFilter APP_FILTER)
 │   └── WordsCoreModule
 ├── HealthModule
 ├── AuthModule (AuthService, SessionService, TokenService, EmailVerificationService,
-│   │           PasswordResetService, GoogleAuthService, JwtStrategy)
+│   │           EmailChangeService, PasswordResetService, GoogleAuthService, JwtStrategy;
+│   │           exports EmailChangeService)
 │   ├── PassportModule
 │   ├── EmailModule
 │   └── JwtModule (JWT_ACCESS_SECRET, 15m)
@@ -540,7 +561,8 @@ AppModule (+ ThrottlerGuard APP_GUARD, PrismaExceptionFilter APP_FILTER)
 ├── LearningModule
 ├── GamesModule
 ├── DashboardModule
-│   └── AuthModule (EmailVerificationService, for the email change)
+├── AccountModule (AccountController, AccountService)
+│   └── AuthModule (EmailChangeService)
 ├── TtsModule
 ├── FeedbackModule
 │   └── EmailModule
@@ -560,8 +582,9 @@ SchedulerModule (scheduler.ts; provider SchedulerService)
 └── RedisModule (@Global)
 ```
 
-Guards (`JwtAuthGuard`, `PackageOwnershipGuard`, `PackageReadGuard`, `CronSecretGuard`) live in
-`auth/guards/` and are applied with `@UseGuards`; they use the global `PrismaService`.
+Guards (`JwtAuthGuard`, `PackageOwnershipGuard`, `PackageReadGuard`, `CronSecretGuard`,
+`SameOriginGuard`) live in `auth/guards/` and are applied with `@UseGuards`; the package guards use
+the global `PrismaService`, `CronSecretGuard` and `SameOriginGuard` read the config.
 `InvalidateDashboardInterceptor` lives in `common/interceptors/`.
 
 **No circular dependencies.**
@@ -570,8 +593,8 @@ Guards (`JwtAuthGuard`, `PackageOwnershipGuard`, `PackageReadGuard`, `CronSecret
 
 ## 6. API Endpoints Mapping
 
-From the controllers (`apps/api/src/**/*.controller.ts`). No global prefix: the only `/api` route is
-the cron `POST /api/reminder` (hidden from Swagger). Every route needs `JwtAuthGuard` except auth
+From the controllers (`apps/api/src/**/*.controller.ts`). No global prefix: the only `/api` routes are
+the cron `POST /api/reminder` (hidden from Swagger) and the Swagger UI `/api/docs` (development only). Every route needs `JwtAuthGuard` except auth
 (register, login, refresh, forgot/reset password, verify-email, resend-verification, Google), feedback, `GET /health`,
 and the `CronSecretGuard` routes (`GET /health/deps`, `POST /api/reminder`).
 "Owner" = `PackageOwnershipGuard`, "Read" = `PackageReadGuard` (owner, or a `public` / `protected`
@@ -582,7 +605,7 @@ package).
 | Express                                                  | NestJS                         | Notes                                                                            |
 | -------------------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------- |
 | POST /login                                              | POST /auth/login               | `{accessToken}` + refresh cookie                                                 |
-| POST /registre                                           | POST /auth/register            | sends the verification email                                                     |
+| POST /registre                                           | POST /auth/register            | sends the verification email, or the account-exists email for a taken address    |
 | GET /logout                                              | POST /auth/logout              | JWT; revokes this device's session, clears the cookie                            |
 | GET /auth/google                                         | GET /auth/google               | 302 to Google (state cookie)                                                     |
 | GET /auth/google/callback                                | GET /auth/google/callback      | 302 to `/dashboard` (refresh cookie) or `/login?error=…`                         |
@@ -594,12 +617,12 @@ package).
 | — (new)                                                  | POST /auth/refresh             | refresh cookie rotation                                                          |
 | — (new)                                                  | GET /auth/me                   | JWT                                                                              |
 
-### Dashboard (`dashboard.controller.ts`)
+### Dashboard + account (`dashboard.controller.ts`, `account.controller.ts`)
 
-| Express              | NestJS                   | Notes                                      |
-| -------------------- | ------------------------ | ------------------------------------------ |
-| GET /dashboard       | GET /dashboard           | stats                                      |
-| POST /dashboard/edit | PATCH /dashboard/profile | username, email (current password), avatar |
+| Express              | NestJS                 | Notes                                      |
+| -------------------- | ---------------------- | ------------------------------------------ |
+| GET /dashboard       | GET /dashboard         | stats (cached 5 min)                       |
+| POST /dashboard/edit | PATCH /account/profile | username, email (current password), avatar |
 
 ### Packages (`packages.controller.ts`)
 
@@ -616,15 +639,15 @@ package).
 
 ### Words + import (`words.controller.ts`, `import.controller.ts`)
 
-| Express                              | NestJS                                      | Notes                                                                 |
-| ------------------------------------ | ------------------------------------------- | --------------------------------------------------------------------- |
-| GET /monVocabs?package=X             | GET /packages/:packageId/words              | Read                                                                  |
-| GET /monVocabs/learn?package=X       | GET /packages/:packageId/words/review       | Owner; due words                                                      |
-| POST /monVocabs/add?package=X        | POST /packages/:packageId/words             | Owner; `CreateWordDto[]` (≤ 500); ≥ 3 words queued (`{async, jobId}`) |
-| POST /monVocabs/add/import?package=X | POST /packages/:packageId/import            | Owner; multipart `file`; queued when RabbitMQ is up                   |
-| POST /monVocabs/edit/:id?package=X   | PATCH /packages/:packageId/words/:detailId  | Owner                                                                 |
-| POST /monVocabs/delete/:id?package=X | DELETE /packages/:packageId/words/:detailId | Owner                                                                 |
-| POST /monVocabs/deleteAll?package=X  | DELETE /packages/:packageId/words           | Owner                                                                 |
+| Express                              | NestJS                                      | Notes                                                                                                             |
+| ------------------------------------ | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| GET /monVocabs?package=X             | GET /packages/:packageId/words              | Read                                                                                                              |
+| GET /monVocabs/learn?package=X       | GET /packages/:packageId/words/review       | Owner; due words                                                                                                  |
+| POST /monVocabs/add?package=X        | POST /packages/:packageId/words             | Owner; `CreateWordDto[]` (≤ 500, body ≤ 6 MB); ≥ 3 words queued when RabbitMQ and Redis are up (`{async, jobId}`) |
+| POST /monVocabs/add/import?package=X | POST /packages/:packageId/import            | Owner; multipart `file`; queued when RabbitMQ and Redis are up                                                    |
+| POST /monVocabs/edit/:id?package=X   | PATCH /packages/:packageId/words/:detailId  | Owner                                                                                                             |
+| POST /monVocabs/delete/:id?package=X | DELETE /packages/:packageId/words/:detailId | Owner                                                                                                             |
+| POST /monVocabs/deleteAll?package=X  | DELETE /packages/:packageId/words           | Owner                                                                                                             |
 
 ### Games (`games.controller.ts`)
 
@@ -666,39 +689,39 @@ Swagger UI at `/api/docs` in development only (off in staging and production).
 
 Routes that write, or read package data, with their security layers (Global = 100/min default):
 
-| #   | NestJS endpoint                                          | Auth                                       | Rate Limit    | Validation                                                            | Ownership                 |
-| --- | -------------------------------------------------------- | ------------------------------------------ | ------------- | --------------------------------------------------------------------- | ------------------------- |
-| 1   | POST /auth/login                                         | SameOriginGuard                            | 10 / 15 min   | LoginDto                                                              | —                         |
-| 2   | POST /auth/register                                      | SameOriginGuard                            | 5 / 15 min    | RegisterDto                                                           | —                         |
-| 3   | POST /auth/forgot-password                               | —                                          | 3 / h         | ForgotPasswordDto                                                     | —                         |
-| 4   | POST /auth/reset-password                                | —                                          | 10 / 15 min   | ResetPasswordDto                                                      | —                         |
-| 5   | POST /packages/:packageId/words                          | JwtAuthGuard                               | Global        | `ParseArrayPipe` CreateWordDto[] (≤ 500, unknown properties rejected) | **PackageOwnershipGuard** |
-| 6   | POST /packages/:packageId/import                         | JwtAuthGuard                               | Global        | file .xlsx/.xls ≤ 5 MB, rows checked                                  | **PackageOwnershipGuard** |
-| 7   | DELETE /packages/:packageId/words                        | JwtAuthGuard                               | Global        | ParseIntPipe                                                          | **PackageOwnershipGuard** |
-| 8   | DELETE /packages/:packageId/words/:detailId              | JwtAuthGuard                               | Global        | ParseIntPipe                                                          | **PackageOwnershipGuard** |
-| 9   | PATCH /packages/:packageId/words/:detailId               | JwtAuthGuard                               | Global        | UpdateWordDto                                                         | **PackageOwnershipGuard** |
-| 10  | PATCH /dashboard/profile                                 | JwtAuthGuard                               | 10 / 15 min   | UpdateProfileDto                                                      | own user                  |
-| 11  | POST /auth/verify-email                                  | —                                          | Global        | VerifyEmailDto                                                        | token                     |
-| 12  | POST /feedback                                           | —                                          | 5 / h         | CreateFeedbackDto                                                     | —                         |
-| 13  | POST /packages                                           | JwtAuthGuard                               | Global        | CreatePackageDto                                                      | —                         |
-| 14  | DELETE /packages/:packageId                              | JwtAuthGuard                               | Global        | ParseIntPipe                                                          | **PackageOwnershipGuard** |
-| 15  | PATCH /packages/:packageId                               | JwtAuthGuard                               | Global        | UpdatePackageDto                                                      | **PackageOwnershipGuard** |
-| 16  | PATCH /packages/:packageId/toggle                        | JwtAuthGuard                               | Global        | ParseIntPipe                                                          | **PackageOwnershipGuard** |
-| 17  | POST /packages/:packageId/copy                           | JwtAuthGuard                               | 20 / h        | ParseIntPipe                                                          | — (public only)           |
-| 18  | POST /api/reminder                                       | CronSecretGuard                            | 3 / h         | —                                                                     | —                         |
-| 19  | POST /reminder/test                                      | JwtAuthGuard                               | 3 / h         | —                                                                     | own address               |
-| 20  | POST /tts/generate                                       | JwtAuthGuard                               | 30 / min      | GenerateAudioDto                                                      | —                         |
-| 21  | POST /games/score                                        | JwtAuthGuard                               | Global        | SaveScoreDto                                                          | own user                  |
-| 22  | POST /learning/level-progress/track                      | JwtAuthGuard                               | Global        | TrackGameDto                                                          | **PackageOwnershipGuard** |
-| 23  | POST /learning/level-progress/reset                      | JwtAuthGuard                               | Global        | ResetLevelDto                                                         | own user                  |
-| 24  | POST /learning/streak                                    | JwtAuthGuard                               | Global        | —                                                                     | own user                  |
-| 25  | GET /games/:gameType/data?packageId=                     | JwtAuthGuard                               | Global        | ParseGameTypePipe, ParseIntPipe                                       | **PackageOwnershipGuard** |
-| 26  | GET /packages/:packageId, GET /packages/:packageId/words | JwtAuthGuard                               | Global        | ParseIntPipe                                                          | **PackageReadGuard**      |
-| 27  | GET /packages/:packageId/words/review                    | JwtAuthGuard                               | Global        | ParseIntPipe                                                          | **PackageOwnershipGuard** |
-| 28  | GET /jobs/:id, GET /jobs/:id/stream                      | JwtAuthGuard                               | none / Global | —                                                                     | job `meta.userId`         |
-| 29  | GET /health/deps                                         | CronSecretGuard                            | Global        | —                                                                     | —                         |
-| 30  | POST /auth/resend-verification                           | —                                          | 3 / h         | ResendVerificationDto                                                 | — (generic answer)        |
-| 31  | POST /auth/refresh, POST /auth/logout                    | SameOriginGuard (+ JwtAuthGuard on logout) | Global        | refresh cookie                                                        | own session               |
+| #   | NestJS endpoint                                          | Auth                                       | Rate Limit    | Validation                                                                         | Ownership                 |
+| --- | -------------------------------------------------------- | ------------------------------------------ | ------------- | ---------------------------------------------------------------------------------- | ------------------------- |
+| 1   | POST /auth/login                                         | SameOriginGuard                            | 10 / 15 min   | LoginDto                                                                           | —                         |
+| 2   | POST /auth/register                                      | SameOriginGuard                            | 5 / 15 min    | RegisterDto                                                                        | —                         |
+| 3   | POST /auth/forgot-password                               | —                                          | 3 / h         | ForgotPasswordDto                                                                  | —                         |
+| 4   | POST /auth/reset-password                                | —                                          | 10 / 15 min   | ResetPasswordDto                                                                   | —                         |
+| 5   | POST /packages/:packageId/words                          | JwtAuthGuard                               | Global        | `ParseArrayPipe` CreateWordDto[] (≤ 500, unknown properties rejected, body ≤ 6 MB) | **PackageOwnershipGuard** |
+| 6   | POST /packages/:packageId/import                         | JwtAuthGuard                               | Global        | file .xlsx/.xls ≤ 5 MB, rows checked                                               | **PackageOwnershipGuard** |
+| 7   | DELETE /packages/:packageId/words                        | JwtAuthGuard                               | Global        | ParseIntPipe                                                                       | **PackageOwnershipGuard** |
+| 8   | DELETE /packages/:packageId/words/:detailId              | JwtAuthGuard                               | Global        | ParseIntPipe                                                                       | **PackageOwnershipGuard** |
+| 9   | PATCH /packages/:packageId/words/:detailId               | JwtAuthGuard                               | Global        | UpdateWordDto                                                                      | **PackageOwnershipGuard** |
+| 10  | PATCH /account/profile                                   | JwtAuthGuard                               | 10 / 15 min   | UpdateProfileDto                                                                   | own user                  |
+| 11  | POST /auth/verify-email                                  | —                                          | Global        | VerifyEmailDto                                                                     | token                     |
+| 12  | POST /feedback                                           | —                                          | 5 / h         | CreateFeedbackDto                                                                  | —                         |
+| 13  | POST /packages                                           | JwtAuthGuard                               | Global        | CreatePackageDto                                                                   | —                         |
+| 14  | DELETE /packages/:packageId                              | JwtAuthGuard                               | Global        | ParseIntPipe                                                                       | **PackageOwnershipGuard** |
+| 15  | PATCH /packages/:packageId                               | JwtAuthGuard                               | Global        | UpdatePackageDto                                                                   | **PackageOwnershipGuard** |
+| 16  | PATCH /packages/:packageId/toggle                        | JwtAuthGuard                               | Global        | ParseIntPipe                                                                       | **PackageOwnershipGuard** |
+| 17  | POST /packages/:packageId/copy                           | JwtAuthGuard                               | 20 / h        | ParseIntPipe                                                                       | — (public only)           |
+| 18  | POST /api/reminder                                       | CronSecretGuard                            | 3 / h         | —                                                                                  | —                         |
+| 19  | POST /reminder/test                                      | JwtAuthGuard                               | 3 / h         | —                                                                                  | own address               |
+| 20  | POST /tts/generate                                       | JwtAuthGuard                               | 30 / min      | GenerateAudioDto                                                                   | —                         |
+| 21  | POST /games/score                                        | JwtAuthGuard                               | Global        | SaveScoreDto                                                                       | own user                  |
+| 22  | POST /learning/level-progress/track                      | JwtAuthGuard                               | Global        | TrackGameDto                                                                       | **PackageOwnershipGuard** |
+| 23  | POST /learning/level-progress/reset                      | JwtAuthGuard                               | Global        | ResetLevelDto                                                                      | own user                  |
+| 24  | POST /learning/streak                                    | JwtAuthGuard                               | Global        | —                                                                                  | own user                  |
+| 25  | GET /games/:gameType/data?packageId=                     | JwtAuthGuard                               | Global        | ParseGameTypePipe, ParseIntPipe                                                    | **PackageOwnershipGuard** |
+| 26  | GET /packages/:packageId, GET /packages/:packageId/words | JwtAuthGuard                               | Global        | ParseIntPipe                                                                       | **PackageReadGuard**      |
+| 27  | GET /packages/:packageId/words/review                    | JwtAuthGuard                               | Global        | ParseIntPipe                                                                       | **PackageOwnershipGuard** |
+| 28  | GET /jobs/:id, GET /jobs/:id/stream                      | JwtAuthGuard                               | none / Global | —                                                                                  | job `meta.userId`         |
+| 29  | GET /health/deps                                         | CronSecretGuard                            | Global        | —                                                                                  | —                         |
+| 30  | POST /auth/resend-verification                           | —                                          | 3 / h         | ResendVerificationDto                                                              | — (generic answer)        |
+| 31  | POST /auth/refresh, POST /auth/logout                    | SameOriginGuard (+ JwtAuthGuard on logout) | Global        | refresh cookie                                                                     | own session               |
 
 All package guards are owner-only (no Admin bypass); a `packageId` that is not a positive integer is
 a 400, one that differs between path, query and body a 403.
@@ -707,8 +730,8 @@ a 400, one that differs between path, query and body a 403.
 
 ## 8. Frontend Decomposition
 
-22 vanilla JS files (~11 200 lines) → App Router pages + 91 `.tsx` components + 62 `.ts` hooks/helpers
-in `components/` (tests excluded; `apps/web/src` overall: 142 `.tsx` + 87 `.ts`, plus 2 `test-utils/` files):
+22 vanilla JS files (~11 200 lines) → App Router pages + 92 `.tsx` components + 63 `.ts` hooks/helpers
+in `components/` (tests excluded; `apps/web/src` overall: 143 `.tsx` + 99 `.ts`, `test-utils/` included):
 
 ### Pages (`apps/web/src/app`)
 
@@ -753,10 +776,12 @@ components/
 
 ```
 hooks/      use-auth, use-packages, use-words (incl. useReviewWords), use-import, use-games, use-learning,
-            use-dashboard, use-feedback (React Query), use-timeouts, use-unmount-signal, use-is-client
-lib/        api.ts (Axios + Bearer + refresh interceptor), query-keys.ts, job-watcher.ts (Zustand) +
+            use-dashboard, use-feedback (React Query), use-timeouts, use-unmount-signal, use-is-client,
+            use-package-id-param, use-dialog (modal Escape + focus), use-leave-confirmation
+lib/        api.ts (Axios + Bearer + refresh interceptor), restore-session.ts (startup refresh),
+            api-error.ts, notify.ts, query-keys.ts, job-watcher.ts (Zustand) +
             active-jobs.ts (localStorage) + job-stream.ts (SSE via fetch-event-source), css-module.ts (cx),
-            shuffle.ts, bold-markup.ts, tts.ts
+            safe-redirect.ts, word-type.ts, shuffle.ts, bold-markup.ts, tts.ts
 stores/     auth.store.ts (Zustand: user + access token in memory)
 providers/  QueryProvider, ThemeProvider (next-themes), AuthInitializer, JobWatcher, Toaster
 ```
@@ -769,7 +794,7 @@ The original YAML sketch is obsolete. Source of truth: `.github/workflows/ci-cd.
 `.github/workflows/e2e.yml`; setup (environments, secrets, variables) in `docs/railway-setup.md`.
 
 - **PR + push** (`main`, `staging`, `develop`): `npm ci` → `npm audit --omit=dev` (critical) →
-  `prisma generate` → `turbo lint` → `turbo test` → `turbo build` (`.turbo/cache` kept with
+  `turbo lint` (after `db:generate`, i.e. `prisma generate`, in the turbo graph) → `turbo test` → `turbo build` (`.turbo/cache` kept with
   `actions/cache`)
 - **Migrations check** (same triggers, job `migrations-check`): MySQL 8 service, empty database →
   `prisma migrate deploy` → `prisma migrate diff --from-migrations … --to-schema-datamodel …
