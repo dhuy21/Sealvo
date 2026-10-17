@@ -59,7 +59,8 @@ function WordsContent() {
     );
   }
 
-  if (pkgQuery.isError || wordsQuery.isError) {
+  // A failed background refetch keeps the list already shown
+  if ((pkgQuery.isError && !pkgQuery.data) || (wordsQuery.isError && !wordsQuery.data)) {
     return (
       <div
         className={cx(styles, 'vocabulary-container')}

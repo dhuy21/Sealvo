@@ -5,7 +5,11 @@ import { GRID_SIZE, cellKey, findWordInGrid, generateGrid, normalizeWord } from 
 describe('normalizeWord', () => {
   it('upper-cases and keeps only A–Z', () => {
     expect(normalizeWord("look up-to it's")).toBe('LOOKUPTOITS');
-    expect(normalizeWord('café')).toBe('CAF');
+  });
+
+  it('drops accents instead of the accented letters', () => {
+    expect(normalizeWord('café')).toBe('CAFE');
+    expect(normalizeWord('Tiếng Việt')).toBe('TIENGVIET');
   });
 });
 
@@ -55,7 +59,7 @@ describe('findWordInGrid', () => {
 describe('generateGrid', () => {
   it('fills a 15×15 grid with upper-case letters', () => {
     seedRandom(1);
-    const grid = generateGrid(['apple', 'banana']);
+    const { grid } = generateGrid(['apple', 'banana']);
     expect(grid).toHaveLength(GRID_SIZE);
     for (const row of grid) {
       expect(row).toHaveLength(GRID_SIZE);
@@ -65,9 +69,10 @@ describe('generateGrid', () => {
 
   it('places every word (normalized) somewhere in the grid', () => {
     seedRandom(2);
-    const words = ['apple', 'Banana', 'ice cream', 'look-up', 'zebra'];
-    const grid = generateGrid(words);
+    const words = ['apple', 'Banana', 'ice cream', 'look-up', 'zebra', 'café'];
+    const { grid, placed } = generateGrid(words);
     for (const w of words) expect(findWordInGrid(grid, normalizeWord(w))).not.toBeNull();
+    expect(placed).toEqual(words);
   });
 
   it('is reproducible for the same random sequence', () => {
@@ -77,10 +82,19 @@ describe('generateGrid', () => {
     expect(generateGrid(['apple', 'pear'])).toEqual(first);
   });
 
-  it('skips one-letter words and words longer than the grid', () => {
+  it('skips one-letter words, words longer than the grid and words with no Latin letter', () => {
     // Every filler letter is Q, so any placed letter would show up.
     vi.spyOn(Math, 'random').mockReturnValue(16 / 26);
-    const grid = generateGrid(['a', 'abcdefghijklmnop']);
+    const { grid, placed } = generateGrid(['a', 'abcdefghijklmnop', '猫']);
     expect(grid.flat().every((c) => c === 'Q')).toBe(true);
+    expect(placed).toEqual([]);
+  });
+
+  it('leaves out a word that never fits, so the game does not ask for it', () => {
+    // Always the same start cell and direction: the second word collides with the first
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const { grid, placed } = generateGrid(['apple', 'berry']);
+    expect(placed).toEqual(['apple']);
+    expect(findWordInGrid(grid, 'BERRY')).toBeNull();
   });
 });

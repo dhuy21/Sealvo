@@ -1,7 +1,7 @@
 import { connection } from 'next/server';
 import { serverApiUrl } from '@/env';
 
-/** The login and register pages are prerendered, so their Google link cannot hold the runtime API URL */
+/** The Google link of the login and register pages: a plain href, valid before hydration, while the API URL is only known at runtime */
 export async function GET() {
   await connection();
   return Response.redirect(`${serverApiUrl()}/auth/google`, 307);

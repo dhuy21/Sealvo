@@ -67,7 +67,8 @@ function VocabQuizContent() {
 
   const handleAnswer = useCallback(
     (optIdx: number) => {
-      if (answered) return;
+      // A second click on the same option would count as a second right answer
+      if (answered || selected.includes(optIdx)) return;
       const q = questions[currentIdx];
       const nextSelected = [...selected, optIdx];
       setSelected(nextSelected);

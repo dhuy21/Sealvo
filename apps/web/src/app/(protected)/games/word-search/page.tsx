@@ -14,6 +14,7 @@ import {
   normalizeWord,
   type CellRef,
 } from '@/components/games/word-search/grid';
+import toast from 'react-hot-toast';
 import { showHintToast, showLowScoreToast } from '@/components/games/word-search/hint-toasts';
 import { useCellSelection } from '@/components/games/word-search/use-cell-selection';
 import { useHintFlash } from '@/components/games/word-search/use-hint-flash';
@@ -85,19 +86,25 @@ function WordSearchInner() {
       return;
     }
 
-    const wordStrings = gameData.words.slice(0, MAX_WORDS).map((w) => w.word);
-    const newGrid = generateGrid(wordStrings);
+    const { grid: newGrid, placed } = generateGrid(
+      gameData.words.slice(0, MAX_WORDS).map((w) => w.word),
+    );
+    if (placed.length === 0) {
+      toast.error('Aucun de vos mots ne contient de lettres à placer dans la grille.');
+      shell.showRules();
+      return;
+    }
 
     setGrid(newGrid);
     gridRef.current = newGrid;
-    setWordsToFind(wordStrings);
+    setWordsToFind(placed);
     setFoundWords([]);
     setFoundCells(new Set());
     setScore(0);
     setAttempts(0);
     gameActiveRef.current = true;
 
-    setTimer(timeLimit(wordStrings.length));
+    setTimer(timeLimit(placed.length));
     shell.start();
   }
 

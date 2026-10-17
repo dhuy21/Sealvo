@@ -40,7 +40,7 @@ jobs:
         run: npx playwright install chromium --with-deps
         working-directory: apps/web
       - name: Run E2E
-        # An empty BASE_URL would make playwright.config.ts fall back to production
+        # An empty BASE_URL would make playwright.config.ts fall back to localhost
         run: |
           : "${BASE_URL:?BASE_URL is empty: set vars.STAGING_URL}"
           npx turbo test:e2e --filter=@sealvo/web

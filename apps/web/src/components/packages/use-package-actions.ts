@@ -93,24 +93,24 @@ export function usePackageActions() {
     });
   }, [deleteId, deletePkg]);
 
+  // mutateAsync: mutate()'s own callbacks only run for the latest call, and two packages can be
+  // toggled or copied back to back
   const toggle = useCallback(
     (id: number) => {
-      togglePkg.mutate(id, {
-        onSuccess: (data) => {
-          toast.success(data.isActive ? 'Package activé' : 'Package désactivé');
-        },
-        onError: (err) => toast.error(getApiErrorMessage(err, 'Erreur')),
-      });
+      togglePkg.mutateAsync(id).then(
+        (data) => toast.success(data.isActive ? 'Package activé' : 'Package désactivé'),
+        (err: unknown) => toast.error(getApiErrorMessage(err, 'Erreur')),
+      );
     },
     [togglePkg],
   );
 
   const copy = useCallback(
     (id: number) => {
-      copyPkg.mutate(id, {
-        onSuccess: () => toast.success('Package copié avec succès'),
-        onError: (err) => toast.error(getApiErrorMessage(err, 'Erreur')),
-      });
+      copyPkg.mutateAsync(id).then(
+        () => toast.success('Package copié avec succès'),
+        (err: unknown) => toast.error(getApiErrorMessage(err, 'Erreur')),
+      );
     },
     [copyPkg],
   );

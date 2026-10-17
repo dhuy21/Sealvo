@@ -19,17 +19,17 @@ export function escapeHtml(str: string): string {
     .replace(/"/g, '&quot;');
 }
 
-/** One phrase per word; an example without `**…**` (or no example) gives a phrase with no blank. */
-export function generatePhrases(words: GameWord[]): Phrase[] {
-  const phrases = words.map((w) => {
-    let phrase = '';
-    let correctWords: string[] = [];
+export const NO_PHRASE_MESSAGE =
+  "Aucun de vos mots n'a d'exemple avec un mot en gras (**mot**) à compléter.";
 
-    if (w.example && w.example.trim() !== '') {
-      correctWords = [...w.example.matchAll(BOLD_MARKUP)].map((m) => m[1]);
-      phrase = w.example.replace(BOLD_MARKUP, BLANK);
-    }
-    return { phrase, word: w.word, meaningWord: w.meaning, correctWords };
+/** One phrase per word whose example has a `**…**` blank: the others could not be answered. */
+export function generatePhrases(words: GameWord[]): Phrase[] {
+  const phrases = words.flatMap((w) => {
+    const example = w.example ?? '';
+    const correctWords = [...example.matchAll(BOLD_MARKUP)].map((m) => m[1]);
+    if (correctWords.length === 0) return [];
+    const phrase = example.replace(BOLD_MARKUP, BLANK);
+    return [{ phrase, word: w.word, meaningWord: w.meaning, correctWords }];
   });
   return shuffleArray(phrases);
 }

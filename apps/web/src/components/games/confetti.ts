@@ -10,7 +10,7 @@ function canceller(stopScheduling: () => void): CancelConfetti {
   };
 }
 
-/** Random fireworks bursts from both sides (Test Prononciation, Word Search). */
+/** Random fireworks bursts from both sides (Flash Match, Test Prononciation, Word Search). */
 export function launchFireworks(): CancelConfetti {
   const duration = 15 * 1000;
   const animationEnd = Date.now() + duration;

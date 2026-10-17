@@ -10,16 +10,23 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   config.baseURL = apiUrl();
   const token = useAuthStore.getState().accessToken;
-  if (token) {
+  // An explicit header wins: fetchMe passes the token the store does not hold yet
+  if (token && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
 // ── Response interceptor: 401 → refresh → retry ──
-let refreshPromise: Promise<string | null> | null = null;
+/** sessionEnded: the API rejected the refresh cookie, as opposed to the API being unreachable */
+type RefreshResult = { token: string } | { token: null; sessionEnded: boolean };
 
-/** Refresh after a 401, shared by every caller. Logs out when the refresh cookie is no longer valid. */
+let refreshPromise: Promise<RefreshResult> | null = null;
+
+/**
+ * Refresh after a 401, shared by every caller. Logs out only when the refresh cookie is no longer
+ * valid: an API outage or a 429 keeps the session, the next request refreshes again.
+ */
 export async function renewAccessToken(): Promise<string | null> {
   // Deduplicate concurrent refresh calls
   if (!refreshPromise) {
@@ -28,9 +35,9 @@ export async function renewAccessToken(): Promise<string | null> {
     });
   }
 
-  const newToken = await refreshPromise;
-  if (!newToken) useAuthStore.getState().logout();
-  return newToken;
+  const result = await refreshPromise;
+  if (result.token === null && result.sessionEnded) useAuthStore.getState().logout();
+  return result.token;
 }
 
 api.interceptors.response.use(
@@ -67,20 +74,22 @@ function isAuthRefreshSkip(url?: string): boolean {
  * Tabs share the refresh cookie: one refresh at a time, so a waiting tab sends the token the
  * previous one just received instead of the rotated one (which the API only accepts for 10 s).
  */
-async function refreshAcrossTabs(): Promise<string | null> {
+async function refreshAcrossTabs(): Promise<RefreshResult> {
   if (!('locks' in navigator)) return refreshAccessToken();
   return await navigator.locks.request('sealvo-refresh', refreshAccessToken);
 }
 
-async function refreshAccessToken(): Promise<string | null> {
+async function refreshAccessToken(): Promise<RefreshResult> {
   try {
     const { data } = await axios.post<{ accessToken: string }>(`${apiUrl()}/auth/refresh`, null, {
       withCredentials: true,
     });
     useAuthStore.getState().setAccessToken(data.accessToken);
-    return data.accessToken;
-  } catch {
-    return null;
+    return { token: data.accessToken };
+  } catch (error) {
+    const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+    // 403: the API refused this origin (SameOriginGuard), retrying cannot succeed either
+    return { token: null, sessionEnded: status === 401 || status === 403 };
   }
 }
 

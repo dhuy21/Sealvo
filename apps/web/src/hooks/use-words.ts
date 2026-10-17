@@ -98,6 +98,8 @@ export function useUpdateWord(packageId: number) {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.words(packageId) });
       void qc.invalidateQueries({ queryKey: queryKeys.games() });
+      // The dashboard counts words per level
+      void qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
     },
   });
 }

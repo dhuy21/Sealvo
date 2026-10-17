@@ -17,7 +17,13 @@ export interface CellRef {
 
 export const cellKey = (r: number, c: number) => `${r},${c}`;
 
-export const normalizeWord = (word: string) => word.toUpperCase().replace(/[^A-Z]/g, '');
+/** Grid letters are A–Z: accents are dropped (café → CAFE), other characters removed */
+export const normalizeWord = (word: string) =>
+  word
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toUpperCase()
+    .replace(/[^A-Z]/g, '');
 
 /** Cells of the first occurrence of `word` (already normalized) in the grid, scanning row by row. */
 export function findWordInGrid(grid: string[][], word: string): CellRef[] | null {
@@ -36,7 +42,12 @@ export function findWordInGrid(grid: string[][], word: string): CellRef[] | null
   return null;
 }
 
-export function generateGrid(wordList: string[]): string[][] {
+/**
+ * The grid, and the words actually hidden in it: a word with fewer than 2 letters once normalized
+ * (e.g. written in another script), longer than the grid, or that never fit is left out.
+ */
+export function generateGrid(wordList: string[]): { grid: string[][]; placed: string[] } {
+  const placedWords: string[] = [];
   const grid: string[][] = Array(GRID_SIZE)
     .fill(null)
     .map(() => Array(GRID_SIZE).fill(''));
@@ -70,6 +81,7 @@ export function generateGrid(wordList: string[]): string[][] {
         placed = true;
       }
     }
+    if (placed) placedWords.push(rawWord);
   }
 
   const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -81,5 +93,5 @@ export function generateGrid(wordList: string[]): string[][] {
     }
   }
 
-  return grid;
+  return { grid, placed: placedWords };
 }

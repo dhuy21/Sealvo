@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useCallback, useEffect, useRef } from 'react';
 import { useTimeouts } from '@/hooks/use-timeouts';
+import { launchFireworks } from '@/components/games/confetti';
 import { GameDataStatus } from '@/components/games/GameDataStatus';
 import { GameStats } from '@/components/games/GameStats';
 import { GameFooter } from '@/components/games/GameFooter';
@@ -16,7 +17,7 @@ import { cx } from '@/lib/css-module';
 import styles from '@/styles/games/flash-match.module.css';
 
 function FlashMatchContent() {
-  const shell = useGameShell('flash_match');
+  const shell = useGameShell('flash_match', { celebration: launchFireworks });
   const { packageId, gameData, screen } = shell;
 
   const [cards, setCards] = useState<Card[]>([]);

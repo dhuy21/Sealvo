@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// BASE_URL is set by CI per environment; defaults to production.
-// Local: BASE_URL=http://localhost:3000 npx turbo test:e2e --filter=@sealvo/web
+// BASE_URL is set by CI per environment; defaults to the local dev server, so a run
+// without it never logs in to production.
 export default defineConfig({
   testDir: './e2e',
   timeout: 30000,
@@ -9,7 +9,7 @@ export default defineConfig({
   reporter: [['list'], ['html', { open: 'never' }]],
 
   use: {
-    baseURL: process.env.BASE_URL || 'https://www.sealvo.it.com',
+    baseURL: process.env.BASE_URL || 'http://localhost:3000',
     headless: true,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

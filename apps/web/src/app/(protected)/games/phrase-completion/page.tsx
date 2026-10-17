@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useState, useRef, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import { launchStars } from '@/components/games/confetti';
 import { useGameShell } from '@/components/games/use-game-shell';
 import { useCountdownTimer } from '@/components/games/use-countdown-timer';
@@ -15,6 +16,7 @@ import { useTypewriter } from '@/components/games/phrase-completion/use-typewrit
 import {
   escapeHtml,
   generatePhrases,
+  NO_PHRASE_MESSAGE,
   repeatPhrases,
   revealAnswers,
   type Phrase,
@@ -66,6 +68,11 @@ function PhraseCompletionInner() {
     }
 
     const generated = generatePhrases(gameData.words);
+    if (generated.length === 0) {
+      toast.error(NO_PHRASE_MESSAGE);
+      shell.showRules();
+      return;
+    }
 
     const totalQ = questionCount(gameData.wordCount);
     setTotalQuestions(totalQ);

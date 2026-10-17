@@ -63,6 +63,21 @@ describe('generateQuestions', () => {
     }
   });
 
+  it('never shows the same meaning twice, so every correct option can be picked', () => {
+    seedRandom(13);
+    const pool = [
+      ...words(6),
+      gameWord(7, { word: 'cat', meaning: 'chat' }),
+      gameWord(8, { word: 'kitty', meaning: 'chat' }),
+      gameWord(9, { word: 'cat', meaning: 'chat' }),
+    ];
+    for (const q of generateQuestions(pool)) {
+      expect(new Set(q.options).size).toBe(q.options.length);
+      expect(new Set(q.correctIndex).size).toBe(q.correctIndex.length);
+      expect(q.correctIndex.every((i) => i >= 0)).toBe(true);
+    }
+  });
+
   it('is reproducible for the same random sequence', () => {
     seedRandom(99);
     const first = generateQuestions(words(8));

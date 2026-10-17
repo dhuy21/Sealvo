@@ -1,63 +1,61 @@
 import { useCallback } from 'react';
 import toast from 'react-hot-toast';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore, type User } from '@/stores/auth.store';
 import { useTestReminder, useUpdateProfile } from '@/hooks/use-dashboard';
 import { getApiErrorMessage } from '@/lib/api-error';
 
-/** Profile mutations of the dashboard, with their toasts and the local user update. */
+/** Read when the save completes: two quick saves must not undo each other */
+function updateUser(change: Partial<User>) {
+  const { user, setUser } = useAuthStore.getState();
+  if (user) setUser({ ...user, ...change });
+}
+
+/**
+ * Profile mutations of the dashboard, with their toasts and the local user update.
+ * mutateAsync: TanStack Query runs mutate()'s own callbacks for the latest call only.
+ */
 export function useProfileActions({ onAvatarSaved }: { onAvatarSaved: () => void }) {
-  const user = useAuthStore((s) => s.user);
-  const setUser = useAuthStore((s) => s.setUser);
   const updateProfile = useUpdateProfile();
   const testReminder = useTestReminder();
 
   const saveField = useCallback(
     (fieldName: string, rawValue: string, currentPassword?: string) => {
       const newValue = rawValue.trim();
-      updateProfile.mutate(
-        { [fieldName]: newValue, current_password: currentPassword },
-        {
-          onSuccess: ({ pendingEmail }) => {
-            if (pendingEmail) {
-              toast.success(
-                `Un email de confirmation a été envoyé à ${pendingEmail}. Cliquez sur le lien qu'il contient pour valider votre nouvelle adresse.`,
-                { duration: 8000 },
-              );
-              return;
-            }
-            toast.success('Informations modifiées avec succès');
-            if (user) {
-              setUser({ ...user, [fieldName]: newValue });
-            }
-          },
-          onError: (err) => {
-            toast.error(getApiErrorMessage(err, 'Erreur lors de la modification'));
-          },
+      updateProfile.mutateAsync({ [fieldName]: newValue, current_password: currentPassword }).then(
+        ({ pendingEmail }) => {
+          if (pendingEmail) {
+            toast.success(
+              `Un email de confirmation a été envoyé à ${pendingEmail}. Cliquez sur le lien qu'il contient pour valider votre nouvelle adresse.`,
+              { duration: 8000 },
+            );
+            return;
+          }
+          toast.success('Informations modifiées avec succès');
+          // The email only changes through its confirmation link
+          if (fieldName !== 'email') updateUser({ [fieldName]: newValue });
+        },
+        (err: unknown) => {
+          toast.error(getApiErrorMessage(err, 'Erreur lors de la modification'));
         },
       );
     },
-    [updateProfile, user, setUser],
+    [updateProfile],
   );
 
   const saveAvatar = useCallback(
     (ava: number) => {
-      updateProfile.mutate(
-        { ava },
-        {
-          onSuccess: () => {
-            toast.success('Avatar modifié avec succès');
-            onAvatarSaved();
-            if (user) {
-              setUser({ ...user, ava });
-            }
-          },
-          onError: (err) => {
-            toast.error(getApiErrorMessage(err, "Erreur lors de la modification de l'avatar"));
-          },
+      updateProfile.mutateAsync({ ava }).then(
+        () => {
+          toast.success('Avatar modifié avec succès');
+          onAvatarSaved();
+          updateUser({ ava });
+        },
+        (err: unknown) => {
+          toast.error(getApiErrorMessage(err, "Erreur lors de la modification de l'avatar"));
         },
       );
     },
-    [updateProfile, user, setUser, onAvatarSaved],
+    [updateProfile, onAvatarSaved],
   );
 
   const sendTestReminder = () => {

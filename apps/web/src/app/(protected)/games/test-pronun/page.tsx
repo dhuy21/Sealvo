@@ -2,7 +2,6 @@
 
 import { Suspense, useState, useEffect, useRef } from 'react';
 import type { GameWord } from '@/hooks/use-games';
-import { useUnmountSignal } from '@/hooks/use-unmount-signal';
 import { randomIndexExcept, shuffleArray } from '@/lib/shuffle';
 import { launchFireworks } from '@/components/games/confetti';
 import { useGameShell } from '@/components/games/use-game-shell';
@@ -44,9 +43,12 @@ function TestPronunInner() {
 
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const playbackRef = useRef<AbortController | null>(null);
-  const unmountSignal = useUnmountSignal();
+  /** The word being recorded: a result arriving after a skip or the end must not be scored */
+  const recordedWordRef = useRef<GameWord | null>(null);
 
   const currentWord = words[currentIndex] ?? null;
+
+  useEffect(() => () => playbackRef.current?.abort(), []);
 
   useEffect(() => {
     if (screen === 'active' && startTime > 0) {
@@ -58,7 +60,7 @@ function TestPronunInner() {
   }, [screen, startTime]);
 
   function processResult(spokenText: string, confidence: number) {
-    if (!currentWord) return;
+    if (!currentWord || screen !== 'active' || recordedWordRef.current !== currentWord) return;
 
     const target = currentWord.word.toLowerCase().trim();
     setRecognizedText(`"${spokenText}"`);
@@ -91,7 +93,10 @@ function TestPronunInner() {
   const speech = useSpeechRecognition({
     language: currentWord?.language_code || 'en-US',
     onResult: processResult,
-    onListenStart: () => setRecognizedText(''),
+    onListenStart: () => {
+      recordedWordRef.current = currentWord;
+      setRecognizedText('');
+    },
     setFeedback,
     getFeedbackText,
   });
@@ -135,7 +140,6 @@ function TestPronunInner() {
     stopPlayback();
     const playback = new AbortController();
     playbackRef.current = playback;
-    unmountSignal().addEventListener('abort', () => playback.abort(), { once: true });
     void playWordAudio(currentWord, setFeedback, playback.signal);
   }
 

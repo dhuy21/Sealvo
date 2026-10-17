@@ -14,9 +14,10 @@ export function hasEnoughWords(words: GameWord[]): boolean {
 
 /**
  * One question per word, each drawn independently (a word can be asked several times):
- * the first word of a fresh shuffle is asked, the next five are the wrong options.
- * `correctIndex` gets one entry (the first option with that text) for the asked word and for each
- * other option whose word text equals it; the player must pick that many options.
+ * the first word of a fresh shuffle is asked, the next ones give the other options.
+ * An option is never shown twice: a meaning already offered is skipped (two buttons with the same
+ * text could not both be right). `correctIndex` holds the asked word's option and each other
+ * option whose word text equals it; the player must pick that many options.
  * The round is then repeated until the quiz length is reached.
  */
 export function generateQuestions(words: GameWord[]): Question[] {
@@ -25,8 +26,10 @@ export function generateQuestions(words: GameWord[]): Question[] {
     const correctMeanings = [formatTypeMeaning(asked.type, asked.meaning)];
     const options = [correctMeanings[0]];
 
-    for (const w of others.slice(0, OPTIONS_COUNT - 1)) {
+    for (const w of others) {
+      if (options.length === OPTIONS_COUNT) break;
       const meaning = formatTypeMeaning(w.type, w.meaning);
+      if (options.includes(meaning)) continue;
       if (w.word === asked.word) correctMeanings.push(meaning);
       options.push(meaning);
     }

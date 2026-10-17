@@ -33,22 +33,21 @@ describe('generatePhrases', () => {
     });
   });
 
-  it('gives an empty phrase for a missing or blank example', () => {
+  it('skips words whose example is missing, blank or has no marker', () => {
     seedRandom(2);
-    const phrases = generatePhrases([gameWord(1), gameWord(2, { example: '   ' })]);
-    for (const p of phrases) expect(p).toMatchObject({ phrase: '', correctWords: [] });
-  });
-
-  it('keeps an example without markers as is, with no answer', () => {
-    seedRandom(3);
-    const [p] = generatePhrases([gameWord(1, { example: 'No marker here' })]);
-    expect(p).toMatchObject({ phrase: 'No marker here', correctWords: [] });
+    const phrases = generatePhrases([
+      gameWord(1, { example: null }),
+      gameWord(2, { example: '   ' }),
+      gameWord(3, { example: 'No marker here' }),
+      gameWord(4, { example: 'A **marked** one' }),
+    ]);
+    expect(phrases.map((p) => p.word)).toEqual(['word4']);
   });
 
   it('shuffles the phrases', () => {
     // [1, 2, 3] → [2, 3, 1]
     mockRandom(0, 0);
-    const words = [1, 2, 3].map((id) => gameWord(id));
+    const words = [1, 2, 3].map((id) => gameWord(id, { example: 'A **marked** one' }));
     expect(generatePhrases(words).map((p) => p.word)).toEqual(['word2', 'word3', 'word1']);
   });
 });
