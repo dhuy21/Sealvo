@@ -1,18 +1,14 @@
 'use client';
 
 import { Suspense, useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { useGameData, useSaveScore, type GameWord } from '@/hooks/use-games';
-import { useTimeouts } from '@/hooks/use-timeouts';
+import type { GameWord } from '@/hooks/use-games';
 import { useUnmountSignal } from '@/hooks/use-unmount-signal';
-import { shuffleArray } from '@/lib/shuffle';
+import { randomIndexExcept, shuffleArray } from '@/lib/shuffle';
 import { launchFireworks } from '@/components/games/confetti';
-import { useCelebration } from '@/components/games/use-celebration';
-import { useLevelTracking } from '@/components/games/use-level-tracking';
+import { useGameShell } from '@/components/games/use-game-shell';
 import { GameDataStatus } from '@/components/games/GameDataStatus';
 import { GameStats } from '@/components/games/GameStats';
 import { GameFooter } from '@/components/games/GameFooter';
-import type { LevelStatus } from '@/components/games/TrackLevelMessage';
 import { useTransientFlag } from '@/components/games/use-transient-flag';
 import { calculatePronunciationAccuracy, playWordAudio } from '@/components/games/test-pronun/pronunciation';
 import { useFeedback } from '@/components/games/test-pronun/use-feedback';
@@ -28,16 +24,10 @@ import styles from '@/styles/games/test-pronun.module.css';
    INNER COMPONENT (needs useSearchParams)
    ================================================================ */
 function TestPronunInner() {
-  const searchParams = useSearchParams();
-  const packageId = searchParams.get('package') ? Number(searchParams.get('package')) : null;
-
-  const { data: gameData, isLoading, error } = useGameData('test_pronun', packageId);
-  const saveScore = useSaveScore();
-  const level = useLevelTracking('test_pronun');
+  const shell = useGameShell('test_pronun', { celebration: launchFireworks });
+  const { packageId, gameData, screen } = shell;
 
   // Game state
-  type Screen = 'pre' | 'active' | 'post';
-  const [screen, setScreen] = useState<Screen>('pre');
   const [words, setWords] = useState<GameWord[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [completedWords, setCompletedWords] = useState(0);
@@ -51,17 +41,12 @@ function TestPronunInner() {
   const { feedback, setFeedback, getFeedbackText } = useFeedback();
   const [speaking, triggerSpeaking] = useTransientFlag();
   const [wordFadeIn, triggerWordFadeIn] = useTransientFlag();
-  const [levelMessage, setLevelMessage] = useState('');
-  const [levelStatus, setLevelStatus] = useState<LevelStatus>('');
 
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-  const later = useTimeouts();
-  const celebrate = useCelebration(launchFireworks);
   const unmountSignal = useUnmountSignal();
 
   const WORDS_PER_GAME = 10;
   const currentWord = words[currentIndex] ?? null;
-  const ready = !!gameData && !gameData.errorMessage;
 
   // Timer
   useEffect(() => {
@@ -122,7 +107,7 @@ function TestPronunInner() {
 
   function startGame() {
     if (!gameData || gameData.errorMessage || gameData.words.length === 0) {
-      setScreen('pre');
+      shell.showRules();
       return;
     }
 
@@ -132,11 +117,9 @@ function TestPronunInner() {
     setTotalAccuracy(0);
     setPerfectCount(0);
     setAccuracy(0);
-    setLevelMessage('');
-    setLevelStatus('');
     setStartTime(Date.now());
     setElapsed(0);
-    setScreen('active');
+    shell.start();
     showWord(Math.floor(Math.random() * shuffled.length));
   }
 
@@ -151,30 +134,10 @@ function TestPronunInner() {
   }
 
   function endGame() {
-    clearInterval(timerRef.current);
-    const finalTime = Date.now() - startTime;
     const avgAccuracy = completedWords > 0 ? totalAccuracy / completedWords : 0;
-    const score = Math.round(avgAccuracy);
-
-    saveScore.mutate({ game_type: 'test_pronun', score });
-
-    const isSuccessful = avgAccuracy >= 70 && completedWords >= 5;
-    level.track(isSuccessful, packageId!);
-
-    if (isSuccessful) {
-      setLevelMessage('Excellent travail ! Progressez les autres jeux de ce niveau 😍');
-      setLevelStatus('completed');
-    } else {
-      setLevelMessage('Bon courage ! Réessayer ce jeu pour améliorer vos compétences 🤧');
-      setLevelStatus('failed');
-    }
-
-    setElapsed(finalTime);
-
-    later(() => {
-      setScreen('post');
-      celebrate();
-    }, 1000);
+    if (!shell.finish(Math.round(avgAccuracy), avgAccuracy >= 70 && completedWords >= 5)) return;
+    clearInterval(timerRef.current);
+    setElapsed(Date.now() - startTime);
   }
 
   // Move to next word when completedWords changes
@@ -186,13 +149,7 @@ function TestPronunInner() {
       return () => clearTimeout(timeout);
     }
 
-    const timeout = setTimeout(() => {
-      let nextIndex = Math.floor(Math.random() * words.length);
-      while (nextIndex === currentIndex && words.length > 1) {
-        nextIndex = Math.floor(Math.random() * words.length);
-      }
-      showWord(nextIndex);
-    }, 2000);
+    const timeout = setTimeout(() => showWord(randomIndexExcept(words.length, currentIndex)), 2000);
 
     return () => clearTimeout(timeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -227,10 +184,10 @@ function TestPronunInner() {
       </div>
 
       {screen === 'pre' && (
-        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} styles={styles} />
+        <GameDataStatus isLoading={shell.isLoading} error={shell.error} data={gameData} packageId={packageId} styles={styles} />
       )}
 
-      {gameData && (screen !== 'pre' || ready) && (
+      {gameData && (screen !== 'pre' || shell.ready) && (
         <>
           <GameStats gameType="test_pronun" wordCount={gameData.wordCount} styles={styles} />
 
@@ -262,9 +219,9 @@ function TestPronunInner() {
                   perfectCount={perfectCount}
                   elapsed={elapsed}
                   avgAccuracy={avgAccuracy}
-                  levelMessage={levelMessage}
-                  levelStatus={levelStatus}
-                  levelFinished={level.levelFinished}
+                  levelMessage={shell.levelMessage}
+                  levelStatus={shell.levelStatus}
+                  levelFinished={shell.levelFinished}
                   packageId={packageId}
                   onReplay={startGame}
                 />

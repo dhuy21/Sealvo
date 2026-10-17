@@ -1,53 +1,26 @@
 'use client';
 
 import { Suspense, useState, useCallback, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { useGameData, useSaveScore } from '@/hooks/use-games';
-import type { GameWord } from '@/hooks/use-games';
 import { useTimeouts } from '@/hooks/use-timeouts';
-import { shuffleArray } from '@/lib/shuffle';
-import { formatTypeMeaning } from '@/lib/word-type';
 import { GameDataStatus } from '@/components/games/GameDataStatus';
 import { GameStats } from '@/components/games/GameStats';
 import { GameFooter } from '@/components/games/GameFooter';
-import { useLevelTracking } from '@/components/games/use-level-tracking';
+import { useGameShell } from '@/components/games/use-game-shell';
 import { FlashMatchRules } from '@/components/games/flash-match/FlashMatchRules';
 import { FlashMatchBoard, type Card } from '@/components/games/flash-match/FlashMatchBoard';
 import { FlashMatchSummary } from '@/components/games/flash-match/FlashMatchSummary';
+import { generateCards } from '@/components/games/flash-match/generate-cards';
 import { Bubbles } from '@/components/games/flash-match/Bubbles';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/games/flash-match.module.css';
-
-function generateCards(words: GameWord[]): Card[] {
-  const selected = shuffleArray(words).slice(0, 15); // max 15 pairs
-  const cards: Card[] = [];
-  selected.forEach((w) => {
-    cards.push({ pairId: w.detail_id, type: 'word', content: w.word, flipped: false, matched: false });
-    cards.push({
-      pairId: w.detail_id,
-      type: 'meaning',
-      content: formatTypeMeaning(w.type, w.meaning),
-      flipped: false,
-      matched: false,
-    });
-  });
-  return shuffleArray(cards);
-}
-
-type Screen = 'pre' | 'active' | 'post';
 
 /* ═══════════════════════════ */
 /* FLASH MATCH GAME            */
 /* ═══════════════════════════ */
 function FlashMatchContent() {
-  const searchParams = useSearchParams();
-  const packageId = Number(searchParams.get('package'));
+  const shell = useGameShell('flash_match');
+  const { packageId, gameData, screen } = shell;
 
-  const { data: gameData, isLoading, error } = useGameData('flash_match', packageId || null);
-  const saveScore = useSaveScore();
-  const level = useLevelTracking('flash_match');
-
-  const [screen, setScreen] = useState<Screen>('pre');
   const [cards, setCards] = useState<Card[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
@@ -55,12 +28,9 @@ function FlashMatchContent() {
   const [totalPairs, setTotalPairs] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [gameActive, setGameActive] = useState(false);
-  const [levelMessage, setLevelMessage] = useState<{ text: string; success: boolean } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const checkingRef = useRef(false);
   const later = useTimeouts();
-
-  const ready = !!gameData && !gameData.errorMessage;
 
   // Timer
   useEffect(() => {
@@ -72,7 +42,7 @@ function FlashMatchContent() {
 
   const startGame = useCallback(() => {
     if (!gameData?.words?.length || gameData.errorMessage) {
-      setScreen('pre');
+      shell.showRules();
       return;
     }
     const newCards = generateCards(gameData.words);
@@ -83,9 +53,8 @@ function FlashMatchContent() {
     setMatchedPairs(0);
     setCurrentTime(0);
     setGameActive(true);
-    setScreen('active');
-    setLevelMessage(null);
-  }, [gameData]);
+    shell.start();
+  }, [gameData, shell]);
 
   const flipCard = useCallback(
     (index: number) => {
@@ -122,18 +91,7 @@ function FlashMatchContent() {
               setGameActive(false);
               clearInterval(timerRef.current);
 
-              const isSuccessful = newMatched >= Math.ceil(totalPairs * 0.8);
-              setLevelMessage({
-                text: isSuccessful
-                  ? 'Excellent travail ! Progressez les autres jeux de ce niveau 😍'
-                  : 'Bon courage ! Réessayer ce jeu pour améliorer vos compétences 🤧',
-                success: isSuccessful,
-              });
-
-              saveScore.mutate({ game_type: 'flash_match', score: newMatched });
-              level.track(isSuccessful, packageId);
-
-              later(() => setScreen('post'), 1000);
+              shell.finish(newMatched, newMatched >= Math.ceil(totalPairs * 0.8));
             }
           } else {
             // No match
@@ -148,7 +106,7 @@ function FlashMatchContent() {
         }, 1000);
       }
     },
-    [gameActive, cards, selected, matchedPairs, totalPairs, packageId, saveScore, level, later],
+    [gameActive, cards, selected, matchedPairs, totalPairs, shell, later],
   );
 
   if (!packageId) {
@@ -167,10 +125,10 @@ function FlashMatchContent() {
       </div>
 
       {screen === 'pre' && (
-        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} styles={styles} />
+        <GameDataStatus isLoading={shell.isLoading} error={shell.error} data={gameData} packageId={packageId} styles={styles} />
       )}
 
-      {gameData && (screen !== 'pre' || ready) && (
+      {gameData && (screen !== 'pre' || shell.ready) && (
         <>
           <GameStats gameType="flash_match" wordCount={gameData.wordCount} styles={styles} />
 
@@ -194,9 +152,9 @@ function FlashMatchContent() {
                   matchedPairs={matchedPairs}
                   currentTime={currentTime}
                   moves={moves}
-                  levelMessage={levelMessage?.text ?? ''}
-                  levelStatus={levelMessage ? (levelMessage.success ? 'completed' : 'failed') : ''}
-                  levelFinished={level.levelFinished}
+                  levelMessage={shell.levelMessage}
+                  levelStatus={shell.levelStatus}
+                  levelFinished={shell.levelFinished}
                   packageId={packageId}
                   onReplay={startGame}
                 />

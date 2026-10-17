@@ -1,17 +1,13 @@
 'use client';
 
 import { Suspense, useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { useGameData, useSaveScore } from '@/hooks/use-games';
-import { useTimeouts } from '@/hooks/use-timeouts';
-import { shuffleArray } from '@/lib/shuffle';
+import { randomIndexExcept, shuffleArray } from '@/lib/shuffle';
 import { launchEmbers } from '@/components/games/confetti';
-import { useCelebration } from '@/components/games/use-celebration';
-import { useLevelTracking } from '@/components/games/use-level-tracking';
+import { useGameShell } from '@/components/games/use-game-shell';
+import { useCountdownTimer } from '@/components/games/use-countdown-timer';
 import { GameDataStatus } from '@/components/games/GameDataStatus';
 import { GameStats } from '@/components/games/GameStats';
 import { GameFooter } from '@/components/games/GameFooter';
-import type { LevelStatus } from '@/components/games/TrackLevelMessage';
 import { SpeedVocabRules } from '@/components/games/speed-vocab/SpeedVocabRules';
 import { SpeedVocabBoard } from '@/components/games/speed-vocab/SpeedVocabBoard';
 import { SpeedVocabSummary } from '@/components/games/speed-vocab/SpeedVocabSummary';
@@ -25,19 +21,11 @@ import styles from '@/styles/games/speed-vocab.module.css';
    INNER COMPONENT
    ================================================================ */
 function SpeedVocabInner() {
-  const searchParams = useSearchParams();
-  const packageId = searchParams.get('package') ? Number(searchParams.get('package')) : null;
-
-  const { data: gameData, isLoading, error } = useGameData('speed_vocab', packageId);
-  const saveScore = useSaveScore();
-  const level = useLevelTracking('speed_vocab');
-
-  type Screen = 'pre' | 'active' | 'post';
-  const [screen, setScreen] = useState<Screen>('pre');
+  const shell = useGameShell('speed_vocab', { celebration: launchEmbers, trackOnSummary: true });
+  const { packageId, gameData, screen } = shell;
   const [words, setWords] = useState<{ word: string; meaning: string }[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
-  const [timer, setTimer] = useState(0);
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
   const [wordsTyped, setWordsTyped] = useState(0);
@@ -48,32 +36,19 @@ function SpeedVocabInner() {
   const [wordFadeIn, triggerWordFadeIn] = useTransientFlag();
   const [streakCelebration, triggerStreakCelebration] = useTransientFlag();
   const [shaking, triggerShake] = useTransientFlag();
-  const [levelMessage, setLevelMessage] = useState('');
-  const [levelStatus, setLevelStatus] = useState<LevelStatus>('');
 
-  const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const wrongPendingRef = useRef(false);
-  const later = useTimeouts();
-  const celebrate = useCelebration(launchEmbers);
 
   const currentWord = words[currentIndex] ?? null;
-  const ready = !!gameData && !gameData.errorMessage;
 
-  // Timer countdown
-  useEffect(() => {
-    if (screen === 'active' && timer > 0) {
-      timerRef.current = setInterval(() => {
-        setTimer((prev) => {
-          if (prev <= 1) { clearInterval(timerRef.current); return 0; }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timerRef.current);
-    }
-  }, [screen, timer > 0]); // eslint-disable-line react-hooks/exhaustive-deps
+  function endGame() {
+    const accuracy = wordsTyped > 0 ? Math.round((correctWords / wordsTyped) * 100) : 0;
+    shell.finish(score, accuracy >= 70);
+  }
 
+  const [timer, setTimer] = useCountdownTimer(shell.playing, endGame);
   const gameActive = screen === 'active' && timer > 0;
   const speedLinesRef = useSpeedBackground(gameActive, timer);
 
@@ -98,7 +73,7 @@ function SpeedVocabInner() {
 
   function startGame() {
     if (!gameData || gameData.errorMessage || gameData.words.length === 0) {
-      setScreen('pre');
+      shell.showRules();
       return;
     }
 
@@ -115,22 +90,15 @@ function SpeedVocabInner() {
     clearTimeout(feedbackTimeoutRef.current);
     wrongPendingRef.current = false;
     setInputFeedback('');
-    setLevelMessage('');
-    setLevelStatus('');
 
-    const gameTimer = 100 + shuffled.length * 6;
-    setTimer(gameTimer);
-    setScreen('active');
+    setTimer(100 + shuffled.length * 6);
+    shell.start();
 
     setTimeout(() => inputRef.current?.focus(), 100);
   }
 
   function nextIndex() {
-    let index = Math.floor(Math.random() * words.length);
-    while (index === currentIndex && words.length > 1) {
-      index = Math.floor(Math.random() * words.length);
-    }
-    return index;
+    return randomIndexExcept(words.length, currentIndex);
   }
 
   function flashInput(feedback: 'correct' | 'incorrect', onDone?: () => void) {
@@ -183,38 +151,6 @@ function SpeedVocabInner() {
     }
   }
 
-  function endGame() {
-    clearInterval(timerRef.current);
-    const accuracy = wordsTyped > 0 ? Math.round((correctWords / wordsTyped) * 100) : 0;
-    const isSuccessful = accuracy >= 70;
-
-    saveScore.mutate({ game_type: 'speed_vocab', score });
-
-    if (isSuccessful) {
-      setLevelMessage('Excellent travail ! Progressez les autres jeux de ce niveau 😍');
-      setLevelStatus('completed');
-    } else {
-      setLevelMessage('Bon courage ! Réessayer ce jeu pour améliorer vos compétences 🤧');
-      setLevelStatus('failed');
-    }
-
-    later(() => {
-      setScreen('post');
-      level.track(isSuccessful, packageId!);
-      celebrate();
-    }, 1000);
-  }
-
-  // End game when timer hits 0
-  useEffect(() => {
-    if (screen === 'active' && timer === 0 && words.length > 0) {
-      // Reacting to the countdown interval reaching 0; the tick itself cannot see the final state
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      endGame();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timer, screen]);
-
   const wpm = Math.round((correctWords / 60) * 60);
 
   if (!packageId) {
@@ -241,10 +177,10 @@ function SpeedVocabInner() {
       </div>
 
       {screen === 'pre' && (
-        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} styles={styles} />
+        <GameDataStatus isLoading={shell.isLoading} error={shell.error} data={gameData} packageId={packageId} styles={styles} />
       )}
 
-      {gameData && (screen !== 'pre' || ready) && (
+      {gameData && (screen !== 'pre' || shell.ready) && (
         <>
           <GameStats gameType="speed_vocab" wordCount={gameData.wordCount} styles={styles} />
 
@@ -269,9 +205,9 @@ function SpeedVocabInner() {
               score={score}
               bestStreak={bestStreak}
               wpm={wpm}
-              levelMessage={levelMessage}
-              levelStatus={levelStatus}
-              levelFinished={level.levelFinished}
+              levelMessage={shell.levelMessage}
+              levelStatus={shell.levelStatus}
+              levelFinished={shell.levelFinished}
               packageId={packageId}
               onReplay={startGame}
             />

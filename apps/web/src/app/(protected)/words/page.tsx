@@ -1,31 +1,21 @@
 'use client';
 
-import { Suspense } from 'react';
-import Link from 'next/link';
+import { Suspense, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useState, useMemo, useCallback } from 'react';
-import { useWords, useUpdateWord, useDeleteWord, useDeleteAllWords } from '@/hooks/use-words';
+import { useWords } from '@/hooks/use-words';
 import { usePackage } from '@/hooks/use-packages';
-import type { Word, UpdateWordPayload } from '@/hooks/use-words';
 import { getApiErrorMessage } from '@/lib/api-error';
-import toast from 'react-hot-toast';
-import { DeleteAllModal, type DeleteAllStatus } from '@/components/words/DeleteAllModal';
-import { WordRow } from '@/components/words/WordRow';
-import { matchesSearch } from '@/components/words/word-search';
+import { DeleteAllModal } from '@/components/words/DeleteAllModal';
+import { WordsToolbar } from '@/components/words/WordsToolbar';
+import { WordsSearch } from '@/components/words/WordsSearch';
+import { WordsLevelTable } from '@/components/words/WordsLevelTable';
+import { WordsEmptyState } from '@/components/words/WordsEmptyState';
+import { useWordsByLevel } from '@/components/words/use-words-by-level';
+import { useWordActions } from '@/components/words/use-word-actions';
+import { useDeleteAllFlow } from '@/components/words/use-delete-all-flow';
 import styles from '@/styles/vocabs.module.css';
 import { cx } from '@/lib/css-module';
 
-const LEVELS = ['x', 'level_0', 'level_1', 'level_2', 'v'] as const;
-
-function levelLabel(level: string): string {
-  if (level === 'x') return 'x';
-  if (level === 'v') return 'v';
-  return level.replace('level_', '');
-}
-
-/* ═══════════════════════════ */
-/* MAIN WORDS PAGE             */
-/* ═══════════════════════════ */
 function WordsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -35,85 +25,11 @@ function WordsContent() {
   const wordsQuery = useWords(packageId || null);
   const words = wordsQuery.data;
   const isOwner = pkgQuery.data?.isOwner ?? false;
-  const updateWord = useUpdateWord(packageId);
-  const deleteWord = useDeleteWord(packageId);
-  const deleteAll = useDeleteAllWords(packageId);
 
   const [search, setSearch] = useState('');
-  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
-  const [deleteAllStatus, setDeleteAllStatus] = useState<DeleteAllStatus>('idle');
-  const [deletingLevels, setDeletingLevels] = useState<Set<string>>(new Set());
-  const addWordsHref = `/words/add?package=${packageId}`;
-
-  // Group words by level
-  const wordsByLevel = useMemo(() => {
-    if (!words) return {};
-    let filtered = words;
-    const term = search.trim().toLowerCase();
-    if (term) {
-      filtered = words.filter((w) => matchesSearch(w, term));
-    }
-    const grouped: Record<string, Word[]> = {};
-    for (const level of LEVELS) {
-      const levelWords = filtered.filter((w) => w.level === level);
-      if (levelWords.length > 0) {
-        grouped[level] = levelWords;
-      }
-    }
-    return grouped;
-  }, [words, search]);
-
-  const handleUpdateWord = useCallback(
-    (detailId: number, dto: UpdateWordPayload) => {
-      updateWord.mutate(
-        { detailId, dto },
-        {
-          onSuccess: () => toast.success('Mot modifié avec succès'),
-          onError: (err) => toast.error(getApiErrorMessage(err, 'Erreur')),
-        },
-      );
-    },
-    [updateWord],
-  );
-
-  const handleDeleteWord = useCallback(
-    (detailId: number) => {
-      deleteWord.mutate(detailId, {
-        onSuccess: () => toast.success('Mot supprimé'),
-        onError: (err) => toast.error(getApiErrorMessage(err, 'Erreur')),
-      });
-    },
-    [deleteWord],
-  );
-
-  const handleDeleteAll = useCallback(() => {
-    setDeleteAllStatus('loading');
-    deleteAll.mutate(undefined, {
-      onSuccess: (data: { message: string }) => {
-        setDeleteAllStatus('success');
-        setTimeout(() => {
-          setDeleteAllOpen(false);
-          setDeleteAllStatus('idle');
-
-          // Staggered fade-out of the level containers, then refetch, as in the old app
-          const levels = Object.keys(wordsByLevel);
-          levels.forEach((level, i) => {
-            setTimeout(() => setDeletingLevels((prev) => new Set(prev).add(level)), i * 100);
-          });
-          setTimeout(() => {
-            void wordsQuery.refetch().then(() => setDeletingLevels(new Set()));
-            toast.success(data.message);
-          }, levels.length * 100 + 600);
-        }, 1500);
-      },
-      onError: (err) => {
-        setDeleteAllStatus('idle');
-        toast.error(
-          getApiErrorMessage(err, 'Une erreur est survenue lors de la suppression des mots'),
-        );
-      },
-    });
-  }, [deleteAll, wordsByLevel, wordsQuery]);
+  const levelEntries = useWordsByLevel(words, search);
+  const wordActions = useWordActions(packageId);
+  const deleteAll = useDeleteAllFlow(packageId, levelEntries.map(([level]) => level));
 
   if (!packageId) {
     return (
@@ -154,8 +70,7 @@ function WordsContent() {
     );
   }
 
-  const hasWords = words && words.length > 0;
-  const levelEntries = Object.entries(wordsByLevel);
+  const hasWords = !!words && words.length > 0;
 
   return (
     <div className={cx(styles, 'vocabulary-container')} data-package={packageId}>
@@ -171,110 +86,35 @@ function WordsContent() {
       )}
 
       {isOwner && (
-        <div className={cx(styles, 'action-container')}>
-          <Link href={addWordsHref} className={cx(styles, 'add-word-btn')}>
-            <i className="fas fa-plus"></i> Ajouter un nouveau mot
-          </Link>
-          <button
-            className={cx(styles, 'learn-btn')}
-            onClick={() => router.push(`/learn?package=${packageId}`)}
-          >
-            <i className="fas fa-book-open"></i> Mode d&apos;apprentissage
-          </button>
-          {hasWords && (
-            <button className={cx(styles, 'btn-danger')} onClick={() => setDeleteAllOpen(true)}>
-              <i className="fas fa-trash"></i> Supprimer tous les mots
-            </button>
-          )}
-        </div>
+        <WordsToolbar packageId={packageId} hasWords={hasWords} onDeleteAll={deleteAll.openModal} />
       )}
 
-      {/* Search */}
-      <div className={cx(styles, 'search-container')}>
-        <div className={cx(styles, 'search-form')}>
-          <div className={cx(styles, 'input-group')}>
-            <input
-              type="text"
-              placeholder="Tapez pour rechercher un mot..."
-              className={cx(styles, 'search-input')}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <button type="button" className={cx(styles, 'search-btn')}>
-              <i className="fas fa-search"></i>
-            </button>
-          </div>
-        </div>
-      </div>
+      <WordsSearch
+        search={search}
+        onSearchChange={setSearch}
+        resultCount={levelEntries.reduce((s, [, ws]) => s + ws.length, 0)}
+      />
 
-      {search && (
-        <div className={cx(styles, 'search-results-info')} style={{ display: 'block' }}>
-          <p>
-            <span>{levelEntries.reduce((s, [, ws]) => s + ws.length, 0)}</span> résultat(s) pour{' '}
-            <strong>{search}</strong>
-          </p>
-        </div>
-      )}
-
-      {hasWords ? (
-        levelEntries.length > 0 ? (
-          levelEntries.map(([level, levelWords]) => (
-            <div key={level} className={cx(styles, 'level-container', deletingLevels.has(level) && 'level-deleting')} data-level={level}>
-              <div className={cx(styles, 'level-header')}>
-                <span>Niveau {levelLabel(level)}</span>
-                <span className={cx(styles, 'level-badge')}>{levelWords.length} mot(s)</span>
-              </div>
-              <table className={cx(styles, 'words-table')}>
-                <thead>
-                  <tr>
-                    <th>Mot</th>
-                    <th>Langue</th>
-                    <th>Type</th>
-                    <th>Meaning</th>
-                    <th>Prononciation</th>
-                    <th>Synonymes</th>
-                    <th>Antonymes</th>
-                    <th>Exemple</th>
-                    <th>Grammaire</th>
-                    {isOwner && <th>Actions</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {levelWords.map((w) => (
-                    <WordRow
-                      key={w.detail_id}
-                      w={w}
-                      onSave={handleUpdateWord}
-                      onDelete={handleDeleteWord}
-                      savePending={updateWord.isPending}
-                      readOnly={!isOwner}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ))
-        ) : (
-          <div className={cx(styles, 'no-words')}>
-            <i className="fas fa-search"></i>
-            <h3>Aucun résultat</h3>
-            <p>Aucun mot ne correspond à votre recherche.</p>
-          </div>
-        )
+      {!hasWords ? (
+        <WordsEmptyState packageId={packageId} isOwner={isOwner} />
+      ) : levelEntries.length > 0 ? (
+        levelEntries.map(([level, levelWords]) => (
+          <WordsLevelTable
+            key={level}
+            level={level}
+            words={levelWords}
+            isOwner={isOwner}
+            deleting={deleteAll.deletingLevels.has(level)}
+            onSave={wordActions.saveWord}
+            onDelete={wordActions.removeWord}
+            savePending={wordActions.savePending}
+          />
+        ))
       ) : (
         <div className={cx(styles, 'no-words')}>
-          <i className="fas fa-book"></i>
-          {isOwner ? (
-            <>
-              <h3>Aucun mot dans votre vocabulaire</h3>
-              <p>Commencez à ajouter des mots pour enrichir votre vocabulaire.</p>
-              <Link href={addWordsHref} className={cx(styles, 'btn')}>
-                Ajouter votre premier mot
-              </Link>
-            </>
-          ) : (
-            <h3>Aucun mot dans ce package</h3>
-          )}
+          <i className="fas fa-search"></i>
+          <h3>Aucun résultat</h3>
+          <p>Aucun mot ne correspond à votre recherche.</p>
         </div>
       )}
 
@@ -286,10 +126,10 @@ function WordsContent() {
 
       {/* Modals */}
       <DeleteAllModal
-        open={deleteAllOpen}
-        status={deleteAllStatus}
-        onClose={() => setDeleteAllOpen(false)}
-        onConfirm={handleDeleteAll}
+        open={deleteAll.open}
+        status={deleteAll.status}
+        onClose={deleteAll.closeModal}
+        onConfirm={deleteAll.confirm}
       />
     </div>
   );

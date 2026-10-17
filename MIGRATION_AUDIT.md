@@ -216,6 +216,17 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 - `docker-compose.prod.yml`: shared `x-api-image` anchor (`build` + `image: sealvo-api`) for api, worker and scheduler: worker/scheduler had only `image`, so Compose tried to pull `sealvo-api` and failed. `NODE_ENV: production` forced in the shared environment (api, worker, scheduler, backup), over the `.env` value.
 - CI: Trivy lists fixable CRITICAL + HIGH, then fails the job (and so the deploy) on fixable CRITICAL only (`--ignore-unfixed`).
 - User-facing API messages use the old app's French texts (some old English texts kept as in the old app, e.g. `Job not found.`).
+- Migrations: `001_baseline` uses `utf8mb4_general_ci` like the real DB (with `unicode_ci` a fresh `migrate deploy` failed with MySQL error 3780 on the foreign keys). New `004_applied_jobs`.
+- Import idempotency: `WordsService.addWords(..., { jobId })` inserts an `applied_jobs` row first, in the same transaction as the words; a redelivered RabbitMQ job hits the primary key, saves nothing, is completed with the full count and acked (`words/words.service.ts`, `import/import-queue.service.ts`). Markers older than 7 days are deleted by the reminder cleanup. A marker found before the Gemini enrichment skips it too.
+- Import progress is written every `max(1, floor(total / 20))` words instead of every word.
+- Level progress: with Redis up, the current game only counts once its `HSET` succeeded (a failed write no longer lets the `HDEL` wipe the saved games without promoting).
+- Email: a send that times out is not retried (it may still be delivered) and counts as sent; other transient errors are retried as before.
+- Env validation at boot, one class per process (`config/env.validation.ts`): API (`app.module.ts`), worker and scheduler fail fast on a missing required variable. Google OAuth (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`) and `FEEDBACK_RECIPIENT_EMAIL` are required by the API; TTS and Gemini are optional.
+- `WorkerModule` / `SchedulerModule` (`worker.module.ts`, `scheduler.module.ts`): the worker and scheduler boot only the modules they use instead of the whole `AppModule`. `app.enableShutdownHooks()` in `main.ts`.
+- `@sealvo/shared` is the single source for levels, word types and game types (DTOs, `learning/constants.ts`, web hooks, stores and components); its unused/incorrect `api.ts` types were removed.
+- Web: `app/not-found.tsx` (old texts "Erreur" / "La route GET <url> n'existe pas"), `app/error.tsx`, `app/global-error.tsx` replace `ErrorBoundary.tsx`. Learn and packages pages show the old error texts when loading fails.
+- Web: packages and words pages split into hooks (`use-package-filters`, `use-package-actions`, `use-delete-all-flow`, `use-word-actions`, `use-words-by-level`) and components. The 7 game pages share `useGameShell` (screen, data, score save, level tracking, celebration, finish once) and `useCountdownTimer`; per-game timings, success rules and texts are unchanged. Pure game logic moved out of the pages (`generate-cards.ts`, `phrases.ts`, `scramble-word.ts`).
+- Web unit tests: Vitest in `apps/web` (`npm test`, picked up by `turbo run test`), 59 tests on the pure modules (deck, progress storage, quiz questions, word-search grid, pronunciation, shuffle, game generators).
 
 ### Legend
 - 🔴🔴🔴 CRITICAL security
@@ -276,7 +287,7 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 |---|---|---|---|---|
 | 35 | 🟡 | `editVocabs.hbs` referenced in code but file doesn't exist | Don't port dead reference | ✅ Done — not ported |
 | 36 | 🔴 | Google OAuth creates user without `is_verified=true` | Set `is_verified: true` for OAuth users | ✅ Done — `is_verified: true` in `googleLogin` |
-| 37 | 🟠 | 52 unit + 5 e2e tests with no migration strategy | Jest + @nestjs/testing + Playwright | ✅ Done — Vitest (131 API tests in 24 files, incl. guards) + 31 Playwright (26 public + 5 protected with the seeded account, #58); E2E workflow still manual (Phase 6) |
+| 37 | 🟠 | 52 unit + 5 e2e tests with no migration strategy | Jest + @nestjs/testing + Playwright | ✅ Done — Vitest (142 API tests in 26 files, incl. guards; 59 web unit tests in 10 files) + 31 Playwright (26 public + 5 protected with the seeded account, #58); E2E workflow still manual (Phase 6) |
 | 38 | 🟠 | 22 JS files (~5500 lines) not 6 as initially estimated | Full decomposition into ~40 React components | ✅ Done — 81 `.tsx` components + 45 `.ts` hooks/helpers in `components/` (about, auth, dashboard, games ×7, home, jobs, layout, learn, packages, words); largest pages: packages 349, phrase-completion 342, words 310, other games 226–296, dashboard 130 lines (split into `components/dashboard/`) |
 | 39 | 🟡 | theme-init.js FOUC prevention | Cookie-based theme detection in Next.js | ✅ Done — `next-themes` inline script (localStorage, not cookie) |
 | 40 | 🟡 | /update-streak orphan route (registered on app, not router) | Move into LearningController | ✅ Done — `POST /learning/streak` |
@@ -644,13 +655,14 @@ components/
 ├── home/        Hero, Showcase, Stats, Cta sections, WordCard, MouseGlow
 ├── about/       SocialClock
 ├── dashboard/   ProfileCard, StatsCard, StreakSection, PackagesToReview, AvatarModal, … + use-* hooks
-├── packages/    PackageCard, PackageModal, DeleteModal
-├── words/       WordRow, WordCardForm, MultiWordForm, ImportForm, DeleteAllModal, … + use-* hooks
+├── packages/    PackageCard, PackageModal, DeleteModal, Packages{StatsBar,Toolbar,FilterTabs,Grid} + use-* hooks
+├── words/       WordRow, WordCardForm, MultiWordForm, ImportForm, DeleteAllModal, Words{Toolbar,Search,LevelTable,EmptyState}, … + use-* hooks
 ├── learn/       LearnSession, Flashcard, KnowledgeButtons, LearnProgress, … + use-* hooks
 ├── jobs/        JobWatcher + use-job-subscription, use-resume-active-jobs, job-messages
 ├── games/       shared GameStats, GameFooter, GameDataStatus, PlayAgainActions, TrackLevelMessage,
-│                use-level-tracking, use-celebration; one folder per game (Board, Rules, Summary, effects)
-└── ErrorBoundary.tsx
+│                use-game-shell, use-countdown-timer, use-level-tracking, use-celebration;
+│                one folder per game (Board, Rules, Summary, effects, pure generators)
+└── ErrorPanel.tsx, RouteNotFound.tsx   # used by app/not-found, error, global-error
 ```
 
 ### Hooks and state

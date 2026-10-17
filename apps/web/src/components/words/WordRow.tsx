@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { Word, UpdateWordPayload } from '@/hooks/use-words';
-import { WORD_TYPES, stripBoldMarkup, wordTypeLabel } from './constants';
+import { WORD_TYPE_OPTIONS, stripBoldMarkup, wordTypeLabel } from './constants';
 import styles from '@/styles/vocabs.module.css';
 import { cx } from '@/lib/css-module';
 
@@ -65,7 +65,7 @@ export function WordRow({
               value={form.type}
               onChange={(e) => handleChange('type', e.target.value)}
             >
-              {WORD_TYPES.map((t) => (
+              {WORD_TYPE_OPTIONS.map((t) => (
                 <option key={t.value} value={t.value}>
                   {t.label}
                 </option>

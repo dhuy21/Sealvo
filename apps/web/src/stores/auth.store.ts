@@ -1,16 +1,7 @@
 import { create } from 'zustand';
+import type { UserDto } from '@sealvo/shared';
 
-export interface User {
-  id: string;
-  username: string;
-  email: string;
-  role: string;
-  ava: number;
-  is_verified: boolean;
-  streak: number;
-  created_at: string;
-  last_login: string | null;
-}
+export type User = UserDto;
 
 interface AuthState {
   user: User | null;

@@ -1,7 +1,7 @@
 'use client';
 
 import { VALID_LANGS } from '@sealvo/shared';
-import { LANGUAGE_NAMES, LEVEL_OPTIONS, WORD_TYPES } from './constants';
+import { LANGUAGE_NAMES, LEVEL_OPTIONS, WORD_TYPE_OPTIONS } from './constants';
 import type { WordCard, WordCardValues } from './word-card';
 import styles from '@/styles/add-word.module.css';
 import { cx } from '@/lib/css-module';
@@ -98,7 +98,7 @@ export function WordCardForm({
                 <option value="" disabled>
                   Choisir un type
                 </option>
-                {WORD_TYPES.map((t) => (
+                {WORD_TYPE_OPTIONS.map((t) => (
                   <option key={t.value} value={t.value}>
                     {t.formLabel}
                   </option>

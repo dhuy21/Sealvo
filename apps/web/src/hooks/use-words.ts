@@ -105,7 +105,7 @@ export function useDeleteAllWords(packageId: number) {
       const { data } = await api.delete(`/packages/${packageId}/words`);
       return data;
     },
-    // The words list is refetched by the caller once its exit animation has played
+    // The words queries are invalidated by the caller once its exit animation has played
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['dashboard'] });
     },

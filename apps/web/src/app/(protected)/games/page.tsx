@@ -3,65 +3,59 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import { ALL_GAME_TYPES, GAME_LEVEL, levelLabel, type GameType } from '@sealvo/shared';
 
-const GAMES = [
-  {
-    slug: 'flash-match',
+const GAME_CARDS: Record<GameType, { name: string; description: string; icon: string; color: string }> = {
+  flash_match: {
     name: 'Memory Match',
     description: 'Associez les mots à leur traduction en retournant les cartes.',
     icon: '🃏',
-    level: 'x',
     color: '#6a11cb',
   },
-  {
-    slug: 'vocab-quiz',
+  vocab_quiz: {
     name: 'Quiz de Vocabulaire',
     description: 'Testez vos connaissances avec des quiz à choix multiples.',
     icon: '❓',
-    level: 'x',
     color: '#2575fc',
   },
-  {
-    slug: 'test-pronun',
+  test_pronun: {
     name: 'Défi Prononcial',
     description: 'Entraînez votre prononciation avec la reconnaissance vocale.',
     icon: '🎤',
-    level: 'x',
     color: '#e91e63',
   },
-  {
-    slug: 'word-scramble',
+  word_scramble: {
     name: 'Mots Mélangés',
     description: 'Remettez les lettres dans le bon ordre.',
     icon: '🔤',
-    level: '0',
     color: '#ff9800',
   },
-  {
-    slug: 'phrase-completion',
+  phrase_completion: {
     name: 'Complétion de Phrase',
     description: 'Complétez les phrases avec le bon mot.',
     icon: '📝',
-    level: '0',
     color: '#4caf50',
   },
-  {
-    slug: 'speed-vocab',
+  speed_vocab: {
     name: 'Vitesse Vocab',
     description: 'Tapez les mots le plus vite possible.',
     icon: '⚡',
-    level: '1',
     color: '#ff5722',
   },
-  {
-    slug: 'word-search',
+  word_search: {
     name: 'Mots Cachés',
     description: 'Trouvez les mots cachés dans la grille.',
     icon: '🔍',
-    level: '2',
     color: '#009688',
   },
-];
+};
+
+/** Route segments are the game types with dashes (`flash_match` → `/games/flash-match`) */
+const GAMES = ALL_GAME_TYPES.map((type) => ({
+  ...GAME_CARDS[type],
+  slug: type.replaceAll('_', '-'),
+  level: levelLabel(GAME_LEVEL[type]),
+}));
 
 function GamesHub() {
   const searchParams = useSearchParams();

@@ -1,20 +1,16 @@
 'use client';
 
 import { Suspense, useState, useCallback, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { useGameData, useSaveScore } from '@/hooks/use-games';
-import { useTimeouts } from '@/hooks/use-timeouts';
 import { GameDataStatus } from '@/components/games/GameDataStatus';
 import { GameStats } from '@/components/games/GameStats';
 import { GameFooter } from '@/components/games/GameFooter';
-import { useLevelTracking } from '@/components/games/use-level-tracking';
+import { useGameShell } from '@/components/games/use-game-shell';
 import { VocabQuizRules } from '@/components/games/vocab-quiz/VocabQuizRules';
 import { QuizQuestion, type Question } from '@/components/games/vocab-quiz/QuizQuestion';
 import { VocabQuizSummary } from '@/components/games/vocab-quiz/VocabQuizSummary';
 import { FloatingQuizElements } from '@/components/games/vocab-quiz/FloatingQuizElements';
 import { useQuizEffects } from '@/components/games/vocab-quiz/use-quiz-effects';
 import { launchSnow } from '@/components/games/confetti';
-import { useCelebration } from '@/components/games/use-celebration';
 import {
   NOT_ENOUGH_WORDS_MESSAGE,
   generateQuestions,
@@ -23,17 +19,10 @@ import {
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/games/vocab-quiz.module.css';
 
-type Screen = 'pre' | 'active' | 'post';
-
 function VocabQuizContent() {
-  const searchParams = useSearchParams();
-  const packageId = Number(searchParams.get('package'));
+  const shell = useGameShell('vocab_quiz', { celebration: launchSnow });
+  const { packageId, gameData, screen } = shell;
 
-  const { data: gameData, isLoading, error } = useGameData('vocab_quiz', packageId || null);
-  const saveScore = useSaveScore();
-  const level = useLevelTracking('vocab_quiz');
-
-  const [screen, setScreen] = useState<Screen>('pre');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [score, setScore] = useState(0);
@@ -44,13 +33,8 @@ function VocabQuizContent() {
   const [quizError, setQuizError] = useState('');
   const [resultMsg, setResultMsg] = useState<{ text: string; correct: boolean } | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
-  const [levelMessage, setLevelMessage] = useState<{ text: string; success: boolean } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const effects = useQuizEffects();
-  const later = useTimeouts();
-  const celebrate = useCelebration(launchSnow);
-
-  const ready = !!gameData && !gameData.errorMessage;
 
   useEffect(() => {
     if (screen === 'active') {
@@ -61,7 +45,7 @@ function VocabQuizContent() {
 
   const startGame = useCallback(() => {
     if (!gameData?.words?.length || gameData.errorMessage) {
-      setScreen('pre');
+      shell.showRules();
       return;
     }
     const enough = hasEnoughWords(gameData.words);
@@ -75,11 +59,10 @@ function VocabQuizContent() {
     setAnswered(false);
     setResultMsg(null);
     setCurrentTime(0);
-    setLevelMessage(null);
-    setScreen('active');
+    shell.start();
     effects.start();
     if (enough) effects.showQuestion();
-  }, [gameData, effects]);
+  }, [gameData, shell, effects]);
 
   const handleAnswer = useCallback(
     (optIdx: number) => {
@@ -115,27 +98,12 @@ function VocabQuizContent() {
       effects.showQuestion();
     } else {
       // End game
-      clearInterval(timerRef.current);
       const total = questions.length;
-      const isSuccessful = correctCount >= Math.ceil(total * 0.7);
+      if (!shell.finish(score, correctCount >= Math.ceil(total * 0.7))) return;
+      clearInterval(timerRef.current);
       effects.finish(Math.round((correctCount / total) * 100));
-
-      setLevelMessage({
-        text: isSuccessful
-          ? 'Excellent travail ! Progressez les autres jeux de ce niveau 😍'
-          : 'Bon courage ! Réessayer ce jeu pour améliorer vos compétences 🤧',
-        success: isSuccessful,
-      });
-
-      saveScore.mutate({ game_type: 'vocab_quiz', score });
-      level.track(isSuccessful, packageId);
-
-      later(() => {
-        setScreen('post');
-        celebrate();
-      }, 1000);
     }
-  }, [currentIdx, questions, correctCount, score, packageId, saveScore, level, effects, later, celebrate]);
+  }, [currentIdx, questions, correctCount, score, shell, effects]);
 
   if (!packageId) {
     return (
@@ -156,10 +124,10 @@ function VocabQuizContent() {
       </div>
 
       {screen === 'pre' && (
-        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} styles={styles} />
+        <GameDataStatus isLoading={shell.isLoading} error={shell.error} data={gameData} packageId={packageId} styles={styles} />
       )}
 
-      {gameData && (screen !== 'pre' || ready) && (
+      {gameData && (screen !== 'pre' || shell.ready) && (
         <>
           <GameStats gameType="vocab_quiz" wordCount={gameData.wordCount} styles={styles} />
 
@@ -194,9 +162,9 @@ function VocabQuizContent() {
                   score={score}
                   correctCount={correctCount}
                   currentTime={currentTime}
-                  levelMessage={levelMessage?.text ?? ''}
-                  levelStatus={levelMessage ? (levelMessage.success ? 'completed' : 'failed') : ''}
-                  levelFinished={level.levelFinished}
+                  levelMessage={shell.levelMessage}
+                  levelStatus={shell.levelStatus}
+                  levelFinished={shell.levelFinished}
                   packageId={packageId}
                   onReplay={startGame}
                 />

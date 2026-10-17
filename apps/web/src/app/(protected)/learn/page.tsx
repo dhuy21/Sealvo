@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useReviewWords } from '@/components/learn/use-review-words';
 import { LearnSession } from '@/components/learn/LearnSession';
+import { getApiErrorMessage } from '@/lib/api-error';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/learn.module.css';
 
@@ -14,7 +15,7 @@ function LearnContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const packageId = Number(searchParams.get('package'));
-  const { data: words, isPending } = useReviewWords(packageId || null);
+  const { data: words, isPending, error } = useReviewWords(packageId || null);
 
   if (!packageId) {
     return (
@@ -37,6 +38,31 @@ function LearnContent() {
         style={{ textAlign: 'center', padding: '4rem' }}
       >
         <i className="fas fa-spinner fa-spin fa-2x"></i>
+      </div>
+    );
+  }
+
+  if (!words && error) {
+    return (
+      <div
+        className={cx(styles, 'learn-container')}
+        style={{ textAlign: 'center', padding: '4rem' }}
+      >
+        <div className={cx(styles, 'no-words')}>
+          <i className="fas fa-exclamation-circle"></i>
+          <p>
+            {getApiErrorMessage(
+              error,
+              'Une erreur est survenue lors de la récupération des mots à apprendre',
+            )}
+          </p>
+          <button
+            className={cx(styles, 'btn')}
+            onClick={() => router.push(`/words?package=${packageId}`)}
+          >
+            Retour à mon vocabulaire
+          </button>
+        </div>
       </div>
     );
   }

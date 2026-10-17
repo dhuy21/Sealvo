@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import type { GameType } from '@sealvo/shared';
 import { useTrackLevelProgress } from '@/hooks/use-games';
 import { levelCompletedMessage } from './level-progress';
 
@@ -7,7 +8,7 @@ import { levelCompletedMessage } from './level-progress';
  * Reports a finished game to the level progress. When that completes the level,
  * notifies the user and flags it so the summary offers "Terminé" instead of replaying.
  */
-export function useLevelTracking(gameType: string) {
+export function useLevelTracking(gameType: GameType) {
   const trackLevel = useTrackLevelProgress();
   const [levelFinished, setLevelFinished] = useState(false);
 

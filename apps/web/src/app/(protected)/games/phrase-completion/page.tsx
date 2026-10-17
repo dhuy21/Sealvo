@@ -1,111 +1,65 @@
 'use client';
 
-import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { useGameData, useSaveScore, type GameWord } from '@/hooks/use-games';
-import { useTimeouts } from '@/hooks/use-timeouts';
-import { shuffleArray } from '@/lib/shuffle';
+import { Suspense, useState, useRef, useCallback } from 'react';
 import { launchStars } from '@/components/games/confetti';
-import { useCelebration } from '@/components/games/use-celebration';
-import { useLevelTracking } from '@/components/games/use-level-tracking';
+import { useGameShell } from '@/components/games/use-game-shell';
+import { useCountdownTimer } from '@/components/games/use-countdown-timer';
 import { GameDataStatus } from '@/components/games/GameDataStatus';
 import { GameStats } from '@/components/games/GameStats';
 import { GameFooter } from '@/components/games/GameFooter';
-import type { LevelStatus } from '@/components/games/TrackLevelMessage';
 import { StarryBackground } from '@/components/games/phrase-completion/StarryBackground';
 import { PhraseCompletionRules } from '@/components/games/phrase-completion/PhraseCompletionRules';
 import { PhraseBoard } from '@/components/games/phrase-completion/PhraseBoard';
 import { PhraseCompletionSummary } from '@/components/games/phrase-completion/PhraseCompletionSummary';
 import { useTypewriter } from '@/components/games/phrase-completion/use-typewriter';
+import {
+  escapeHtml,
+  generatePhrases,
+  repeatPhrases,
+  revealAnswers,
+  type Phrase,
+} from '@/components/games/phrase-completion/phrases';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/games/phrase-completion.module.css';
-
-/* ================================================================
-   TYPES & HELPERS
-   ================================================================ */
-function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-interface Phrase {
-  phrase: string;
-  word: string;
-  meaningWord: string;
-  correctWords: string[];
-}
-
-/** One phrase per word; an example without `**…**` (or no example) gives a phrase with no blank. */
-function generatePhrases(words: GameWord[]): Phrase[] {
-  const phrases = words.map((w) => {
-    let phrase = '';
-    let correctWords: string[] = [];
-
-    if (w.example && w.example.trim() !== '') {
-      const regex = /\*\*([^*]+)\*\*/g;
-      correctWords = [...w.example.matchAll(regex)].map((m) => m[1]);
-      phrase = w.example.replace(regex, '_____');
-    }
-    return { phrase, word: w.word, meaningWord: w.meaning, correctWords };
-  });
-  return shuffleArray(phrases);
-}
 
 /* ================================================================
    INNER COMPONENT
    ================================================================ */
 function PhraseCompletionInner() {
-  const searchParams = useSearchParams();
-  const packageId = searchParams.get('package') ? Number(searchParams.get('package')) : null;
-
-  const { data: gameData, isLoading, error } = useGameData('phrase_completion', packageId);
-  const saveScore = useSaveScore();
-  const level = useLevelTracking('phrase_completion');
-
-  type Screen = 'pre' | 'active' | 'post';
-  const [screen, setScreen] = useState<Screen>('pre');
+  const shell = useGameShell('phrase_completion', { celebration: launchStars });
+  const { packageId, gameData, screen } = shell;
   const [phrases, setPhrases] = useState<Phrase[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
-  const [timer, setTimer] = useState(0);
   const [input, setInput] = useState('');
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [feedbackType, setFeedbackType] = useState<'correct' | 'incorrect' | ''>('');
   const [answered, setAnswered] = useState(false);
   const [displayPhrase, setDisplayPhrase] = useState('');
   const [meaningText, setMeaningText] = useState('');
-  const [levelMessage, setLevelMessage] = useState('');
-  const [levelStatus, setLevelStatus] = useState<LevelStatus>('');
-  const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const questionStartRef = useRef(0);
   const attemptsRef = useRef(0);
   const [totalQuestions, setTotalQuestions] = useState(0);
   const showTypedText = useCallback((text: string) => setDisplayPhrase(escapeHtml(text)), []);
   const typewriter = useTypewriter(showTypedText);
-  const later = useTimeouts();
-  const celebrate = useCelebration(launchStars);
 
   const currentPhrase = phrases[currentIndex] ?? null;
-  const ready = !!gameData && !gameData.errorMessage;
 
-  // Timer countdown
-  useEffect(() => {
-    if (screen === 'active' && timer > 0) {
-      timerRef.current = setInterval(() => {
-        setTimer((prev) => {
-          if (prev <= 1) { clearInterval(timerRef.current); return 0; }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timerRef.current);
-    }
-  }, [screen, timer > 0]); // eslint-disable-line react-hooks/exhaustive-deps
+  function endGame() {
+    typewriter.stop();
+    const accuracy = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+    shell.finish(score, accuracy >= 80);
+  }
+
+  const [timer, setTimer] = useCountdownTimer(shell.playing, endGame);
 
   function startGame() {
     if (!gameData || gameData.errorMessage) {
-      setScreen('pre');
+      shell.showRules();
       return;
     }
 
@@ -115,11 +69,7 @@ function PhraseCompletionInner() {
     const totalQ = Math.min(availableWords, 100) + Math.floor(0.5 * availableWords);
     setTotalQuestions(totalQ);
 
-    // Extend phrases array to cover totalQ
-    const extendedPhrases: Phrase[] = [];
-    for (let i = 0; i < totalQ; i++) {
-      extendedPhrases.push(generated[i % generated.length]);
-    }
+    const extendedPhrases = repeatPhrases(generated, totalQ);
 
     setPhrases(extendedPhrases);
     setCurrentIndex(0);
@@ -132,15 +82,12 @@ function PhraseCompletionInner() {
     setFeedbackType('');
     setAnswered(false);
     setMeaningText('');
-    setLevelMessage('');
-    setLevelStatus('');
     typewriter.type(extendedPhrases[0].phrase);
 
-    const gameTimer = 200 + 4 * totalQ;
-    setTimer(gameTimer);
+    setTimer(200 + 4 * totalQ);
     questionStartRef.current = Date.now();
     attemptsRef.current = 0;
-    setScreen('active');
+    shell.start();
 
     setTimeout(() => inputRef.current?.focus(), 100);
   }
@@ -184,24 +131,13 @@ function PhraseCompletionInner() {
 
       setFeedbackMessage(`Correct ! +${totalPoints} points`);
       setFeedbackType('correct');
-
-      // Replace blanks with correct words in green
-      let updated = escapeHtml(currentPhrase.phrase);
-      for (const w of currentPhrase.correctWords) {
-        updated = updated.replace('_____', `<span class="${cx(styles, 'blank', 'correct')}">${escapeHtml(w)}</span>`);
-      }
-      setDisplayPhrase(updated);
+      setDisplayPhrase(revealAnswers(currentPhrase, cx(styles, 'blank', 'correct')));
     } else {
       setStreak(0);
 
       setFeedbackMessage(`Incorrect. La bonne réponse était "${currentPhrase.correctWords.join(' ')}"`);
       setFeedbackType('incorrect');
-
-      let updated = escapeHtml(currentPhrase.phrase);
-      for (const w of currentPhrase.correctWords) {
-        updated = updated.replace('_____', `<span class="${cx(styles, 'blank', 'incorrect')}">${escapeHtml(w)}</span>`);
-      }
-      setDisplayPhrase(updated);
+      setDisplayPhrase(revealAnswers(currentPhrase, cx(styles, 'blank', 'incorrect')));
     }
   }
 
@@ -226,39 +162,6 @@ function PhraseCompletionInner() {
     setTimeout(() => inputRef.current?.focus(), 50);
   }
 
-  function endGame() {
-    clearInterval(timerRef.current);
-    typewriter.stop();
-    const totalQ = totalQuestions;
-    const accuracy = totalQ > 0 ? Math.round((correctAnswers / totalQ) * 100) : 0;
-    const isSuccessful = accuracy >= 80;
-
-    saveScore.mutate({ game_type: 'phrase_completion', score });
-
-    level.track(isSuccessful, packageId!);
-
-    if (isSuccessful) {
-      setLevelMessage('Excellent travail ! Progressez les autres jeux de ce niveau 😍');
-      setLevelStatus('completed');
-    } else {
-      setLevelMessage('Bon courage ! Réessayer ce jeu pour améliorer vos compétences 🤧');
-      setLevelStatus('failed');
-    }
-
-    later(() => {
-      setScreen('post');
-      celebrate();
-    }, 1000);
-  }
-
-  // End game when timer hits 0
-  useEffect(() => {
-    if (screen === 'active' && timer === 0 && phrases.length > 0) {
-      endGame();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timer, screen]);
-
   if (!packageId) {
     return (
       <div className={cx(styles, 'game-container')}>
@@ -281,10 +184,10 @@ function PhraseCompletionInner() {
       </div>
 
       {screen === 'pre' && (
-        <GameDataStatus isLoading={isLoading} error={error} data={gameData} packageId={packageId} styles={styles} />
+        <GameDataStatus isLoading={shell.isLoading} error={shell.error} data={gameData} packageId={packageId} styles={styles} />
       )}
 
-      {gameData && (screen !== 'pre' || ready) && (
+      {gameData && (screen !== 'pre' || shell.ready) && (
         <>
           <GameStats gameType="phrase_completion" wordCount={gameData.wordCount} styles={styles} />
 
@@ -315,9 +218,9 @@ function PhraseCompletionInner() {
               correctAnswers={correctAnswers}
               totalQuestions={totalQuestions}
               bestStreak={bestStreak}
-              levelMessage={levelMessage}
-              levelStatus={levelStatus}
-              levelFinished={level.levelFinished}
+              levelMessage={shell.levelMessage}
+              levelStatus={shell.levelStatus}
+              levelFinished={shell.levelFinished}
               packageId={packageId}
               onReplay={startGame}
             />

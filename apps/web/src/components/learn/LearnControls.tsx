@@ -1,4 +1,4 @@
-import { LEVELS, levelLabel } from './levels';
+import { LEVELS, levelLabel } from '@sealvo/shared';
 import type { LearnMode } from './Flashcard';
 import type { VocabMode } from './deck';
 import { cx } from '@/lib/css-module';

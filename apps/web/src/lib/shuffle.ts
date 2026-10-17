@@ -7,3 +7,12 @@ export function shuffleArray<T>(arr: readonly T[]): T[] {
   }
   return a;
 }
+
+/** Random index in `[0, length)`, other than `current` whenever there is another one. */
+export function randomIndexExcept(length: number, current: number): number {
+  let index = Math.floor(Math.random() * length);
+  while (index === current && length > 1) {
+    index = Math.floor(Math.random() * length);
+  }
+  return index;
+}
