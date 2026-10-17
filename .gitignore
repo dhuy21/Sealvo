@@ -45,3 +45,8 @@ apps/api/backups/
 /src/
 /MIGRATION_AUDIT.md
 /docs/legacy/
+
+# Project documentation: kept locally, only the READMEs are published
+/BUSINESS_RULES.md
+/docs/
+AGENTS.md

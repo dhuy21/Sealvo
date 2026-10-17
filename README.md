@@ -33,14 +33,11 @@ npm run db:migrate
 npm run dev               # API :3001, web :3000
 ```
 
-Details (existing databases, E2E account, production images on your machine):
-[docs/local-dev.md](docs/local-dev.md).
-
 ## Tests
 
 ```bash
 npx turbo lint test build                 # what CI runs
-npx turbo test:e2e --filter=@sealvo/web   # Playwright, see docs/local-dev.md
+npx turbo test:e2e --filter=@sealvo/web   # Playwright
 ```
 
 API and web unit tests use Vitest. CI also checks that the Prisma migrations match
@@ -50,9 +47,4 @@ API and web unit tests use Vitest. CI also checks that the Prisma migrations mat
 
 GitHub Actions (`.github/workflows/ci-cd.yml`) builds immutable `:sha-<commit>` images on GHCR;
 `deploy.yml` moves the `:staging` / `:latest` tag after approval and redeploys the Railway
-services, `rollback.yml` redeploys an earlier commit. Service setup, environment variables and
-the first deploy on the existing database: [docs/railway-setup.md](docs/railway-setup.md).
-
-## Reference
-
-- [BUSINESS_RULES.md](BUSINESS_RULES.md): the product rules (spaced repetition, games, limits).
+services, `rollback.yml` redeploys an earlier commit.
