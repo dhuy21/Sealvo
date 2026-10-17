@@ -24,6 +24,14 @@ describe('CreateWordDto', () => {
     );
   });
 
+  it('trims text fields, and rejects a required one left blank', async () => {
+    const dto = plainToInstance(CreateWordDto, { ...validWord, word: '  cat ', example: ' Hi. ' });
+    expect([dto.word, dto.example]).toEqual(['cat', 'Hi.']);
+    await expect(
+      invalidFields(CreateWordDto, { ...validWord, word: '   ', meaning: ' ' }),
+    ).resolves.toEqual(['meaning', 'word']);
+  });
+
   it('rejects a null level', async () => {
     await expect(invalidFields(CreateWordDto, { ...validWord, level: null })).resolves.toEqual([
       'level',

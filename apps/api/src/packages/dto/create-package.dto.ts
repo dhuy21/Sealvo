@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { PACKAGE_MODES, type PackageMode } from '@sealvo/shared';
 import { IsOptionalDefined } from '../../common/decorators/is-optional-defined.decorator.js';
+import { Trim } from '../../common/decorators/trim.decorator.js';
 import {
   TEXT_MAX_LENGTH,
   VARCHAR_MAX_LENGTH,
@@ -9,6 +10,7 @@ import {
 
 export class CreatePackageDto {
   @ApiProperty({ example: 'English Basics' })
+  @Trim()
   @IsString()
   @MinLength(1)
   @MaxLength(VARCHAR_MAX_LENGTH)
@@ -16,6 +18,7 @@ export class CreatePackageDto {
 
   @ApiProperty({ example: 'Basic vocabulary for beginners', required: false })
   @IsOptional()
+  @Trim()
   @IsString()
   @MaxLength(TEXT_MAX_LENGTH)
   package_description?: string;

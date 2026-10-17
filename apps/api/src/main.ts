@@ -3,16 +3,22 @@ import { ValidationPipe } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
+import { json } from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module.js';
 import { appConfig, type AppConfig } from './config/app.config.js';
 
-/** POST words takes up to 500 words; at the longest allowed fields that is about 5.5 MB (default: 100 KB) */
-const JSON_BODY_LIMIT = '6mb';
+/** POST words takes up to 500 words; at the longest allowed fields that is about 5.5 MB */
+const ADD_WORDS_BODY_LIMIT = '6mb';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  app.useBodyParser('json', { limit: JSON_BODY_LIMIT });
+  // Only this route gets the large limit; every other JSON body keeps Nest's default parser (100 KB),
+  // which skips a body already parsed here
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .post('/packages/:packageId/words', json({ limit: ADD_WORDS_BODY_LIMIT }));
   app.enableShutdownHooks();
   const config = app.get<AppConfig>(appConfig.KEY);
 
