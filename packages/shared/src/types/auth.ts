@@ -5,13 +5,6 @@ export interface LoginRequest {
   password: string;
 }
 
-export interface RegisterRequest {
-  username: string;
-  email: string;
-  password: string;
-  confirm_password: string;
-}
-
 export interface AuthTokens {
   accessToken: string;
 }
@@ -24,22 +17,15 @@ export interface JwtPayload {
   exp: number;
 }
 
+/** GET /auth/me */
 export interface UserDto {
   id: string;        // CHAR(7)
   username: string;
   email: string;
   role: UserRole;
-  avatar: number;
+  ava: number;
   is_verified: boolean;
-  created_at: string;
-}
-
-export interface ResetPasswordRequest {
-  email: string;
-}
-
-export interface NewPasswordRequest {
-  token: string;
-  password: string;
-  confirm_password: string;
+  streak: number;
+  created_at: string | null;
+  last_login: string | null;
 }

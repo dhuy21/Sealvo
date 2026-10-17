@@ -1,5 +1,5 @@
 import type { GameType } from '../types/game.js';
-import type { Level } from '../types/word.js';
+import type { Level, WordType } from '../types/word.js';
 
 /** 18 supported language codes (Google TTS compatible) */
 export const VALID_LANGS = [
@@ -10,34 +10,58 @@ export const VALID_LANGS = [
 
 export type LanguageCode = (typeof VALID_LANGS)[number];
 
-/** 7 word types */
+/** 7 word types, as the API sends and accepts them */
+export const WORD_TYPES: readonly WordType[] = [
+  'noun', 'verb', 'adjective', 'adverb', 'ph_v', 'idiom', 'collocation',
+];
+
+/** Spaced repetition levels, as the API sends and accepts them */
+export const LEVELS: readonly Level[] = ['x', 'level_0', 'level_1', 'level_2', 'v'];
+
+/** Word types as written in import spreadsheets (raw database values: `ph.v`, not `ph_v`) */
 export const VALID_TYPES = [
   'noun', 'verb', 'adjective', 'adverb', 'ph.v', 'idiom', 'collocation',
 ] as const;
 
-/** Spaced repetition levels */
-export const VALID_LEVELS: readonly Level[] = ['x', '0', '1', '2', 'v'] as const;
+/** Levels as written in import spreadsheets (raw database values: `0`, not `level_0`) */
+export const VALID_LEVELS = ['x', '0', '1', '2', 'v'] as const;
+
+/** Level as shown to users: its raw database value (`level_0` → `0`) */
+export function levelLabel(level: Level): string {
+  return level.replace('level_', '');
+}
 
 /** Spaced repetition intervals (days) */
 export const LEVEL_INTERVALS: Record<Level, number> = {
   x: 0,
-  '0': 2,
-  '1': 4,
-  '2': 10,
+  level_0: 2,
+  level_1: 4,
+  level_2: 10,
   v: 20,
 };
 
-/** Games required per level to promote */
-export const LEVEL_GAMES: Record<Exclude<Level, 'v'>, readonly GameType[]> = {
-  x: ['flash_match', 'vocab_quiz', 'test_pronun'],
-  '0': ['word_scramble', 'phrase_completion'],
-  '1': ['speed_vocab'],
-  '2': ['word_search'],
-};
-
-/** All game types */
+/** All game types, in level order */
 export const ALL_GAME_TYPES: readonly GameType[] = [
   'flash_match', 'vocab_quiz', 'test_pronun',
   'word_scramble', 'phrase_completion',
   'speed_vocab', 'word_search',
-] as const;
+];
+
+/** Level whose words each game reviews */
+export const GAME_LEVEL: Record<GameType, Exclude<Level, 'v'>> = {
+  flash_match: 'x',
+  vocab_quiz: 'x',
+  test_pronun: 'x',
+  word_scramble: 'level_0',
+  phrase_completion: 'level_0',
+  speed_vocab: 'level_1',
+  word_search: 'level_2',
+};
+
+/** Games required per level to promote (all must be completed) */
+export const LEVEL_GAMES: Record<Exclude<Level, 'v'>, readonly GameType[]> = {
+  x: ['flash_match', 'vocab_quiz', 'test_pronun'],
+  level_0: ['word_scramble', 'phrase_completion'],
+  level_1: ['speed_vocab'],
+  level_2: ['word_search'],
+};
