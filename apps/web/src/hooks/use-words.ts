@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Level, WordType } from '@sealvo/shared';
 import api from '@/lib/api';
 import { stripBoldMarkup } from '@/lib/bold-markup';
-import { queryKeys } from '@/lib/query-keys';
+import { invalidate, invalidateWords, queryKeys } from '@/lib/query-keys';
 
 export interface Word {
   detail_id: number;
@@ -81,9 +81,7 @@ export function useAddWords(packageId: number) {
     },
     onSuccess: (data) => {
       if (data.async) return;
-      void qc.invalidateQueries({ queryKey: queryKeys.words(packageId) });
-      void qc.invalidateQueries({ queryKey: queryKeys.games() });
-      void qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
+      invalidateWords(qc, packageId);
     },
   });
 }
@@ -96,10 +94,8 @@ export function useUpdateWord(packageId: number) {
       return data;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: queryKeys.words(packageId) });
-      void qc.invalidateQueries({ queryKey: queryKeys.games() });
       // The dashboard counts words per level
-      void qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
+      invalidateWords(qc, packageId);
     },
   });
 }
@@ -112,9 +108,7 @@ export function useDeleteWord(packageId: number) {
       return data;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: queryKeys.words(packageId) });
-      void qc.invalidateQueries({ queryKey: queryKeys.games() });
-      void qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
+      invalidateWords(qc, packageId);
     },
   });
 }
@@ -128,8 +122,7 @@ export function useDeleteAllWords(packageId: number) {
     },
     // The words queries are invalidated by the caller once its exit animation has played
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: queryKeys.games() });
-      void qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
+      invalidate(qc, queryKeys.games(), queryKeys.dashboard());
     },
   });
 }

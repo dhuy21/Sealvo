@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PackageMode } from '@sealvo/shared';
 import api from '@/lib/api';
-import { queryKeys } from '@/lib/query-keys';
+import { invalidate, queryKeys } from '@/lib/query-keys';
 
 export interface Package {
   package_id: number;
@@ -74,8 +74,7 @@ export function useCreatePackage() {
       return data;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: queryKeys.packages() });
-      void qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
+      invalidate(qc, queryKeys.packages(), queryKeys.dashboard());
     },
   });
 }
@@ -89,9 +88,7 @@ export function useUpdatePackage() {
     },
     // The name and the active flag are also shown by the dashboard and the game pickers
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: queryKeys.packages() });
-      void qc.invalidateQueries({ queryKey: queryKeys.games() });
-      void qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
+      invalidate(qc, queryKeys.packages(), queryKeys.games(), queryKeys.dashboard());
     },
   });
 }
@@ -104,9 +101,7 @@ export function useDeletePackage() {
       return data;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: queryKeys.packages() });
-      void qc.invalidateQueries({ queryKey: queryKeys.games() });
-      void qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
+      invalidate(qc, queryKeys.packages(), queryKeys.games(), queryKeys.dashboard());
     },
   });
 }
@@ -121,8 +116,7 @@ export function useTogglePackage() {
       return data;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: queryKeys.packages() });
-      void qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
+      invalidate(qc, queryKeys.packages(), queryKeys.dashboard());
     },
   });
 }
@@ -135,8 +129,7 @@ export function useCopyPackage() {
       return data;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: queryKeys.packages() });
-      void qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
+      invalidate(qc, queryKeys.packages(), queryKeys.dashboard());
     },
   });
 }

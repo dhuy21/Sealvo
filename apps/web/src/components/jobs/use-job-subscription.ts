@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { streamJob } from '@/lib/job-stream';
 import { finishJob, type JobOutcome } from '@/lib/job-watcher';
 import { notifyInfo } from '@/lib/notify';
-import { queryKeys } from '@/lib/query-keys';
+import { invalidate, queryKeys } from '@/lib/query-keys';
 import {
   STREAM_UNAVAILABLE_MESSAGE,
   completedMessage,
@@ -25,10 +25,13 @@ export function useJobSubscription(jobId: string): void {
       ended = true;
       controller.abort();
       if (outcome !== 'lost') {
-        void qc.invalidateQueries({ queryKey: queryKeys.allWords() });
-        void qc.invalidateQueries({ queryKey: queryKeys.games() });
-        void qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
-        void qc.invalidateQueries({ queryKey: queryKeys.packages() });
+        invalidate(
+          qc,
+          queryKeys.allWords(),
+          queryKeys.games(),
+          queryKeys.dashboard(),
+          queryKeys.packages(),
+        );
       }
       finishJob(jobId, outcome, keepStored);
     };

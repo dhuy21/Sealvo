@@ -1,3 +1,4 @@
+import type { QueryClient, QueryKey } from '@tanstack/react-query';
 import type { GameType } from '@sealvo/shared';
 
 /** React Query keys. Hierarchical: invalidating a key also invalidates every key it prefixes. */
@@ -14,3 +15,13 @@ export const queryKeys = {
   package: (packageId: number | null) => ['packages', 'detail', packageId] as const,
   dashboard: () => ['dashboard'] as const,
 };
+
+/** Mark the queries stale without waiting for their refetch */
+export function invalidate(qc: QueryClient, ...keys: QueryKey[]): void {
+  for (const queryKey of keys) void qc.invalidateQueries({ queryKey });
+}
+
+/** Everything that lists or counts a package's words: the list, the game data, the dashboard */
+export function invalidateWords(qc: QueryClient, packageId: number): void {
+  invalidate(qc, queryKeys.words(packageId), queryKeys.games(), queryKeys.dashboard());
+}

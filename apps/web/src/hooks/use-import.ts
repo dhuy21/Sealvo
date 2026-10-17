@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { queryKeys } from '@/lib/query-keys';
+import { invalidateWords } from '@/lib/query-keys';
 import type { WordsSubmitResponse } from './use-words';
 
 export function useImportFile(packageId: number) {
@@ -18,9 +18,7 @@ export function useImportFile(packageId: number) {
     },
     onSuccess: (data) => {
       if (data.async) return;
-      void qc.invalidateQueries({ queryKey: queryKeys.words(packageId) });
-      void qc.invalidateQueries({ queryKey: queryKeys.games() });
-      void qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
+      invalidateWords(qc, packageId);
     },
   });
 }

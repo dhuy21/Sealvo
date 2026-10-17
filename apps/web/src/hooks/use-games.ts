@@ -8,7 +8,7 @@ import type {
   TrackLevelProgressResult,
 } from '@sealvo/shared';
 import api from '@/lib/api';
-import { queryKeys } from '@/lib/query-keys';
+import { invalidateWords, queryKeys } from '@/lib/query-keys';
 
 export type { GameData, GameWord, TrackLevelProgressResult } from '@sealvo/shared';
 
@@ -49,9 +49,7 @@ export function useTrackLevelProgress() {
       return data;
     },
     onSuccess: (_data, { packageId }) => {
-      void qc.invalidateQueries({ queryKey: queryKeys.games() });
-      void qc.invalidateQueries({ queryKey: queryKeys.words(packageId) });
-      void qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
+      invalidateWords(qc, packageId);
     },
   });
 }
