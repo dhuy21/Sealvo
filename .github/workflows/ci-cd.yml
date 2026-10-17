@@ -11,8 +11,11 @@ on:
   pull_request:
     branches: [main, staging, develop]
 
+# PRs and develop: a new push cancels the previous run. main and staging: every run goes through, so
+# each commit gets its images (a rollback target) and lint/test feedback even while a deploy waits for
+# approval; the deploy job serializes the releases (deploy.yml) and skips superseded commits.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging') && format('-{0}', github.run_id) || '' }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/staging' }}
 
 jobs:
@@ -22,15 +25,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
           cache: 'npm'
       - run: npm ci
       - name: NPM audit (production deps)
         run: npm audit --audit-level=critical --omit=dev
-      - uses: actions/cache@v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: .turbo/cache
           key: ${{ runner.os }}-turbo-${{ github.sha }}
@@ -49,7 +52,7 @@ jobs:
     timeout-minutes: 10
     services:
       mysql:
-        image: mysql:8.0
+        image: mysql:8.0@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b
         env:
           MYSQL_ROOT_PASSWORD: root
         ports:
@@ -66,8 +69,8 @@ jobs:
       run:
         working-directory: apps/api
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
           cache: 'npm'
@@ -96,9 +99,16 @@ jobs:
     needs: [lint-and-test, migrations-check]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')
     timeout-minutes: 20
+    # staging and main fast-forwarded to the same commit build it once: the second run waits, then
+    # finds the image and reuses it instead of pushing a different digest under the same tag
+    concurrency:
+      group: build-${{ github.sha }}-${{ matrix.image }}
+      cancel-in-progress: false
     permissions:
       contents: read
       packages: write
+      # Staging's E2E result for a reused image
+      actions: read
     strategy:
       matrix:
         # The backup cron only runs in production: staging does not build its image
@@ -106,7 +116,7 @@ jobs:
     env:
       REGISTRY: ghcr.io
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set image name
         id: image
@@ -117,9 +127,9 @@ jobs:
         id: meta
         run: echo "ref=$REGISTRY/${{ steps.image.outputs.name }}/${{ matrix.image }}:sha-${{ github.sha }}" >> "$GITHUB_OUTPUT"
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -138,8 +148,29 @@ jobs:
         env:
           IMAGE: ${{ steps.meta.outputs.ref }}
 
+      # Promotion: production reuses the staging image only once it passed E2E on staging.
+      # A commit pushed to main directly has no staging image and is built above (the approver gates it).
+      - name: Check staging passed
+        if: steps.existing.outputs.found == 'true' && github.ref == 'refs/heads/main'
+        run: |
+          run_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$GITHUB_SHA&branch=staging&event=push" \
+            --jq '[.workflow_runs[] | select(.path == ".github/workflows/ci-cd.yml")] | sort_by(.run_number) | last | .id // empty')
+          [ -n "$run_id" ] || { echo "::error::No staging CI/CD run for $GITHUB_SHA"; exit 1; }
+          e2e=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" \
+            --jq '[.jobs[] | select(.name | startswith("E2E Staging"))] | first | .conclusion // "missing"')
+          [ "$e2e" = success ] || { echo "::error::E2E Staging is '$e2e' for $GITHUB_SHA (run $run_id): not promoted"; exit 1; }
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      # The scan below also covers a reused image: it was scanned when built, maybe weeks ago
+      - name: Pull the existing image
+        if: steps.existing.outputs.found == 'true'
+        run: docker pull "$IMAGE"
+        env:
+          IMAGE: ${{ steps.meta.outputs.ref }}
+
       # Built into the runner's Docker only: nothing reaches the registry before the scan passes
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         if: steps.existing.outputs.found != 'true'
         with:
           context: .
@@ -155,7 +186,6 @@ jobs:
       # (read-only mount): no Docker socket, no registry credentials.
       # Lists CRITICAL and HIGH, then fails the job (and so blocks the push and the deploy) on fixable CRITICAL only
       - name: Trivy vulnerability scan
-        if: steps.existing.outputs.found != 'true'
         run: |
           docker save -o "$RUNNER_TEMP/image.tar" "$IMAGE"
           # Without capabilities the scanner's root cannot read a file owned by the runner user
@@ -202,6 +232,7 @@ jobs:
     with:
       environment: production
       version: ${{ github.sha }}
+      skip-if-superseded: true
     secrets: inherit
 
   deploy-staging:
@@ -215,12 +246,15 @@ jobs:
     with:
       environment: staging
       version: ${{ github.sha }}
+      skip-if-superseded: true
     secrets: inherit
 
   # ── 4. E2E ON STAGING ──────────────────────────────────────
   e2e-staging:
     name: E2E Staging
     needs: deploy-staging
+    # A superseded deploy left staging on a newer commit: testing it would vouch for the wrong commit
+    if: needs.deploy-staging.outputs.deployed == 'true'
     uses: ./.github/workflows/e2e.yml
     with:
       target: staging

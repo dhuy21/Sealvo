@@ -1,6 +1,7 @@
 # Dev infrastructure only — MySQL + Redis + RabbitMQ
 # NestJS and Next.js run natively (turbo dev)
 # Usage: docker compose -f docker-compose.dev.yml up -d (from the repo root: credentials come from .env)
+# Ports bound to 127.0.0.1: the default credentials must not be reachable from the local network
 
 services:
   db:
@@ -13,7 +14,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-example}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-web_db}
     ports:
-      - '${MYSQL_PORT:-3307}:3306'
+      - '127.0.0.1:${MYSQL_PORT:-3307}:3306'
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
@@ -29,7 +30,7 @@ services:
     restart: unless-stopped
     command: redis-server --maxmemory-policy volatile-lru
     ports:
-      - '${REDIS_PORT:-6379}:6379'
+      - '127.0.0.1:${REDIS_PORT:-6379}:6379'
     volumes:
       - redis_data:/data
     healthcheck:
@@ -46,8 +47,8 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
     ports:
-      - '${RABBITMQ_PORT:-5672}:5672'
-      - '${RABBITMQ_UI_PORT:-15672}:15672'
+      - '127.0.0.1:${RABBITMQ_PORT:-5672}:5672'
+      - '127.0.0.1:${RABBITMQ_UI_PORT:-15672}:15672'
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:

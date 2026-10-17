@@ -185,19 +185,20 @@ file differs from the one in this repository. Check with
 
 Tokens and service IDs differ between staging and production: define all of them as
 **environment secrets** on the `staging` and `production` GitHub environments (Settings →
-Environments), not as repository secrets. Without `RAILWAY_TOKEN` the deploy steps and the
-health check are skipped.
+Environments), not as repository secrets. The deploy fails before moving any tag when one of
+them (or `API_URL`, or the environment's frontend URL) is missing: a skipped check would end green
+and leave E2E testing the previous deployment.
 
 ## GitHub Variables
 
 Define these as **environment variables** on both the `production` and `staging` GitHub
 environments (Settings → Environments), so each environment gets its own values:
 
-| Variable         | Description                                                                                                                                                                                                                                                                   |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `API_URL`        | API base URL for the post-deploy checks: CI polls `$API_URL/health` (up to 10 min per service) until its `version` (and then `processes.worker` / `processes.scheduler`) equals the deployed commit, so a 200 from the previous deployment does not count. Skipped when unset |
-| `STAGING_URL`    | Staging frontend URL (staging environment only): web health check after a deploy, E2E                                                                                                                                                                                         |
-| `PRODUCTION_URL` | Production frontend URL (default `https://www.sealvo.it.com`): web health check after a deploy, E2E                                                                                                                                                                           |
+| Variable         | Description                                                                                                                                                                                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `API_URL`        | API base URL for the post-deploy checks: CI polls `$API_URL/health` (up to 10 min per service) until its `version` (and then `processes.worker` / `processes.scheduler`) equals the deployed commit, so a 200 from the previous deployment does not count. Required |
+| `STAGING_URL`    | Staging frontend URL (staging environment only): web health check after a deploy, E2E                                                                                                                                                                               |
+| `PRODUCTION_URL` | Production frontend URL (default `https://www.sealvo.it.com`): web health check after a deploy, E2E                                                                                                                                                                 |
 
 ## Deploy Order
 
@@ -214,16 +215,26 @@ environments (Settings → Environments), so each environment gets its own value
 1. Lint, tests, build, and the migrations check.
 2. Images, tagged only `:sha-<commit>` (never overwritten): when that tag already exists, it is
    reused as is. So on `main`, a commit staging already built runs the exact images tested on
-   staging. Otherwise (hotfix pushed to `main`, merge commit, first push) the `api` and `web` images
-   are built, scanned with Trivy, and pushed only when the scan passes. `backup` is only built for
-   `main` (staging has no backup cron).
+   staging, and only once **E2E Staging passed for that commit** (the build job fails otherwise:
+   re-run it after a green staging run). Otherwise (hotfix pushed to `main`, merge commit, first
+   push) the `api` and `web` images are built and pushed only when the Trivy scan passes. A reused
+   image is scanned again (it was scanned when built, maybe weeks ago). Two runs building the same
+   commit (staging, then `main` fast-forwarded to it) take turns: the second reuses the first's
+   image. `backup` is only built for `main` (staging has no backup cron).
 3. `.github/workflows/deploy.yml`, once approved (see below): points `:latest` (production) or
    `:staging` at the commit's images, redeploys the services one after the other, and waits for each
    to run the commit: the API and the web app report it on `/health` (`version`); the Worker and
    the Scheduler, which have no HTTP server, write it to Redis every 15 s and the API lists it on
-   `/health` (`processes.worker`, `processes.scheduler`). The Backup cron is redeployed without a
-   check (it only runs at its schedule). Two deploys of one environment never interleave.
-4. On `staging`, the E2E workflow then runs against the staging URL.
+   `/health` (`processes.worker`, `processes.scheduler`), which must keep reporting it for 60 s (a
+   heartbeat outlives a crashed process by its 45 s TTL). The Backup cron is redeployed without a
+   check (it only runs at its schedule). Two deploys of one environment never interleave, and a
+   commit the branch has already moved past is not deployed (a newer push follows). When a step
+   fails, the environment tag is put back on the previous images, so a later redeploy does not pull
+   the failed commit; services already redeployed keep running it until a Rollback.
+4. On `staging`, the E2E workflow then runs against the staging URL (not after a skipped deploy).
+
+Runs on `staging` and `main` do not wait for each other: every commit gets its lint/test feedback
+and its images (a later rollback target) even while a deploy waits for approval.
 
 Releasing staging to production: fast-forward `main`, so that it points at the very commit
 staging built. GitHub's merge button cannot do this ("Create a merge commit", "Squash" and
@@ -250,3 +261,17 @@ refuses a commit that was never on that branch). It runs the same deploy workflo
 (one approval): its images are put back, nothing is rebuilt. Commits built before the web `/health`
 endpoint or the Worker/Scheduler heartbeat existed fail that check after 10 minutes, although the
 rollback itself took effect.
+
+A rollback puts the code back, **not the database**: the old images start against the schema the
+newer migrations left. The workflow lists those migrations in its summary. So every migration must
+stay compatible with the code of the previous release (expand/contract):
+
+- **Expand** (safe to roll back over): add a table, a nullable column or a column with a default,
+  an index; widen a type.
+- **Contract** (breaks the previous code): drop or rename a column or table, add `NOT NULL` without a
+  default, narrow a type. Ship it in a later release, once no deployed or rollback-target code uses
+  the old shape; a rename is add, copy, switch the code, then drop.
+
+Migrations `002` to `004` are expand. `005` adds CHECK constraints the previous code already
+respected. `006` makes `word`/`subject` case- and accent-sensitive: code rolled back over it keeps
+working, but treats `Run` and `run` as two words, like the current code.

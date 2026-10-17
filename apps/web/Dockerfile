@@ -1,5 +1,6 @@
 # Build context: repository root
-FROM node:22-alpine AS base
+# Pinned by digest (Dependabot updates it): a rebuild of the same commit uses the same base
+FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS base
 WORKDIR /app
 # No .git in the build context: skip the root `prepare: husky` script
 ENV NEXT_TELEMETRY_DISABLED=1 \
