@@ -128,10 +128,10 @@ function PackageWords({ packageId }: { packageId: number }) {
           />
         ))
       ) : (
-        <div className={cx(styles, 'no-words')}>
+        <div id="no-search-results" className={cx(styles, 'no-words')}>
           <i className="fas fa-search"></i>
-          <h3>Aucun résultat</h3>
-          <p>Aucun mot ne correspond à votre recherche.</p>
+          <h3>Aucun résultat trouvé</h3>
+          <p>Aucun mot ne correspond à votre recherche. Essayez avec d&apos;autres termes.</p>
         </div>
       )}
 

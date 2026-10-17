@@ -44,7 +44,9 @@ export function PronunciationBoard({
         </div>
         <div className={cx(styles, 'timer-display')}>
           <span className={cx(styles, 'timer-label')}>Temps</span>
-          <span className={cx(styles, 'timer-value')}>{formatTime(elapsed)}</span>
+          <span id="timer" className={cx(styles, 'timer-value')}>
+            {formatTime(elapsed)}
+          </span>
         </div>
         <div className={cx(styles, 'accuracy-display')}>
           <span className={cx(styles, 'accuracy-label')}>Précision</span>

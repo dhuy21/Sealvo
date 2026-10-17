@@ -65,6 +65,8 @@ export function PhraseBoard({
           <input
             ref={inputRef}
             type="text"
+            id="word-input"
+            className={cx(styles, feedbackType)}
             placeholder="Tapez le mot manquant ici"
             autoComplete="off"
             autoCorrect="off"

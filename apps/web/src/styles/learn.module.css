@@ -818,21 +818,6 @@
   box-shadow: var(--card-inner-shadow);
 }
 
-/* Final fixes for synonym/antonym clipping */
-.card-details p:has(strong:contains('Synonymes')) {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-.card-details p:has(strong:contains('Antonymes')) {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-/* Fallback for browsers that don't support :has */
-
 .example-text {
   font-style: italic;
   border-left: 3px solid rgba(255, 255, 255, 0.3);

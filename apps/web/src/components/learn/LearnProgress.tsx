@@ -22,7 +22,7 @@ export function LearnProgress({
     <div className={cx(styles, 'progress-container', animation)}>
       <div className={cx(styles, 'progress-header')}>
         <h3>Votre progression</h3>
-        <span>{progress}%</span>
+        <span id="progress-text">{progress}%</span>
       </div>
       <div className={cx(styles, 'progress-bar')}>
         <div
