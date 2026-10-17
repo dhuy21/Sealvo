@@ -11,6 +11,7 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { appConfig, type AppConfig } from '../config/app.config.js';
@@ -24,6 +25,8 @@ const VERIFICATION_TOKEN_TTL_MS = 3 * 60 * 60 * 1000;
 const VERIFICATION_TOKEN_MAX_ATTEMPTS = 5;
 const EMAIL_CHANGE_WINDOW_MS = 60 * 60 * 1000;
 const EMAIL_CHANGE_MAX_PER_WINDOW = 3;
+const INVALID_TOKEN_MESSAGE = "Le jeton de vérification de l'email n'est pas valide";
+const EMAIL_TAKEN_MESSAGE = 'Cet email est déjà utilisé';
 const RESEND_VERIFICATION_MESSAGE =
   'Si un compte non vérifié correspond, un nouvel email de vérification a été envoyé.';
 
@@ -50,7 +53,7 @@ export class EmailVerificationService {
     });
 
     if (!verification) {
-      throw new BadRequestException("Le jeton de vérification de l'email n'est pas valide");
+      throw new BadRequestException(INVALID_TOKEN_MESSAGE);
     }
 
     const newEmail = verification.new_email;
@@ -60,20 +63,32 @@ export class EmailVerificationService {
         select: { id: true },
       });
       if (owner && owner.id !== verification.user_id) {
-        throw new ConflictException('Cet email est déjà utilisé');
+        throw new ConflictException(EMAIL_TAKEN_MESSAGE);
       }
     }
 
-    await this.prisma.$transaction([
-      this.prisma.email_verification.update({
-        where: { id: verification.id },
-        data: { status: 'used', used_at: new Date() },
-      }),
-      this.prisma.users.update({
-        where: { id: verification.user_id },
-        data: { is_verified: true, ...(newEmail ? { email: newEmail } : {}) },
-      }),
-    ]);
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        // Only one request consumes the token: a second click, or a resend that revoked it meanwhile,
+        // matches nothing here
+        const { count } = await tx.email_verification.updateMany({
+          where: { id: verification.id, status: 'pending', used_at: null },
+          data: { status: 'used', used_at: new Date() },
+        });
+        if (count !== 1) throw new BadRequestException(INVALID_TOKEN_MESSAGE);
+
+        await tx.users.update({
+          where: { id: verification.user_id },
+          data: { is_verified: true, ...(newEmail ? { email: newEmail } : {}) },
+        });
+      });
+    } catch (error) {
+      // Another account took the address after the check above
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException(EMAIL_TAKEN_MESSAGE);
+      }
+      throw error;
+    }
 
     return {
       message: newEmail
@@ -122,7 +137,7 @@ export class EmailVerificationService {
       select: { id: true },
     });
     if (existing && existing.id !== userId) {
-      throw new ConflictException('Cet email est déjà utilisé');
+      throw new ConflictException(EMAIL_TAKEN_MESSAGE);
     }
 
     await this.sendVerificationEmail(user, newEmail);
@@ -187,7 +202,7 @@ export class EmailVerificationService {
     }
   }
 
-  /** Sent when someone registers with the email of a verified account */
+  /** Sent when someone registers with the email of an existing account, verified or not */
   async sendAccountExistsEmail(user: { username: string; email: string }) {
     const baseUrl = this.app.frontendUrl;
     const sent = await this.emailQueue.enqueue({

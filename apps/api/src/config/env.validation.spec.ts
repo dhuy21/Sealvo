@@ -63,6 +63,7 @@ describe('env validation', () => {
       NODE_ENV: 'production',
       FRONTEND_URL: 'https://www.sealvo.it.com',
       JWT_ACCESS_SECRET: STRONG,
+      CRON_SECRET: STRONG,
     };
     const STAGING_API = {
       ...PRODUCTION_API,
@@ -73,6 +74,12 @@ describe('env validation', () => {
     it('accepts a complete production and staging environment', () => {
       expect(() => validateApiEnv(PRODUCTION_API)).not.toThrow();
       expect(() => validateApiEnv(STAGING_API)).not.toThrow();
+    });
+
+    it.each(['production', 'staging'])('requires CRON_SECRET in %s', (NODE_ENV) => {
+      expect(() => validateApiEnv({ ...STAGING_API, NODE_ENV, CRON_SECRET: undefined })).toThrow(
+        'CRON_SECRET is required in ' + NODE_ENV,
+      );
     });
 
     it.each(['production', 'staging'])(

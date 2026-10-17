@@ -15,6 +15,9 @@ import { authConfig, type AuthConfig } from '../config/auth.config.js';
 
 const USERNAME_MAX_ATTEMPTS = 5;
 
+/** A hung Google endpoint must not hold the login redirect (the callback then sends to /login?error) */
+const GOOGLE_REQUEST_TIMEOUT_MS = 10_000;
+
 @Injectable()
 export class GoogleAuthService {
   constructor(
@@ -44,6 +47,7 @@ export class GoogleAuthService {
         redirect_uri: this.config.google.redirectUri,
         grant_type: 'authorization_code',
       }),
+      signal: AbortSignal.timeout(GOOGLE_REQUEST_TIMEOUT_MS),
     });
     if (!tokenResponse.ok) {
       throw new UnauthorizedException(
@@ -54,6 +58,7 @@ export class GoogleAuthService {
 
     const profileResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: { Authorization: `Bearer ${access_token}` },
+      signal: AbortSignal.timeout(GOOGLE_REQUEST_TIMEOUT_MS),
     });
     if (!profileResponse.ok) {
       throw new UnauthorizedException(

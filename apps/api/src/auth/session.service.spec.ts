@@ -9,6 +9,7 @@ interface SessionRow {
   previous_hash: string | null;
   rotated_at: Date | null;
   expires_at: Date;
+  created_at: Date;
 }
 
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
@@ -97,6 +98,23 @@ describe('SessionService', () => {
 
     await expect(service.rotate(t0)).resolves.toBeNull();
     expect(rows.size).toBe(0);
+  });
+
+  it('slides 7 days on each refresh, but never past 30 days after login', async () => {
+    vi.useFakeTimers();
+    const day = 86_400_000;
+    let token = await service.create('u1');
+    const row = () => [...rows.values()][0];
+    expect(row().expires_at.getTime()).toBe(Date.now() + 7 * day);
+
+    for (let i = 0; i < 4; i++) {
+      vi.advanceTimersByTime(6 * day);
+      token = (await service.rotate(token))!.token;
+    }
+    expect(row().expires_at.getTime()).toBe(row().created_at.getTime() + 30 * day);
+
+    vi.advanceTimersByTime(6 * day + 1);
+    await expect(service.rotate(token)).resolves.toBeNull();
   });
 
   it('rejects expired sessions and malformed tokens without touching the table', async () => {

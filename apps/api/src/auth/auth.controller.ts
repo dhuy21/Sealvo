@@ -12,6 +12,7 @@ import {
   Redirect,
   Req,
   Res,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -121,7 +122,8 @@ export class AuthController {
       this.setRefreshCookie(res, refreshToken);
       return { accessToken };
     } catch (error) {
-      this.clearRefreshCookie(res);
+      // An outage (database down) must not log the device out: the cookie stays for the next try
+      if (error instanceof UnauthorizedException) this.clearRefreshCookie(res);
       throw error;
     }
   }

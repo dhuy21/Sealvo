@@ -1,7 +1,7 @@
 import { randomUUID, timingSafeEqual } from 'crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { SESSION_TTL_MS } from './auth.constants.js';
+import { SESSION_MAX_AGE_MS, SESSION_TTL_MS } from './auth.constants.js';
 import { hashToken as hash, newToken as newSecret } from './crypto.js';
 
 /** A refresh whose response was lost, or concurrent ones from a browser without Web Locks, present the token just rotated. */
@@ -9,7 +9,8 @@ const ROTATION_LEEWAY_MS = 10_000;
 const MAX_ROTATION_ATTEMPTS = 3;
 
 const sameHash = (a: string, b: string) => timingSafeEqual(Buffer.from(a), Buffer.from(b));
-const expiry = () => new Date(Date.now() + SESSION_TTL_MS);
+const expiry = (createdAt: Date) =>
+  new Date(Math.min(Date.now() + SESSION_TTL_MS, createdAt.getTime() + SESSION_MAX_AGE_MS));
 
 /** Refresh token format: `<sessionId>.<secret>` (opaque, only the secret's hash is stored). */
 function parse(token: string | undefined): { id: string; secret: string } | null {
@@ -29,8 +30,15 @@ export class SessionService {
 
   async create(userId: string): Promise<string> {
     const secret = newSecret();
+    const createdAt = new Date();
     const session = await this.prisma.refresh_sessions.create({
-      data: { id: randomUUID(), user_id: userId, token_hash: hash(secret), expires_at: expiry() },
+      data: {
+        id: randomUUID(),
+        user_id: userId,
+        token_hash: hash(secret),
+        created_at: createdAt,
+        expires_at: expiry(createdAt),
+      },
     });
     return `${session.id}.${secret}`;
   }
@@ -69,7 +77,7 @@ export class SessionService {
           previous_hash: session.token_hash,
           token_hash: hash(secret),
           rotated_at: new Date(),
-          expires_at: expiry(),
+          expires_at: expiry(session.created_at),
         },
       });
       if (count === 1) return { userId: session.user_id, token: `${session.id}.${secret}` };

@@ -1,4 +1,5 @@
 import { createHash } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { Test } from '@nestjs/testing';
 import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { appConfig } from '../config/app.config.js';
@@ -15,7 +16,7 @@ describe('EmailVerificationService', () => {
   let service: EmailVerificationService;
   let prisma: {
     users: { findUnique: any; update: any };
-    email_verification: { findFirst: any; create: any; update: any; updateMany: any; count: any };
+    email_verification: { findFirst: any; create: any; updateMany: any; count: any };
     $transaction: any;
   };
   let emailQueue: { enqueue: any };
@@ -27,12 +28,15 @@ describe('EmailVerificationService', () => {
       email_verification: {
         findFirst: vi.fn(),
         create: vi.fn(),
-        update: vi.fn(),
         updateMany: vi.fn(),
         count: vi.fn().mockResolvedValue(0),
       },
       $transaction: vi.fn(),
     };
+    prisma.email_verification.updateMany.mockResolvedValue({ count: 1 });
+    prisma.$transaction.mockImplementation((arg: unknown) =>
+      typeof arg === 'function' ? arg(prisma) : Promise.all(arg as unknown[]),
+    );
 
     emailQueue = { enqueue: vi.fn() };
     emailService = { compileTemplate: vi.fn() };
@@ -57,8 +61,8 @@ describe('EmailVerificationService', () => {
       const result = await service.verifyEmail('raw-token');
 
       expect(result.message).toBe('Votre email a été vérifié avec succès');
-      expect(prisma.email_verification.update).toHaveBeenCalledWith({
-        where: { id: 'v1' },
+      expect(prisma.email_verification.updateMany).toHaveBeenCalledWith({
+        where: { id: 'v1', status: 'pending', used_at: null },
         data: { status: 'used', used_at: expect.any(Date) },
       });
       expect(prisma.users.update).toHaveBeenCalledWith({
@@ -95,6 +99,31 @@ describe('EmailVerificationService', () => {
 
       await expect(service.verifyEmail('raw-token')).rejects.toThrow(ConflictException);
       expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('should verify only once when the same link is opened twice at the same time', async () => {
+      prisma.email_verification.findFirst.mockResolvedValue({ id: 'v1', user_id: 'abc1234' });
+      prisma.email_verification.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(service.verifyEmail('raw-token')).rejects.toThrow(BadRequestException);
+      expect(prisma.users.update).not.toHaveBeenCalled();
+    });
+
+    it('should answer 409 when another account takes the address during the transaction', async () => {
+      prisma.email_verification.findFirst.mockResolvedValue({
+        id: 'v1',
+        user_id: 'abc1234',
+        new_email: 'new@b.c',
+      });
+      prisma.users.findUnique.mockResolvedValue(null);
+      prisma.users.update.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('duplicate', {
+          code: 'P2002',
+          clientVersion: '5',
+        }),
+      );
+
+      await expect(service.verifyEmail('raw-token')).rejects.toThrow(ConflictException);
     });
 
     it('should reject unknown, expired or already used tokens', async () => {

@@ -1,5 +1,6 @@
 import { testAppConfig } from '../config/testing.js';
-import type { Response } from 'express';
+import { ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { THROTTLE_MESSAGE } from '../common/decorators/throttle-message.decorator.js';
 import { AuthController } from './auth.controller.js';
 import type { AuthService } from './auth.service.js';
@@ -9,11 +10,14 @@ import type { PasswordResetService } from './password-reset.service.js';
 
 describe('AuthController', () => {
   let controller: AuthController;
-  let authService: { login: any };
+  let authService: { login: any; refreshTokens: any };
   let emailVerification: { resendVerification: any };
 
   beforeEach(() => {
-    authService = { login: vi.fn().mockResolvedValue({ accessToken: 'a', refreshToken: 'r' }) };
+    authService = {
+      login: vi.fn().mockResolvedValue({ accessToken: 'a', refreshToken: 'r' }),
+      refreshTokens: vi.fn(),
+    };
     emailVerification = { resendVerification: vi.fn().mockResolvedValue({ message: 'ok' }) };
     controller = new AuthController(
       authService as unknown as AuthService,
@@ -34,6 +38,20 @@ describe('AuthController', () => {
       'r',
       expect.objectContaining({ maxAge: 7 * 86_400_000 }),
     );
+  });
+
+  it.each([
+    ['clears the cookie of a rejected session', new UnauthorizedException(), 1],
+    ['keeps the cookie during an outage', new ServiceUnavailableException(), 0],
+  ] as const)('refresh %s', async (_, error, cleared) => {
+    authService.refreshTokens.mockRejectedValue(error);
+    const res = { clearCookie: vi.fn() };
+    const req = { cookies: { refresh_token: 'r' } };
+
+    await expect(
+      controller.refresh(req as unknown as Request, res as unknown as Response),
+    ).rejects.toBe(error);
+    expect(res.clearCookie).toHaveBeenCalledTimes(cleared);
   });
 
   it('delegates resend-verification with the username', async () => {

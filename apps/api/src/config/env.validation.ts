@@ -99,10 +99,14 @@ type DeployedEnv = Extract<NodeEnv, 'production' | 'staging'>;
 
 /**
  * Optional in development, required once deployed: their default (or absence) would silently be
- * wrong there (CORS and email links; staging emails reaching real users).
+ * wrong there (CORS and email links; staging emails reaching real users; reminders and cleanup
+ * answered 503 without CRON_SECRET).
  */
 const REQUIRED_WHEN_DEPLOYED: Partial<Record<string, Partial<Record<DeployedEnv, string[]>>>> = {
-  ApiEnv: { production: ['FRONTEND_URL'], staging: ['FRONTEND_URL', 'STAGING_EMAIL_INTERCEPT'] },
+  ApiEnv: {
+    production: ['FRONTEND_URL', 'CRON_SECRET'],
+    staging: ['FRONTEND_URL', 'STAGING_EMAIL_INTERCEPT', 'CRON_SECRET'],
+  },
   WorkerEnv: { staging: ['STAGING_EMAIL_INTERCEPT'] },
 };
 
