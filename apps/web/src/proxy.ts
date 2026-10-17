@@ -42,7 +42,12 @@ function staticSecurityHeaders(apiUrl: string | null): [string, string][] {
     ['Origin-Agent-Cluster', '?1'],
     ['X-Permitted-Cross-Domain-Policies', 'none'],
     ...(isHttps(apiUrl)
-      ? [['Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload'] as [string, string]]
+      ? [
+          ['Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload'] as [
+            string,
+            string,
+          ],
+        ]
       : []),
   ];
 }

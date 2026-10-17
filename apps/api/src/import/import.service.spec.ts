@@ -3,7 +3,19 @@ import { zipSync } from 'fflate';
 import * as xlsx from 'xlsx';
 import { ImportService, MAX_IMPORT_ROWS, MAX_UNCOMPRESSED_BYTES } from './import.service.js';
 
-const HEADER = ['Mot', 'Langue', 'Sujet', 'Type', 'Prononciation', 'Signification', 'Exemple', 'Synonymes', 'Antonymes', 'Grammaire', 'Niveau'];
+const HEADER = [
+  'Mot',
+  'Langue',
+  'Sujet',
+  'Type',
+  'Prononciation',
+  'Signification',
+  'Exemple',
+  'Synonymes',
+  'Antonymes',
+  'Grammaire',
+  'Niveau',
+];
 
 function workbook(rows: unknown[][]): Buffer {
   const book = xlsx.utils.book_new();
@@ -12,7 +24,19 @@ function workbook(rows: unknown[][]): Buffer {
 }
 
 const row = (overrides: Record<number, unknown> = {}) => {
-  const base: unknown[] = ['cat', 'en-US (Anglais)', 'Daily', 'noun', '', 'chat', '', '', '', '', ''];
+  const base: unknown[] = [
+    'cat',
+    'en-US (Anglais)',
+    'Daily',
+    'noun',
+    '',
+    'chat',
+    '',
+    '',
+    '',
+    '',
+    '',
+  ];
   for (const [i, v] of Object.entries(overrides)) base[Number(i)] = v;
   return base;
 };
@@ -26,7 +50,12 @@ describe('ImportService', () => {
     );
 
     expect(words).toHaveLength(3);
-    expect(words[0]).toMatchObject({ word: 'cat', language_code: 'en-US', type: 'noun', level: undefined });
+    expect(words[0]).toMatchObject({
+      word: 'cat',
+      language_code: 'en-US',
+      type: 'noun',
+      level: undefined,
+    });
     expect(words[1]).toMatchObject({ word: 'give up', type: 'ph_v', level: 'level_0' });
     expect(words[2].level).toBe('v');
   });
@@ -66,13 +95,17 @@ describe('ImportService', () => {
   });
 
   it('should reject a file with no words', () => {
-    expect(() => service.parseWords(workbook([HEADER]))).toThrow('Le fichier ne contient aucun mot valide.');
+    expect(() => service.parseWords(workbook([HEADER]))).toThrow(
+      'Le fichier ne contient aucun mot valide.',
+    );
   });
 
   it(`should reject more than ${MAX_IMPORT_ROWS} rows`, () => {
     const rows = [HEADER, ...Array.from({ length: MAX_IMPORT_ROWS + 1 }, () => row())];
     expect(() => service.parseWords(workbook(rows))).toThrow(`limite de ${MAX_IMPORT_ROWS} mots`);
-    expect(service.parseWords(workbook(rows.slice(0, MAX_IMPORT_ROWS + 1)))).toHaveLength(MAX_IMPORT_ROWS);
+    expect(service.parseWords(workbook(rows.slice(0, MAX_IMPORT_ROWS + 1)))).toHaveLength(
+      MAX_IMPORT_ROWS,
+    );
   });
 
   it('should not count blank separator rows against the limit', () => {

@@ -22,7 +22,8 @@ export function ImportFormatInfo() {
           <ol>
             <li>Créez un fichier Excel avec les colonnes dans le bon ordre</li>
             <li>
-              Assurez-vous que chaque ligne contient au moins: Mot, Sujet, Langue, Type, Signification
+              Assurez-vous que chaque ligne contient au moins: Mot, Sujet, Langue, Type,
+              Signification
             </li>
             <li>
               Pour le type, utilisez uniquement: noun, verb, adjective, adverb, ph.v, idiom,

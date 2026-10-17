@@ -47,17 +47,11 @@ export default function ForgotPasswordPage() {
       ) : (
         <form className={styles['forgot-password-form']} onSubmit={handleSubmit(onSubmit)}>
           <div className={styles['input-icon-wrapper']}>
-            <input
-              type="email"
-              placeholder="Adresse email"
-              {...register('email')}
-            />
+            <input type="email" placeholder="Adresse email" {...register('email')} />
             <i className={cx(styles, 'input-icon', 'fas', 'fa-envelope')} />
             <span className={styles['focus-border']} />
           </div>
-          {errors.email && (
-            <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
-          )}
+          {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
 
           <button type="submit" className="btn-submit" disabled={isSubmitting}>
             {isSubmitting ? 'Envoi...' : 'Send Reset Link'}

@@ -47,7 +47,9 @@ export function WordSearchBoard({
         </div>
         <div className={cx(styles, 'words-found-display')}>
           <div className={cx(styles, 'words-found-label')}>Mots trouvés</div>
-          <span className={cx(styles, 'words-found-value')}>{foundWords.length}/{wordsToFind.length}</span>
+          <span className={cx(styles, 'words-found-value')}>
+            {foundWords.length}/{wordsToFind.length}
+          </span>
         </div>
       </div>
 
@@ -59,24 +61,30 @@ export function WordSearchBoard({
             <div className={cx(styles, 'eye-right')}></div>
           </div>
           <div className={cx(styles, 'word-items-container')} id="word-items-container">
-            {[...wordsToFind].sort((a, b) => a.localeCompare(b)).map((word, i) => (
-              <div
-                key={`${word}-${i}`}
-                className={cx(styles, 'word-item', foundWords.includes(word) && 'found')}
-                data-word={word}
-                style={{ animationDelay: `${i * 0.1}s` }}
-              >
-                <span className={cx(styles, 'word-marker')}>
-                  <i className={`fas ${foundWords.includes(word) ? 'fa-check-circle' : 'fa-circle'}`}></i>
-                </span>
-                <span className={cx(styles, 'word-text')}>{word}</span>
-              </div>
-            ))}
+            {[...wordsToFind]
+              .sort((a, b) => a.localeCompare(b))
+              .map((word, i) => (
+                <div
+                  key={`${word}-${i}`}
+                  className={cx(styles, 'word-item', foundWords.includes(word) && 'found')}
+                  data-word={word}
+                  style={{ animationDelay: `${i * 0.1}s` }}
+                >
+                  <span className={cx(styles, 'word-marker')}>
+                    <i
+                      className={`fas ${foundWords.includes(word) ? 'fa-check-circle' : 'fa-circle'}`}
+                    ></i>
+                  </span>
+                  <span className={cx(styles, 'word-text')}>{word}</span>
+                </div>
+              ))}
           </div>
           <div className={cx(styles, 'help-btn-container')}>
             <button className={cx(styles, 'help-btn')} onClick={onHint}>
               <div className={cx(styles, 'back')}></div>
-              <div className={cx(styles, 'front')}><i className="fa-solid fa-hand-holding-heart"></i></div>
+              <div className={cx(styles, 'front')}>
+                <i className="fa-solid fa-hand-holding-heart"></i>
+              </div>
             </button>
           </div>
         </div>
@@ -91,7 +99,10 @@ export function WordSearchBoard({
               gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
             }}
             onMouseUp={onSelectionEnd}
-            onTouchEnd={(e) => { e.preventDefault(); onSelectionEnd(); }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              onSelectionEnd();
+            }}
             onTouchMove={onTouchMove}
           >
             {grid.map((row, i) =>
@@ -103,17 +114,26 @@ export function WordSearchBoard({
                 return (
                   <div
                     key={key}
-                    className={cx(styles, 'grid-cell', isFound && 'found', isSelected && 'selected', isHinted && 'hint-flash')}
+                    className={cx(
+                      styles,
+                      'grid-cell',
+                      isFound && 'found',
+                      isSelected && 'selected',
+                      isHinted && 'hint-flash',
+                    )}
                     data-row={i}
                     data-col={j}
                     onMouseDown={() => onCellMouseDown(i, j)}
                     onMouseOver={() => onCellMouseOver(i, j)}
-                    onTouchStart={(e) => { e.preventDefault(); onCellMouseDown(i, j); }}
+                    onTouchStart={(e) => {
+                      e.preventDefault();
+                      onCellMouseDown(i, j);
+                    }}
                   >
                     {letter}
                   </div>
                 );
-              })
+              }),
             )}
           </div>
         </div>

@@ -48,7 +48,14 @@ export function useQuizEffects() {
 
   return {
     enhancedMode,
-    screenFlags: { quizActive, questionLoading, revealing, progressUpdating, scoreIncrease, completionGlow },
+    screenFlags: {
+      quizActive,
+      questionLoading,
+      revealing,
+      progressUpdating,
+      scoreIncrease,
+      completionGlow,
+    },
     start,
     showQuestion,
     answer,

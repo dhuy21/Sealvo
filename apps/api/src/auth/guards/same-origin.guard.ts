@@ -1,4 +1,10 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import type { Request } from 'express';
 import { appConfig, type AppConfig } from '../../config/app.config.js';
 

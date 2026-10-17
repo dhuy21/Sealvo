@@ -14,13 +14,13 @@ disagree, the code wins: fix this file. File references are relative to `apps/ap
 
 ## Levels and spaced repetition
 
-| Level (DB value) | Interval | Games to complete for promotion | Next level |
-|---|---|---|---|
-| `x` (new) | 0 days | Flash Match, Vocab Quiz, Test Pronun | `0` |
-| `0` | 2 days | Word Scramble, Phrase Completion | `1` |
-| `1` | 4 days | Speed Vocab | `2` |
-| `2` | 10 days | Word Search | `v` |
-| `v` (memorized) | 20 days | — (no game, final level) | — |
+| Level (DB value) | Interval | Games to complete for promotion      | Next level |
+| ---------------- | -------- | ------------------------------------ | ---------- |
+| `x` (new)        | 0 days   | Flash Match, Vocab Quiz, Test Pronun | `0`        |
+| `0`              | 2 days   | Word Scramble, Phrase Completion     | `1`        |
+| `1`              | 4 days   | Speed Vocab                          | `2`        |
+| `2`              | 10 days  | Word Search                          | `v`        |
+| `v` (memorized)  | 20 days  | — (no game, final level)             | —          |
 
 Source: `@sealvo/shared` (`packages/shared/src/constants`: `LEVELS`, `LEVEL_INTERVALS`, `GAME_LEVEL`,
 `LEVEL_GAMES`); `learning/learning.constants.ts` derives `NEXT_LEVEL` from `LEVELS`.
@@ -75,11 +75,11 @@ Source: `@sealvo/shared` (`packages/shared/src/constants`: `LEVELS`, `LEVEL_INTE
 
 ## Packages: modes and access
 
-| Mode | Listed in "public" | Read (package + words) | Copy | Write (edit, delete, toggle, words, import, games, review) |
-|---|---|---|---|---|
-| `private` (default) | no | owner | no | owner |
-| `protected` | yes | any logged-in user | no | owner |
-| `public` | yes | any logged-in user | any logged-in user | owner |
+| Mode                | Listed in "public" | Read (package + words) | Copy               | Write (edit, delete, toggle, words, import, games, review) |
+| ------------------- | ------------------ | ---------------------- | ------------------ | ---------------------------------------------------------- |
+| `private` (default) | no                 | owner                  | no                 | owner                                                      |
+| `protected`         | yes                | any logged-in user     | no                 | owner                                                      |
+| `public`            | yes                | any logged-in user     | any logged-in user | owner                                                      |
 
 - Enforced by `auth/guards/package-ownership.guard.ts` (owner only) and
   `package-read.guard.ts` (adds read for `public`/`protected`). The `Admin` role gives no extra
@@ -132,18 +132,18 @@ Source: `@sealvo/shared` (`packages/shared/src/constants`: `LEVELS`, `LEVEL_INTE
 
 ## Accounts, email and sessions
 
-| Item | Rule |
-|---|---|
-| Registration | username trimmed, 3–50 chars (same rules when changed later; also trimmed on login and resend-verification), unique; valid unique email (trimmed and normalized with validator.js `normalizeEmail` defaults, also on forgot-password and profile); username and email checked case-insensitively (DB collation: `john` = `John`); a taken username → 409; a taken email gets the same 201 answer as a new registration (no user enumeration) and nothing is created: the owner is emailed instead — a "your account already exists" message with login and forgot-password links (`mailAccountExists.hbs`) if verified, a new verification link otherwise; password ≥ 6 chars (bcrypt cost 12); avatar 1–11 (`null` rejected) |
-| Email verification | required before login; link token valid **3 h**, stored hashed, previous tokens revoked |
-| Resend verification | `POST /auth/resend-verification` `{username}`: a new link is sent only if the account exists and is not verified; the answer is always the same 200 message |
-| Access token | JWT, **15 min**, payload `{sub, username, role}`, kept in memory by the web app |
-| Refresh session | httpOnly cookie (`SameSite=Strict`, path `/auth`, `Secure` in production/staging); expires **7 days** after the last refresh; rotated on every refresh, the previous token stays valid **10 s** (a lost response; tabs refresh one at a time through Web Locks), replaying it later revokes the session; `POST /auth/login`, `register`, `refresh` and `logout` refuse a browser `Origin` other than the frontend's (403) |
-| Logout | revokes the current device's session only |
-| Password reset | link token valid **1 h**, stored hashed in DB; a new request replaces the previous token; new password ≥ 8 chars; revokes every session of the user; `forgot-password` always answers the same message |
-| Email change | needs the current password; the address changes only when the link sent to the new address (3 h) is opened |
-| Google login | the Google email is normalized like on registration; an account matches on the normalized or the raw stored email, otherwise a verified account is created; an existing **unverified** account is verified, its password replaced and its sessions revoked |
-| Feedback | type suggestion / bug / question / appreciation / other; subject (≤ 255 chars) and content (≤ 5000) trimmed and required; reply email optional |
+| Item                | Rule                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Registration        | username trimmed, 3–50 chars (same rules when changed later; also trimmed on login and resend-verification), unique; valid unique email (trimmed and normalized with validator.js `normalizeEmail` defaults, also on forgot-password and profile); username and email checked case-insensitively (DB collation: `john` = `John`); a taken username → 409; a taken email gets the same 201 answer as a new registration (no user enumeration) and nothing is created: the owner is emailed instead — a "your account already exists" message with login and forgot-password links (`mailAccountExists.hbs`) if verified, a new verification link otherwise; password ≥ 6 chars (bcrypt cost 12); avatar 1–11 (`null` rejected) |
+| Email verification  | required before login; link token valid **3 h**, stored hashed, previous tokens revoked                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Resend verification | `POST /auth/resend-verification` `{username}`: a new link is sent only if the account exists and is not verified; the answer is always the same 200 message                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Access token        | JWT, **15 min**, payload `{sub, username, role}`, kept in memory by the web app                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Refresh session     | httpOnly cookie (`SameSite=Strict`, path `/auth`, `Secure` in production/staging); expires **7 days** after the last refresh; rotated on every refresh, the previous token stays valid **10 s** (a lost response; tabs refresh one at a time through Web Locks), replaying it later revokes the session; `POST /auth/login`, `register`, `refresh` and `logout` refuse a browser `Origin` other than the frontend's (403)                                                                                                                                                                                                                                                                                                     |
+| Logout              | revokes the current device's session only                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Password reset      | link token valid **1 h**, stored hashed in DB; a new request replaces the previous token; new password ≥ 8 chars; revokes every session of the user; `forgot-password` always answers the same message                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Email change        | needs the current password; the address changes only when the link sent to the new address (3 h) is opened                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Google login        | the Google email is normalized like on registration; an account matches on the normalized or the raw stored email, otherwise a verified account is created; an existing **unverified** account is verified, its password replaced and its sessions revoked                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Feedback            | type suggestion / bug / question / appreciation / other; subject (≤ 255 chars) and content (≤ 5000) trimmed and required; reply email optional                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
 ## Reminders and cleanup
 
@@ -167,16 +167,16 @@ Per client IP, stored in Redis (in-memory per instance if Redis is down), `@nest
 A 429 carries the route's French message (`@ThrottleMessage`, e.g. "Trop de tentatives de
 connexion. Réessayez dans 15 minutes."), default "Trop de requêtes. Réessayez dans 1 minute.":
 
-| Route | Limit |
-|---|---|
-| default (every route) | 100 / min |
-| `POST /auth/register` | 5 / 15 min |
-| `POST /auth/login` | 10 / 15 min |
-| `POST /auth/forgot-password` | 3 / h |
-| `POST /auth/resend-verification` | 3 / h |
-| `POST /auth/reset-password` | 10 / 15 min (own message: "Trop de tentatives de réinitialisation. Réessayez dans 15 minutes.") |
-| `POST /feedback` | 5 / h |
-| `POST /api/reminder` (cron secret) | 3 / h |
-| `POST /reminder/test` | 3 / h |
-| `POST /tts/generate` | 30 / min (text 1–200 chars, `language` in `VALID_LANGS`) |
-| `GET /health`, `GET /health/deps`, `GET /jobs/:id` | not limited (`@SkipThrottle`) |
+| Route                                              | Limit                                                                                           |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| default (every route)                              | 100 / min                                                                                       |
+| `POST /auth/register`                              | 5 / 15 min                                                                                      |
+| `POST /auth/login`                                 | 10 / 15 min                                                                                     |
+| `POST /auth/forgot-password`                       | 3 / h                                                                                           |
+| `POST /auth/resend-verification`                   | 3 / h                                                                                           |
+| `POST /auth/reset-password`                        | 10 / 15 min (own message: "Trop de tentatives de réinitialisation. Réessayez dans 15 minutes.") |
+| `POST /feedback`                                   | 5 / h                                                                                           |
+| `POST /api/reminder` (cron secret)                 | 3 / h                                                                                           |
+| `POST /reminder/test`                              | 3 / h                                                                                           |
+| `POST /tts/generate`                               | 30 / min (text 1–200 chars, `language` in `VALID_LANGS`)                                        |
+| `GET /health`, `GET /health/deps`, `GET /jobs/:id` | not limited (`@SkipThrottle`)                                                                   |

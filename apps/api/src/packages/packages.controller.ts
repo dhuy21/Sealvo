@@ -74,10 +74,7 @@ export class PackagesController {
   @ApiResponse({ status: 200, description: 'Package updated' })
   @ApiResponse({ status: 403, description: 'Not owner' })
   @ApiResponse({ status: 404, description: 'Package not found' })
-  async update(
-    @Param('packageId', ParseIntPipe) packageId: number,
-    @Body() dto: UpdatePackageDto,
-  ) {
+  async update(@Param('packageId', ParseIntPipe) packageId: number, @Body() dto: UpdatePackageDto) {
     return this.packagesService.update(packageId, dto);
   }
 

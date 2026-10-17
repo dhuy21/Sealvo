@@ -1,10 +1,4 @@
-import {
-  Inject,
-  Injectable,
-  Logger,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { TimeoutError, withTimeout } from '@sealvo/shared';
 import { redisConfig, type RedisConfig } from '../config/redis.config.js';
 import { createClient, type RedisClientType } from 'redis';
@@ -15,8 +9,7 @@ const WATCHDOG_INTERVAL_MS = 3_000;
 const PING_TIMEOUT_MS = 1_000;
 
 /** Never gives up: returning an Error would leave the client closed for good. */
-const reconnectDelay = (retries: number) =>
-  Math.min(retries * 500, MAX_RECONNECT_DELAY_MS);
+const reconnectDelay = (retries: number) => Math.min(retries * 500, MAX_RECONNECT_DELAY_MS);
 
 /**
  * Starts connecting and resolves after the first attempt: true once ready, false on its first error.

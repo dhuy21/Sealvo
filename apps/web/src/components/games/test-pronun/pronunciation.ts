@@ -56,9 +56,19 @@ function getPhoneticVariants(word: string): string[] {
   return variants;
 }
 
-export function calculatePronunciationAccuracy(spoken: string, target: string, confidence: number): number {
-  const normalizedSpoken = spoken.toLowerCase().replace(/[^\w\s]/g, '').trim();
-  const normalizedTarget = target.toLowerCase().replace(/[^\w\s]/g, '').trim();
+export function calculatePronunciationAccuracy(
+  spoken: string,
+  target: string,
+  confidence: number,
+): number {
+  const normalizedSpoken = spoken
+    .toLowerCase()
+    .replace(/[^\w\s]/g, '')
+    .trim();
+  const normalizedTarget = target
+    .toLowerCase()
+    .replace(/[^\w\s]/g, '')
+    .trim();
 
   if (normalizedSpoken === normalizedTarget) {
     return Math.min(95 + confidence * 5, 100);

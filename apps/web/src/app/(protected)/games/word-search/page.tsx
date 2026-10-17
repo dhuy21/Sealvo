@@ -18,7 +18,10 @@ import { showHintToast, showLowScoreToast } from '@/components/games/word-search
 import { useCellSelection } from '@/components/games/word-search/use-cell-selection';
 import { useHintFlash } from '@/components/games/word-search/use-hint-flash';
 import { useLetterExplosions } from '@/components/games/word-search/use-letter-explosions';
-import { isPortraitBlocked, usePortraitBlocked } from '@/components/games/word-search/use-portrait-blocked';
+import {
+  isPortraitBlocked,
+  usePortraitBlocked,
+} from '@/components/games/word-search/use-portrait-blocked';
 import { useWordListSidebar } from '@/components/games/word-search/use-word-list-sidebar';
 import { RotationNotice } from '@/components/games/word-search/RotationNotice';
 import { WordSearchRules } from '@/components/games/word-search/WordSearchRules';
@@ -100,7 +103,9 @@ function WordSearchInner() {
 
   function checkSelection(cells: CellRef[]) {
     const selectedWord = cells.map((c) => gridRef.current[c.row][c.col]).join('');
-    const word = wordsToFind.find((w) => normalizeWord(w) === selectedWord && !foundWords.includes(w));
+    const word = wordsToFind.find(
+      (w) => normalizeWord(w) === selectedWord && !foundWords.includes(w),
+    );
 
     if (word !== undefined) {
       setFoundWords([...foundWords, word]);
@@ -165,14 +170,24 @@ function WordSearchInner() {
         <i className={`fas ${sidebar.open ? 'fa-times' : 'fa-list'}`}></i>
       </button>
       <RotationNotice visible={portraitBlocked} />
-      <div className={cx(styles, 'game-container', 'letter-explosion-mode')} id="package-id" data-package={packageId}>
+      <div
+        className={cx(styles, 'game-container', 'letter-explosion-mode')}
+        id="package-id"
+        data-package={packageId}
+      >
         <div className={cx(styles, 'game-header')}>
           <h1>Mots Cachés</h1>
           <p className={cx(styles, 'game-description')}>Trouvez les mots cachés dans la grille</p>
         </div>
 
         {screen === 'pre' && (
-          <GameDataStatus isLoading={shell.isLoading} error={shell.error} data={gameData} packageId={packageId} styles={styles} />
+          <GameDataStatus
+            isLoading={shell.isLoading}
+            error={shell.error}
+            data={gameData}
+            packageId={packageId}
+            styles={styles}
+          />
         )}
 
         {gameData && (screen !== 'pre' || shell.ready) && (
@@ -180,7 +195,9 @@ function WordSearchInner() {
             <GameStats gameType="word_search" wordCount={gameData.wordCount} styles={styles} />
 
             <div className={cx(styles, 'game-screen')} id="game-screen">
-              {screen === 'pre' && <WordSearchRules onStart={startGame} disabled={portraitBlocked} />}
+              {screen === 'pre' && (
+                <WordSearchRules onStart={startGame} disabled={portraitBlocked} />
+              )}
 
               {screen === 'active' && (
                 <WordSearchBoard

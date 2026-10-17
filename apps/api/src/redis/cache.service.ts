@@ -33,11 +33,9 @@ export class CacheService {
   async setNX(key: string, value: unknown, ttlSeconds: number): Promise<boolean | null> {
     if (!this.redis.isReady()) return null;
     try {
-      const result = await this.redis.getClient()!.set(
-        PREFIX + key,
-        JSON.stringify(value),
-        { EX: ttlSeconds, NX: true },
-      );
+      const result = await this.redis
+        .getClient()!
+        .set(PREFIX + key, JSON.stringify(value), { EX: ttlSeconds, NX: true });
       return result === 'OK';
     } catch {
       return null;

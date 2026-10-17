@@ -34,7 +34,9 @@ export function PhraseCompletionSummary({
       <div className={cx(styles, 'game-summary')}>
         <div className={cx(styles, 'summary-item')}>
           <div className={cx(styles, 'summary-icon')}>👑 Corrects</div>
-          <span className={cx(styles, 'summary-value')}>{correctAnswers}/{totalQuestions}</span>
+          <span className={cx(styles, 'summary-value')}>
+            {correctAnswers}/{totalQuestions}
+          </span>
         </div>
         <div className={cx(styles, 'summary-item')}>
           <div className={cx(styles, 'summary-icon')}>🧠 Série</div>

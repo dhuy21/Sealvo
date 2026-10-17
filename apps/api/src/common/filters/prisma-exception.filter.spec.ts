@@ -54,7 +54,8 @@ describe('PrismaExceptionFilter', () => {
   });
 
   describe('CHECK constraint violations (MySQL 3819)', () => {
-    const violation = "MysqlError { code: 3819, message: \"Check constraint 'words_chk_1' is violated.\" }";
+    const violation =
+      'MysqlError { code: 3819, message: "Check constraint \'words_chk_1\' is violated." }';
 
     beforeEach(() => {
       vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
@@ -89,7 +90,9 @@ describe('PrismaExceptionFilter', () => {
 
     it('keeps other unknown and raw errors as 500', () => {
       filter.catch(
-        new Prisma.PrismaClientUnknownRequestError('code: 1205 lock wait', { clientVersion: 'test' }),
+        new Prisma.PrismaClientUnknownRequestError('code: 1205 lock wait', {
+          clientVersion: 'test',
+        }),
         host,
       );
       filter.catch(

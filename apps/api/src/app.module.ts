@@ -42,7 +42,16 @@ import { AppService } from './app.service.js';
       envFilePath: ENV_FILE,
       expandVariables: true,
       validate: validateApiEnv,
-      load: [appConfig, buildConfig, authConfig, mailConfig, redisConfig, rabbitmqConfig, geminiConfig, ttsConfig],
+      load: [
+        appConfig,
+        buildConfig,
+        authConfig,
+        mailConfig,
+        redisConfig,
+        rabbitmqConfig,
+        geminiConfig,
+        ttsConfig,
+      ],
     }),
     ThrottlerModule.forRootAsync({
       inject: [RedisService, Reflector],

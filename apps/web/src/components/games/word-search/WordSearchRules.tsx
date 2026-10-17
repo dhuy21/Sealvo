@@ -4,7 +4,9 @@ import styles from '@/styles/games/word-search.module.css';
 export function WordSearchRules({ onStart, disabled }: { onStart: () => void; disabled: boolean }) {
   return (
     <div className={cx(styles, 'screen', 'pre-game-screen', 'active')}>
-      <h2><i className="fas fa-bolt" style={{ color: '#e9e919' }}></i> Règles du jeu</h2>
+      <h2>
+        <i className="fas fa-bolt" style={{ color: '#e9e919' }}></i> Règles du jeu
+      </h2>
       <ul className={cx(styles, 'rules-list')}>
         <li>Cliquez et faites glisser pour sélectionner les lettres qui forment un mot.</li>
         <li>Lorsque vous trouvez un mot, il sera marqué dans la liste de droite.</li>

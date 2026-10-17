@@ -188,7 +188,10 @@ export function useSpeechRecognition({
     if (isIOS()) {
       later(() => {
         if (!gotResultRef.current) {
-          setFeedback('Reconnaissance terminée. Appuyez sur le microphone pour réessayer.', 'neutral');
+          setFeedback(
+            'Reconnaissance terminée. Appuyez sur le microphone pour réessayer.',
+            'neutral',
+          );
         }
       }, 1000);
     }

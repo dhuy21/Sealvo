@@ -8,7 +8,13 @@ export interface Question {
   correctIndex: number[];
 }
 
-function optionClass(i: number, question: Question, selected: number[], lastSelected: number | null, answered: boolean) {
+function optionClass(
+  i: number,
+  question: Question,
+  selected: number[],
+  lastSelected: number | null,
+  answered: boolean,
+) {
   const isCorrect = question.correctIndex.includes(i);
   let cls = 'option-btn';
   if (i === lastSelected) cls += ' selected';
@@ -18,7 +24,13 @@ function optionClass(i: number, question: Question, selected: number[], lastSele
 }
 
 const withFlags = (base: string, flags: Record<string, boolean>) =>
-  cx(styles, ...base.split(' '), ...Object.entries(flags).filter(([, on]) => on).map(([cls]) => cls));
+  cx(
+    styles,
+    ...base.split(' '),
+    ...Object.entries(flags)
+      .filter(([, on]) => on)
+      .map(([cls]) => cls),
+  );
 
 export function QuizQuestion({
   question: currentQ,
@@ -67,8 +79,12 @@ export function QuizQuestion({
       </div>
 
       <div className={cx(styles, 'quiz-question-container')}>
-        <div className={withFlags('quiz-word-container', { 'new-question': flags.questionLoading })}>
-          <div className={withFlags('quiz-word', { revealing: flags.revealing })}>{currentQ.word}</div>
+        <div
+          className={withFlags('quiz-word-container', { 'new-question': flags.questionLoading })}
+        >
+          <div className={withFlags('quiz-word', { revealing: flags.revealing })}>
+            {currentQ.word}
+          </div>
         </div>
 
         <div className={cx(styles, 'options-container')}>
@@ -92,7 +108,9 @@ export function QuizQuestion({
 
       <div className={cx(styles, 'quiz-footer')}>
         <button className={cx(styles, 'next-btn')} disabled={!answered} onClick={onNext}>
-          {answered && questionNumber === totalQuestions ? 'Voir les résultats' : 'Question suivante'}
+          {answered && questionNumber === totalQuestions
+            ? 'Voir les résultats'
+            : 'Question suivante'}
         </button>
       </div>
     </div>

@@ -11,7 +11,10 @@ import {
   type DbWordType,
 } from '@sealvo/shared';
 import type { CreateWordDto } from '../words/dto/create-word.dto.js';
-import { TEXT_MAX_LENGTH, VARCHAR_MAX_LENGTH } from '../common/constants/field-lengths.constants.js';
+import {
+  TEXT_MAX_LENGTH,
+  VARCHAR_MAX_LENGTH,
+} from '../common/constants/field-lengths.constants.js';
 
 export const MAX_IMPORT_ROWS = 500;
 
@@ -51,7 +54,9 @@ const FIELD_INFO = {
   level: { label: 'Niveau invalide', accepted: VALID_LEVELS },
   word_length: { label: `Mot trop long (${VARCHAR_MAX_LENGTH} caractères max)` },
   subject_length: { label: `Sujet trop long (${VARCHAR_MAX_LENGTH} caractères max)` },
-  pronunciation_length: { label: `Prononciation trop longue (${VARCHAR_MAX_LENGTH} caractères max)` },
+  pronunciation_length: {
+    label: `Prononciation trop longue (${VARCHAR_MAX_LENGTH} caractères max)`,
+  },
   meaning_length: { label: `Signification trop longue (${TEXT_MAX_LENGTH} caractères max)` },
   example_length: { label: `Exemple trop long (${TEXT_MAX_LENGTH} caractères max)` },
   synonyms_length: { label: `Synonymes trop longs (${TEXT_MAX_LENGTH} caractères max)` },
@@ -60,7 +65,9 @@ const FIELD_INFO = {
 } as const satisfies Record<string, { label: string; accepted?: readonly string[] }>;
 
 /** Matches the column sizes enforced by CreateWordDto (VARCHAR_MAX_LENGTH and TEXT_MAX_LENGTH). */
-const FIELD_MAX: Partial<Record<keyof ParsedWord, { field: keyof typeof FIELD_INFO; max: number }>> = {
+const FIELD_MAX: Partial<
+  Record<keyof ParsedWord, { field: keyof typeof FIELD_INFO; max: number }>
+> = {
   word: { field: 'word_length', max: VARCHAR_MAX_LENGTH },
   subject: { field: 'subject_length', max: VARCHAR_MAX_LENGTH },
   pronunciation: { field: 'pronunciation_length', max: VARCHAR_MAX_LENGTH },
@@ -119,7 +126,9 @@ export class ImportService {
 
       words.push({
         word: cell(row[0]),
-        language_code: cell(row[1]).replace(/\([^)]*\)/g, '').trim(),
+        language_code: cell(row[1])
+          .replace(/\([^)]*\)/g, '')
+          .trim(),
         subject: cell(row[2]),
         type: cell(row[3]),
         pronunciation: cell(row[4]),

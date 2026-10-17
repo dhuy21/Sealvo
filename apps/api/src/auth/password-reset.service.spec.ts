@@ -68,7 +68,9 @@ describe('PasswordResetService', () => {
 
       await service.forgotPassword('a@b.c');
 
-      expect(prisma.password_reset_tokens.deleteMany).toHaveBeenCalledWith({ where: { user_id: 'u1' } });
+      expect(prisma.password_reset_tokens.deleteMany).toHaveBeenCalledWith({
+        where: { user_id: 'u1' },
+      });
       const { token_hash } = prisma.password_reset_tokens.create.mock.calls[0][0].data;
       const { resetPasswordLink, expiresIn } = emailService.compileTemplate.mock.calls[0][1];
       expect(token_hash).toBe(sha256(resetPasswordLink.split('token=')[1]));
@@ -79,8 +81,9 @@ describe('PasswordResetService', () => {
   describe('resetPassword', () => {
     it('should throw on invalid or expired token', async () => {
       prisma.password_reset_tokens.findFirst.mockResolvedValue(null);
-      await expect(service.resetPassword('badtoken', 'newpass123'))
-        .rejects.toThrow(BadRequestException);
+      await expect(service.resetPassword('badtoken', 'newpass123')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should update the password and revoke reset tokens, every session and pending email changes', async () => {
@@ -89,10 +92,16 @@ describe('PasswordResetService', () => {
 
       await service.resetPassword('raw', 'newpass123');
 
-      expect(prisma.password_reset_tokens.findFirst.mock.calls[0][0].where.token_hash).toBe(sha256('raw'));
+      expect(prisma.password_reset_tokens.findFirst.mock.calls[0][0].where.token_hash).toBe(
+        sha256('raw'),
+      );
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-      expect(prisma.password_reset_tokens.deleteMany).toHaveBeenCalledWith({ where: { token_hash: sha256('raw') } });
-      expect(prisma.password_reset_tokens.deleteMany).toHaveBeenCalledWith({ where: { user_id: 'u1' } });
+      expect(prisma.password_reset_tokens.deleteMany).toHaveBeenCalledWith({
+        where: { token_hash: sha256('raw') },
+      });
+      expect(prisma.password_reset_tokens.deleteMany).toHaveBeenCalledWith({
+        where: { user_id: 'u1' },
+      });
       expect(prisma.users.update.mock.calls[0][0].where).toEqual({ id: 'u1' });
       expect(prisma.refresh_sessions.deleteMany).toHaveBeenCalledWith({ where: { user_id: 'u1' } });
       expect(prisma.email_verification.updateMany).toHaveBeenCalledWith({

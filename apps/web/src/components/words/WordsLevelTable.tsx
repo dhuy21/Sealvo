@@ -20,10 +20,7 @@ export function WordsLevelTable({
   onDelete: (detailId: number) => void;
 }) {
   return (
-    <div
-      className={cx(styles, 'level-container', deleting && 'level-deleting')}
-      data-level={level}
-    >
+    <div className={cx(styles, 'level-container', deleting && 'level-deleting')} data-level={level}>
       <div className={cx(styles, 'level-header')}>
         <span>Niveau {levelLabel(level)}</span>
         <span className={cx(styles, 'level-badge')}>{words.length} mot(s)</span>

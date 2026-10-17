@@ -12,13 +12,21 @@ export function HeroSection() {
           <h1 className={`${authStyles['animated-title']} ${homeStyles['animated-title']}`}>
             Welcome to <span className={authStyles['glow-text']}>SEALVO</span>
           </h1>
-          <p className={`${authStyles['subtitle']} ${homeStyles['subtitle']}`}>Enhance your vocabulary with our interactive learning platform!</p>
+          <p className={`${authStyles['subtitle']} ${homeStyles['subtitle']}`}>
+            Enhance your vocabulary with our interactive learning platform!
+          </p>
 
           <div className={authStyles['hero-cta']}>
-            <Link href="/login" className={`${cx(authStyles, 'btn', 'btn-primary', 'btn-large')} ${cx(homeStyles, 'btn', 'btn-primary', 'btn-large')}`}>
+            <Link
+              href="/login"
+              className={`${cx(authStyles, 'btn', 'btn-primary', 'btn-large')} ${cx(homeStyles, 'btn', 'btn-primary', 'btn-large')}`}
+            >
               <i className="fas fa-sign-in-alt" /> Get Started
             </Link>
-            <Link href="/about" className={`${cx(authStyles, 'btn', 'btn-outline')} ${cx(homeStyles, 'btn', 'btn-outline')}`}>
+            <Link
+              href="/about"
+              className={`${cx(authStyles, 'btn', 'btn-outline')} ${cx(homeStyles, 'btn', 'btn-outline')}`}
+            >
               <i className="fas fa-info-circle" /> Learn More
             </Link>
           </div>

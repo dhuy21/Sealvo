@@ -27,8 +27,14 @@ describe('SameOriginGuard', () => {
     );
   });
 
-  it.each(['register', 'login', 'refresh', 'logout'] as const)('guards POST /auth/%s', (handler) => {
-    const guards = Reflect.getMetadata('__guards__', AuthController.prototype[handler]) as unknown[];
-    expect(guards).toContain(SameOriginGuard);
-  });
+  it.each(['register', 'login', 'refresh', 'logout'] as const)(
+    'guards POST /auth/%s',
+    (handler) => {
+      const guards = Reflect.getMetadata(
+        '__guards__',
+        AuthController.prototype[handler],
+      ) as unknown[];
+      expect(guards).toContain(SameOriginGuard);
+    },
+  );
 });

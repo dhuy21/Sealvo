@@ -6,7 +6,12 @@ import { VALID_LANGS } from '@sealvo/shared';
 import type { Word, UpdateWordPayload } from '@/hooks/use-words';
 import { stripBoldMarkup } from '@/lib/bold-markup';
 import { WORD_TYPE_OPTIONS, wordTypeLabel } from './constants';
-import { REQUIRED_FIELDS_MESSAGE, toUpdatePayload, wordEditForm, type WordEditForm } from './word-edit-form';
+import {
+  REQUIRED_FIELDS_MESSAGE,
+  toUpdatePayload,
+  wordEditForm,
+  type WordEditForm,
+} from './word-edit-form';
 import styles from '@/styles/vocabs.module.css';
 import { cx } from '@/lib/css-module';
 
@@ -155,7 +160,11 @@ export function WordRow({
             >
               <i className={saving ? 'fas fa-spinner fa-spin' : 'fas fa-check'}></i>
             </button>
-            <button className={cx(styles, 'cancel-btn')} title="Annuler" onClick={() => setEditing(false)}>
+            <button
+              className={cx(styles, 'cancel-btn')}
+              title="Annuler"
+              onClick={() => setEditing(false)}
+            >
               <i className="fas fa-times"></i>
             </button>
           </div>
@@ -188,7 +197,9 @@ export function WordRow({
         <div className={cx(styles, 'table-cell-content')}>{w.antonyms}</div>
       </td>
       <td className={cx(styles, 'table-cell')}>
-        <div className={cx(styles, 'table-cell-content')}>{w.example && stripBoldMarkup(w.example)}</div>
+        <div className={cx(styles, 'table-cell-content')}>
+          {w.example && stripBoldMarkup(w.example)}
+        </div>
       </td>
       <td className={cx(styles, 'table-cell')}>
         <div className={cx(styles, 'table-cell-content')}>{w.grammar}</div>
@@ -199,7 +210,11 @@ export function WordRow({
             <button className={cx(styles, 'edit-btn')} title="Modifier" onClick={startEditing}>
               <i className="fas fa-edit"></i>
             </button>
-            <button className={cx(styles, 'delete-btn')} title="Supprimer" onClick={() => onDelete(w.detail_id)}>
+            <button
+              className={cx(styles, 'delete-btn')}
+              title="Supprimer"
+              onClick={() => onDelete(w.detail_id)}
+            >
               <i className="fas fa-trash"></i>
             </button>
           </div>

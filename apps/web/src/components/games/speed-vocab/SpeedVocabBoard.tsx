@@ -40,15 +40,23 @@ export function SpeedVocabBoard({
       <div className={cx(styles, 'game-info')}>
         <div className={cx(styles, 'score-display')}>
           <div className={cx(styles, 'score-label')}>Score</div>
-          <div id="score" className={cx(styles, 'score-value')}>{score}</div>
+          <div id="score" className={cx(styles, 'score-value')}>
+            {score}
+          </div>
         </div>
         <div className={cx(styles, 'timer-display')}>
           <div className={cx(styles, 'timer-label')}>Temps</div>
-          <div id="timer" className={cx(styles, 'timer-value', timer <= 50 && 'warning')}>{timer}</div>
+          <div id="timer" className={cx(styles, 'timer-value', timer <= 50 && 'warning')}>
+            {timer}
+          </div>
         </div>
-        <div className={cx(styles, 'streak-display', flags.streakCelebration && 'streak-celebration')}>
+        <div
+          className={cx(styles, 'streak-display', flags.streakCelebration && 'streak-celebration')}
+        >
           <div className={cx(styles, 'streak-label')}>Série</div>
-          <div id="streak" className={cx(styles, 'streak-value')}>{streak}</div>
+          <div id="streak" className={cx(styles, 'streak-value')}>
+            {streak}
+          </div>
         </div>
       </div>
 

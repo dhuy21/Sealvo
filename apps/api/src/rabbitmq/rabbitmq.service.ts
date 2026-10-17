@@ -10,7 +10,10 @@ import amqp from 'amqplib';
 
 type ChannelReadyHandler = (channel: amqp.ConfirmChannel) => Promise<void>;
 /** Acks or nacks the message on the channel it was delivered on */
-export type MessageHandler = (msg: amqp.ConsumeMessage, channel: amqp.ConfirmChannel) => Promise<void>;
+export type MessageHandler = (
+  msg: amqp.ConsumeMessage,
+  channel: amqp.ConfirmChannel,
+) => Promise<void>;
 
 interface Consumer {
   channel: amqp.ConfirmChannel;
@@ -89,9 +92,7 @@ export class RabbitmqService implements OnApplicationBootstrap, OnModuleDestroy 
       this.ready = true;
       this.logger.log('Connected to RabbitMQ.');
     } catch (err) {
-      this.logger.error(
-        `Failed to connect: ${err instanceof Error ? err.message : err}`,
-      );
+      this.logger.error(`Failed to connect: ${err instanceof Error ? err.message : err}`);
       this.ready = false;
       conn?.close().catch(() => {
         /* already closed */
@@ -174,7 +175,9 @@ export class RabbitmqService implements OnApplicationBootstrap, OnModuleDestroy 
       this.logger.error(`Consumer of ${queue} lost: ${reason}`);
       this.connectionLostHandlers.forEach((notify) => notify());
     };
-    channel.on('error', (err: Error) => this.logger.error(`Consumer channel error (${queue}): ${err.message}`));
+    channel.on('error', (err: Error) =>
+      this.logger.error(`Consumer channel error (${queue}): ${err.message}`),
+    );
     channel.on('close', () => lost('channel closed'));
     await channel.prefetch(prefetch);
 
@@ -184,7 +187,9 @@ export class RabbitmqService implements OnApplicationBootstrap, OnModuleDestroy 
       if (!msg) return lost('cancelled by the broker');
       const run = handler(msg, channel)
         .catch((err: unknown) => {
-          this.logger.error(`Unhandled error on ${queue}: ${err instanceof Error ? err.message : String(err)}`);
+          this.logger.error(
+            `Unhandled error on ${queue}: ${err instanceof Error ? err.message : String(err)}`,
+          );
           try {
             channel.nack(msg, false, false);
           } catch {
@@ -201,7 +206,9 @@ export class RabbitmqService implements OnApplicationBootstrap, OnModuleDestroy 
   /** Stops new deliveries, then waits (up to 25 s) for the messages being handled */
   async stopConsumers(): Promise<void> {
     this.closing = true;
-    await Promise.all(this.consumers.map(({ channel, tag }) => channel.cancel(tag).catch(() => {})));
+    await Promise.all(
+      this.consumers.map(({ channel, tag }) => channel.cancel(tag).catch(() => {})),
+    );
     const inFlight = this.consumers.flatMap(({ inFlight }) => [...inFlight]);
     if (inFlight.length === 0) return;
     this.logger.log(`Waiting for ${inFlight.length} message(s) in progress...`);

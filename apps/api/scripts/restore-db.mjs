@@ -56,9 +56,7 @@ function parseArgs() {
 function analyzeDump(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
   const stat = fs.statSync(filePath);
-  const tables = [...content.matchAll(/CREATE TABLE.*?`(\w+)`/gi)].map(
-    (m) => m[1],
-  );
+  const tables = [...content.matchAll(/CREATE TABLE.*?`(\w+)`/gi)].map((m) => m[1]);
   return {
     sizeKB: (stat.size / 1024).toFixed(1),
     modified: stat.mtime.toISOString().replace('T', ' ').slice(0, 19),
@@ -90,26 +88,15 @@ function checkResult(result) {
     process.exit(1);
   }
   if (result.status !== 0) {
-    const stderr = (result.stderr || '')
-      .replace(/.*\[Warning\].*\n?/g, '')
-      .trim();
-    console.error(
-      '[restore] mysql failed (exit',
-      result.status + ')',
-      stderr || '(warnings only)',
-    );
+    const stderr = (result.stderr || '').replace(/.*\[Warning\].*\n?/g, '').trim();
+    console.error('[restore] mysql failed (exit', result.status + ')', stderr || '(warnings only)');
     process.exit(1);
   }
 }
 
 // Runs the mysql client inside the dev container (Docker mode) or on this machine (direct).
 function mysql(conn, useDocker, args, input) {
-  const clientArgs = [
-    '-u',
-    conn.user,
-    '--default-character-set=utf8mb4',
-    ...args,
-  ];
+  const clientArgs = ['-u', conn.user, '--default-character-set=utf8mb4', ...args];
   const opts = {
     input,
     stdio: ['pipe', 'pipe', 'pipe'],
@@ -119,15 +106,7 @@ function mysql(conn, useDocker, args, input) {
   const result = useDocker
     ? spawnSync(
         'docker',
-        [
-          'exec',
-          '-i',
-          '-e',
-          `MYSQL_PWD=${conn.password}`,
-          CONTAINER,
-          'mysql',
-          ...clientArgs,
-        ],
+        ['exec', '-i', '-e', `MYSQL_PWD=${conn.password}`, CONTAINER, 'mysql', ...clientArgs],
         opts,
       )
     : spawnSync('mysql', ['-h', conn.host, '-P', conn.port, ...clientArgs], {
@@ -165,9 +144,7 @@ async function main() {
   const { file, confirm, target } = parseArgs();
 
   if (!file) {
-    console.log(
-      'Usage: node scripts/restore-db.mjs <dump.sql> [--confirm] [--target <db>]',
-    );
+    console.log('Usage: node scripts/restore-db.mjs <dump.sql> [--confirm] [--target <db>]');
     process.exit(0);
   }
 
@@ -186,24 +163,16 @@ async function main() {
   const defaultDb = conn.database;
   const database = target || defaultDb;
   const info = analyzeDump(filePath);
-  const mode = useDocker
-    ? `Docker (${CONTAINER})`
-    : `Direct (${conn.host}:${conn.port})`;
+  const mode = useDocker ? `Docker (${CONTAINER})` : `Direct (${conn.host}:${conn.port})`;
 
   console.log('\n=== Database Restore ===\n');
-  console.log(
-    `  File:     ${path.basename(filePath)} (${info.sizeKB} KB, ${info.modified})`,
-  );
+  console.log(`  File:     ${path.basename(filePath)} (${info.sizeKB} KB, ${info.modified})`);
   console.log(`  Tables:   ${info.tables.length} (${info.tables.join(', ')})`);
   console.log(`  INSERTs:  ${info.inserts} | DROP TABLE: ${info.drops}`);
-  console.log(
-    `  Target:   ${database}${target ? ' (custom)' : ''} | Mode: ${mode}`,
-  );
+  console.log(`  Target:   ${database}${target ? ' (custom)' : ''} | Mode: ${mode}`);
 
   if (process.env.NODE_ENV === 'production' && database === defaultDb)
-    console.log(
-      '\n  *** WARNING: NODE_ENV=production — restoring into MAIN database! ***',
-    );
+    console.log('\n  *** WARNING: NODE_ENV=production — restoring into MAIN database! ***');
 
   if (!confirm) {
     console.log('\n  DRY RUN — add --confirm to execute.\n');
@@ -220,9 +189,7 @@ async function main() {
   console.log('[restore] SQL applied. Verifying...');
 
   const tables = getTablesInDb(conn, useDocker, database);
-  console.log(
-    `[restore] ${tables.length} table(s) in '${database}': ${tables.join(', ')}`,
-  );
+  console.log(`[restore] ${tables.length} table(s) in '${database}': ${tables.join(', ')}`);
 
   if (info.tables.length > 0 && tables.length >= info.tables.length)
     console.log(`[restore] OK — table count matches (${info.tables.length}).`);

@@ -16,11 +16,17 @@ export function GameFooter({
   const router = useRouter();
   return (
     <div className={cx(styles, 'game-footer')}>
-      <button className={cx(styles, 'btn', 'learn-btn')} onClick={() => router.push(`/learn?package=${packageId}`)}>
+      <button
+        className={cx(styles, 'btn', 'learn-btn')}
+        onClick={() => router.push(`/learn?package=${packageId}`)}
+      >
         <i className="fas fa-arrow-left"></i> Apprendre
       </button>
       {nextGame && (
-        <button className={cx(styles, 'btn', 'next-btn')} onClick={() => router.push(`/games/${nextGame}?package=${packageId}`)}>
+        <button
+          className={cx(styles, 'btn', 'next-btn')}
+          onClick={() => router.push(`/games/${nextGame}?package=${packageId}`)}
+        >
           <i className="fas fa-arrow-right"></i> Jeu suivant
         </button>
       )}

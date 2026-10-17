@@ -16,7 +16,7 @@ import { cx } from '@/lib/css-module';
 import styles from '@/styles/auth.module.css';
 
 const loginSchema = z.object({
-  username: z.string().min(1, 'Nom d\'utilisateur requis'),
+  username: z.string().min(1, "Nom d'utilisateur requis"),
   password: z.string().min(1, 'Mot de passe requis'),
 });
 
@@ -83,7 +83,9 @@ function LoginForm() {
             <i className="fas fa-graduation-cap" />
           </div>
           <h1>Connexion</h1>
-          <p className={styles['auth-subtitle']}>Connectez-vous pour continuer votre apprentissage</p>
+          <p className={styles['auth-subtitle']}>
+            Connectez-vous pour continuer votre apprentissage
+          </p>
         </div>
 
         {googleError && (
@@ -116,7 +118,10 @@ function LoginForm() {
             {resend.isError && (
               <div className={cx(styles, 'alert', 'alert-error')}>
                 <i className="fas fa-exclamation-circle" />
-                {getApiErrorMessage(resend.error, 'Une erreur est survenue. Veuillez réessayer plus tard.')}
+                {getApiErrorMessage(
+                  resend.error,
+                  'Une erreur est survenue. Veuillez réessayer plus tard.',
+                )}
               </div>
             )}
           </>
@@ -164,7 +169,12 @@ function LoginForm() {
             </Link>
           </div>
 
-          <button type="submit" className={styles['btn-submit']} data-delay="400" disabled={isSubmitting}>
+          <button
+            type="submit"
+            className={styles['btn-submit']}
+            data-delay="400"
+            disabled={isSubmitting}
+          >
             {isSubmitting ? 'Connexion...' : 'Se connecter'} <i className="fas fa-arrow-right" />
           </button>
         </form>

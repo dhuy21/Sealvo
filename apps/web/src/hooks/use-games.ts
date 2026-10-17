@@ -42,7 +42,10 @@ export function useTrackLevelProgress() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: LevelProgressRequest) => {
-      const { data } = await api.post<TrackLevelProgressResult>('/learning/level-progress/track', payload);
+      const { data } = await api.post<TrackLevelProgressResult>(
+        '/learning/level-progress/track',
+        payload,
+      );
       return data;
     },
     onSuccess: (_data, { packageId }) => {

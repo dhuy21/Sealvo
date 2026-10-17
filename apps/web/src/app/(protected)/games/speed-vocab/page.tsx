@@ -171,7 +171,13 @@ function SpeedVocabInner() {
       </div>
 
       {screen === 'pre' && (
-        <GameDataStatus isLoading={shell.isLoading} error={shell.error} data={gameData} packageId={packageId} styles={styles} />
+        <GameDataStatus
+          isLoading={shell.isLoading}
+          error={shell.error}
+          data={gameData}
+          packageId={packageId}
+          styles={styles}
+        />
       )}
 
       {gameData && (screen !== 'pre' || shell.ready) && (

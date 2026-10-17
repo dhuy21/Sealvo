@@ -40,7 +40,10 @@ describe('FeedbackService', () => {
 
     expect(result.message).toContain('Merci');
     expect(emailQueue.enqueue).toHaveBeenCalledWith(
-      expect.objectContaining({ to: 'admin@test.com', subject: 'Nouveau feedback pour votre site' }),
+      expect.objectContaining({
+        to: 'admin@test.com',
+        subject: 'Nouveau feedback pour votre site',
+      }),
     );
     const { content } = emailQueue.enqueue.mock.calls[0][0];
     expect(content).toContain('<p>Contenu: Great app</p>');

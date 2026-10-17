@@ -20,9 +20,17 @@ export const THROTTLE = {
   LOGIN: { ttl: 15 * MINUTE_MS, limit: 10, reason: 'Trop de tentatives de connexion.' },
   // Checks the current password for an email change, like a login
   PROFILE: { ttl: 15 * MINUTE_MS, limit: 10, reason: 'Trop de modifications du profil.' },
-  RESET_PASSWORD: { ttl: 15 * MINUTE_MS, limit: 10, reason: 'Trop de tentatives de réinitialisation.' },
+  RESET_PASSWORD: {
+    ttl: 15 * MINUTE_MS,
+    limit: 10,
+    reason: 'Trop de tentatives de réinitialisation.',
+  },
   FORGOT_PASSWORD: { ttl: HOUR_MS, limit: 3, reason: 'Trop de demandes de réinitialisation.' },
-  RESEND_VERIFICATION: { ttl: HOUR_MS, limit: 3, reason: "Trop de demandes d'email de vérification." },
+  RESEND_VERIFICATION: {
+    ttl: HOUR_MS,
+    limit: 3,
+    reason: "Trop de demandes d'email de vérification.",
+  },
   REMINDER_EMAIL: { ttl: HOUR_MS, limit: 3, reason: "Trop d'emails envoyés." },
   FEEDBACK: { ttl: HOUR_MS, limit: 5, reason: 'Trop de feedbacks envoyés.' },
   TTS: { ttl: MINUTE_MS, limit: 30, reason: 'Trop de requêtes TTS.' },

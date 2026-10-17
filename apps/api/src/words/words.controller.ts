@@ -68,7 +68,9 @@ export class WordsController {
     @Res({ passthrough: true }) res: Response,
   ) {
     if (dto.length > MAX_IMPORT_ROWS) {
-      throw new BadRequestException(`Vous ne pouvez pas ajouter plus de ${MAX_IMPORT_ROWS} mots à la fois.`);
+      throw new BadRequestException(
+        `Vous ne pouvez pas ajouter plus de ${MAX_IMPORT_ROWS} mots à la fois.`,
+      );
     }
 
     const result = await this.bulkWords.add('addWords', packageId, userId, dto);

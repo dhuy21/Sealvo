@@ -6,10 +6,7 @@ export function StatsCard({ stats }: { stats: DashboardStats }) {
   return (
     <div className={cx(styles, 'dashboard-card', 'fade-in')}>
       <h2>
-        <i
-          className="fas fa-chart-pie"
-          style={{ color: '#C850C0', marginRight: '0.5rem' }}
-        ></i>
+        <i className="fas fa-chart-pie" style={{ color: '#C850C0', marginRight: '0.5rem' }}></i>
         Mes Statistiques
       </h2>
       <div className={cx(styles, 'stats')}>

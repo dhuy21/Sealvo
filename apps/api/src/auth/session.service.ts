@@ -55,7 +55,9 @@ export class SessionService {
 
       if (!isCurrent && !isJustRotated) {
         // Only tokens issued for this session carry its id: an older one is being replayed
-        this.logger.warn(`Refresh token reuse: session ${session.id} of user ${session.user_id} revoked`);
+        this.logger.warn(
+          `Refresh token reuse: session ${session.id} of user ${session.user_id} revoked`,
+        );
         await this.prisma.refresh_sessions.deleteMany({ where: { id: session.id } });
         return null;
       }

@@ -56,7 +56,10 @@ export class ImportController {
   @ApiOperation({ summary: 'Import words from Excel file' })
   @ApiResponse({ status: 202, description: 'Import queued (async via RabbitMQ)' })
   @ApiResponse({ status: 200, description: 'Import processed synchronously' })
-  @ApiResponse({ status: 400, description: 'Invalid file or rows (message lists the invalid rows)' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid file or rows (message lists the invalid rows)',
+  })
   async importFile(
     @Param('packageId', ParseIntPipe) packageId: number,
     @CurrentUser('id') userId: string,

@@ -53,7 +53,8 @@ async function claimJob(tx: Prisma.TransactionClient, jobId: string): Promise<bo
     await tx.applied_jobs.create({ data: { job_id: jobId } });
     return true;
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') return false;
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002')
+      return false;
     throw error;
   }
 }
@@ -157,7 +158,9 @@ export class WordsService {
       return true;
     }, TX_OPTIONS);
 
-    return applied ? this.addWordsResult(successCount, false) : this.addWordsResult(wordsData.length, true);
+    return applied
+      ? this.addWordsResult(successCount, false)
+      : this.addWordsResult(wordsData.length, true);
   }
 
   /** An already applied job reports every word: the earlier transaction was all-or-nothing */

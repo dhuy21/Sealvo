@@ -23,7 +23,9 @@ describe('INITIAL_LEVELS', () => {
 
 describe('buildDeck', () => {
   it('keeps only words due today in today-words mode, in package order', () => {
-    expect(buildDeck(words, INITIAL_LEVELS, 'today-words').map((w) => w.detail_id)).toEqual([1, 3, 5]);
+    expect(buildDeck(words, INITIAL_LEVELS, 'today-words').map((w) => w.detail_id)).toEqual([
+      1, 3, 5,
+    ]);
   });
 
   it('keeps every word of the selected levels in all-words mode', () => {
@@ -32,7 +34,9 @@ describe('buildDeck', () => {
   });
 
   it('combines the level filter with the due-today filter', () => {
-    expect(buildDeck(words, new Set(['level_0']), 'today-words').map((w) => w.detail_id)).toEqual([5]);
+    expect(buildDeck(words, new Set(['level_0']), 'today-words').map((w) => w.detail_id)).toEqual([
+      5,
+    ]);
   });
 
   it('is empty when no level is selected', () => {

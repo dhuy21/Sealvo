@@ -25,7 +25,9 @@ const registerSchema = z
         `Le nom d'utilisateur doit contenir entre ${AUTH_LIMITS.USERNAME_MIN} et ${AUTH_LIMITS.USERNAME_MAX} caractères`,
       ),
     email: z.email('Email invalide'),
-    password: z.string().min(AUTH_LIMITS.PASSWORD_MIN, `Minimum ${AUTH_LIMITS.PASSWORD_MIN} caractères`),
+    password: z
+      .string()
+      .min(AUTH_LIMITS.PASSWORD_MIN, `Minimum ${AUTH_LIMITS.PASSWORD_MIN} caractères`),
     password2: z.string(),
     avatar: z.number().int().min(1).max(AVATAR_COUNT),
     terms: z.literal(true, { message: 'Vous devez accepter les conditions' }),
@@ -85,12 +87,16 @@ export default function RegisterPage() {
             <i className="fas fa-graduation-cap" />
           </div>
           <h1>Inscription</h1>
-          <p className={styles['auth-subtitle']}>Créez votre compte pour commencer votre apprentissage</p>
+          <p className={styles['auth-subtitle']}>
+            Créez votre compte pour commencer votre apprentissage
+          </p>
         </div>
 
         {status && (
           <div className={cx(styles, 'alert', `alert-${status.type}`)}>
-            <i className={`fas fa-${status.type === 'success' ? 'check-circle' : 'exclamation-circle'}`} />
+            <i
+              className={`fas fa-${status.type === 'success' ? 'check-circle' : 'exclamation-circle'}`}
+            />
             {status.message}
           </div>
         )}
@@ -98,7 +104,12 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit(onSubmit)} className={styles['auth-form']}>
           <div className={styles['form-group']} data-delay="100">
             <div className={styles['input-icon-wrapper']}>
-              <input type="text" placeholder="Nom d'utilisateur" autoComplete="username" {...register('username')} />
+              <input
+                type="text"
+                placeholder="Nom d'utilisateur"
+                autoComplete="username"
+                {...register('username')}
+              />
               <i className={cx(styles, 'input-icon', 'fas', 'fa-user')} />
               <span className="focus-border" />
             </div>
@@ -107,7 +118,12 @@ export default function RegisterPage() {
 
           <div className={styles['form-group']} data-delay="200">
             <div className={styles['input-icon-wrapper']}>
-              <input type="email" placeholder="Adresse email" autoComplete="email" {...register('email')} />
+              <input
+                type="email"
+                placeholder="Adresse email"
+                autoComplete="email"
+                {...register('email')}
+              />
               <i className={cx(styles, 'input-icon', 'fas', 'fa-envelope')} />
               <span className="focus-border" />
             </div>
@@ -123,7 +139,11 @@ export default function RegisterPage() {
                 {...register('password')}
               />
               <i className={cx(styles, 'input-icon', 'fas', 'fa-lock')} />
-              <button type="button" className={styles['password-toggle']} onClick={() => setShowPassword((v) => !v)}>
+              <button
+                type="button"
+                className={styles['password-toggle']}
+                onClick={() => setShowPassword((v) => !v)}
+              >
                 <i className={showPassword ? 'far fa-eye-slash' : 'far fa-eye'} />
               </button>
               <span className="focus-border" />
@@ -140,7 +160,11 @@ export default function RegisterPage() {
                 {...register('password2')}
               />
               <i className={cx(styles, 'input-icon', 'fas', 'fa-lock')} />
-              <button type="button" className={styles['password-toggle']} onClick={() => setShowConfirm((v) => !v)}>
+              <button
+                type="button"
+                className={styles['password-toggle']}
+                onClick={() => setShowConfirm((v) => !v)}
+              >
                 <i className={showConfirm ? 'far fa-eye-slash' : 'far fa-eye'} />
               </button>
               <span className="focus-border" />
@@ -152,7 +176,10 @@ export default function RegisterPage() {
             <div className={styles['terms-check']}>
               <input type="checkbox" id="terms" {...register('terms')} />
               <label htmlFor="terms">
-                J&apos;accepte les <a href="/terms" className={styles['terms-link']}>conditions d&apos;utilisation</a>
+                J&apos;accepte les{' '}
+                <a href="/terms" className={styles['terms-link']}>
+                  conditions d&apos;utilisation
+                </a>
               </label>
             </div>
             {errors.terms && <span className="form-error">{errors.terms.message}</span>}
@@ -162,7 +189,10 @@ export default function RegisterPage() {
             <label className={styles['avatar-label']}>Choisissez votre avatar</label>
             <div className={styles['avatars-container']}>
               {AVATARS.map((num) => (
-                <div key={num} className={cx(styles, 'avatar-option', selectedAvatar === num && 'selected')}>
+                <div
+                  key={num}
+                  className={cx(styles, 'avatar-option', selectedAvatar === num && 'selected')}
+                >
                   <input
                     type="radio"
                     id={`avatar-${num}`}
@@ -170,15 +200,25 @@ export default function RegisterPage() {
                     onChange={() => setValue('avatar', num)}
                   />
                   <label htmlFor={`avatar-${num}`}>
-                    <Image src={`/images/avatars/${num}.png`} alt={`Avatar ${num}`} width={50} height={50} />
+                    <Image
+                      src={`/images/avatars/${num}.png`}
+                      alt={`Avatar ${num}`}
+                      width={50}
+                      height={50}
+                    />
                   </label>
                 </div>
               ))}
             </div>
           </div>
 
-          <button type="submit" className={styles['btn-submit']} data-delay="600" disabled={isSubmitting}>
-            {isSubmitting ? 'Inscription...' : 'S\'inscrire'} <i className="fas fa-arrow-right" />
+          <button
+            type="submit"
+            className={styles['btn-submit']}
+            data-delay="600"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Inscription...' : "S'inscrire"} <i className="fas fa-arrow-right" />
           </button>
         </form>
 

@@ -107,7 +107,11 @@ export class EmailQueueService implements OnModuleInit {
     }
 
     try {
-      const result = await this.emailService.sendEmail(payload.to, payload.content, payload.subject);
+      const result = await this.emailService.sendEmail(
+        payload.to,
+        payload.content,
+        payload.subject,
+      );
       if (!result) throw new Error('sendEmail returned false');
     } catch (err) {
       const retries = this.getRetryCount(msg);

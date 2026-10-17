@@ -24,7 +24,9 @@ describe('CreateFeedbackDto', () => {
 
   it('rejects a whitespace-only subject or content', async () => {
     expect((await check({ ...valid, subject: '   ' })).messages).toEqual(['Le sujet est requis']);
-    expect((await check({ ...valid, content: ' \n ' })).messages).toEqual(['Le contenu est requis']);
+    expect((await check({ ...valid, content: ' \n ' })).messages).toEqual([
+      'Le contenu est requis',
+    ]);
   });
 
   it('caps subject at 255 and content at 5000 characters', async () => {
@@ -43,6 +45,8 @@ describe('CreateFeedbackDto', () => {
     expect(blank.messages).toEqual([]);
     expect(blank.dto.email).toBeUndefined();
     expect((await check({ ...valid, email: null })).messages).toEqual(["Format d'email invalide"]);
-    expect((await check({ ...valid, email: 'nope' })).messages).toEqual(["Format d'email invalide"]);
+    expect((await check({ ...valid, email: 'nope' })).messages).toEqual([
+      "Format d'email invalide",
+    ]);
   });
 });

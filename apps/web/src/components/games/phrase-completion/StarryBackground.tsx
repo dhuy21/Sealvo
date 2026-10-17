@@ -14,7 +14,11 @@ export function StarryBackground() {
     <>
       {/* Starry Focus Rings */}
       {Array.from({ length: 4 }, (_, i) => (
-        <div key={`ring-${i}`} className={cx(styles, 'starry-focus-ring')} style={{ animationDelay: `${i * 1.5}s` }} />
+        <div
+          key={`ring-${i}`}
+          className={cx(styles, 'starry-focus-ring')}
+          style={{ animationDelay: `${i * 1.5}s` }}
+        />
       ))}
       {/* Floating Celestial Elements */}
       {CELESTIAL_STYLES.map((style, i) => (

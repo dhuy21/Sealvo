@@ -123,8 +123,12 @@ describe('GoogleAuthService', () => {
       const attackerHash = await bcrypt.hash('attacker-pass', 4);
       prisma.users.findMany.mockResolvedValue([
         {
-          id: 'vic1234', username: 'victim', email: 'victim@gmail.com', role: 'User',
-          is_verified: false, password: attackerHash,
+          id: 'vic1234',
+          username: 'victim',
+          email: 'victim@gmail.com',
+          role: 'User',
+          is_verified: false,
+          password: attackerHash,
         },
       ]);
 
@@ -132,9 +136,14 @@ describe('GoogleAuthService', () => {
 
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
       const { data } = prisma.users.update.mock.calls[0][0];
-      expect(data).toEqual({ is_verified: true, password: expect.stringMatching(/^\$2[aby]\$12\$/) });
+      expect(data).toEqual({
+        is_verified: true,
+        password: expect.stringMatching(/^\$2[aby]\$12\$/),
+      });
       expect(await bcrypt.compare('attacker-pass', data.password)).toBe(false);
-      expect(prisma.refresh_sessions.deleteMany).toHaveBeenCalledWith({ where: { user_id: 'vic1234' } });
+      expect(prisma.refresh_sessions.deleteMany).toHaveBeenCalledWith({
+        where: { user_id: 'vic1234' },
+      });
       expect(prisma.email_verification.updateMany).toHaveBeenCalledWith({
         where: { user_id: 'vic1234', status: 'pending' },
         data: { status: 'revoked' },

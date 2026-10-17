@@ -91,7 +91,8 @@ export class GamesService {
         ...result,
         words: playable,
         errorMessage:
-          errorMessage ?? (playable.length === 0 ? 'Aucun mot trouvé dans votre vocabulaire.' : null),
+          errorMessage ??
+          (playable.length === 0 ? 'Aucun mot trouvé dans votre vocabulaire.' : null),
       };
     }
 
@@ -106,7 +107,9 @@ export class GamesService {
     const now = new Date();
 
     const { count: created } = await this.prisma.user_best_scores.createMany({
-      data: [{ user_id: userId, game_type: gt, best_score: score, play_count: 1, last_played_at: now }],
+      data: [
+        { user_id: userId, game_type: gt, best_score: score, play_count: 1, last_played_at: now },
+      ],
       skipDuplicates: true,
     });
     if (created > 0) return { isHighScore: true };

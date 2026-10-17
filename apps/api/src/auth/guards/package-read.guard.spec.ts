@@ -16,7 +16,9 @@ const PACKAGES: Record<number, { user_id: string; mode: string }> = {
 
 function contextFor(packageId: string, request: Record<string, unknown> = {}) {
   const req = { user: { id: 'me', role: 'User' }, params: { packageId }, query: {}, ...request };
-  const context = { switchToHttp: () => ({ getRequest: () => req }) } as unknown as ExecutionContext;
+  const context = {
+    switchToHttp: () => ({ getRequest: () => req }),
+  } as unknown as ExecutionContext;
   return { context, req };
 }
 

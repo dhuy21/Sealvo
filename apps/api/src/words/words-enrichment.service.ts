@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { GeminiService, type ExamplePayload, type GeneratedExample } from '../gemini/gemini.service.js';
+import {
+  GeminiService,
+  type ExamplePayload,
+  type GeneratedExample,
+} from '../gemini/gemini.service.js';
 import type { CreateWordDto } from './dto/create-word.dto.js';
 import type { UpdateWordDto } from './dto/update-word.dto.js';
 

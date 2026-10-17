@@ -22,7 +22,9 @@ export function RotationNotice({ visible }: { visible: boolean }) {
       <div className={cx(styles, 'rotation-icon')}>📱</div>
       <div className={cx(styles, 'rotation-content')}>
         <div className={cx(styles, 'rotation-title')}>Rotation de l&apos;écran requise</div>
-        <div className={cx(styles, 'rotation-message')}>Veuillez tourner votre appareil en mode paysage pour jouer</div>
+        <div className={cx(styles, 'rotation-message')}>
+          Veuillez tourner votre appareil en mode paysage pour jouer
+        </div>
       </div>
     </div>
   );

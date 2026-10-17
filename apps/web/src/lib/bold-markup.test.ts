@@ -20,6 +20,9 @@ describe('stripBoldMarkup', () => {
 
 describe('BOLD_MARKUP', () => {
   it('captures each marked word', () => {
-    expect([...'**go** and **come**'.matchAll(BOLD_MARKUP)].map((m) => m[1])).toEqual(['go', 'come']);
+    expect([...'**go** and **come**'.matchAll(BOLD_MARKUP)].map((m) => m[1])).toEqual([
+      'go',
+      'come',
+    ]);
   });
 });

@@ -2782,15 +2782,33 @@
   }
 }
 
-:where(.page) [data-delay='100'] { animation-delay: 100ms; }
-:where(.page) [data-delay='200'] { animation-delay: 200ms; }
-:where(.page) [data-delay='300'] { animation-delay: 300ms; }
-:where(.page) [data-delay='400'] { animation-delay: 400ms; }
-:where(.page) [data-delay='500'] { animation-delay: 500ms; }
-:where(.page) [data-delay='550'] { animation-delay: 550ms; }
-:where(.page) [data-delay='600'] { animation-delay: 600ms; }
-:where(.page) [data-delay='700'] { animation-delay: 700ms; }
-:where(.page) [data-delay='800'] { animation-delay: 800ms; }
+:where(.page) [data-delay='100'] {
+  animation-delay: 100ms;
+}
+:where(.page) [data-delay='200'] {
+  animation-delay: 200ms;
+}
+:where(.page) [data-delay='300'] {
+  animation-delay: 300ms;
+}
+:where(.page) [data-delay='400'] {
+  animation-delay: 400ms;
+}
+:where(.page) [data-delay='500'] {
+  animation-delay: 500ms;
+}
+:where(.page) [data-delay='550'] {
+  animation-delay: 550ms;
+}
+:where(.page) [data-delay='600'] {
+  animation-delay: 600ms;
+}
+:where(.page) [data-delay='700'] {
+  animation-delay: 700ms;
+}
+:where(.page) [data-delay='800'] {
+  animation-delay: 800ms;
+}
 
 /* Success and Error Messages */
 .alert {

@@ -105,7 +105,10 @@ function FlashMatchContent() {
 
   if (!packageId) {
     return (
-      <div className={cx(styles, 'game-container')} style={{ textAlign: 'center', padding: '4rem' }}>
+      <div
+        className={cx(styles, 'game-container')}
+        style={{ textAlign: 'center', padding: '4rem' }}
+      >
         <p>Aucun package sélectionné.</p>
       </div>
     );
@@ -119,7 +122,13 @@ function FlashMatchContent() {
       </div>
 
       {screen === 'pre' && (
-        <GameDataStatus isLoading={shell.isLoading} error={shell.error} data={gameData} packageId={packageId} styles={styles} />
+        <GameDataStatus
+          isLoading={shell.isLoading}
+          error={shell.error}
+          data={gameData}
+          packageId={packageId}
+          styles={styles}
+        />
       )}
 
       {gameData && (screen !== 'pre' || shell.ready) && (

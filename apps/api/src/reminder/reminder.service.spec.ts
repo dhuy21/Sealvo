@@ -114,7 +114,11 @@ describe('ReminderService', () => {
     cache.setNX.mockResolvedValue(false);
 
     await expect(service.sendReminders()).resolves.toEqual({ sent: 0, failed: 0, skipped: true });
-    expect(cache.setNX).toHaveBeenCalledWith(expect.stringMatching(/^reminder:run:\d{4}-\d{2}-\d{2}T\d{2}$/), 1, 7200);
+    expect(cache.setNX).toHaveBeenCalledWith(
+      expect.stringMatching(/^reminder:run:\d{4}-\d{2}-\d{2}T\d{2}$/),
+      1,
+      7200,
+    );
     expect(prisma.learning.findMany).not.toHaveBeenCalled();
   });
 

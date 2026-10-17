@@ -75,28 +75,18 @@ export function ProfileCard({
             ></i>
             Membre depuis:
           </div>
-          <div className={cx(styles, 'info-value')}>
-            {formatDate(user?.created_at ?? null)}
-          </div>
+          <div className={cx(styles, 'info-value')}>{formatDate(user?.created_at ?? null)}</div>
         </div>
         <div className={cx(styles, 'info-row')}>
           <div className={cx(styles, 'info-label')}>
-            <i
-              className="fas fa-clock"
-              style={{ color: '#ba7d13', width: 30, marginRight: 8 }}
-            ></i>
+            <i className="fas fa-clock" style={{ color: '#ba7d13', width: 30, marginRight: 8 }}></i>
             Dernière connexion:
           </div>
-          <div className={cx(styles, 'info-value')}>
-            {formatDate(user?.last_login ?? null)}
-          </div>
+          <div className={cx(styles, 'info-value')}>{formatDate(user?.last_login ?? null)}</div>
         </div>
         <div className={cx(styles, 'info-row')}>
           <div className={cx(styles, 'info-label')}>
-            <i
-              className="fas fa-bell"
-              style={{ color: '#ee1616', width: 20, marginRight: 20 }}
-            ></i>
+            <i className="fas fa-bell" style={{ color: '#ee1616', width: 20, marginRight: 20 }}></i>
             <div className={cx(styles, 'info-value')}>
               <SparkleBtn id="reminderBtn" onClick={onTestReminder}>
                 <i className="fas fa-mail-bulk"></i> Test Reminder

@@ -152,17 +152,13 @@ function waitForMySQL(host, port) {
       sock.once('error', () => {
         sock.destroy();
         if (Date.now() >= deadline)
-          return reject(
-            new Error(`MySQL not reachable after ${WAIT_MAX_MS / 1000}s`),
-          );
+          return reject(new Error(`MySQL not reachable after ${WAIT_MAX_MS / 1000}s`));
         setTimeout(tryConnect, WAIT_INTERVAL_MS);
       });
       sock.once('timeout', () => {
         sock.destroy();
         if (Date.now() >= deadline)
-          return reject(
-            new Error(`MySQL not reachable after ${WAIT_MAX_MS / 1000}s`),
-          );
+          return reject(new Error(`MySQL not reachable after ${WAIT_MAX_MS / 1000}s`));
         setTimeout(tryConnect, WAIT_INTERVAL_MS);
       });
 
@@ -221,16 +217,7 @@ function backup(conn, useDocker, outPath) {
     console.log(`[backup] Using direct connection (${conn.host}:${conn.port})`);
     result = spawnSync(
       'mysqldump',
-      [
-        '-h',
-        conn.host,
-        '-P',
-        conn.port,
-        '-u',
-        conn.user,
-        ...flags,
-        conn.database,
-      ],
+      ['-h', conn.host, '-P', conn.port, '-u', conn.user, ...flags, conn.database],
       { ...spawnOpts, env: { ...process.env, MYSQL_PWD: conn.password } },
     );
   }
@@ -247,16 +234,14 @@ function backup(conn, useDocker, outPath) {
 /* ── verify ───────────────────────────────────────────────── */
 
 function verify(filePath) {
-  const tables = [
-    ...fs.readFileSync(filePath, 'utf8').matchAll(/CREATE TABLE.*?`(\w+)`/gi),
-  ].map((m) => m[1]);
+  const tables = [...fs.readFileSync(filePath, 'utf8').matchAll(/CREATE TABLE.*?`(\w+)`/gi)].map(
+    (m) => m[1],
+  );
   if (!tables.length) {
     console.error('[backup] FAILED: no CREATE TABLE in dump.');
     process.exit(1);
   }
-  console.log(
-    `[backup] Verified: ${tables.length} table(s) (${tables.join(', ')})`,
-  );
+  console.log(`[backup] Verified: ${tables.length} table(s) (${tables.join(', ')})`);
 }
 
 /* ── local retention ──────────────────────────────────────── */
@@ -291,26 +276,19 @@ async function uploadToBucket(client, cfg, localPath, key) {
       ContentType: 'application/sql',
     }),
   );
-  console.log(
-    `[backup] Uploaded to bucket: ${key} (${(body.length / 1024).toFixed(1)} KB)`,
-  );
+  console.log(`[backup] Uploaded to bucket: ${key} (${(body.length / 1024).toFixed(1)} KB)`);
 }
 
 async function applyRetentionInBucket(client, cfg, db) {
-  const { ListObjectsV2Command, DeleteObjectCommand } =
-    await import('@aws-sdk/client-s3');
+  const { ListObjectsV2Command, DeleteObjectCommand } = await import('@aws-sdk/client-s3');
   const prefix = `${BUCKET_PREFIX}/${db}_`;
-  const list = await client.send(
-    new ListObjectsV2Command({ Bucket: cfg.bucket, Prefix: prefix }),
-  );
+  const list = await client.send(new ListObjectsV2Command({ Bucket: cfg.bucket, Prefix: prefix }));
   const objects = (list.Contents || [])
     .filter((o) => o.Key && /\.sql$/.test(o.Key))
     .sort((a, b) => (b.LastModified || 0) - (a.LastModified || 0));
 
   for (let i = RETENTION; i < objects.length; i++) {
-    await client.send(
-      new DeleteObjectCommand({ Bucket: cfg.bucket, Key: objects[i].Key }),
-    );
+    await client.send(new DeleteObjectCommand({ Bucket: cfg.bucket, Key: objects[i].Key }));
     console.log('[backup] Removed from bucket:', objects[i].Key);
   }
   console.log(
@@ -324,8 +302,7 @@ async function main() {
   const conn = getConnection();
   const outPath = path.join(BACKUPS_DIR, `${conn.database}_${timestamp()}.sql`);
 
-  if (!fs.existsSync(BACKUPS_DIR))
-    fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+  if (!fs.existsSync(BACKUPS_DIR)) fs.mkdirSync(BACKUPS_DIR, { recursive: true });
 
   console.log('[backup] Starting...');
 
@@ -333,9 +310,7 @@ async function main() {
   if (!useDocker) {
     console.log(`[backup] Waiting for MySQL (${conn.host}:${conn.port})...`);
     const attempts = await waitForMySQL(conn.host, conn.port);
-    console.log(
-      `[backup] MySQL ready (${attempts} attempt${attempts > 1 ? 's' : ''})`,
-    );
+    console.log(`[backup] MySQL ready (${attempts} attempt${attempts > 1 ? 's' : ''})`);
   }
 
   backup(conn, useDocker, outPath);
@@ -348,9 +323,7 @@ async function main() {
 
   const bucketCfg = getBucketConfig();
   if (bucketCfg) {
-    console.log(
-      `[backup] Bucket detected (${bucketCfg.endpoint}), uploading...`,
-    );
+    console.log(`[backup] Bucket detected (${bucketCfg.endpoint}), uploading...`);
     const client = await makeS3Client(bucketCfg);
     const key = `${BUCKET_PREFIX}/${path.basename(outPath)}`;
     await uploadToBucket(client, bucketCfg, outPath, key);

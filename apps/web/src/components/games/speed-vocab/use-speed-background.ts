@@ -44,13 +44,19 @@ export function useSpeedBackground(active: boolean, timer: number) {
     const intensity = intensityRef.current;
     const mobile = isMobile();
 
-    const particleInterval = setInterval(() => {
-      if (particlesRef.current) createParticle(particlesRef.current, intensity);
-    }, Math.max(200, (mobile ? 1200 : 800) / intensity));
+    const particleInterval = setInterval(
+      () => {
+        if (particlesRef.current) createParticle(particlesRef.current, intensity);
+      },
+      Math.max(200, (mobile ? 1200 : 800) / intensity),
+    );
 
-    const speedLineInterval = setInterval(() => {
-      if (active && speedLinesRef.current) createSpeedLine(speedLinesRef.current, intensity);
-    }, Math.max(100, (mobile ? 500 : 300) / intensity));
+    const speedLineInterval = setInterval(
+      () => {
+        if (active && speedLinesRef.current) createSpeedLine(speedLinesRef.current, intensity);
+      },
+      Math.max(100, (mobile ? 500 : 300) / intensity),
+    );
 
     return () => {
       clearInterval(particleInterval);

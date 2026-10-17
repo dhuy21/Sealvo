@@ -13,7 +13,8 @@ const SEND_TIMEOUT_MS = 10_000;
 const SEND_RETRY_DELAY_MS = 1_000;
 
 // The timeout does not cancel the underlying send, which may still be delivered: never resend after it
-const isRetryableSendError = (err: unknown) => !(err instanceof TimeoutError) && isTransientError(err);
+const isRetryableSendError = (err: unknown) =>
+  !(err instanceof TimeoutError) && isTransientError(err);
 
 // Same depth from src/email (tests) and dist/email (runtime), independent of the process cwd
 const TEMPLATES_DIR = fileURLToPath(new URL('../../templates/mails/', import.meta.url));
@@ -53,9 +54,7 @@ export class EmailService {
   ): Promise<boolean> {
     try {
       const { to, intercepted, original } = this.resolveRecipient(userEmail);
-      const resolvedSubject = intercepted
-        ? `[STAGING → ${original}] ${subject}`
-        : subject;
+      const resolvedSubject = intercepted ? `[STAGING → ${original}] ${subject}` : subject;
 
       const result = await withRetry(
         () =>
@@ -85,9 +84,7 @@ export class EmailService {
         this.logger.warn(`Email possibly sent, not retrying: ${error.message}`);
         return true;
       }
-      this.logger.error(
-        `Failed to send email: ${error instanceof Error ? error.message : error}`,
-      );
+      this.logger.error(`Failed to send email: ${error instanceof Error ? error.message : error}`);
       return false;
     }
   }

@@ -10,18 +10,17 @@ import { GameDataStatus } from '@/components/games/GameDataStatus';
 import { GameStats } from '@/components/games/GameStats';
 import { GameFooter } from '@/components/games/GameFooter';
 import { useTransientFlag } from '@/components/games/use-transient-flag';
-import { calculatePronunciationAccuracy, playWordAudio } from '@/components/games/test-pronun/pronunciation';
+import {
+  calculatePronunciationAccuracy,
+  playWordAudio,
+} from '@/components/games/test-pronun/pronunciation';
 import { useFeedback } from '@/components/games/test-pronun/use-feedback';
 import { useSpeechRecognition } from '@/components/games/test-pronun/use-speech-recognition';
 import { SoundBackground } from '@/components/games/test-pronun/SoundBackground';
 import { TestPronunRules } from '@/components/games/test-pronun/TestPronunRules';
 import { PronunciationBoard } from '@/components/games/test-pronun/PronunciationBoard';
 import { TestPronunSummary } from '@/components/games/test-pronun/TestPronunSummary';
-import {
-  WORDS_PER_GAME,
-  averageAccuracy,
-  isPassed,
-} from '@/components/games/test-pronun/scoring';
+import { WORDS_PER_GAME, averageAccuracy, isPassed } from '@/components/games/test-pronun/scoring';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/games/test-pronun.module.css';
 
@@ -193,7 +192,13 @@ function TestPronunInner() {
       </div>
 
       {screen === 'pre' && (
-        <GameDataStatus isLoading={shell.isLoading} error={shell.error} data={gameData} packageId={packageId} styles={styles} />
+        <GameDataStatus
+          isLoading={shell.isLoading}
+          error={shell.error}
+          data={gameData}
+          packageId={packageId}
+          styles={styles}
+        />
       )}
 
       {gameData && (screen !== 'pre' || shell.ready) && (

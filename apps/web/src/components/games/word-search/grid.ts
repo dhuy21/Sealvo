@@ -1,7 +1,13 @@
 export const GRID_SIZE = 15;
 export const DIRECTIONS: [number, number][] = [
-  [0, 1], [1, 0], [1, 1], [1, -1],
-  [0, -1], [-1, 0], [-1, 1], [-1, -1],
+  [0, 1],
+  [1, 0],
+  [1, 1],
+  [1, -1],
+  [0, -1],
+  [-1, 0],
+  [-1, 1],
+  [-1, -1],
 ];
 
 export interface CellRef {
@@ -31,7 +37,9 @@ export function findWordInGrid(grid: string[][], word: string): CellRef[] | null
 }
 
 export function generateGrid(wordList: string[]): string[][] {
-  const grid: string[][] = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(''));
+  const grid: string[][] = Array(GRID_SIZE)
+    .fill(null)
+    .map(() => Array(GRID_SIZE).fill(''));
 
   function canPlace(word: string, row: number, col: number, dx: number, dy: number): boolean {
     const len = word.length;

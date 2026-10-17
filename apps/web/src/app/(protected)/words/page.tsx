@@ -29,11 +29,17 @@ function WordsContent() {
   const [search, setSearch] = useState('');
   const levelEntries = useWordsByLevel(words, search);
   const wordActions = useWordActions(packageId);
-  const deleteAll = useDeleteAllFlow(packageId, levelEntries.map(([level]) => level));
+  const deleteAll = useDeleteAllFlow(
+    packageId,
+    levelEntries.map(([level]) => level),
+  );
 
   if (!packageId) {
     return (
-      <div className={cx(styles, 'vocabulary-container')} style={{ textAlign: 'center', padding: '4rem' }}>
+      <div
+        className={cx(styles, 'vocabulary-container')}
+        style={{ textAlign: 'center', padding: '4rem' }}
+      >
         <p>Aucun package sélectionné.</p>
         <button className={cx(styles, 'btn')} onClick={() => router.push('/packages')}>
           Retour aux packages
@@ -44,7 +50,10 @@ function WordsContent() {
 
   if (pkgQuery.isLoading || wordsQuery.isLoading) {
     return (
-      <div className={cx(styles, 'vocabulary-container')} style={{ textAlign: 'center', padding: '4rem' }}>
+      <div
+        className={cx(styles, 'vocabulary-container')}
+        style={{ textAlign: 'center', padding: '4rem' }}
+      >
         <i className="fas fa-spinner fa-spin fa-2x"></i>
       </div>
     );
@@ -52,7 +61,10 @@ function WordsContent() {
 
   if (pkgQuery.isError || wordsQuery.isError) {
     return (
-      <div className={cx(styles, 'vocabulary-container')} style={{ textAlign: 'center', padding: '4rem' }}>
+      <div
+        className={cx(styles, 'vocabulary-container')}
+        style={{ textAlign: 'center', padding: '4rem' }}
+      >
         <div className={cx(styles, 'no-words')}>
           <i className="fas fa-exclamation-circle"></i>
           <h3>Package inaccessible</h3>

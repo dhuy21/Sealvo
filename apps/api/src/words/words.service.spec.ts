@@ -181,7 +181,9 @@ describe('WordsService', () => {
       await service.addWords(1, [word()]);
 
       const [sql, ...values] = tx.$executeRaw.mock.calls[0];
-      expect(sql.join('?')).toMatch(/INSERT INTO words .* ON DUPLICATE KEY UPDATE word_id = LAST_INSERT_ID\(word_id\)/s);
+      expect(sql.join('?')).toMatch(
+        /INSERT INTO words .* ON DUPLICATE KEY UPDATE word_id = LAST_INSERT_ID\(word_id\)/s,
+      );
       expect(values).toEqual(['cat', 'Daily', 'en-US']);
       expect(tx.word_details.create.mock.calls[0][0].data).toMatchObject({ word_id: 42 });
       expect(prisma.$transaction).toHaveBeenCalledWith(
@@ -206,7 +208,11 @@ describe('WordsService', () => {
     };
 
     beforeEach(() => {
-      prisma.learning.findUnique.mockResolvedValue({ detail_id: 7, package_id: 2, word_details: detail });
+      prisma.learning.findUnique.mockResolvedValue({
+        detail_id: 7,
+        package_id: 2,
+        word_details: detail,
+      });
     });
 
     it('should clone a word_details row shared with another package before editing it', async () => {
@@ -305,7 +311,9 @@ describe('WordsService', () => {
     it('removes the learning row, then its word_details only if no package references it', async () => {
       prisma.learning.findUnique.mockResolvedValue({ detail_id: 7, package_id: 2 });
 
-      await expect(service.deleteWord(2, 7)).resolves.toEqual({ message: 'Mot supprimé avec succès' });
+      await expect(service.deleteWord(2, 7)).resolves.toEqual({
+        message: 'Mot supprimé avec succès',
+      });
 
       expect(tx.learning.delete).toHaveBeenCalledWith({
         where: { detail_id_package_id: { detail_id: 7, package_id: 2 } },

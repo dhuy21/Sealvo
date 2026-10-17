@@ -24,7 +24,10 @@ const Required = () =>
   );
 const Optional = () => applyDecorators(IsOptional(), IsString());
 const Url = () =>
-  IsUrl({ require_tld: false, require_protocol: true }, { message: '$property must be a URL with its protocol' });
+  IsUrl(
+    { require_tld: false, require_protocol: true },
+    { message: '$property must be a URL with its protocol' },
+  );
 
 class RedisEnv {
   @Optional() REDIS_URL?: string;
@@ -124,7 +127,9 @@ const groupProblems = (schema: ClassConstructor<object>, env: Record<string, unk
     const set = group.filter((key) => env[key] !== undefined);
     return set.length === 0 || set.length === group.length
       ? []
-      : [`${group.join(', ')} must be set together (missing ${group.filter((k) => !set.includes(k)).join(', ')})`];
+      : [
+          `${group.join(', ')} must be set together (missing ${group.filter((k) => !set.includes(k)).join(', ')})`,
+        ];
   });
 
 /**
@@ -138,7 +143,9 @@ const validateWith =
     const present = Object.fromEntries(Object.entries(config).filter(([, value]) => value !== ''));
     const env = plainToInstance(schema, present) as Record<string, unknown>;
     const problems = [
-      ...validateSync(env, { stopAtFirstError: true }).flatMap((error) => Object.values(error.constraints ?? {})),
+      ...validateSync(env, { stopAtFirstError: true }).flatMap((error) =>
+        Object.values(error.constraints ?? {}),
+      ),
       ...groupProblems(schema, env),
       ...deployedProblems(schema, present),
     ];

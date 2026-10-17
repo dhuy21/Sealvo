@@ -48,7 +48,11 @@ export function SocialClock() {
     <div className={styles['social-clock']}>
       <div className={styles['social-clock__list']}>
         {SOCIALS.map((social) => (
-          <button key={social.name} type="button" className={cx(styles, 'social-clock__button', social.name)}>
+          <button
+            key={social.name}
+            type="button"
+            className={cx(styles, 'social-clock__button', social.name)}
+          >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox={social.viewBox}>
               <path d={social.path} />
             </svg>

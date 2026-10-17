@@ -4,16 +4,37 @@ import type { Level, WordType } from '../types/word.js';
 
 /** 18 supported language codes (Google TTS compatible) */
 export const VALID_LANGS = [
-  'en-US', 'en-GB', 'fr-FR', 'es-ES', 'de-DE', 'it-IT',
-  'ja-JP', 'zh-CN', 'zh-HK', 'zh-TW', 'pt-PT', 'ru-RU',
-  'vi-VN', 'ko-KR', 'id-ID', 'hi-IN', 'pl-PL', 'nl-NL',
+  'en-US',
+  'en-GB',
+  'fr-FR',
+  'es-ES',
+  'de-DE',
+  'it-IT',
+  'ja-JP',
+  'zh-CN',
+  'zh-HK',
+  'zh-TW',
+  'pt-PT',
+  'ru-RU',
+  'vi-VN',
+  'ko-KR',
+  'id-ID',
+  'hi-IN',
+  'pl-PL',
+  'nl-NL',
 ] as const;
 
 export type LanguageCode = (typeof VALID_LANGS)[number];
 
 /** 7 word types, as the API sends and accepts them */
 export const WORD_TYPES: readonly WordType[] = [
-  'noun', 'verb', 'adjective', 'adverb', 'ph_v', 'idiom', 'collocation',
+  'noun',
+  'verb',
+  'adjective',
+  'adverb',
+  'ph_v',
+  'idiom',
+  'collocation',
 ];
 
 /** Spaced repetition levels, as the API sends and accepts them */
@@ -21,7 +42,13 @@ export const LEVELS: readonly Level[] = ['x', 'level_0', 'level_1', 'level_2', '
 
 /** Word types as written in import spreadsheets (raw database values: `ph.v`, not `ph_v`) */
 export const VALID_TYPES = [
-  'noun', 'verb', 'adjective', 'adverb', 'ph.v', 'idiom', 'collocation',
+  'noun',
+  'verb',
+  'adjective',
+  'adverb',
+  'ph.v',
+  'idiom',
+  'collocation',
 ] as const;
 
 export type DbWordType = (typeof VALID_TYPES)[number];
@@ -65,9 +92,13 @@ export const LEVEL_INTERVALS: Record<Level, number> = {
 
 /** All game types, in level order */
 export const ALL_GAME_TYPES: readonly GameType[] = [
-  'flash_match', 'vocab_quiz', 'test_pronun',
-  'word_scramble', 'phrase_completion',
-  'speed_vocab', 'word_search',
+  'flash_match',
+  'vocab_quiz',
+  'test_pronun',
+  'word_scramble',
+  'phrase_completion',
+  'speed_vocab',
+  'word_search',
 ];
 
 /** Level whose words each game reviews */

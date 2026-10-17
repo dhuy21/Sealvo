@@ -1,5 +1,10 @@
 import { randomBytes } from 'crypto';
-import { Inject, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { AUTH_LIMITS } from '@sealvo/shared';
 import { normalizeEmail } from '../common/decorators/normalize-email.decorator.js';
@@ -71,7 +76,8 @@ export class GoogleAuthService {
     const matches = await this.prisma.users.findMany({
       where: { email: { in: [email, profile.email] } },
     });
-    let user = matches.find((match) => match.email.toLowerCase() === email.toLowerCase()) ?? matches[0];
+    let user =
+      matches.find((match) => match.email.toLowerCase() === email.toLowerCase()) ?? matches[0];
     if (!user) {
       user = await createUser(this.prisma, {
         email,
@@ -84,7 +90,10 @@ export class GoogleAuthService {
       await this.prisma.$transaction([
         this.prisma.users.update({
           where: { id: user.id },
-          data: { is_verified: true, password: await bcrypt.hash(randomBytes(32).toString('hex'), 12) },
+          data: {
+            is_verified: true,
+            password: await bcrypt.hash(randomBytes(32).toString('hex'), 12),
+          },
         }),
         this.prisma.refresh_sessions.deleteMany({ where: { user_id: user.id } }),
         this.prisma.email_verification.updateMany({
@@ -111,9 +120,14 @@ export class GoogleAuthService {
 
     for (let attempt = 0; attempt < USERNAME_MAX_ATTEMPTS; attempt++) {
       const username = attempt === 0 ? base : `${base}_${randomBytes(3).toString('hex')}`;
-      const taken = await this.prisma.users.findUnique({ where: { username }, select: { id: true } });
+      const taken = await this.prisma.users.findUnique({
+        where: { username },
+        select: { id: true },
+      });
       if (!taken) return username;
     }
-    throw new InternalServerErrorException('Une erreur est survenue. Veuillez réessayer plus tard.');
+    throw new InternalServerErrorException(
+      'Une erreur est survenue. Veuillez réessayer plus tard.',
+    );
   }
 }

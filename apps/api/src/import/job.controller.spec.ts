@@ -124,7 +124,9 @@ describe('JobController stream', () => {
     for (const r of responses) await controller.streamJob('job-1', 'u1', r as any);
 
     await expect(stream()).rejects.toMatchObject({ status: 429 });
-    await expect(controller.streamJob('job-1', 'u2', new FakeResponse() as any)).resolves.toBeUndefined();
+    await expect(
+      controller.streamJob('job-1', 'u2', new FakeResponse() as any),
+    ).resolves.toBeUndefined();
 
     responses[0].emit('close');
     await expect(stream()).resolves.toBeUndefined();

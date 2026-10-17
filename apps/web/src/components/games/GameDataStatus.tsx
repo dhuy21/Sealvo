@@ -43,7 +43,10 @@ export function GameDataStatus({
       <div className={cx(styles, 'error-box')}>
         <i className="fas fa-exclamation-triangle"></i>
         <p>{data.errorMessage}</p>
-        <button className={cx(styles, 'btn', 'add-words-btn')} onClick={() => router.push(`/words?package=${packageId}`)}>
+        <button
+          className={cx(styles, 'btn', 'add-words-btn')}
+          onClick={() => router.push(`/words?package=${packageId}`)}
+        >
           Ajouter des mots
         </button>
       </div>

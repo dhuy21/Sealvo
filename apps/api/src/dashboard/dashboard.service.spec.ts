@@ -13,9 +13,11 @@ describe('DashboardService.updateProfile', () => {
   beforeEach(async () => {
     prisma = {
       users: {
-        findUnique: vi.fn().mockImplementation(({ where }: { where: { id?: string } }) =>
-          Promise.resolve(where.id ? { email: 'old@b.c' } : null),
-        ),
+        findUnique: vi
+          .fn()
+          .mockImplementation(({ where }: { where: { id?: string } }) =>
+            Promise.resolve(where.id ? { email: 'old@b.c' } : null),
+          ),
         update: vi.fn(),
       },
     };
@@ -91,7 +93,9 @@ describe('DashboardService.getStats', () => {
     const prisma = {
       users: { findUnique: vi.fn().mockResolvedValue({ streak: 5 }) },
       learning: { groupBy },
-      packages: { findMany: vi.fn().mockResolvedValue([{ package_id: 9, package_name: 'Animals' }]) },
+      packages: {
+        findMany: vi.fn().mockResolvedValue([{ package_id: 9, package_name: 'Animals' }]),
+      },
     };
     const cache = { get: vi.fn().mockResolvedValue(null), set: vi.fn(), del: vi.fn() };
     const service = new DashboardService(

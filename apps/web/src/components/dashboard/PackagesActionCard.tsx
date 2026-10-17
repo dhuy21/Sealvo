@@ -11,8 +11,7 @@ export function PackagesActionCard() {
       <div
         className={cx(styles, 'action-card-icon')}
         style={{
-          background:
-            'linear-gradient(135deg, rgba(200, 80, 192, 0.2), rgba(200, 80, 192, 0.1))',
+          background: 'linear-gradient(135deg, rgba(200, 80, 192, 0.2), rgba(200, 80, 192, 0.1))',
         }}
       >
         <i className="fas fa-plus-circle"></i>

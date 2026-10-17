@@ -14,7 +14,11 @@ export const testAppConfig = (overrides: Partial<AppConfig> = {}): AppConfig => 
 
 export const testAuthConfig = (overrides: Partial<AuthConfig> = {}): AuthConfig => ({
   jwtSecret: 'secret',
-  google: { clientId: 'client-id', clientSecret: 'client-secret', redirectUri: 'http://localhost:3001/auth/google/callback' },
+  google: {
+    clientId: 'client-id',
+    clientSecret: 'client-secret',
+    redirectUri: 'http://localhost:3001/auth/google/callback',
+  },
   cronSecret: 'cron-secret',
   ...overrides,
 });

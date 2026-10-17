@@ -30,7 +30,12 @@ describe('RedisThrottlerStorage', () => {
       keys: ['throttle:abc', 'throttle:abc:blocked'],
       arguments: ['60000', '100', '60000'],
     });
-    expect(record).toEqual({ totalHits: 3, timeToExpire: 60, isBlocked: false, timeToBlockExpire: 0 });
+    expect(record).toEqual({
+      totalHits: 3,
+      timeToExpire: 60,
+      isBlocked: false,
+      timeToBlockExpire: 0,
+    });
   });
 
   it('reports a blocked key', async () => {
@@ -38,7 +43,12 @@ describe('RedisThrottlerStorage', () => {
 
     const record = await storage.increment('abc', 60_000, 5, 30_000, 'default');
 
-    expect(record).toEqual({ totalHits: 6, timeToExpire: 30, isBlocked: true, timeToBlockExpire: 30 });
+    expect(record).toEqual({
+      totalHits: 6,
+      timeToExpire: 30,
+      isBlocked: true,
+      timeToBlockExpire: 30,
+    });
   });
 
   it('falls back to in-memory storage when Redis is not ready', async () => {

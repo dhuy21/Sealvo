@@ -49,7 +49,9 @@ export function PhraseBoard({
         </div>
         <div className={cx(styles, 'timer-display')}>
           <div className={cx(styles, 'timer-label')}>Temps</div>
-          <span id="timer" className={cx(styles, 'timer-value', timer <= 20 && 'warning')}>{timer}</span>
+          <span id="timer" className={cx(styles, 'timer-value', timer <= 20 && 'warning')}>
+            {timer}
+          </span>
         </div>
       </div>
 
@@ -70,7 +72,9 @@ export function PhraseBoard({
             spellCheck={false}
             value={input}
             onChange={(e) => onInputChange(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') onCheck(); }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') onCheck();
+            }}
             disabled={answered}
           />
         </div>
@@ -78,19 +82,18 @@ export function PhraseBoard({
         <div className={cx(styles, 'button-group')}>
           <button className={cx(styles, 'submit-btn')} onClick={onCheck} disabled={answered}>
             <div className={cx(styles, 'back')}></div>
-            <div className={cx(styles, 'front')}><i className="fas fa-crown"></i></div>
+            <div className={cx(styles, 'front')}>
+              <i className="fas fa-crown"></i>
+            </div>
           </button>
-          <button
-            className={cx(styles, 'pass-btn')}
-            onClick={onNext}
-            disabled={!answered}
-          >
+          <button className={cx(styles, 'pass-btn')} onClick={onNext} disabled={!answered}>
             <div className={cx(styles, 'back')}></div>
             <div className={cx(styles, 'front')}>
-              {currentIndex + 1 >= totalQuestions
-                ? <i className="fa-solid fa-medal"></i>
-                : <i className="fas fa-play"></i>
-              }
+              {currentIndex + 1 >= totalQuestions ? (
+                <i className="fa-solid fa-medal"></i>
+              ) : (
+                <i className="fas fa-play"></i>
+              )}
             </div>
           </button>
         </div>

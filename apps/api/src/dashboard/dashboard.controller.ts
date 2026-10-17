@@ -24,7 +24,8 @@ export class DashboardController {
   @Patch('profile')
   @Throttled(THROTTLE.PROFILE)
   @ApiOperation({
-    summary: 'Update user profile (username, avatar); an email change is confirmed via the new address',
+    summary:
+      'Update user profile (username, avatar); an email change is confirmed via the new address',
   })
   @ApiResponse({
     status: 200,

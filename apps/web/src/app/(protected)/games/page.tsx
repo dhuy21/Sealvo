@@ -5,7 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { ALL_GAME_TYPES, GAME_LEVEL, levelLabel, type GameType } from '@sealvo/shared';
 
-const GAME_CARDS: Record<GameType, { name: string; description: string; icon: string; color: string }> = {
+const GAME_CARDS: Record<
+  GameType,
+  { name: string; description: string; icon: string; color: string }
+> = {
   flash_match: {
     name: 'Memory Match',
     description: 'Associez les mots à leur traduction en retournant les cartes.',
@@ -64,7 +67,9 @@ function GamesHub() {
   return (
     <div style={{ minHeight: '100vh', padding: '2rem' }}>
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem', textAlign: 'center' }}>
+        <h1
+          style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem', textAlign: 'center' }}
+        >
           🎮 Mini-Jeux
         </h1>
         <p style={{ textAlign: 'center', color: '#888', marginBottom: '2rem' }}>

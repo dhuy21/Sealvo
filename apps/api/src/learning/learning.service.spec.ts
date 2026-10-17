@@ -22,7 +22,9 @@ describe('LearningService', () => {
         return true;
       }),
       hGetAll: vi.fn(async (k: string) => Object.fromEntries(store.get(k) ?? [])),
-      hDel: vi.fn(async (k: string, fields: string[]) => fields.filter((f) => store.get(k)?.delete(f)).length),
+      hDel: vi.fn(
+        async (k: string, fields: string[]) => fields.filter((f) => store.get(k)?.delete(f)).length,
+      ),
     };
     prisma = {
       learning: {
@@ -34,7 +36,10 @@ describe('LearningService', () => {
       },
       users: { findUnique: vi.fn(), updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     };
-    service = new LearningService(prisma as unknown as PrismaService, cache as unknown as CacheService);
+    service = new LearningService(
+      prisma as unknown as PrismaService,
+      cache as unknown as CacheService,
+    );
   });
 
   describe('trackGameCompletion', () => {
@@ -78,7 +83,9 @@ describe('LearningService', () => {
         where: { package_id: 7, detail_id: { in: [1] }, level: 'x' },
         data: { level: 'level_0', date_memorized: expect.any(Date) },
       });
-      await expect(service.getLevelProgress('u1')).resolves.toEqual({ level_0: { word_scramble: true } });
+      await expect(service.getLevelProgress('u1')).resolves.toEqual({
+        level_0: { word_scramble: true },
+      });
     });
 
     it('promotes only once when two last games complete concurrently', async () => {
@@ -107,7 +114,9 @@ describe('LearningService', () => {
       });
       expect(cache.hDel).not.toHaveBeenCalled();
       expect(prisma.learning.updateMany).not.toHaveBeenCalled();
-      await expect(service.getLevelProgress('u1')).resolves.toEqual({ x: { flash_match: true, vocab_quiz: true } });
+      await expect(service.getLevelProgress('u1')).resolves.toEqual({
+        x: { flash_match: true, vocab_quiz: true },
+      });
     });
 
     it('still promotes a single-game level when Redis is unavailable', async () => {
@@ -115,7 +124,9 @@ describe('LearningService', () => {
       cache.hGetAll.mockResolvedValue(null);
       cache.hDel.mockResolvedValue(null);
 
-      await expect(service.trackGameCompletion('u1', 'speed_vocab', true, 7)).resolves.toMatchObject({
+      await expect(
+        service.trackGameCompletion('u1', 'speed_vocab', true, 7),
+      ).resolves.toMatchObject({
         level_completed: true,
         words_updated: 1,
         from_level: 'level_1',
@@ -143,13 +154,18 @@ describe('LearningService', () => {
     await expect(service.resetLevelProgress('u1', 'x')).resolves.toEqual({
       message: 'Progression du niveau x réinitialisée',
     });
-    await expect(service.getLevelProgress('u1')).resolves.toEqual({ level_0: { word_scramble: true } });
+    await expect(service.getLevelProgress('u1')).resolves.toEqual({
+      level_0: { word_scramble: true },
+    });
   });
 
   describe('checkAndUpdateStreak', () => {
     const now = new Date(2026, 9, 17, 10, 0);
     const conditionalUpdate = (streak: number) => ({
-      where: { id: 'u1', OR: [{ streak_updated_at: null }, { streak_updated_at: { lt: new Date(2026, 9, 17) } }] },
+      where: {
+        id: 'u1',
+        OR: [{ streak_updated_at: null }, { streak_updated_at: { lt: new Date(2026, 9, 17) } }],
+      },
       data: { streak, streak_updated_at: now },
     });
 
@@ -164,18 +180,27 @@ describe('LearningService', () => {
 
     it('returns 0 for an unknown user', async () => {
       prisma.users.findUnique.mockResolvedValue(null);
-      await expect(service.checkAndUpdateStreak('u1')).resolves.toEqual({ updated: false, streak: 0 });
+      await expect(service.checkAndUpdateStreak('u1')).resolves.toEqual({
+        updated: false,
+        streak: 0,
+      });
     });
 
     it('starts the streak at 1 on the first activity', async () => {
       prisma.users.findUnique.mockResolvedValue({ streak: 0, streak_updated_at: null });
 
-      await expect(service.checkAndUpdateStreak('u1')).resolves.toEqual({ updated: true, streak: 1 });
+      await expect(service.checkAndUpdateStreak('u1')).resolves.toEqual({
+        updated: true,
+        streak: 1,
+      });
       expect(prisma.users.updateMany).toHaveBeenCalledWith(conditionalUpdate(1));
     });
 
     it('does nothing when already updated today', async () => {
-      prisma.users.findUnique.mockResolvedValue({ streak: 4, streak_updated_at: new Date(2026, 9, 17, 0, 5) });
+      prisma.users.findUnique.mockResolvedValue({
+        streak: 4,
+        streak_updated_at: new Date(2026, 9, 17, 0, 5),
+      });
 
       await expect(service.checkAndUpdateStreak('u1')).resolves.toEqual({
         updated: false,
@@ -186,16 +211,28 @@ describe('LearningService', () => {
     });
 
     it('increments on a consecutive day', async () => {
-      prisma.users.findUnique.mockResolvedValue({ streak: 4, streak_updated_at: new Date(2026, 9, 16, 23, 59) });
+      prisma.users.findUnique.mockResolvedValue({
+        streak: 4,
+        streak_updated_at: new Date(2026, 9, 16, 23, 59),
+      });
 
-      await expect(service.checkAndUpdateStreak('u1')).resolves.toEqual({ updated: true, streak: 5 });
+      await expect(service.checkAndUpdateStreak('u1')).resolves.toEqual({
+        updated: true,
+        streak: 5,
+      });
       expect(prisma.users.updateMany).toHaveBeenCalledWith(conditionalUpdate(5));
     });
 
     it('resets to 1 after a gap', async () => {
-      prisma.users.findUnique.mockResolvedValue({ streak: 4, streak_updated_at: new Date(2026, 9, 15, 12, 0) });
+      prisma.users.findUnique.mockResolvedValue({
+        streak: 4,
+        streak_updated_at: new Date(2026, 9, 15, 12, 0),
+      });
 
-      await expect(service.checkAndUpdateStreak('u1')).resolves.toEqual({ updated: true, streak: 1 });
+      await expect(service.checkAndUpdateStreak('u1')).resolves.toEqual({
+        updated: true,
+        streak: 1,
+      });
       expect(prisma.users.updateMany).toHaveBeenCalledWith(conditionalUpdate(1));
     });
 

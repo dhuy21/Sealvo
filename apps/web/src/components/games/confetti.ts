@@ -21,8 +21,16 @@ export function launchFireworks(): CancelConfetti {
     if (timeLeft <= 0) return clearInterval(interval);
 
     const particleCount = 50 * (timeLeft / duration);
-    confetti({ ...defaults, particleCount, origin: { x: Math.random() * 0.2 + 0.1, y: Math.random() - 0.2 } });
-    confetti({ ...defaults, particleCount, origin: { x: Math.random() * 0.2 + 0.7, y: Math.random() - 0.2 } });
+    confetti({
+      ...defaults,
+      particleCount,
+      origin: { x: Math.random() * 0.2 + 0.1, y: Math.random() - 0.2 },
+    });
+    confetti({
+      ...defaults,
+      particleCount,
+      origin: { x: Math.random() * 0.2 + 0.7, y: Math.random() - 0.2 },
+    });
   }, 250);
   return canceller(() => clearInterval(interval));
 }
@@ -76,7 +84,11 @@ export function launchStars(): CancelConfetti {
   const duration = 15 * 1000;
   const animationEnd = Date.now() + duration;
   const defaults = {
-    spread: 360, ticks: 50, gravity: 0, decay: 0.94, startVelocity: 30,
+    spread: 360,
+    ticks: 50,
+    gravity: 0,
+    decay: 0.94,
+    startVelocity: 30,
     shapes: ['star' as const],
     colors: ['FFE400', 'FFBD00', 'E89400', 'FFCA6C', 'FDFFB8'],
   };
@@ -94,7 +106,11 @@ export function launchEmbers(): CancelConfetti {
   const duration = 15 * 1000;
   const animationEnd = Date.now() + duration;
   const defaults = {
-    spread: 360, ticks: 100, gravity: 0, decay: 0.94, startVelocity: 30,
+    spread: 360,
+    ticks: 100,
+    gravity: 0,
+    decay: 0.94,
+    startVelocity: 30,
     shapes: ['circle' as const],
     colors: ['FF0000', 'FF7F00', 'FFFF00', 'FFA500', 'FF4500'],
   };

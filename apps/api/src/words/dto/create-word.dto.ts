@@ -2,7 +2,10 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { LEVELS, VALID_LANGS, WORD_TYPES, type Level, type WordType } from '@sealvo/shared';
 import { IsOptionalDefined } from '../../common/decorators/is-optional-defined.decorator.js';
-import { TEXT_MAX_LENGTH, VARCHAR_MAX_LENGTH } from '../../common/constants/field-lengths.constants.js';
+import {
+  TEXT_MAX_LENGTH,
+  VARCHAR_MAX_LENGTH,
+} from '../../common/constants/field-lengths.constants.js';
 
 export const LANGUAGE_CODE_MESSAGE = `Langue invalide. Acceptées : ${VALID_LANGS.join(', ')}`;
 

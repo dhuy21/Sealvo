@@ -1,5 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsByteLength, IsEmail, IsInt, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import {
+  IsByteLength,
+  IsEmail,
+  IsInt,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 import { AUTH_LIMITS, AVATAR_COUNT } from '@sealvo/shared';
 import { IsOptionalDefined } from '../../common/decorators/is-optional-defined.decorator.js';
 import { NormalizeEmail } from '../../common/decorators/normalize-email.decorator.js';

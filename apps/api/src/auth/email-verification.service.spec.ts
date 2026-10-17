@@ -157,7 +157,9 @@ describe('EmailVerificationService', () => {
     it('should refuse a 4th email change within an hour, whatever the IP', async () => {
       prisma.email_verification.count.mockResolvedValue(3);
 
-      await expect(service.requestEmailChange('abc1234', 'new@b.c', 'secret')).rejects.toMatchObject({
+      await expect(
+        service.requestEmailChange('abc1234', 'new@b.c', 'secret'),
+      ).rejects.toMatchObject({
         status: 429,
         message: "Trop de demandes de changement d'email. Réessayez dans 1 heure.",
       });

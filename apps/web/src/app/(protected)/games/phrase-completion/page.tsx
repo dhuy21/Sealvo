@@ -96,7 +96,10 @@ function PhraseCompletionInner() {
   function checkAnswer() {
     if (!currentPhrase || answered) return;
 
-    const userInputs = input.trim().split(';').map((s) => s.trim().toLowerCase());
+    const userInputs = input
+      .trim()
+      .split(';')
+      .map((s) => s.trim().toLowerCase());
     const correctWordsLower = currentPhrase.correctWords.map((w) => w.toLowerCase());
 
     if (!input.trim()) {
@@ -132,7 +135,9 @@ function PhraseCompletionInner() {
     } else {
       setStreak(0);
 
-      setFeedbackMessage(`Incorrect. La bonne réponse était "${currentPhrase.correctWords.join(' ')}"`);
+      setFeedbackMessage(
+        `Incorrect. La bonne réponse était "${currentPhrase.correctWords.join(' ')}"`,
+      );
       setFeedbackType('incorrect');
       setDisplayPhrase(revealAnswers(currentPhrase, cx(styles, 'blank', 'incorrect')));
     }
@@ -180,7 +185,13 @@ function PhraseCompletionInner() {
       </div>
 
       {screen === 'pre' && (
-        <GameDataStatus isLoading={shell.isLoading} error={shell.error} data={gameData} packageId={packageId} styles={styles} />
+        <GameDataStatus
+          isLoading={shell.isLoading}
+          error={shell.error}
+          data={gameData}
+          packageId={packageId}
+          styles={styles}
+        />
       )}
 
       {gameData && (screen !== 'pre' || shell.ready) && (

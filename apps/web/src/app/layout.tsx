@@ -44,9 +44,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
         <AppProviders nonce={nonce}>
           <div className="app flex-1">
             <Header />
-            <main className="content flex-1">
-              {children}
-            </main>
+            <main className="content flex-1">{children}</main>
             <Footer />
           </div>
         </AppProviders>

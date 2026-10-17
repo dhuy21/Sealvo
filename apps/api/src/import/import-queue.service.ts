@@ -133,7 +133,9 @@ export class ImportQueueService implements OnModuleInit {
             : Promise.resolve(),
       });
       if (result.alreadyApplied) {
-        this.logger.warn(`Job ${jobId} was already applied by an earlier delivery — not saving again.`);
+        this.logger.warn(
+          `Job ${jobId} was already applied by an earlier delivery — not saving again.`,
+        );
       }
 
       await report({
@@ -154,7 +156,12 @@ export class ImportQueueService implements OnModuleInit {
   }
 
   /** Retries once through the retry queue, then parks the job in the failed queue */
-  private async fail(msg: ConsumeMessage, ch: ConfirmChannel, jobId: string, err: unknown): Promise<void> {
+  private async fail(
+    msg: ConsumeMessage,
+    ch: ConfirmChannel,
+    jobId: string,
+    err: unknown,
+  ): Promise<void> {
     if (this.getRetryCount(msg) >= MAX_RETRIES) {
       await this.jobTracker.update(jobId, { status: 'failed', error: errorMessage(err) });
       ch.sendToQueue(FAILED_QUEUE, msg.content, { persistent: true });

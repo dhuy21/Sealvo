@@ -47,9 +47,7 @@ export function Footer() {
           </div>
         </div>
         <div className="copyright">
-          <p>
-            &copy; {year} SealVo. All rights reserved.
-          </p>
+          <p>&copy; {year} SealVo. All rights reserved.</p>
         </div>
       </div>
     </footer>

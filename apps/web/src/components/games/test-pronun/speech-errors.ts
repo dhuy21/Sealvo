@@ -14,9 +14,15 @@ export function browserOptimizations(userAgent: string): {
 export function errorInfo(error: string, canRetry: boolean): { message: string; retry: boolean } {
   switch (error) {
     case 'no-speech':
-      return { message: 'Aucune parole détectée. Parlez plus fort et plus clairement.', retry: canRetry };
+      return {
+        message: 'Aucune parole détectée. Parlez plus fort et plus clairement.',
+        retry: canRetry,
+      };
     case 'audio-capture':
-      return { message: "Impossible d'accéder au microphone. Vérifiez les permissions.", retry: false };
+      return {
+        message: "Impossible d'accéder au microphone. Vérifiez les permissions.",
+        retry: false,
+      };
     case 'not-allowed':
       return {
         message: 'Permission microphone refusée. Activez le microphone dans les paramètres.',

@@ -45,15 +45,18 @@ describe('PackageOwnershipGuard', () => {
   });
 
   it('rejects a package owned by someone else', async () => {
-    await expect(guard.canActivate(contextFor({ body: { packageId: OTHER_PACKAGE } }))).rejects.toThrow(
-      ForbiddenException,
-    );
+    await expect(
+      guard.canActivate(contextFor({ body: { packageId: OTHER_PACKAGE } })),
+    ).rejects.toThrow(ForbiddenException);
   });
 
   it('rejects an admin acting on a package owned by someone else', async () => {
     await expect(
       guard.canActivate(
-        contextFor({ user: { id: 'me', role: 'Admin' }, params: { packageId: String(OTHER_PACKAGE) } }),
+        contextFor({
+          user: { id: 'me', role: 'Admin' },
+          params: { packageId: String(OTHER_PACKAGE) },
+        }),
       ),
     ).rejects.toThrow(ForbiddenException);
   });
@@ -61,7 +64,10 @@ describe('PackageOwnershipGuard', () => {
   it('rejects an own id in the query combined with a foreign id in the body', async () => {
     await expect(
       guard.canActivate(
-        contextFor({ query: { packageId: String(OWN_PACKAGE) }, body: { packageId: OTHER_PACKAGE } }),
+        contextFor({
+          query: { packageId: String(OWN_PACKAGE) },
+          body: { packageId: OTHER_PACKAGE },
+        }),
       ),
     ).rejects.toThrow(ForbiddenException);
   });
@@ -75,11 +81,14 @@ describe('PackageOwnershipGuard', () => {
     );
   });
 
-  it.each(['abc', '1.5', '0', '-1', ''])('rejects the malformed id %j with a 400', async (packageId) => {
-    await expect(guard.canActivate(contextFor({ params: { packageId } }))).rejects.toThrow(
-      BadRequestException,
-    );
-  });
+  it.each(['abc', '1.5', '0', '-1', ''])(
+    'rejects the malformed id %j with a 400',
+    async (packageId) => {
+      await expect(guard.canActivate(contextFor({ params: { packageId } }))).rejects.toThrow(
+        BadRequestException,
+      );
+    },
+  );
 
   it('rejects a non-positive or fractional body id with a 400', async () => {
     await expect(guard.canActivate(contextFor({ body: { packageId: 1.5 } }))).rejects.toThrow(

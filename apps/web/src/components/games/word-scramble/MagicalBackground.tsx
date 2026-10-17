@@ -6,17 +6,28 @@ const rand = (min: number, range: number) => min + Math.random() * range;
 /** [left, top] in %: corners and edges first, then the centre, then anywhere. */
 function orbPosition(index: number): [number, number] {
   switch (index) {
-    case 0: return [rand(0, 25), rand(0, 25)];
-    case 1: return [rand(75, 25), rand(0, 25)];
-    case 2: return [rand(0, 25), rand(75, 25)];
-    case 3: return [rand(75, 25), rand(75, 25)];
-    case 4: return [rand(35, 30), rand(0, 20)];
-    case 5: return [rand(35, 30), rand(80, 20)];
-    case 8: return [rand(40, 20), rand(40, 20)];
-    case 9: return [rand(20, 25), rand(25, 50)];
-    case 10: return [rand(55, 25), rand(25, 50)];
-    case 11: return [rand(25, 50), rand(20, 25)];
-    default: return [rand(0, 100), rand(0, 100)];
+    case 0:
+      return [rand(0, 25), rand(0, 25)];
+    case 1:
+      return [rand(75, 25), rand(0, 25)];
+    case 2:
+      return [rand(0, 25), rand(75, 25)];
+    case 3:
+      return [rand(75, 25), rand(75, 25)];
+    case 4:
+      return [rand(35, 30), rand(0, 20)];
+    case 5:
+      return [rand(35, 30), rand(80, 20)];
+    case 8:
+      return [rand(40, 20), rand(40, 20)];
+    case 9:
+      return [rand(20, 25), rand(25, 50)];
+    case 10:
+      return [rand(55, 25), rand(25, 50)];
+    case 11:
+      return [rand(25, 50), rand(20, 25)];
+    default:
+      return [rand(0, 100), rand(0, 100)];
   }
 }
 

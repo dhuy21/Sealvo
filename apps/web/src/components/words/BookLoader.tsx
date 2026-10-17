@@ -6,8 +6,21 @@ export function BookLoader() {
   return (
     <div className={cx(styles, 'loader')}>
       <div className={cx(styles, 'book-wrapper')}>
-        <svg xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 126 75" className={cx(styles, 'book')}>
-          <rect strokeWidth="5" stroke="#e05452" rx="7.5" height="70" width="121" y="2.5" x="2.5"></rect>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="white"
+          viewBox="0 0 126 75"
+          className={cx(styles, 'book')}
+        >
+          <rect
+            strokeWidth="5"
+            stroke="#e05452"
+            rx="7.5"
+            height="70"
+            width="121"
+            y="2.5"
+            x="2.5"
+          ></rect>
           <line strokeWidth="5" stroke="#e05452" y2="75" x2="63.5" x1="63.5"></line>
           <path strokeLinecap="round" strokeWidth="4" stroke="#c18949" d="M25 20H50"></path>
           <path strokeLinecap="round" strokeWidth="4" stroke="#c18949" d="M101 20H76"></path>

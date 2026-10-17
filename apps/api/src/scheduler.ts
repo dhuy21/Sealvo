@@ -47,7 +47,11 @@ async function bootstrap() {
   const { apiUrl, cronSecret } = app.get<SchedulerConfig>(schedulerConfig.KEY);
   const redis = app.get(RedisService);
   // Before the catch-up, which can take minutes: lets the deploy check this commit is running
-  const stopHeartbeat = startHeartbeat(redis, 'scheduler', app.get<BuildConfig>(buildConfig.KEY).gitSha);
+  const stopHeartbeat = startHeartbeat(
+    redis,
+    'scheduler',
+    app.get<BuildConfig>(buildConfig.KEY).gitSha,
+  );
 
   // ── Helper functions ──
 

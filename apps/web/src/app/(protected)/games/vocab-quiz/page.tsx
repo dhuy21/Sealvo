@@ -106,7 +106,10 @@ function VocabQuizContent() {
 
   if (!packageId) {
     return (
-      <div className={cx(styles, 'game-container')} style={{ textAlign: 'center', padding: '4rem' }}>
+      <div
+        className={cx(styles, 'game-container')}
+        style={{ textAlign: 'center', padding: '4rem' }}
+      >
         <p>Aucun package sélectionné.</p>
       </div>
     );
@@ -119,11 +122,19 @@ function VocabQuizContent() {
       <FloatingQuizElements />
       <div className={cx(styles, 'game-header')}>
         <h1>Quiz de Vocabulaire</h1>
-        <p className={cx(styles, 'game-description')}>Choisissez la bonne définition pour chaque mot</p>
+        <p className={cx(styles, 'game-description')}>
+          Choisissez la bonne définition pour chaque mot
+        </p>
       </div>
 
       {screen === 'pre' && (
-        <GameDataStatus isLoading={shell.isLoading} error={shell.error} data={gameData} packageId={packageId} styles={styles} />
+        <GameDataStatus
+          isLoading={shell.isLoading}
+          error={shell.error}
+          data={gameData}
+          packageId={packageId}
+          styles={styles}
+        />
       )}
 
       {gameData && (screen !== 'pre' || shell.ready) && (

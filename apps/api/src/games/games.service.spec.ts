@@ -14,15 +14,17 @@ describe('GamesService', () => {
   beforeEach(async () => {
     prisma = {
       learning: { findMany: vi.fn() },
-      user_best_scores: { createMany: vi.fn(), update: vi.fn(), updateMany: vi.fn(), findMany: vi.fn() },
+      user_best_scores: {
+        createMany: vi.fn(),
+        update: vi.fn(),
+        updateMany: vi.fn(),
+        findMany: vi.fn(),
+      },
       $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     };
 
     const module = await Test.createTestingModule({
-      providers: [
-        GamesService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [GamesService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get(GamesService);
@@ -30,8 +32,7 @@ describe('GamesService', () => {
 
   describe('getWordsForGame', () => {
     it('should throw on unknown game type', async () => {
-      await expect(service.getWordsForGame(1, 'invalid_game'))
-        .rejects.toThrow(BadRequestException);
+      await expect(service.getWordsForGame(1, 'invalid_game')).rejects.toThrow(BadRequestException);
     });
 
     it('should throw on prototype keys used as game type', async () => {

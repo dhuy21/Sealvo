@@ -126,9 +126,7 @@ try {
     `[seed] User "${username}" (${user.id}), package ${packageId} with ${WORDS.length} words at level x.`,
   );
 } catch (err) {
-  console.error(
-    `[seed] Failed: ${err instanceof Error ? err.message : String(err)}`,
-  );
+  console.error(`[seed] Failed: ${err instanceof Error ? err.message : String(err)}`);
   process.exitCode = 1;
 } finally {
   await prisma.$disconnect();

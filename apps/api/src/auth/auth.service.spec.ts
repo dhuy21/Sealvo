@@ -2,7 +2,11 @@ import { createHash } from 'crypto';
 import { Test } from '@nestjs/testing';
 import { appConfig } from '../config/app.config.js';
 import { testAppConfig } from '../config/testing.js';
-import { ConflictException, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { AuthService } from './auth.service.js';
@@ -37,7 +41,11 @@ describe('AuthService', () => {
       $transaction: vi.fn(),
     };
 
-    sessions = { create: vi.fn().mockResolvedValue('session.token'), rotate: vi.fn(), revoke: vi.fn() };
+    sessions = {
+      create: vi.fn().mockResolvedValue('session.token'),
+      rotate: vi.fn(),
+      revoke: vi.fn(),
+    };
     emailQueue = { enqueue: vi.fn() };
     emailService = { compileTemplate: vi.fn() };
 
@@ -85,7 +93,11 @@ describe('AuthService', () => {
     it('should return tokens on valid login without touching last_login', async () => {
       const hashed = await bcrypt.hash('pass', 12);
       prisma.users.findUnique.mockResolvedValue({
-        id: '1', username: 'user', password: hashed, is_verified: true, role: 'user',
+        id: '1',
+        username: 'user',
+        password: hashed,
+        is_verified: true,
+        role: 'user',
       });
 
       const result = await service.login({ username: 'user', password: 'pass' });
@@ -189,7 +201,8 @@ describe('AuthService', () => {
         await expect(
           service.register({ username: 'new', email: 'a@b.c', password: '123456' }),
         ).rejects.toThrow("Une erreur est survenue lors de l'envoi de l'email de vérification.");
-      });    });
+      });
+    });
 
     it('should store a hashed verification token, revoke older ones and email the raw token', async () => {
       prisma.users.findUnique.mockResolvedValue(null);

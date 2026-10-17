@@ -27,7 +27,12 @@ describe('config factories', () => {
   });
 
   describe('redis', () => {
-    const defaults = { REDIS_URL: undefined, REDIS_PORT: '6379', REDIS_USER: 'default', REDIS_PASSWORD: undefined };
+    const defaults = {
+      REDIS_URL: undefined,
+      REDIS_PORT: '6379',
+      REDIS_USER: 'default',
+      REDIS_PASSWORD: undefined,
+    };
 
     it('uses REDIS_URL as is', () => {
       stub({ ...defaults, REDIS_URL: 'redis://cache:6379', REDIS_HOST: 'ignored' });
@@ -50,7 +55,13 @@ describe('config factories', () => {
 
   describe('rabbitmq', () => {
     it('builds the URL from the host, or is null without it', () => {
-      stub({ RABBITMQ_URL: undefined, RABBITMQ_HOST: 'mq', RABBITMQ_PORT: '5672', RABBITMQ_USER: 'guest', RABBITMQ_PASS: 'guest' });
+      stub({
+        RABBITMQ_URL: undefined,
+        RABBITMQ_HOST: 'mq',
+        RABBITMQ_PORT: '5672',
+        RABBITMQ_USER: 'guest',
+        RABBITMQ_PASS: 'guest',
+      });
       expect(rabbitmqConfig().url).toBe('amqp://guest:guest@mq:5672');
 
       stub({ RABBITMQ_HOST: undefined });
@@ -70,7 +81,11 @@ describe('config factories', () => {
 
   describe('tts', () => {
     it('restores the line breaks of the private key, or is null when not configured', () => {
-      stub({ GOOGLE_TTS_PROJECT_ID: 'p', GOOGLE_TTS_CLIENT_EMAIL: 'e@p.iam', GOOGLE_TTS_PRIVATE_KEY: 'a\\nb' });
+      stub({
+        GOOGLE_TTS_PROJECT_ID: 'p',
+        GOOGLE_TTS_CLIENT_EMAIL: 'e@p.iam',
+        GOOGLE_TTS_PRIVATE_KEY: 'a\\nb',
+      });
       expect(ttsConfig().credentials?.privateKey).toBe('a\nb');
 
       stub({ GOOGLE_TTS_PROJECT_ID: undefined });

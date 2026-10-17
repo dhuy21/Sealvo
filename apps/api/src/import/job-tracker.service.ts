@@ -86,10 +86,7 @@ export class JobTrackerService implements OnModuleDestroy {
    * Calls onUpdate with every update published for the job, until the returned unsubscribe is called.
    * Null when Redis Pub/Sub is unavailable.
    */
-  async subscribe(
-    id: string,
-    onUpdate: (job: Job) => void,
-  ): Promise<(() => Promise<void>) | null> {
+  async subscribe(id: string, onUpdate: (job: Job) => void): Promise<(() => Promise<void>) | null> {
     const subscriber = await this.getSubscriber();
     if (!subscriber) return null;
 

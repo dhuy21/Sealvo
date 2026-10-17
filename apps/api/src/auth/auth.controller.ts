@@ -85,7 +85,10 @@ export class AuthController {
   @Throttled(THROTTLE.REGISTER)
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
-  @ApiResponse({ status: 409, description: 'Username already taken (a taken email gets the 201 response)' })
+  @ApiResponse({
+    status: 409,
+    description: 'Username already taken (a taken email gets the 201 response)',
+  })
   async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
@@ -198,7 +201,10 @@ export class AuthController {
   @Get('google/callback')
   @Redirect()
   @ApiOperation({ summary: 'Google OAuth callback: sets refresh cookie, redirects to frontend' })
-  @ApiResponse({ status: 302, description: 'Redirect to /dashboard, or /login?error=... on failure' })
+  @ApiResponse({
+    status: 302,
+    description: 'Redirect to /dashboard, or /login?error=... on failure',
+  })
   async googleCallback(
     @Query('code') code: string | undefined,
     @Query('state') state: string | undefined,

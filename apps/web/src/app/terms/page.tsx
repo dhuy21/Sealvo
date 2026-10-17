@@ -12,8 +12,8 @@ export default function TermsPage() {
           1. Acceptation des conditions
         </h2>
         <p>
-          En utilisant SealVo, vous acceptez les présentes conditions d&apos;utilisation.
-          Si vous n&apos;acceptez pas ces conditions, veuillez ne pas utiliser le service.
+          En utilisant SealVo, vous acceptez les présentes conditions d&apos;utilisation. Si vous
+          n&apos;acceptez pas ces conditions, veuillez ne pas utiliser le service.
         </p>
       </section>
 
@@ -42,8 +42,8 @@ export default function TermsPage() {
           4. Propriété intellectuelle
         </h2>
         <p>
-          Le contenu de SealVo (code, design, textes) est protégé par le droit d&apos;auteur.
-          Les packages de vocabulaire créés par les utilisateurs leur appartiennent.
+          Le contenu de SealVo (code, design, textes) est protégé par le droit d&apos;auteur. Les
+          packages de vocabulaire créés par les utilisateurs leur appartiennent.
         </p>
       </section>
 
@@ -52,20 +52,19 @@ export default function TermsPage() {
           5. Protection des données
         </h2>
         <p>
-          Vos données personnelles sont traitées conformément au RGPD.
-          Nous ne partageons pas vos données avec des tiers sans votre consentement.
+          Vos données personnelles sont traitées conformément au RGPD. Nous ne partageons pas vos
+          données avec des tiers sans votre consentement.
         </p>
       </section>
 
       <section style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-          6. Contact
-        </h2>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>6. Contact</h2>
         <p>
           Pour toute question, contactez-nous via la page{' '}
           <Link href="/feedback" style={{ color: 'var(--primary-color, #6a11cb)' }}>
             Feedback
-          </Link>.
+          </Link>
+          .
         </p>
       </section>
 

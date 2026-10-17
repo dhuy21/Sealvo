@@ -38,11 +38,20 @@ export class LearningService {
     const currentLevel = GAME_LEVEL[gameType];
 
     if (!completed) {
-      return { success: true, level_completed: false, message: 'Partie non terminée, aucun changement de progression' };
+      return {
+        success: true,
+        level_completed: false,
+        message: 'Partie non terminée, aucun changement de progression',
+      };
     }
 
     const key = CACHE_KEYS.levelProgress(userId);
-    const stored = await this.cache.hSet(key, progressField(currentLevel, gameType), '1', LEVEL_PROGRESS_TTL);
+    const stored = await this.cache.hSet(
+      key,
+      progressField(currentLevel, gameType),
+      '1',
+      LEVEL_PROGRESS_TTL,
+    );
 
     const fields = await this.cache.hGetAll(key);
     const progress = toProgress(fields ?? {});
@@ -146,7 +155,11 @@ export class LearningService {
         where: { id: userId },
         select: { streak: true },
       });
-      return { updated: false, streak: current?.streak ?? 0, reason: "Déjà mis à jour aujourd'hui" };
+      return {
+        updated: false,
+        streak: current?.streak ?? 0,
+        reason: "Déjà mis à jour aujourd'hui",
+      };
     }
 
     return { updated: true, streak: newStreak };

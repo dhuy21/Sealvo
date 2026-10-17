@@ -49,7 +49,9 @@ export class ReminderService {
    */
   async sendReminders(): Promise<{ sent: number; failed: number; skipped?: true }> {
     const hour = new Date().toISOString().slice(0, 13);
-    if ((await this.cache.setNX(CACHE_KEYS.reminderRun(hour), 1, CACHE_TTL.REMINDER_RUN)) === false) {
+    if (
+      (await this.cache.setNX(CACHE_KEYS.reminderRun(hour), 1, CACHE_TTL.REMINDER_RUN)) === false
+    ) {
       this.logger.warn(`Reminders already sent this hour (${hour} UTC) — skipping.`);
       return { sent: 0, failed: 0, skipped: true };
     }

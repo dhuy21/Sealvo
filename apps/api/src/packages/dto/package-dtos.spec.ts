@@ -8,14 +8,18 @@ const invalidFields = async (cls: new () => object, body: object) =>
 
 describe('package DTOs', () => {
   it('rejects a null mode on create', async () => {
-    await expect(invalidFields(CreatePackageDto, { package_name: 'A', mode: null })).resolves.toEqual([
-      'mode',
-    ]);
+    await expect(
+      invalidFields(CreatePackageDto, { package_name: 'A', mode: null }),
+    ).resolves.toEqual(['mode']);
   });
 
   it('rejects a null name or mode on update, but lets null clear the description', async () => {
     await expect(
-      invalidFields(UpdatePackageDto, { package_name: null, package_description: null, mode: null }),
+      invalidFields(UpdatePackageDto, {
+        package_name: null,
+        package_description: null,
+        mode: null,
+      }),
     ).resolves.toEqual(['package_name', 'mode']);
   });
 

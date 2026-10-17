@@ -1,7 +1,7 @@
 export type UserRole = 'Admin' | 'User';
 
 export interface JwtPayload {
-  sub: string;       // user id (CHAR 7)
+  sub: string; // user id (CHAR 7)
   username: string;
   role: UserRole;
   iat: number;
@@ -10,7 +10,7 @@ export interface JwtPayload {
 
 /** GET /auth/me */
 export interface UserDto {
-  id: string;        // CHAR(7)
+  id: string; // CHAR(7)
   username: string;
   email: string;
   role: UserRole;

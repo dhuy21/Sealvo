@@ -10,7 +10,13 @@ export function generateCards(words: GameWord[]): Card[] {
   const selected = shuffleArray(words).slice(0, MAX_PAIRS);
   const cards: Card[] = [];
   selected.forEach((w) => {
-    cards.push({ pairId: w.detail_id, type: 'word', content: w.word, flipped: false, matched: false });
+    cards.push({
+      pairId: w.detail_id,
+      type: 'word',
+      content: w.word,
+      flipped: false,
+      matched: false,
+    });
     cards.push({
       pairId: w.detail_id,
       type: 'meaning',

@@ -14,9 +14,13 @@ const WAVE_COLORS = [
 export type SoundBackgroundMode = 'idle' | 'listening' | 'normal';
 
 function waveStyle(mode: SoundBackgroundMode, index: number): CSSProperties | undefined {
-  if (mode === 'listening') return { animationDuration: '2s', borderColor: 'rgba(229, 62, 62, 0.2)' };
+  if (mode === 'listening')
+    return { animationDuration: '2s', borderColor: 'rgba(229, 62, 62, 0.2)' };
   if (mode === 'normal') {
-    return { animationDuration: '3s', borderColor: WAVE_COLORS[index] || 'rgba(106, 17, 203, 0.1)' };
+    return {
+      animationDuration: '3s',
+      borderColor: WAVE_COLORS[index] || 'rgba(106, 17, 203, 0.1)',
+    };
   }
   return undefined;
 }

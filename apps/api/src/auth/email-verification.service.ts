@@ -173,7 +173,9 @@ export class EmailVerificationService {
     const sent = await this.emailQueue.enqueue({
       to: newEmail ?? user.email,
       content: htmlContent,
-      subject: newEmail ? 'Confirmation de votre nouvelle adresse email' : 'Vérification de votre email',
+      subject: newEmail
+        ? 'Confirmation de votre nouvelle adresse email'
+        : 'Vérification de votre email',
     });
 
     if (!sent) {
@@ -214,6 +216,8 @@ export class EmailVerificationService {
       });
       if (!existing) return { token, tokenHash };
     }
-    throw new InternalServerErrorException('Une erreur est survenue. Veuillez réessayer plus tard.');
+    throw new InternalServerErrorException(
+      'Une erreur est survenue. Veuillez réessayer plus tard.',
+    );
   }
 }

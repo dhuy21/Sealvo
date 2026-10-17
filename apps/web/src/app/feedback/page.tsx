@@ -78,9 +78,7 @@ export default function FeedbackPage() {
                 <option value="appreciation">Appréciation</option>
                 <option value="other">Autre</option>
               </select>
-              {errors.type && (
-                <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>
-              )}
+              {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>}
             </div>
 
             <div className={`${authStyles['form-group']} ${feedbackStyles['form-group']}`}>
@@ -120,13 +118,15 @@ export default function FeedbackPage() {
                 className={feedbackStyles['form-control']}
                 {...register('email')}
               />
-              {errors.email && (
-                <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
-              )}
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
             </div>
 
             <div className={feedbackStyles['feedback-actions']}>
-              <button type="submit" className={`${cx(authStyles, 'btn', 'btn-primary')} ${cx(feedbackStyles, 'btn', 'btn-primary')}`} disabled={isSubmitting}>
+              <button
+                type="submit"
+                className={`${cx(authStyles, 'btn', 'btn-primary')} ${cx(feedbackStyles, 'btn', 'btn-primary')}`}
+                disabled={isSubmitting}
+              >
                 <i className="fas fa-paper-plane" /> {isSubmitting ? 'Envoi...' : 'Envoyer'}
               </button>
               <Link

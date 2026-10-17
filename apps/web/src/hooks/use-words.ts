@@ -76,10 +76,7 @@ export function useAddWords(packageId: number) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: CreateWordPayload[]) => {
-      const { data } = await api.post<WordsSubmitResponse>(
-        `/packages/${packageId}/words`,
-        payload,
-      );
+      const { data } = await api.post<WordsSubmitResponse>(`/packages/${packageId}/words`, payload);
       return data;
     },
     onSuccess: (data) => {

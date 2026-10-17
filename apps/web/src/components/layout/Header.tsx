@@ -83,7 +83,13 @@ export function Header() {
         <div className="brand-container">
           <Link href="/" className="brand-link" onClick={closeMobile}>
             <div className="logo-wrapper">
-              <Image src="/images/logo.png" alt="Logo" width={40} height={40} className="logo-img" />
+              <Image
+                src="/images/logo.png"
+                alt="Logo"
+                width={40}
+                height={40}
+                className="logo-img"
+              />
               <div className="logo-glow" />
             </div>
             <h1 className="brand-text">SEALVO</h1>
@@ -105,10 +111,7 @@ export function Header() {
             <ul className="nav-list">
               {navItems.map(renderNavItem)}
 
-              <li
-                ref={dropdownRef}
-                className={`nav-item dropdown ${dropdownOpen ? 'open' : ''}`}
-              >
+              <li ref={dropdownRef} className={`nav-item dropdown ${dropdownOpen ? 'open' : ''}`}>
                 <button
                   className="nav-link dropdown-toggle"
                   onClick={(e) => {

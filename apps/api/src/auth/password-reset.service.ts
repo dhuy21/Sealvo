@@ -81,7 +81,9 @@ export class PasswordResetService {
     // change may come from whoever forced this reset: its confirmation link must stop working too.
     await this.prisma.$transaction(async (tx) => {
       // Two requests with the same token: only the one that deletes it changes the password
-      const consumed = await tx.password_reset_tokens.deleteMany({ where: { token_hash: tokenHash } });
+      const consumed = await tx.password_reset_tokens.deleteMany({
+        where: { token_hash: tokenHash },
+      });
       if (consumed.count === 0) throw new BadRequestException(INVALID_TOKEN_MESSAGE);
       await tx.password_reset_tokens.deleteMany({ where: { user_id: userId } });
       await tx.users.update({ where: { id: userId }, data: { password: hashedPassword } });

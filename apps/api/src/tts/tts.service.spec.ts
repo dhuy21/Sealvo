@@ -11,9 +11,10 @@ vi.mock('@google-cloud/text-to-speech', () => ({
   }),
 }));
 
-const transient = () => Object.assign(new Error('14 UNAVAILABLE: googleapis.com secret details'), {
-  code: 14,
-});
+const transient = () =>
+  Object.assign(new Error('14 UNAVAILABLE: googleapis.com secret details'), {
+    code: 14,
+  });
 
 describe('TtsService', () => {
   let cache: { get: any; set: any };

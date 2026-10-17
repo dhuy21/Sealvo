@@ -75,11 +75,7 @@ export function ScrambleBoard({
             <i className="fa-solid fa-wand-magic-sparkles"></i>
           </div>
         </button>
-        <button
-          className={cx(styles, 'pass-btn')}
-          onClick={onNext}
-          disabled={!canSkip}
-        >
+        <button className={cx(styles, 'pass-btn')} onClick={onNext} disabled={!canSkip}>
           <div className={cx(styles, 'back')}></div>
           <div className={cx(styles, 'front')}>
             <i className="fas fa-play"></i>

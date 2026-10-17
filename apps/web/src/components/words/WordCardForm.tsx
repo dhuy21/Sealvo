@@ -28,9 +28,8 @@ export function WordCardForm({
     id: `${name}-${index}`,
     name,
     value: card.values[name],
-    onChange: (
-      e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
-    ) => onChange(name, e.target.value),
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+      onChange(name, e.target.value),
     className: cx(styles, 'form-control'),
   });
 
@@ -47,7 +46,12 @@ export function WordCardForm({
           <h3>{card.values.word.trim() || 'Nouveau mot'}</h3>
         </div>
         <div className={cx(styles, 'card-actions')}>
-          <button type="button" className={cx(styles, 'btn-icon', 'btn-duplicate')} title="Dupliquer" onClick={onDuplicate}>
+          <button
+            type="button"
+            className={cx(styles, 'btn-icon', 'btn-duplicate')}
+            title="Dupliquer"
+            onClick={onDuplicate}
+          >
             <i className="fas fa-copy"></i>
           </button>
           <button
@@ -58,7 +62,12 @@ export function WordCardForm({
           >
             <i className="fas fa-chevron-up"></i>
           </button>
-          <button type="button" className={cx(styles, 'btn-icon', 'btn-remove')} title="Supprimer" onClick={onRemove}>
+          <button
+            type="button"
+            className={cx(styles, 'btn-icon', 'btn-remove')}
+            title="Supprimer"
+            onClick={onRemove}
+          >
             <i className="fas fa-trash"></i>
           </button>
         </div>

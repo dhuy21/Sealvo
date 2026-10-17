@@ -1,8 +1,4 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { TX_OPTIONS } from '../prisma/tx-options.constants.js';
 import { deleteOrphanDetails } from '../words/orphan-details.js';
@@ -105,7 +101,10 @@ export class PackagesService {
       // Cascades to the package's learning rows
       await tx.packages.delete({ where: { package_id: packageId } });
 
-      await deleteOrphanDetails(tx, entries.map((e) => e.detail_id));
+      await deleteOrphanDetails(
+        tx,
+        entries.map((e) => e.detail_id),
+      );
     }, TX_OPTIONS);
 
     return { message: 'Package supprimé avec succès' };

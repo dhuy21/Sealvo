@@ -65,7 +65,9 @@ function ResetPasswordForm() {
       <div className={styles['reset-password-container']}>
         <h1 className={styles['reset-password-title']}>Reset Password</h1>
         <p className="text-red-500">Lien de réinitialisation invalide.</p>
-        <Link href="/login" className={styles['back-link']}>Back to Login</Link>
+        <Link href="/login" className={styles['back-link']}>
+          Back to Login
+        </Link>
       </div>
     );
   }
@@ -112,7 +114,9 @@ function ResetPasswordForm() {
         </form>
       )}
 
-      <Link href="/login" className={styles['back-link']}>Back to Login</Link>
+      <Link href="/login" className={styles['back-link']}>
+        Back to Login
+      </Link>
     </div>
   );
 }

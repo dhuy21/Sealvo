@@ -59,7 +59,12 @@ export function FlashMatchBoard({
         {cards.map((card, i) => (
           <div
             key={i}
-            className={cx(styles, 'card-container', card.flipped && 'flipped', card.matched && 'matched')}
+            className={cx(
+              styles,
+              'card-container',
+              card.flipped && 'flipped',
+              card.matched && 'matched',
+            )}
             onClick={() => onFlip(i)}
           >
             <div className={cx(styles, 'card-inner')}>

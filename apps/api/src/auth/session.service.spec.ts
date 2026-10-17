@@ -26,12 +26,14 @@ function fakePrisma() {
     findUnique: vi.fn(({ where }: { where: { id: string } }) =>
       Promise.resolve(rows.has(where.id) ? { ...rows.get(where.id)! } : null),
     ),
-    updateMany: vi.fn(({ where, data }: { where: Partial<SessionRow>; data: Partial<SessionRow> }) => {
-      const row = rows.get(where.id!);
-      if (!row || row.token_hash !== where.token_hash) return Promise.resolve({ count: 0 });
-      Object.assign(row, data);
-      return Promise.resolve({ count: 1 });
-    }),
+    updateMany: vi.fn(
+      ({ where, data }: { where: Partial<SessionRow>; data: Partial<SessionRow> }) => {
+        const row = rows.get(where.id!);
+        if (!row || row.token_hash !== where.token_hash) return Promise.resolve({ count: 0 });
+        Object.assign(row, data);
+        return Promise.resolve({ count: 1 });
+      },
+    ),
     deleteMany: vi.fn(({ where }: { where: { id: string; user_id?: string } }) => {
       const row = rows.get(where.id);
       if (!row || (where.user_id !== undefined && row.user_id !== where.user_id)) {

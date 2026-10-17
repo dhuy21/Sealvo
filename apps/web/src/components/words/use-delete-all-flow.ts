@@ -31,13 +31,16 @@ export function useDeleteAllFlow(packageId: number, levels: string[]) {
           levels.forEach((level, i) => {
             later(() => setDeletingLevels((prev) => new Set(prev).add(level)), i * 100);
           });
-          later(() => {
-            // Prefix match: also refreshes the Learn review list and other per-package word queries
-            void queryClient
-              .invalidateQueries({ queryKey: queryKeys.words(packageId) })
-              .then(() => setDeletingLevels(new Set()));
-            toast.success(data.message);
-          }, levels.length * 100 + 600);
+          later(
+            () => {
+              // Prefix match: also refreshes the Learn review list and other per-package word queries
+              void queryClient
+                .invalidateQueries({ queryKey: queryKeys.words(packageId) })
+                .then(() => setDeletingLevels(new Set()));
+              toast.success(data.message);
+            },
+            levels.length * 100 + 600,
+          );
         }, 1500);
       },
       onError: (err) => {

@@ -20,7 +20,9 @@ const baseStyle = {
 
 export function showLowScoreToast(): void {
   toast(
-    <HintContent title="Note">Votre score est inférieur à 100 points pour avoir un indice</HintContent>,
+    <HintContent title="Note">
+      Votre score est inférieur à 100 points pour avoir un indice
+    </HintContent>,
     {
       icon: '🚨',
       duration: 3000,

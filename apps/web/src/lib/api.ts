@@ -74,11 +74,9 @@ async function refreshAcrossTabs(): Promise<string | null> {
 
 async function refreshAccessToken(): Promise<string | null> {
   try {
-    const { data } = await axios.post<{ accessToken: string }>(
-      `${apiUrl()}/auth/refresh`,
-      null,
-      { withCredentials: true },
-    );
+    const { data } = await axios.post<{ accessToken: string }>(`${apiUrl()}/auth/refresh`, null, {
+      withCredentials: true,
+    });
     useAuthStore.getState().setAccessToken(data.accessToken);
     return data.accessToken;
   } catch {

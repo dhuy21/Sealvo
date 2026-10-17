@@ -96,13 +96,20 @@ export function MultiWordForm({ packageId }: { packageId: number }) {
   return (
     // noValidate: the browser would block the submit (silently for collapsed cards) before
     // validateCards can mark the fields and report the error count.
-    <form className={cx(styles, 'word-form', 'multiple-words-form')} noValidate onSubmit={handleSubmit}>
+    <form
+      className={cx(styles, 'word-form', 'multiple-words-form')}
+      noValidate
+      onSubmit={handleSubmit}
+    >
       <div
         ref={containerRef}
         className={cx(styles, 'words-cards-container')}
         onBlur={(e) => {
           const t = e.target;
-          if (isFormField(t) && (t.required || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) {
+          if (
+            isFormField(t) &&
+            (t.required || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')
+          ) {
             validateField(t);
           }
         }}

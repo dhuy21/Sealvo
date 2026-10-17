@@ -12,7 +12,10 @@ import { cx } from '@/lib/css-module';
 
 function Notice({ children, backHref }: { children: ReactNode; backHref: string }) {
   return (
-    <div className={cx(styles, 'add-word-container')} style={{ textAlign: 'center', padding: '4rem' }}>
+    <div
+      className={cx(styles, 'add-word-container')}
+      style={{ textAlign: 'center', padding: '4rem' }}
+    >
       {children}
       <div className={cx(styles, 'form-actions')}>
         <Link href={backHref} className={cx(styles, 'btn', 'btn-tertiary')}>
@@ -39,7 +42,10 @@ function AddWordsContent() {
 
   if (pkgQuery.isLoading) {
     return (
-      <div className={cx(styles, 'add-word-container')} style={{ textAlign: 'center', padding: '4rem' }}>
+      <div
+        className={cx(styles, 'add-word-container')}
+        style={{ textAlign: 'center', padding: '4rem' }}
+      >
         <i className="fas fa-spinner fa-spin fa-2x"></i>
       </div>
     );

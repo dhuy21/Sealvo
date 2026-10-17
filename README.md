@@ -8,12 +8,12 @@ browser's speech recognition), Excel import with AI enrichment (Gemini), and rem
 
 A Turborepo monorepo (npm workspaces):
 
-| Path | What it is |
-|---|---|
-| `apps/api` | NestJS API, Prisma (MySQL), Redis (cache, rate limits, job progress), RabbitMQ (email and import queues). The same image runs three processes: the API (`dist/main.js`), the queue worker (`dist/worker.js`) and the scheduler (`dist/scheduler.js`, reminders at 6:00, 12:00, 18:00 and 23:00). |
-| `apps/web` | Next.js 16 front end (App Router). Runtime configuration through `/env.js`, security headers and a per-request CSP nonce in `src/proxy.ts`. |
-| `packages/shared` | Types, constants and resilience helpers shared by both apps. |
-| `src/` | The previous Express application, kept read-only as the reference for behaviour and visuals. |
+| Path              | What it is                                                                                                                                                                                                                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `apps/api`        | NestJS API, Prisma (MySQL), Redis (cache, rate limits, job progress), RabbitMQ (email and import queues). The same image runs three processes: the API (`dist/main.js`), the queue worker (`dist/worker.js`) and the scheduler (`dist/scheduler.js`, reminders at 6:00, 12:00, 18:00 and 23:00). |
+| `apps/web`        | Next.js 16 front end (App Router). Runtime configuration through `/env.js`, security headers and a per-request CSP nonce in `src/proxy.ts`.                                                                                                                                                      |
+| `packages/shared` | Types, constants and resilience helpers shared by both apps.                                                                                                                                                                                                                                     |
+| `src/`            | The previous Express application, kept read-only as the reference for behaviour and visuals.                                                                                                                                                                                                     |
 
 ```
 browser ──► web (Next.js) ──► API (NestJS) ──► MySQL

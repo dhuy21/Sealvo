@@ -25,7 +25,10 @@ function VerifyEmailStatus() {
     : error
       ? {
           type: 'error',
-          message: getApiErrorMessage(error, 'Une erreur est survenue. Veuillez réessayer plus tard.'),
+          message: getApiErrorMessage(
+            error,
+            'Une erreur est survenue. Veuillez réessayer plus tard.',
+          ),
         }
       : null;
   const status = token ? result : INVALID_TOKEN;
@@ -43,7 +46,9 @@ function VerifyEmailStatus() {
 
         {status && (
           <div className={cx(styles, 'alert', `alert-${status.type}`)}>
-            <i className={`fas fa-${status.type === 'success' ? 'check-circle' : 'exclamation-circle'}`} />
+            <i
+              className={`fas fa-${status.type === 'success' ? 'check-circle' : 'exclamation-circle'}`}
+            />
             {status.message}
           </div>
         )}

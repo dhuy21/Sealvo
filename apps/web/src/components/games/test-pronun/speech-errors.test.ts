@@ -3,7 +3,9 @@ import { browserOptimizations, errorInfo } from './speech-errors';
 
 describe('browserOptimizations', () => {
   it('picks the settings of the browser in the user agent', () => {
-    expect(browserOptimizations('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) Version/17.0 Safari')).toEqual({
+    expect(
+      browserOptimizations('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) Version/17.0 Safari'),
+    ).toEqual({
       delay: 300,
       maxRetries: 2,
       timeout: 8000,
@@ -31,17 +33,22 @@ describe('browserOptimizations', () => {
 });
 
 describe('errorInfo', () => {
-  it.each(['no-speech', 'network', 'aborted', 'unknown-error'])('retries %s while retries remain', (error) => {
-    expect(errorInfo(error, true).retry).toBe(true);
-    expect(errorInfo(error, false).retry).toBe(false);
-  });
+  it.each(['no-speech', 'network', 'aborted', 'unknown-error'])(
+    'retries %s while retries remain',
+    (error) => {
+      expect(errorInfo(error, true).retry).toBe(true);
+      expect(errorInfo(error, false).retry).toBe(false);
+    },
+  );
 
   it.each(['audio-capture', 'not-allowed', 'service-not-allowed'])('never retries %s', (error) => {
     expect(errorInfo(error, true).retry).toBe(false);
   });
 
   it('names unknown errors in the message', () => {
-    expect(errorInfo('bad-grammar', true).message).toBe('Erreur: bad-grammar. Essayez de recharger la page.');
+    expect(errorInfo('bad-grammar', true).message).toBe(
+      'Erreur: bad-grammar. Essayez de recharger la page.',
+    );
   });
 
   it('explains a missing microphone permission', () => {

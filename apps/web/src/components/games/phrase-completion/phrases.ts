@@ -12,7 +12,11 @@ export interface Phrase {
 const BLANK = '_____';
 
 export function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 /** One phrase per word; an example without `**…**` (or no example) gives a phrase with no blank. */

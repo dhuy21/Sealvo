@@ -18,7 +18,9 @@ describe('auth DTOs', () => {
     const valid = { username: 'john', email: 'john@example.com', password: 'secret' };
 
     it('trims the username before checking its length', async () => {
-      expect((await check(RegisterDto, { ...valid, username: '  john  ' })).dto.username).toBe('john');
+      expect((await check(RegisterDto, { ...valid, username: '  john  ' })).dto.username).toBe(
+        'john',
+      );
       expect((await check(RegisterDto, { ...valid, username: '  ab  ' })).messages).toEqual([
         USERNAME_LENGTH_MESSAGE,
       ]);
@@ -31,7 +33,9 @@ describe('auth DTOs', () => {
     });
 
     it('rejects a password bcrypt would truncate (over 72 bytes, accents count double)', async () => {
-      expect((await check(RegisterDto, { ...valid, password: 'a'.repeat(72) })).messages).toEqual([]);
+      expect((await check(RegisterDto, { ...valid, password: 'a'.repeat(72) })).messages).toEqual(
+        [],
+      );
       expect((await check(RegisterDto, { ...valid, password: 'é'.repeat(37) })).messages).toEqual([
         'Le mot de passe est trop long',
       ]);

@@ -1,4 +1,13 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PackageOwnershipGuard } from '../auth/guards/package-ownership.guard.js';
@@ -31,7 +40,12 @@ export class LearningController {
   @ApiOperation({ summary: 'Track game completion for level progress' })
   @ApiResponse({ status: 200, description: 'Progress tracked' })
   async trackGame(@CurrentUser('id') userId: string, @Body() dto: TrackGameDto) {
-    return this.learningService.trackGameCompletion(userId, dto.game_type, dto.completed, dto.packageId);
+    return this.learningService.trackGameCompletion(
+      userId,
+      dto.game_type,
+      dto.completed,
+      dto.packageId,
+    );
   }
 
   @Get('level-progress')

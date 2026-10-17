@@ -55,19 +55,11 @@ export class TtsService implements OnModuleInit {
   }
 
   private audioKey(text: string, language: string): string {
-    const hash = crypto
-      .createHash('sha256')
-      .update(text)
-      .digest('hex')
-      .slice(0, 12);
+    const hash = crypto.createHash('sha256').update(text).digest('hex').slice(0, 12);
     return CACHE_KEYS.ttsAudio(language, hash);
   }
 
-  private selectVoice(
-    voices: { name: string }[],
-    text: string,
-    language: string,
-  ): string {
+  private selectVoice(voices: { name: string }[], text: string, language: string): string {
     const hash = crypto
       .createHash('md5')
       .update(text + language)

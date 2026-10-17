@@ -47,7 +47,8 @@ export class BulkWordsService {
     let jobId: string | undefined;
     if (words.length >= QUEUE_THRESHOLD[type]) {
       const job = await this.enqueue(type, packageId, userId, words);
-      if (job?.queued) return { success: true, jobId: job.id, async: true, message: MESSAGES[type].queued };
+      if (job?.queued)
+        return { success: true, jobId: job.id, async: true, message: MESSAGES[type].queued };
       jobId = job?.id;
     }
 

@@ -20,7 +20,8 @@ function subscribe(onChange: () => void) {
 }
 
 /** Screens up to 950px wide must be in landscape to play. */
-export const isPortraitBlocked = () => window.innerWidth <= 950 && window.innerWidth <= window.innerHeight;
+export const isPortraitBlocked = () =>
+  window.innerWidth <= 950 && window.innerWidth <= window.innerHeight;
 
 export function usePortraitBlocked(): boolean {
   return useSyncExternalStore(subscribe, isPortraitBlocked, () => false);

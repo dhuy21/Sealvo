@@ -24,10 +24,7 @@ describe('GeminiService', () => {
 
   async function createService(apiKey?: string) {
     const module = await Test.createTestingModule({
-      providers: [
-        GeminiService,
-        { provide: geminiConfig.KEY, useValue: { apiKey } },
-      ],
+      providers: [GeminiService, { provide: geminiConfig.KEY, useValue: { apiKey } }],
     }).compile();
     return module.get(GeminiService);
   }

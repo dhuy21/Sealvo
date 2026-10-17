@@ -18,9 +18,7 @@ describe('EmailService.sendEmail', () => {
 
   it('retries a transient error', async () => {
     sendMail
-      .mockRejectedValueOnce(
-        Object.assign(new Error('reset'), { code: 'ECONNRESET' }),
-      )
+      .mockRejectedValueOnce(Object.assign(new Error('reset'), { code: 'ECONNRESET' }))
       .mockResolvedValueOnce({ messageId: 'm1' });
 
     const result = service.sendEmail('a@test.com', '<p>hi</p>', 'S', {

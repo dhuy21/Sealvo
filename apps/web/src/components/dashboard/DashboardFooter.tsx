@@ -8,9 +8,7 @@ export function DashboardFooter() {
       <SparkleLink href="/">
         <i className="fas fa-home"></i> Retour à l&apos;accueil
       </SparkleLink>
-      <span
-        style={{ display: 'inline-block', margin: '0 10px', color: 'var(--text-secondary)' }}
-      >
+      <span style={{ display: 'inline-block', margin: '0 10px', color: 'var(--text-secondary)' }}>
         <i className="fas fa-heart" style={{ color: '#EF4444' }}></i>
       </span>
       <SparkleLink href="/feedback">

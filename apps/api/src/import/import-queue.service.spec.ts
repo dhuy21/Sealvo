@@ -51,7 +51,9 @@ describe('ImportQueueService consumer', () => {
       }),
     ),
     properties: {
-      headers: deaths ? { 'x-death': [{ queue: 'import.process', reason: 'rejected', count: deaths }] } : {},
+      headers: deaths
+        ? { 'x-death': [{ queue: 'import.process', reason: 'rejected', count: deaths }] }
+        : {},
     },
     fields: { redelivered },
   });
@@ -59,10 +61,8 @@ describe('ImportQueueService consumer', () => {
   const savingUpdates = () =>
     jobTracker.update.mock.calls
       .map(
-        ([, fields]: [
-          string,
-          { progress?: { phase: string; current: number } },
-        ]) => fields.progress,
+        ([, fields]: [string, { progress?: { phase: string; current: number } }]) =>
+          fields.progress,
       )
       .filter((p: { phase: string } | undefined) => p?.phase === 'saving')
       .map((p: { current: number }) => p.current);
@@ -71,13 +71,11 @@ describe('ImportQueueService consumer', () => {
     channel = { ack: vi.fn(), nack: vi.fn(), sendToQueue: vi.fn() };
     jobTracker = { update: vi.fn().mockResolvedValue(true) };
     wordsService = {
-      addWords: vi.fn(
-        async (_packageId: number, data: unknown[], { onProgress }) => {
-          await onProgress('gemini', 0);
-          for (let i = 0; i <= data.length; i++) await onProgress('saving', i);
-          return { successCount: data.length, alreadyApplied: false };
-        },
-      ),
+      addWords: vi.fn(async (_packageId: number, data: unknown[], { onProgress }) => {
+        await onProgress('gemini', 0);
+        for (let i = 0; i <= data.length; i++) await onProgress('saving', i);
+        return { successCount: data.length, alreadyApplied: false };
+      }),
     };
 
     const service = new ImportQueueService(
@@ -102,8 +100,7 @@ describe('ImportQueueService consumer', () => {
       expect.objectContaining({ jobId: 'job-1' }),
     );
     expect(savingUpdates()).toEqual([
-      0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38,
-      40, 42, 44, 45,
+      0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 45,
     ]);
     expect(jobTracker.update).toHaveBeenCalledWith('job-1', {
       progress: { current: 0, total: 45, phase: 'gemini' },
@@ -135,7 +132,11 @@ describe('ImportQueueService consumer', () => {
   });
 
   it('acks a message that is not an import job without processing it', async () => {
-    const msg = { content: Buffer.from('{"jobId":"job-1"}'), properties: { headers: {} }, fields: {} };
+    const msg = {
+      content: Buffer.from('{"jobId":"job-1"}'),
+      properties: { headers: {} },
+      fields: {},
+    };
 
     await run(msg);
 
@@ -157,9 +158,14 @@ describe('ImportQueueService consumer', () => {
 
     await run(msg);
 
-    expect(channel.sendToQueue).toHaveBeenCalledWith('import.failed', msg.content, { persistent: true });
+    expect(channel.sendToQueue).toHaveBeenCalledWith('import.failed', msg.content, {
+      persistent: true,
+    });
     expect(channel.ack).toHaveBeenCalledWith(msg);
-    expect(jobTracker.update).toHaveBeenLastCalledWith('job-1', expect.objectContaining({ status: 'failed' }));
+    expect(jobTracker.update).toHaveBeenLastCalledWith(
+      'job-1',
+      expect.objectContaining({ status: 'failed' }),
+    );
   });
 
   it('writes the final status after every progress update, even slow ones', async () => {
@@ -168,7 +174,11 @@ describe('ImportQueueService consumer', () => {
         new Promise((resolve) => setTimeout(() => resolve(true), fields.status ? 0 : 5)),
     );
     wordsService.addWords.mockImplementation(
-      async (_p: number, data: unknown[], { onProgress }: { onProgress: (phase: string, n: number) => Promise<unknown> }) => {
+      async (
+        _p: number,
+        data: unknown[],
+        { onProgress }: { onProgress: (phase: string, n: number) => Promise<unknown> },
+      ) => {
         for (let i = 1; i <= data.length; i++) void onProgress('saving', i);
         return { successCount: data.length, alreadyApplied: false };
       },
@@ -176,6 +186,9 @@ describe('ImportQueueService consumer', () => {
 
     await run(message(3));
 
-    expect(jobTracker.update).toHaveBeenLastCalledWith('job-1', expect.objectContaining({ status: 'completed' }));
+    expect(jobTracker.update).toHaveBeenLastCalledWith(
+      'job-1',
+      expect.objectContaining({ status: 'completed' }),
+    );
   });
 });

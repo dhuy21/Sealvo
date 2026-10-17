@@ -64,20 +64,27 @@ describe('env validation', () => {
       FRONTEND_URL: 'https://www.sealvo.it.com',
       JWT_ACCESS_SECRET: STRONG,
     };
-    const STAGING_API = { ...PRODUCTION_API, NODE_ENV: 'staging', STAGING_EMAIL_INTERCEPT: 'qa@sealvo.test' };
+    const STAGING_API = {
+      ...PRODUCTION_API,
+      NODE_ENV: 'staging',
+      STAGING_EMAIL_INTERCEPT: 'qa@sealvo.test',
+    };
 
     it('accepts a complete production and staging environment', () => {
       expect(() => validateApiEnv(PRODUCTION_API)).not.toThrow();
       expect(() => validateApiEnv(STAGING_API)).not.toThrow();
     });
 
-    it.each(['production', 'staging'])('requires FRONTEND_URL in %s (no localhost default)', (NODE_ENV) => {
-      const env = { ...STAGING_API, NODE_ENV };
-      expect(() => validateApiEnv({ ...env, FRONTEND_URL: undefined })).toThrow(
-        `FRONTEND_URL is required in ${NODE_ENV}`,
-      );
-      expect(() => validateApiEnv({ ...env, FRONTEND_URL: '' })).toThrow('FRONTEND_URL');
-    });
+    it.each(['production', 'staging'])(
+      'requires FRONTEND_URL in %s (no localhost default)',
+      (NODE_ENV) => {
+        const env = { ...STAGING_API, NODE_ENV };
+        expect(() => validateApiEnv({ ...env, FRONTEND_URL: undefined })).toThrow(
+          `FRONTEND_URL is required in ${NODE_ENV}`,
+        );
+        expect(() => validateApiEnv({ ...env, FRONTEND_URL: '' })).toThrow('FRONTEND_URL');
+      },
+    );
 
     it('requires STAGING_EMAIL_INTERCEPT in staging, for the API and the worker', () => {
       expect(() => validateApiEnv({ ...STAGING_API, STAGING_EMAIL_INTERCEPT: '' })).toThrow(
@@ -92,7 +99,9 @@ describe('env validation', () => {
       expect(() => validateApiEnv({ ...PRODUCTION_API, JWT_ACCESS_SECRET: 'short' })).toThrow(
         'JWT_ACCESS_SECRET must be at least 32 characters in production',
       );
-      expect(() => validateApiEnv({ ...PRODUCTION_API, CRON_SECRET: 'short' })).toThrow('CRON_SECRET');
+      expect(() => validateApiEnv({ ...PRODUCTION_API, CRON_SECRET: 'short' })).toThrow(
+        'CRON_SECRET',
+      );
       expect(() => validateSchedulerEnv({ ...SCHEDULER_ENV, NODE_ENV: 'staging' })).toThrow(
         'CRON_SECRET must be at least 32 characters in staging',
       );
@@ -101,7 +110,9 @@ describe('env validation', () => {
   });
 
   it('removes the trailing slash of FRONTEND_URL', () => {
-    expect(validateApiEnv({ ...API_ENV, FRONTEND_URL: 'https://www.sealvo.it.com/' })).toMatchObject({
+    expect(
+      validateApiEnv({ ...API_ENV, FRONTEND_URL: 'https://www.sealvo.it.com/' }),
+    ).toMatchObject({
       FRONTEND_URL: 'https://www.sealvo.it.com',
     });
   });
@@ -121,7 +132,9 @@ describe('env validation', () => {
   });
 
   it.each(Object.keys(SCHEDULER_ENV))('rejects an empty %s for the scheduler', (key) => {
-    expect(() => validateSchedulerEnv({ ...SCHEDULER_ENV, [key]: '' })).toThrow(`${key} is required`);
+    expect(() => validateSchedulerEnv({ ...SCHEDULER_ENV, [key]: '' })).toThrow(
+      `${key} is required`,
+    );
   });
 
   it.each([
