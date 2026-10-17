@@ -107,8 +107,9 @@ export function useDeleteWord(packageId: number) {
       const { data } = await api.delete(`/packages/${packageId}/words/${detailId}`);
       return data;
     },
+    // The words list is invalidated by the caller once the row's exit animation has played
     onSuccess: () => {
-      invalidateWords(qc, packageId);
+      invalidate(qc, queryKeys.games(), queryKeys.dashboard());
     },
   });
 }

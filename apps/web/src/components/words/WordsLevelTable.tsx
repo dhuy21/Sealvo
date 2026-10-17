@@ -17,7 +17,7 @@ export function WordsLevelTable({
   isOwner: boolean;
   deleting: boolean;
   onSave: (detailId: number, dto: UpdateWordPayload) => Promise<boolean>;
-  onDelete: (detailId: number) => void;
+  onDelete: (detailId: number) => Promise<boolean>;
 }) {
   return (
     <div className={cx(styles, 'level-container', deleting && 'level-deleting')} data-level={level}>

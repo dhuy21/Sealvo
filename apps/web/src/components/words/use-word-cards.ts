@@ -33,10 +33,10 @@ export function useWordCards() {
     return card.key;
   }, []);
 
-  /** False (and the card shakes) when it is the last one. */
+  /** False (and the card shakes) when it is the last one; cards already fading out do not count. */
   const removeCard = useCallback(
     (key: number) => {
-      if (cards.length <= 1) {
+      if (cards.filter((c) => !c.removing).length <= 1) {
         patchCard(key, { shaking: true });
         setTimeout(() => patchCard(key, { shaking: false }), SHAKE_ANIMATION_MS);
         return false;
@@ -45,7 +45,7 @@ export function useWordCards() {
       setTimeout(() => setCards((cs) => cs.filter((c) => c.key !== key)), REMOVE_ANIMATION_MS);
       return true;
     },
-    [cards.length, patchCard],
+    [cards, patchCard],
   );
 
   /** Clears every card like `form.reset()`: the number of cards stays. */

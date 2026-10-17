@@ -24,11 +24,13 @@ export function WordRow({
   w: Word;
   /** Resolves to `true` once saved; the editor stays open otherwise. */
   onSave: (detailId: number, dto: UpdateWordPayload) => Promise<boolean>;
-  onDelete: (detailId: number) => void;
+  /** Resolves to `true` once deleted; the row then fades out. */
+  onDelete: (detailId: number) => Promise<boolean>;
   readOnly?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deletion, setDeletion] = useState<'idle' | 'pending' | 'done'>('idle');
   const [form, setForm] = useState(() => wordEditForm(w));
 
   const handleChange = (field: keyof WordEditForm, value: string) =>
@@ -49,6 +51,11 @@ export function WordRow({
     const saved = await onSave(w.detail_id, dto);
     setSaving(false);
     if (saved) setEditing(false);
+  };
+
+  const remove = async () => {
+    setDeletion('pending');
+    setDeletion((await onDelete(w.detail_id)) ? 'done' : 'idle');
   };
 
   if (editing) {
@@ -174,7 +181,7 @@ export function WordRow({
   }
 
   return (
-    <tr>
+    <tr className={cx(styles, deletion === 'done' && 'row-deleted')}>
       <td className={cx(styles, 'table-cell')}>
         <div className={cx(styles, 'table-cell-content')}>{w.word}</div>
       </td>
@@ -213,9 +220,10 @@ export function WordRow({
             <button
               className={cx(styles, 'delete-btn')}
               title="Supprimer"
-              onClick={() => onDelete(w.detail_id)}
+              onClick={remove}
+              disabled={deletion !== 'idle'}
             >
-              <i className="fas fa-trash"></i>
+              <i className={deletion === 'pending' ? 'fas fa-spinner fa-spin' : 'fas fa-trash'}></i>
             </button>
           </div>
         </td>
