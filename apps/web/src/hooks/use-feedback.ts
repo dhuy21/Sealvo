@@ -1,7 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
+import type { FeedbackType } from '@sealvo/shared';
 import api from '@/lib/api';
-
-type FeedbackType = 'suggestion' | 'bug' | 'question' | 'appreciation' | 'other';
 
 interface FeedbackPayload {
   type: FeedbackType;

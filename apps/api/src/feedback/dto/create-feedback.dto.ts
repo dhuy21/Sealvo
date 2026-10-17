@@ -1,17 +1,19 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsEmail, IsIn, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { FEEDBACK_TYPES, type FeedbackType } from '@sealvo/shared';
+import { VARCHAR_MAX_LENGTH } from '../../common/constants/field-lengths.constants.js';
 import { IsOptionalDefined } from '../../common/decorators/is-optional-defined.decorator.js';
 import { Trim } from '../../common/decorators/trim.decorator.js';
 
-const SUBJECT_MAX = 255;
+const SUBJECT_MAX = VARCHAR_MAX_LENGTH;
 const CONTENT_MAX = 5000;
 
 export class CreateFeedbackDto {
-  @ApiProperty({ enum: ['suggestion', 'bug', 'question', 'appreciation', 'other'] })
+  @ApiProperty({ enum: FEEDBACK_TYPES })
   @IsString()
-  @IsIn(['suggestion', 'bug', 'question', 'appreciation', 'other'])
-  type!: string;
+  @IsIn(FEEDBACK_TYPES)
+  type!: FeedbackType;
 
   @ApiProperty({ maxLength: SUBJECT_MAX })
   @Trim()

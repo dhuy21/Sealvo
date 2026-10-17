@@ -61,6 +61,11 @@ export type DbLevel = (typeof VALID_LEVELS)[number];
 /** Package visibility modes */
 export const PACKAGE_MODES: readonly PackageMode[] = ['private', 'public', 'protected'];
 
+/** POST /feedback `type` */
+export const FEEDBACK_TYPES = ['suggestion', 'bug', 'question', 'appreciation', 'other'] as const;
+
+export type FeedbackType = (typeof FEEDBACK_TYPES)[number];
+
 /** Longest package name (old app rule, below the 255-char column) */
 export const PACKAGE_NAME_MAX = 100;
 

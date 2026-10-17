@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
 import toast from 'react-hot-toast';
+import { FEEDBACK_TYPES, type FeedbackType } from '@sealvo/shared';
 import { useSendFeedback } from '@/hooks/use-feedback';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { useAuthStore } from '@/stores/auth.store';
@@ -12,8 +13,16 @@ import { cx } from '@/lib/css-module';
 import authStyles from '@/styles/auth.module.css';
 import feedbackStyles from '@/styles/feedback.module.css';
 
+const TYPE_LABELS: Record<FeedbackType, string> = {
+  suggestion: 'Suggestion',
+  bug: 'Problème technique',
+  question: 'Question',
+  appreciation: 'Appréciation',
+  other: 'Autre',
+};
+
 const schema = z.object({
-  type: z.enum(['suggestion', 'bug', 'question', 'appreciation', 'other'], {
+  type: z.enum(FEEDBACK_TYPES, {
     message: 'Veuillez sélectionner un type',
   }),
   subject: z.string().min(1, 'Sujet requis'),
@@ -72,11 +81,11 @@ export default function FeedbackPage() {
                 <option value="" disabled>
                   Sélectionnez un type
                 </option>
-                <option value="suggestion">Suggestion</option>
-                <option value="bug">Problème technique</option>
-                <option value="question">Question</option>
-                <option value="appreciation">Appréciation</option>
-                <option value="other">Autre</option>
+                {FEEDBACK_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {TYPE_LABELS[type]}
+                  </option>
+                ))}
               </select>
               {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>}
             </div>
