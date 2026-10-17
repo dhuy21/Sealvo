@@ -45,6 +45,10 @@ function TestPronunInner() {
   const playbackRef = useRef<AbortController | null>(null);
   /** The word being recorded: a result arriving after a skip or the end must not be scored */
   const recordedWordRef = useRef<GameWord | null>(null);
+  /** The shown word got its score: recording it again until the next word changes nothing */
+  const scoredRef = useRef(false);
+  /** Next word (or the end), 2 s after a score */
+  const advanceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const currentWord = words[currentIndex] ?? null;
 
@@ -61,6 +65,8 @@ function TestPronunInner() {
 
   function processResult(spokenText: string, confidence: number) {
     if (!currentWord || screen !== 'active' || recordedWordRef.current !== currentWord) return;
+    if (scoredRef.current) return;
+    scoredRef.current = true;
 
     const target = currentWord.word.toLowerCase().trim();
     setRecognizedText(`"${spokenText}"`);
@@ -109,6 +115,7 @@ function TestPronunInner() {
 
   function showWord(index: number) {
     stopPlayback();
+    scoredRef.current = false;
     setCurrentIndex(index);
     setMeterWidth(0);
     setRecognizedText('');
@@ -144,6 +151,9 @@ function TestPronunInner() {
   }
 
   function skipWord() {
+    // A scored word already has its move scheduled: skipping replaces it instead of adding one
+    clearTimeout(advanceRef.current);
+    if (completedWords >= WORDS_PER_GAME) return endGame();
     showWord(Math.floor(Math.random() * words.length));
   }
 
@@ -157,14 +167,13 @@ function TestPronunInner() {
   useEffect(() => {
     if (screen !== 'active' || completedWords === 0) return;
 
-    if (completedWords >= WORDS_PER_GAME) {
-      const timeout = setTimeout(() => endGame(), 2000);
-      return () => clearTimeout(timeout);
-    }
-
-    const timeout = setTimeout(() => showWord(randomIndexExcept(words.length, currentIndex)), 2000);
-
-    return () => clearTimeout(timeout);
+    advanceRef.current = setTimeout(
+      completedWords >= WORDS_PER_GAME
+        ? endGame
+        : () => showWord(randomIndexExcept(words.length, currentIndex)),
+      2000,
+    );
+    return () => clearTimeout(advanceRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [completedWords]);
 
