@@ -774,20 +774,24 @@ The original YAML sketch is obsolete. Source of truth: `.github/workflows/ci-cd.
 - **Migrations check** (same triggers, job `migrations-check`): MySQL 8 service, empty database →
   `prisma migrate deploy` → `prisma migrate diff --from-migrations … --to-schema-datamodel …
 --exit-code`: fails when `schema.prisma` has changes no migration contains
-- **Push `main` / `staging`** (needs both jobs above): matrix build of the `api`, `web` and `backup`
-  images (buildx GHA cache scoped per image) → GHCR
+- **Push `main` / `staging`** (needs both jobs above): matrix build of the `api` and `web` images,
+  plus `backup` on `main` (buildx GHA cache scoped per image) → GHCR
   (`:sha-<commit>` only, never overwritten: an existing one is reused, so production runs the
   images built on staging), `GIT_SHA` build arg; Trivy (pinned by digest) scans the image before
   it is pushed (`--ignore-unfixed`): lists CRITICAL + HIGH, fails the job (so no push, no deploy)
-  on CRITICAL only
+  on CRITICAL only. A commit of `main` that is on `staging` needs E2E Staging green first. Pull
+  requests build and scan the three images, without pushing
 - **Deploy** (`deploy.yml`, GitHub environment `production` / `staging`, one at a time per
   environment): points `:latest` / `:staging` at the commit's images, then `railway redeploy` (CLI
   pinned) of the API → poll `/health` until `version` equals the commit → web (same check) →
   worker and scheduler (their Redis heartbeat, listed by the API's `/health` under `processes`) →
-  backup cron in production. Skipped when `RAILWAY_TOKEN` / `API_URL` are unset. `rollback.yml`
-  checks the commit is on the branch, then runs the same workflow
+  backup cron in production. Fails before changing anything when a setting (`RAILWAY_TOKEN`,
+  `API_URL`, a service ID…) is unset. On a failure, cancel or timeout the tag goes back to the
+  previous images (not for a rollback). `rollback.yml` checks the commit is on the branch, then
+  runs the same workflow
 - **E2E** (`e2e.yml`, after each staging deploy via `workflow_call`, or `workflow_dispatch`):
-  Playwright against the environment URL; protected-page specs only when `E2E_USERNAME` / `E2E_PASSWORD` are set
+  Playwright against the environment URL; protected-page specs only when `E2E_USERNAME` / `E2E_PASSWORD` are set.
+  After a deploy it checks the web app and the API run the commit before and after the tests
 
 ---
 

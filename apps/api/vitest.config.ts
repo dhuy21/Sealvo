@@ -9,5 +9,7 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['**/*.spec.ts'],
+    // Day boundaries (spaced repetition, streaks) are computed in the API image's zone
+    env: { TZ: 'Europe/Paris' },
   },
 });

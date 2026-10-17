@@ -62,6 +62,7 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
 
-# sh is PID 1 during the migration and would ignore SIGTERM: the trap lets the migration finish (killing
-# it could leave a migration half applied), then exits instead of starting the server
+# sh is PID 1 during the migration and would ignore SIGTERM: the trap lets the migration go on, then
+# exits instead of starting the server. Only within the platform's draining time: Railway kills the
+# container after it (default 0 s, docs/railway-setup.md), which can leave a migration half applied
 CMD ["sh", "-c", "trap 'exit 143' TERM INT; npx --no prisma migrate deploy --schema=./prisma/schema.prisma && exec node dist/main.js"]

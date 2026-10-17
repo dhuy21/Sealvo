@@ -1,13 +1,5 @@
 import { dueCutoff, dueWhereConditions, isDue, startOfToday } from './spaced-repetition.js';
 
-// Same zone as the API image (TZ=Europe/Paris)
-const originalTz = process.env.TZ;
-process.env.TZ = 'Europe/Paris';
-
-afterAll(() => {
-  process.env.TZ = originalTz;
-});
-
 describe('spaced-repetition', () => {
   afterEach(() => {
     vi.useRealTimers();

@@ -43,6 +43,10 @@ keeps crashing the worker ends in `import.failed`), an email is sent again unles
 marked as sent.
 Worker and Scheduler need Redis (the same `REDIS_*` as the API) for the deploy check: they report
 their commit there.
+Set `RAILWAY_DEPLOYMENT_DRAINING_SECONDS=60` on the API service too. Railway's default is 0: the
+old container is killed right after SIGTERM, which cuts the requests in progress and, while the
+API starts, can stop `prisma migrate deploy` in the middle of a migration (MySQL cannot roll back
+DDL). See "A migration stopped half way" below.
 Backup: set the cron schedule in the Railway dashboard (`0 2 * * *`, 02:00 UTC) — not in
 config-as-code, which would also run it on every deploy.
 
@@ -214,13 +218,16 @@ environments (Settings → Environments), so each environment gets its own value
 
 1. Lint, tests, build, and the migrations check.
 2. Images, tagged only `:sha-<commit>` (never overwritten): when that tag already exists, it is
-   reused as is. So on `main`, a commit staging already built runs the exact images tested on
-   staging, and only once **E2E Staging passed for that commit** (the build job fails otherwise:
-   re-run it after a green staging run). Otherwise (hotfix pushed to `main`, merge commit, first
-   push) the `api` and `web` images are built and pushed only when the Trivy scan passes. A reused
+   reused as is (a registry error other than "not found" fails the job instead of rebuilding). On
+   `main`, a commit that is on `staging` goes on only once **E2E Staging passed for that commit**,
+   whether its image exists yet or not (the build job fails otherwise: re-run it after a green
+   staging run); it then runs the exact images tested on staging. A commit that is not on `staging`
+   (hotfix pushed to `main`, merge commit) is built here and gated by the production approver.
+   The `api` and `web` images are pushed only when the Trivy scan passes. A reused
    image is scanned again (it was scanned when built, maybe weeks ago). Two runs building the same
    commit (staging, then `main` fast-forwarded to it) take turns: the second reuses the first's
-   image. `backup` is only built for `main` (staging has no backup cron).
+   image. `backup` is only built for `main` (staging has no backup cron). Pull requests build and
+   scan all three images without pushing them.
 3. `.github/workflows/deploy.yml`, once approved (see below): points `:latest` (production) or
    `:staging` at the commit's images, redeploys the services one after the other, and waits for each
    to run the commit: the API and the web app report it on `/health` (`version`); the Worker and
@@ -229,9 +236,12 @@ environments (Settings → Environments), so each environment gets its own value
    heartbeat outlives a crashed process by its 45 s TTL). The Backup cron is redeployed without a
    check (it only runs at its schedule). Two deploys of one environment never interleave, and a
    commit the branch has already moved past is not deployed (a newer push follows). When a step
-   fails, the environment tag is put back on the previous images, so a later redeploy does not pull
-   the failed commit; services already redeployed keep running it until a Rollback.
+   fails, or the deploy is cancelled or times out, the environment tag is put back on the previous
+   images, so a later redeploy does not pull the failed commit; services already redeployed keep
+   running it until a Rollback.
 4. On `staging`, the E2E workflow then runs against the staging URL (not after a skipped deploy).
+   It checks that the web app and the API report the commit before and after the tests: a newer
+   deploy during the run fails it instead of passing for the wrong commit.
 
 Runs on `staging` and `main` do not wait for each other: every commit gets its lint/test feedback
 and its images (a later rollback target) even while a deploy waits for approval.
@@ -260,7 +270,8 @@ of that environment (a commit of `main` for production, of `staging` for staging
 refuses a commit that was never on that branch). It runs the same deploy workflow with that commit
 (one approval): its images are put back, nothing is rebuilt. Commits built before the web `/health`
 endpoint or the Worker/Scheduler heartbeat existed fail that check after 10 minutes, although the
-rollback itself took effect.
+rollback itself took effect. A failed rollback leaves the tag on the rollback target (the previous
+images are the release being rolled back): fix the cause and run it again.
 
 A rollback puts the code back, **not the database**: the old images start against the schema the
 newer migrations left. The workflow lists those migrations in its summary. So every migration must
@@ -275,3 +286,18 @@ stay compatible with the code of the previous release (expand/contract):
 Migrations `002` to `004` are expand. `005` adds CHECK constraints the previous code already
 respected. `006` makes `word`/`subject` case- and accent-sensitive: code rolled back over it keeps
 working, but treats `Run` and `run` as two words, like the current code.
+
+### A migration stopped half way (P3009)
+
+When the API stops during `prisma migrate deploy` (a deploy killed without draining time, a crash,
+a timeout), MySQL keeps the statements already run: it cannot roll back DDL. Prisma records the
+migration as failed, and every later start fails with `P3009` (the API never listens).
+
+1. Find the migration: `npx prisma migrate status --schema=apps/api/prisma/schema.prisma` with the
+   environment's `DATABASE_URL`.
+2. Read its `migration.sql` and check, statement by statement, which ones ran (`SHOW CREATE TABLE`,
+   `SHOW INDEX`). Undo them by hand, so the database is as before the migration.
+3. Mark it rolled back: `npx prisma migrate resolve --rolled-back <name> --schema=apps/api/prisma/schema.prisma`.
+4. Redeploy the API: the migration runs again from the start.
+
+Never edit an applied migration file to get past it: Prisma compares its checksum.
