@@ -17,7 +17,8 @@ export async function createUser(prisma: PrismaService, data: Omit<Prisma.usersC
         if (error.meta?.target === 'PRIMARY') continue;
         throw new ConflictException("Ce nom d'utilisateur ou cette adresse email est déjà utilisé");
       }
-      throw new InternalServerErrorException('Une erreur est survenue. Veuillez réessayer plus tard.');
+      // PrismaExceptionFilter maps it: a CHECK violation (email format) becomes a 400, the rest a 500
+      throw error;
     }
   }
   throw new InternalServerErrorException('Une erreur est survenue. Veuillez réessayer plus tard.');

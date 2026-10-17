@@ -1,4 +1,9 @@
-import { ForbiddenException, NotFoundException, type ExecutionContext } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  type ExecutionContext,
+} from '@nestjs/common';
 import { PackageReadGuard } from './package-read.guard.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
 
@@ -49,5 +54,10 @@ describe('PackageReadGuard', () => {
 
   it('rejects an unknown package', async () => {
     await expect(guard.canActivate(contextFor('99').context)).rejects.toThrow(NotFoundException);
+  });
+
+  it('rejects a malformed id with a 400', async () => {
+    await expect(guard.canActivate(contextFor('abc').context)).rejects.toThrow(BadRequestException);
+    await expect(guard.canActivate(contextFor('0').context)).rejects.toThrow(BadRequestException);
   });
 });

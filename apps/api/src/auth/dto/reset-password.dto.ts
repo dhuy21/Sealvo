@@ -1,5 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsByteLength, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { AUTH_LIMITS } from '@sealvo/shared';
+import { PASSWORD_TOO_LONG_MESSAGE } from './register.dto.js';
 
 export class ResetPasswordDto {
   @ApiProperty()
@@ -7,8 +9,9 @@ export class ResetPasswordDto {
   @IsNotEmpty()
   token!: string;
 
-  @ApiProperty({ minLength: 8 })
+  @ApiProperty({ minLength: AUTH_LIMITS.RESET_PASSWORD_MIN })
   @IsString()
-  @MinLength(8)
+  @MinLength(AUTH_LIMITS.RESET_PASSWORD_MIN)
+  @IsByteLength(0, AUTH_LIMITS.PASSWORD_MAX_BYTES, { message: PASSWORD_TOO_LONG_MESSAGE })
   password!: string;
 }

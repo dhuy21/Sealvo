@@ -1,12 +1,47 @@
 import { ImportQueueService } from './import-queue.service.js';
 
+describe('ImportQueueService publishing', () => {
+  let rabbitmq: { publish: any; onChannelReady: any };
+  let service: ImportQueueService;
+
+  beforeEach(() => {
+    rabbitmq = { publish: vi.fn(), onChannelReady: vi.fn() };
+    service = new ImportQueueService(rabbitmq as any, {} as any, {} as any, {} as any);
+  });
+
+  it('asserts its topology on every channel the RabbitMQ service opens', async () => {
+    const channel = { assertExchange: vi.fn(), assertQueue: vi.fn(), bindQueue: vi.fn() };
+    service.onModuleInit();
+
+    await rabbitmq.onChannelReady.mock.calls[0][0](channel);
+
+    expect(channel.assertExchange).toHaveBeenCalledWith('import.direct', 'direct', {
+      durable: true,
+    });
+    expect(channel.bindQueue).toHaveBeenCalledWith('import.process', 'import.direct', 'import');
+  });
+
+  it('reports whether the broker confirmed the job', async () => {
+    const payload = { jobId: 'job-1', wordsData: [], packageId: 7, userId: 'u1' };
+    rabbitmq.publish.mockResolvedValue(false);
+
+    await expect(service.publish(payload)).resolves.toBe(false);
+    expect(rabbitmq.publish).toHaveBeenCalledWith(
+      'import.direct',
+      'import',
+      Buffer.from(JSON.stringify(payload)),
+      { persistent: true, contentType: 'application/json' },
+    );
+  });
+});
+
 describe('ImportQueueService consumer', () => {
-  let handler: (msg: unknown) => Promise<void>;
-  let channel: { consume: any; ack: any; nack: any; sendToQueue: any };
+  let handler: (msg: unknown, ch: unknown) => Promise<void>;
+  let channel: { ack: any; nack: any; sendToQueue: any };
   let jobTracker: { update: any };
   let wordsService: { addWords: any };
 
-  const message = (count: number) => ({
+  const message = (count: number, { redelivered = false, deaths = 0 } = {}) => ({
     content: Buffer.from(
       JSON.stringify({
         jobId: 'job-1',
@@ -15,8 +50,12 @@ describe('ImportQueueService consumer', () => {
         userId: 'u1',
       }),
     ),
-    properties: { headers: {} },
+    properties: {
+      headers: deaths ? { 'x-death': [{ queue: 'import.process', reason: 'rejected', count: deaths }] } : {},
+    },
+    fields: { redelivered },
   });
+  const run = (msg: unknown) => handler(msg, channel);
   const savingUpdates = () =>
     jobTracker.update.mock.calls
       .map(
@@ -29,14 +68,7 @@ describe('ImportQueueService consumer', () => {
       .map((p: { current: number }) => p.current);
 
   beforeEach(async () => {
-    channel = {
-      consume: vi.fn((_queue, cb) => {
-        handler = cb;
-      }),
-      ack: vi.fn(),
-      nack: vi.fn(),
-      sendToQueue: vi.fn(),
-    };
+    channel = { ack: vi.fn(), nack: vi.fn(), sendToQueue: vi.fn() };
     jobTracker = { update: vi.fn().mockResolvedValue(true) };
     wordsService = {
       addWords: vi.fn(
@@ -49,7 +81,11 @@ describe('ImportQueueService consumer', () => {
     };
 
     const service = new ImportQueueService(
-      { createChannel: vi.fn().mockResolvedValue(channel) } as any,
+      {
+        consume: vi.fn((_queue: string, cb: typeof handler) => {
+          handler = cb;
+        }),
+      } as any,
       { del: vi.fn() } as any,
       wordsService as any,
       jobTracker as any,
@@ -58,7 +94,7 @@ describe('ImportQueueService consumer', () => {
   });
 
   it('publishes saving progress about every 5% of the words', async () => {
-    await handler(message(45));
+    await run(message(45));
 
     expect(wordsService.addWords).toHaveBeenCalledWith(
       7,
@@ -75,7 +111,7 @@ describe('ImportQueueService consumer', () => {
   });
 
   it('publishes every word of a small import', async () => {
-    await handler(message(3));
+    await run(message(3));
 
     expect(savingUpdates()).toEqual([0, 1, 2, 3]);
   });
@@ -87,7 +123,7 @@ describe('ImportQueueService consumer', () => {
     });
     const msg = message(3);
 
-    await handler(msg);
+    await run(msg);
 
     expect(jobTracker.update).toHaveBeenLastCalledWith('job-1', {
       status: 'completed',
@@ -96,5 +132,50 @@ describe('ImportQueueService consumer', () => {
     });
     expect(channel.ack).toHaveBeenCalledWith(msg);
     expect(channel.nack).not.toHaveBeenCalled();
+  });
+
+  it('acks a message that is not an import job without processing it', async () => {
+    const msg = { content: Buffer.from('{"jobId":"job-1"}'), properties: { headers: {} }, fields: {} };
+
+    await run(msg);
+
+    expect(wordsService.addWords).not.toHaveBeenCalled();
+    expect(channel.ack).toHaveBeenCalledWith(msg);
+  });
+
+  it('sends an interrupted delivery through the retry queue instead of running it again at once', async () => {
+    const msg = message(3, { redelivered: true });
+
+    await run(msg);
+
+    expect(wordsService.addWords).not.toHaveBeenCalled();
+    expect(channel.nack).toHaveBeenCalledWith(msg, false, false);
+  });
+
+  it('fails a job interrupted again after its retry (a job that crashes the worker)', async () => {
+    const msg = message(3, { redelivered: true, deaths: 1 });
+
+    await run(msg);
+
+    expect(channel.sendToQueue).toHaveBeenCalledWith('import.failed', msg.content, { persistent: true });
+    expect(channel.ack).toHaveBeenCalledWith(msg);
+    expect(jobTracker.update).toHaveBeenLastCalledWith('job-1', expect.objectContaining({ status: 'failed' }));
+  });
+
+  it('writes the final status after every progress update, even slow ones', async () => {
+    jobTracker.update.mockImplementation(
+      (_id: string, fields: { status?: string }) =>
+        new Promise((resolve) => setTimeout(() => resolve(true), fields.status ? 0 : 5)),
+    );
+    wordsService.addWords.mockImplementation(
+      async (_p: number, data: unknown[], { onProgress }: { onProgress: (phase: string, n: number) => Promise<unknown> }) => {
+        for (let i = 1; i <= data.length; i++) void onProgress('saving', i);
+        return { successCount: data.length, alreadyApplied: false };
+      },
+    );
+
+    await run(message(3));
+
+    expect(jobTracker.update).toHaveBeenLastCalledWith('job-1', expect.objectContaining({ status: 'completed' }));
   });
 });

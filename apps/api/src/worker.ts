@@ -12,6 +12,9 @@ import { WorkerModule } from './worker.module.js';
 import { RabbitmqService } from './rabbitmq/rabbitmq.service.js';
 import { EmailQueueService } from './email/email-queue.service.js';
 import { ImportQueueService } from './import/import-queue.service.js';
+import { RedisService } from './redis/redis.service.js';
+import { buildConfig, type BuildConfig } from './config/build.config.js';
+import { startHeartbeat } from './health/heartbeat.js';
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(WorkerModule);
@@ -26,11 +29,7 @@ async function bootstrap() {
   const emailQueue = app.get(EmailQueueService);
   const importQueue = app.get(ImportQueueService);
 
-  // Setup queue topologies
-  await emailQueue.setupTopology();
-  await importQueue.setupTopology();
-
-  // Start consumers
+  // Topologies are asserted by the queue services whenever the channel opens
   await emailQueue.startConsumer();
   await importQueue.startConsumer();
 
@@ -40,10 +39,20 @@ async function bootstrap() {
     process.exit(1);
   });
 
+  // Lets the deploy check that this commit's worker is running (no HTTP server to probe)
+  const stopHeartbeat = startHeartbeat(
+    app.get(RedisService),
+    'worker',
+    app.get<BuildConfig>(buildConfig.KEY).gitSha,
+  );
+
   console.log('[worker] Ready — consuming email + import queues.');
 
   const shutdown = async (signal: string) => {
     console.log(`[worker] ${signal} received, shutting down...`);
+    stopHeartbeat();
+    // Before app.close(): the jobs in progress still need Prisma and Redis
+    await rabbitmq.stopConsumers();
     await app.close();
     process.exit(0);
   };

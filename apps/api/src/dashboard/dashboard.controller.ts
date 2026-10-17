@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { DashboardService } from './dashboard.service.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
+import { THROTTLE, Throttled } from '../common/throttler/throttle-policies.js';
 
 @ApiTags('Dashboard')
 @Controller('dashboard')
@@ -21,6 +22,7 @@ export class DashboardController {
   }
 
   @Patch('profile')
+  @Throttled(THROTTLE.PROFILE)
   @ApiOperation({
     summary: 'Update user profile (username, avatar); an email change is confirmed via the new address',
   })

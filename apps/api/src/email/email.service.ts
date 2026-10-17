@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { mailConfig, type MailConfig } from '../config/mail.config.js';
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
@@ -23,32 +23,24 @@ export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private readonly templates = new Map<string, ReturnType<typeof handlebars.compile>>();
   private transporter: Transporter;
-  private readonly fromAddress: string;
-  private readonly isStaging: boolean;
-  private readonly stagingIntercept: string | undefined;
-
-  constructor(private readonly config: ConfigService) {
+  constructor(@Inject(mailConfig.KEY) private readonly config: MailConfig) {
     const sesClient = new SESv2Client({
-      region: this.config.getOrThrow<string>('AWS_REGION'),
+      region: config.region,
       credentials: {
-        accessKeyId: this.config.getOrThrow<string>('AWS_ACCESS_KEY_ID'),
-        secretAccessKey: this.config.getOrThrow<string>('AWS_SECRET_ACCESS_KEY'),
+        accessKeyId: config.accessKeyId,
+        secretAccessKey: config.secretAccessKey,
       },
     });
 
     this.transporter = nodemailer.createTransport({
       SES: { sesClient, SendEmailCommand },
     });
-
-    this.fromAddress = this.config.getOrThrow<string>('AWS_SES_FROM');
-    this.isStaging = this.config.get<string>('NODE_ENV') === 'staging';
-    this.stagingIntercept = this.config.get<string>('STAGING_EMAIL_INTERCEPT');
   }
 
   /** Staging interceptor: redirect emails to test inbox */
   private resolveRecipient(email: string) {
-    if (this.isStaging && this.stagingIntercept) {
-      return { to: this.stagingIntercept, intercepted: true, original: email };
+    if (this.config.interceptTo) {
+      return { to: this.config.interceptTo, intercepted: true, original: email };
     }
     return { to: email, intercepted: false, original: email };
   }
@@ -70,7 +62,7 @@ export class EmailService {
           withTimeout(
             () =>
               this.transporter.sendMail({
-                from: this.fromAddress,
+                from: this.config.from,
                 to,
                 subject: resolvedSubject,
                 html: htmlContent,

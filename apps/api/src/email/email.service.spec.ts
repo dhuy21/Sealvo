@@ -1,4 +1,4 @@
-import type { ConfigService } from '@nestjs/config';
+import { testMailConfig } from '../config/testing.js';
 import { EmailService } from './email.service.js';
 
 describe('EmailService.sendEmail', () => {
@@ -7,8 +7,7 @@ describe('EmailService.sendEmail', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    const config = { getOrThrow: () => 'x', get: () => undefined };
-    service = new EmailService(config as unknown as ConfigService);
+    service = new EmailService(testMailConfig());
     sendMail = vi.fn();
     (service as any).transporter = { sendMail };
   });
@@ -55,5 +54,19 @@ describe('EmailService.sendEmail', () => {
 
     await expect(result).resolves.toBe(false);
     expect(sendMail).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('EmailService.compileTemplate', () => {
+  const service = new EmailService(testMailConfig());
+
+  it.each([
+    ['mailVerification.hbs', 1],
+    ['mailResetPassword.hbs', 2],
+  ])('%s states the link lifetime it is given', (template, occurrences) => {
+    const html = service.compileTemplate(template, { username: 'ann', expiresIn: '42 minutes' });
+
+    expect(html.split('42 minutes')).toHaveLength(occurrences + 1);
+    expect(html).not.toMatch(/\d+ heures?\b/);
   });
 });

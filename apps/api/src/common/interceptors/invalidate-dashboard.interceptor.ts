@@ -1,7 +1,7 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { mergeMap } from 'rxjs';
-import { CacheService } from '../redis/cache.service.js';
-import { CACHE_KEYS } from '../redis/cache-keys.constant.js';
+import { CacheService } from '../../redis/cache.service.js';
+import { CACHE_KEYS } from '../../redis/cache-keys.constants.js';
 
 /**
  * Clears the cached dashboard after a successful mutation. Uses the package owner set by

@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Logger,
   Post,
   Query,
@@ -13,21 +14,23 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
-import { ThrottleMessage } from '../common/decorators/throttle-message.decorator.js';
+import { THROTTLE, Throttled } from '../common/throttler/throttle-policies.js';
 import type { CookieOptions, Request, Response } from 'express';
 import { AuthService } from './auth.service.js';
 import { EmailVerificationService } from './email-verification.service.js';
 import { PasswordResetService } from './password-reset.service.js';
 import { GoogleAuthService } from './google-auth.service.js';
+import { SESSION_TTL_MS } from './auth.constants.js';
+import { appConfig, type AppConfig } from '../config/app.config.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
 import { ResetPasswordDto } from './dto/reset-password.dto.js';
 import { VerifyEmailDto } from './dto/verify-email.dto.js';
+import { ResendVerificationDto } from './dto/resend-verification.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
+import { SameOriginGuard } from './guards/same-origin.guard.js';
 import { CurrentUser } from './decorators/current-user.decorator.js';
 
 const REFRESH_COOKIE = 'refresh_token';
@@ -44,11 +47,11 @@ export class AuthController {
     private readonly emailVerificationService: EmailVerificationService,
     private readonly passwordResetService: PasswordResetService,
     private readonly googleAuthService: GoogleAuthService,
-    private readonly config: ConfigService,
+    @Inject(appConfig.KEY) private readonly app: AppConfig,
   ) {}
 
   private get secureCookies(): boolean {
-    return ['production', 'staging'].includes(this.config.get<string>('NODE_ENV') ?? '');
+    return this.app.isDeployed;
   }
 
   // clearCookie must receive the same attributes as cookie, otherwise some browsers keep the cookie
@@ -69,7 +72,7 @@ export class AuthController {
   private setRefreshCookie(res: Response, refreshToken: string) {
     res.cookie(REFRESH_COOKIE, refreshToken, {
       ...this.refreshCookieOptions,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: SESSION_TTL_MS,
     });
   }
 
@@ -78,18 +81,18 @@ export class AuthController {
   }
 
   @Post('register')
-  @Throttle({ default: { ttl: 15 * 60_000, limit: 5 } })
-  @ThrottleMessage("Trop de tentatives d'inscription. Réessayez dans 15 minutes.")
+  @UseGuards(SameOriginGuard)
+  @Throttled(THROTTLE.REGISTER)
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
-  @ApiResponse({ status: 409, description: 'Username or email already taken' })
+  @ApiResponse({ status: 409, description: 'Username already taken (a taken email gets the 201 response)' })
   async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
   @Post('login')
-  @Throttle({ default: { ttl: 15 * 60_000, limit: 10 } })
-  @ThrottleMessage('Trop de tentatives de connexion. Réessayez dans 15 minutes.')
+  @UseGuards(SameOriginGuard)
+  @Throttled(THROTTLE.LOGIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login with username and password' })
   @ApiResponse({ status: 200, description: 'Login successful, returns access token' })
@@ -101,6 +104,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @UseGuards(SameOriginGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Rotate the refresh cookie and return a new access token' })
   @ApiResponse({ status: 200, description: 'New access token returned' })
@@ -119,7 +123,7 @@ export class AuthController {
   }
 
   @Post('logout')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(SameOriginGuard, JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout: revokes this device session and clears the refresh cookie' })
@@ -135,8 +139,7 @@ export class AuthController {
   }
 
   @Post('forgot-password')
-  @Throttle({ default: { ttl: 60 * 60_000, limit: 3 } })
-  @ThrottleMessage('Trop de demandes de réinitialisation. Réessayez dans 1 heure.')
+  @Throttled(THROTTLE.FORGOT_PASSWORD)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Send password reset email' })
   @ApiResponse({
@@ -148,8 +151,7 @@ export class AuthController {
   }
 
   @Post('reset-password')
-  @Throttle({ default: { ttl: 15 * 60_000, limit: 10 } })
-  @ThrottleMessage('Trop de tentatives de connexion. Réessayez dans 15 minutes.')
+  @Throttled(THROTTLE.RESET_PASSWORD)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset password with token' })
   @ApiResponse({ status: 200, description: 'Password reset successful' })
@@ -166,6 +168,18 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'Email change: the new address was taken meanwhile' })
   async verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.emailVerificationService.verifyEmail(dto.token);
+  }
+
+  @Post('resend-verification')
+  @Throttled(THROTTLE.RESEND_VERIFICATION)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Resend the verification email of an unverified account' })
+  @ApiResponse({
+    status: 200,
+    description: 'Generic message; the email is only sent if an unverified account matches',
+  })
+  async resendVerification(@Body() dto: ResendVerificationDto) {
+    return this.emailVerificationService.resendVerification(dto.username);
   }
 
   @Get('google')
@@ -191,7 +205,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+    const { frontendUrl } = this.app;
     const expectedState: unknown = req.cookies?.[GOOGLE_STATE_COOKIE];
     res.clearCookie(GOOGLE_STATE_COOKIE, this.googleStateCookieOptions);
 

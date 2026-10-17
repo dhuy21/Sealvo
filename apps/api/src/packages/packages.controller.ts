@@ -18,7 +18,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { PackagesService } from './packages.service.js';
 import { CreatePackageDto } from './dto/create-package.dto.js';
 import { UpdatePackageDto } from './dto/update-package.dto.js';
-import { InvalidateDashboardInterceptor } from './invalidate-dashboard.interceptor.js';
+import { InvalidateDashboardInterceptor } from '../common/interceptors/invalidate-dashboard.interceptor.js';
 
 @ApiTags('Packages')
 @Controller('packages')

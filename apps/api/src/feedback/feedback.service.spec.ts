@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
+import { appConfig } from '../config/app.config.js';
+import { testAppConfig, testMailConfig } from '../config/testing.js';
 import { InternalServerErrorException } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
@@ -14,15 +15,14 @@ describe('FeedbackService', () => {
 
   beforeEach(async () => {
     emailQueue = { enqueue: vi.fn() };
-    const config = { getOrThrow: vi.fn().mockReturnValue('admin@test.com'), get: vi.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
         FeedbackService,
-        { provide: ConfigService, useValue: config },
+        { provide: appConfig.KEY, useValue: testAppConfig() },
         { provide: EmailQueueService, useValue: emailQueue },
         // Real EmailService so the feedback.hbs template and its escaping are exercised
-        { provide: EmailService, useFactory: () => new EmailService(config as any) },
+        { provide: EmailService, useFactory: () => new EmailService(testMailConfig()) },
       ],
     }).compile();
 

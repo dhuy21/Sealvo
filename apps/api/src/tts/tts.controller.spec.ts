@@ -1,33 +1,22 @@
-import { ServiceUnavailableException, UnprocessableEntityException } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { GenerateAudioDto, TtsController } from './tts.controller.js';
+import { GenerateAudioDto } from './dto/generate-audio.dto.js';
+import { TtsController } from './tts.controller.js';
 import type { TtsService } from './tts.service.js';
 
 describe('TtsController', () => {
-  let synthesize: any;
-  let controller: TtsController;
-  const res = { setHeader: vi.fn(), send: vi.fn() } as any;
-  const dto = { text: 'hello', language: 'en-US' };
+  it('sends the audio with a cache lifetime matching the audio cache TTL', async () => {
+    const audio = Buffer.from('mp3');
+    const res = { setHeader: vi.fn(), send: vi.fn() } as any;
+    const controller = new TtsController({
+      synthesize: vi.fn().mockResolvedValue(audio),
+    } as unknown as TtsService);
 
-  beforeEach(() => {
-    synthesize = vi.fn();
-    controller = new TtsController({ synthesize } as unknown as TtsService);
-  });
+    await controller.generateAudio({ text: 'hello', language: 'en-US' }, res);
 
-  it('keeps the 422 for a language without voices', async () => {
-    synthesize.mockRejectedValue(new UnprocessableEntityException('no voice'));
-
-    await expect(controller.generateAudio(dto, res)).rejects.toThrow(UnprocessableEntityException);
-  });
-
-  it('maps upstream errors to a generic 503', async () => {
-    synthesize.mockRejectedValue(new Error('14 UNAVAILABLE: googleapis.com secret details'));
-
-    const error = await controller.generateAudio(dto, res).catch((e: unknown) => e);
-
-    expect(error).toBeInstanceOf(ServiceUnavailableException);
-    expect((error as Error).message).not.toContain('googleapis');
+    expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'audio/mpeg');
+    expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', 'public, max-age=86400');
+    expect(res.send).toHaveBeenCalledWith(audio);
   });
 });
 
@@ -39,10 +28,18 @@ describe('GenerateAudioDto', () => {
     expect(await errorsFor({ text: 'hello', language: 'zh-CN' })).toEqual([]);
   });
 
+  it('accepts an example sentence of up to 500 characters', async () => {
+    expect(await errorsFor({ text: 'a'.repeat(500), language: 'en-US' })).toEqual([]);
+  });
+
   it('rejects overly long text and malformed language codes', async () => {
-    expect(await errorsFor({ text: 'a'.repeat(201), language: 'english' })).toEqual([
+    expect(await errorsFor({ text: 'a'.repeat(501), language: 'english' })).toEqual([
       'text',
       'language',
     ]);
+  });
+
+  it('rejects a well-formed but unsupported language', async () => {
+    expect(await errorsFor({ text: 'hello', language: 'sv-SE' })).toEqual(['language']);
   });
 });

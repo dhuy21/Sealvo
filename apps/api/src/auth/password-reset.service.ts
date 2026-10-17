@@ -1,14 +1,17 @@
 import { createHash, randomBytes } from 'crypto';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { appConfig, type AppConfig } from '../config/app.config.js';
+import { formatDuration } from '../common/utils/format-duration.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
 import { EmailService } from '../email/email.service.js';
 
-const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 const FORGOT_PASSWORD_MESSAGE =
   'Si un compte est associé à cet email, un lien de réinitialisation vous a été envoyé';
+const INVALID_TOKEN_MESSAGE =
+  "Le jeton de réinitialisation du mot de passe n'est pas valide ou a expiré";
 
 @Injectable()
 export class PasswordResetService {
@@ -16,7 +19,7 @@ export class PasswordResetService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly config: ConfigService,
+    @Inject(appConfig.KEY) private readonly app: AppConfig,
     private readonly emailQueue: EmailQueueService,
     private readonly emailService: EmailService,
   ) {}
@@ -43,11 +46,12 @@ export class PasswordResetService {
       }),
     ]);
 
-    const baseUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+    const baseUrl = this.app.frontendUrl;
     const resetLink = `${baseUrl}/reset-password?token=${token}`;
     const htmlContent = this.emailService.compileTemplate('mailResetPassword.hbs', {
       username: user.username,
       resetPasswordLink: resetLink,
+      expiresIn: formatDuration(RESET_TOKEN_TTL_MS),
     });
 
     const sent = await this.emailQueue.enqueue({
@@ -68,21 +72,25 @@ export class PasswordResetService {
     const resetToken = await this.prisma.password_reset_tokens.findFirst({
       where: { token_hash: tokenHash, expires_at: { gt: new Date() } },
     });
-    if (!resetToken) {
-      throw new BadRequestException(
-        "Le jeton de réinitialisation du mot de passe n'est pas valide ou a expiré",
-      );
-    }
+    if (!resetToken) throw new BadRequestException(INVALID_TOKEN_MESSAGE);
 
     const userId = resetToken.user_id;
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // New password: consume the token and log out every device (RFC 9700 §4.14.2)
-    await this.prisma.$transaction([
-      this.prisma.users.update({ where: { id: userId }, data: { password: hashedPassword } }),
-      this.prisma.password_reset_tokens.deleteMany({ where: { user_id: userId } }),
-      this.prisma.refresh_sessions.deleteMany({ where: { user_id: userId } }),
-    ]);
+    // New password: consume the token and log out every device (RFC 9700 §4.14.2). A pending email
+    // change may come from whoever forced this reset: its confirmation link must stop working too.
+    await this.prisma.$transaction(async (tx) => {
+      // Two requests with the same token: only the one that deletes it changes the password
+      const consumed = await tx.password_reset_tokens.deleteMany({ where: { token_hash: tokenHash } });
+      if (consumed.count === 0) throw new BadRequestException(INVALID_TOKEN_MESSAGE);
+      await tx.password_reset_tokens.deleteMany({ where: { user_id: userId } });
+      await tx.users.update({ where: { id: userId }, data: { password: hashedPassword } });
+      await tx.refresh_sessions.deleteMany({ where: { user_id: userId } });
+      await tx.email_verification.updateMany({
+        where: { user_id: userId, status: 'pending' },
+        data: { status: 'revoked' },
+      });
+    });
 
     return { message: 'Votre mot de passe a été réinitialisé avec succès' };
   }

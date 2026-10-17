@@ -1,8 +1,9 @@
 import { ConflictException, Injectable } from '@nestjs/common';
+import type { Level } from '@sealvo/shared';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { EmailVerificationService } from '../auth/email-verification.service.js';
 import { CacheService } from '../redis/cache.service.js';
-import { CACHE_KEYS, CACHE_TTL } from '../redis/cache-keys.constant.js';
+import { CACHE_KEYS, CACHE_TTL } from '../redis/cache-keys.constants.js';
 import { dueWhereConditions } from '../learning/spaced-repetition.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 
@@ -33,24 +34,21 @@ export class DashboardService {
     const cached = await this.cache.get<DashboardStats>(CACHE_KEYS.dashboard(userId));
     if (cached) return cached;
 
-    const [user, totalWords, learnedWords, newWords, level0, level1, level2, packagesToReview] =
-      await Promise.all([
-        this.prisma.users.findUnique({ where: { id: userId }, select: { streak: true } }),
-        this.countTotalWords(userId),
-        this.countWordsByLevel(userId, 'v'),
-        this.countWordsByLevel(userId, 'x'),
-        this.countWordsByLevel(userId, 'level_0'),
-        this.countWordsByLevel(userId, 'level_1'),
-        this.countWordsByLevel(userId, 'level_2'),
-        this.getPackagesToReview(userId),
-      ]);
+    const [user, byLevel, packagesToReview] = await Promise.all([
+      this.prisma.users.findUnique({ where: { id: userId }, select: { streak: true } }),
+      this.countWordsByLevel(userId),
+      this.getPackagesToReview(userId),
+    ]);
 
+    const totalWords = Object.values(byLevel).reduce((sum, n) => sum + n, 0);
+    const learnedWords = byLevel.v;
+    const newWords = byLevel.x;
     const stats: DashboardStats = {
       streak: user?.streak ?? 0,
       totalWords,
       learnedWords,
       newWords,
-      islearningWords: level0 + level1 + level2,
+      islearningWords: totalWords - learnedWords - newWords,
       packagesToReview,
     };
 
@@ -91,19 +89,15 @@ export class DashboardService {
     return { pendingEmail };
   }
 
-  private async countTotalWords(userId: string): Promise<number> {
-    return this.prisma.learning.count({
+  private async countWordsByLevel(userId: string): Promise<Record<Level, number>> {
+    const rows = await this.prisma.learning.groupBy({
+      by: ['level'],
       where: { packages: { user_id: userId } },
+      _count: { _all: true },
     });
-  }
-
-  private async countWordsByLevel(userId: string, level: string): Promise<number> {
-    return this.prisma.learning.count({
-      where: {
-        level: level as any,
-        packages: { user_id: userId },
-      },
-    });
+    const counts: Record<Level, number> = { x: 0, level_0: 0, level_1: 0, level_2: 0, v: 0 };
+    for (const row of rows) counts[row.level] = row._count._all;
+    return counts;
   }
 
   private async getPackagesToReview(userId: string): Promise<PackageToReview[]> {

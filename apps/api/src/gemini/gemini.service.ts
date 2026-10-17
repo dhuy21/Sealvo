@@ -1,7 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { GoogleGenAI } from '@google/genai';
 import { CircuitBreaker, isTransientError, withRetry, withTimeout } from '@sealvo/shared';
+import { geminiConfig, type GeminiConfig } from '../config/gemini.config.js';
+
+const GENERATE_TIMEOUT_MS = 30_000;
+const MODIFY_TIMEOUT_MS = 15_000;
+const RETRIES = 1;
+const RETRY_DELAY_MS = 2_000;
+const BREAKER_THRESHOLD = 5;
+const BREAKER_RESET_MS = 60_000;
 
 export interface ExamplePayload {
   id: number;
@@ -12,7 +19,7 @@ export interface ExamplePayload {
   example?: string;
 }
 
-interface GeneratedExample {
+export interface GeneratedExample {
   id: number | string;
   example: unknown;
 }
@@ -68,36 +75,14 @@ export class GeminiService {
   private readonly logger = new Logger(GeminiService.name);
   private readonly apiKey: string | undefined;
   private client: GoogleGenAI | null = null;
-  private readonly modifyTimeout: number;
-  private readonly generateTimeout: number;
-  private readonly retries: number;
-  private readonly retryDelay: number;
-  private readonly breaker: CircuitBreaker;
+  private readonly breaker = new CircuitBreaker({
+    name: 'gemini',
+    threshold: BREAKER_THRESHOLD,
+    resetTimeout: BREAKER_RESET_MS,
+  });
 
-  constructor(config: ConfigService) {
-    const intEnv = (key: string, fallback: number) => {
-      const n = parseInt(config.get<string>(key) ?? '', 10);
-      return Number.isNaN(n) ? fallback : n;
-    };
-
-    this.apiKey = config.get<string>('GEMINI_API_KEY');
-    this.modifyTimeout = intEnv('GEMINI_MODIFY_TIMEOUT_MS', 15000);
-    this.generateTimeout = intEnv('GEMINI_GENERATE_TIMEOUT_MS', 30000);
-    this.retries = intEnv('GEMINI_RETRIES', 1);
-    this.retryDelay = intEnv('GEMINI_RETRY_DELAY_MS', 2000);
-    this.breaker = new CircuitBreaker({
-      name: 'gemini',
-      threshold: intEnv('GEMINI_BREAKER_THRESHOLD', 5),
-      resetTimeout: intEnv('GEMINI_BREAKER_RESET_MS', 60000),
-    });
-  }
-
-  /** Sets `example` on each word whose array index matches a returned `id`. */
-  replaceExample(words: { example?: string }[], replacements: GeneratedExample[]) {
-    words.forEach((word, id) => {
-      const found = replacements.find((r) => Number(r.id) === id);
-      if (typeof found?.example === 'string') word.example = found.example;
-    });
+  constructor(@Inject(geminiConfig.KEY) config: GeminiConfig) {
+    this.apiKey = config.apiKey;
   }
 
   /** Never throws: returns [] when the key is missing, Gemini fails or the output is not JSON. */
@@ -106,7 +91,7 @@ export class GeminiService {
       'generateExample',
       'gemini-2.5-flash',
       generatePrompt(words),
-      this.generateTimeout,
+      GENERATE_TIMEOUT_MS,
       words.length,
     );
   }
@@ -117,7 +102,7 @@ export class GeminiService {
       'modifyExample',
       'gemini-2.5-flash-lite',
       modifyPrompt(words),
-      this.modifyTimeout,
+      MODIFY_TIMEOUT_MS,
       words.length,
     );
   }
@@ -142,8 +127,8 @@ export class GeminiService {
           () =>
             withTimeout(() => client.models.generateContent({ model, contents: prompt }), timeout),
           {
-            retries: this.retries,
-            delay: this.retryDelay,
+            retries: RETRIES,
+            delay: RETRY_DELAY_MS,
             shouldRetry: isTransientError,
           },
         ),

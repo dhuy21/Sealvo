@@ -51,7 +51,7 @@ describe('spaced-repetition', () => {
     const today = new Date('2026-10-16T22:00:00Z');
 
     expect(dueWhereConditions(today)).toEqual(
-      ['x', 'level_0', 'level_1', 'level_2', 'v'].map((level) => ({
+      (['x', 'level_0', 'level_1', 'level_2', 'v'] as const).map((level) => ({
         level,
         date_memorized: { lt: dueCutoff(level, today) },
       })),

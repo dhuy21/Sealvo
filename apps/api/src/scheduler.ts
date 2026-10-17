@@ -9,10 +9,13 @@
  */
 
 import { NestFactory } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
 import cron from 'node-cron';
 import { SchedulerModule } from './scheduler.module.js';
+import { schedulerConfig, type SchedulerConfig } from './config/scheduler.config.js';
 import { RedisService } from './redis/redis.service.js';
+import { dailyCron, maxGapMs } from './daily-schedule.js';
+import { buildConfig, type BuildConfig } from './config/build.config.js';
+import { startHeartbeat } from './health/heartbeat.js';
 
 interface ScheduledTask {
   name: string;
@@ -22,12 +25,14 @@ interface ScheduledTask {
   description: string;
 }
 
+const REMINDER_HOURS = [6, 12, 18, 23];
+
 const TASKS: ScheduledTask[] = [
   {
     name: 'reminder',
-    cron: '0 6,12,18,23 * * *',
+    cron: dailyCron(REMINDER_HOURS),
     endpoint: '/api/reminder',
-    maxGapMs: 7 * 3600 * 1000,
+    maxGapMs: maxGapMs(REMINDER_HOURS),
     description: 'Vocabulary reminder emails + expired account cleanup',
   },
 ];
@@ -39,11 +44,10 @@ const REQUEST_TIMEOUT_MS = 120_000;
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(SchedulerModule);
 
-  const config = app.get(ConfigService);
+  const { apiUrl, cronSecret } = app.get<SchedulerConfig>(schedulerConfig.KEY);
   const redis = app.get(RedisService);
-
-  const apiUrl = config.getOrThrow<string>('SCHEDULER_API_URL');
-  const cronSecret = config.getOrThrow<string>('CRON_SECRET');
+  // Before the catch-up, which can take minutes: lets the deploy check this commit is running
+  const stopHeartbeat = startHeartbeat(redis, 'scheduler', app.get<BuildConfig>(buildConfig.KEY).gitSha);
 
   // ── Helper functions ──
 
@@ -145,6 +149,7 @@ async function bootstrap() {
     }, 5000);
     (forceExitTimer as NodeJS.Timeout).unref();
     jobs.forEach((j) => j.stop());
+    stopHeartbeat();
     await app.close();
     process.exit(0);
   };

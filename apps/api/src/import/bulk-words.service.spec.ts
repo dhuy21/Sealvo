@@ -36,8 +36,10 @@ describe('BulkWordsService', () => {
     const data = words(3);
 
     await expect(service.add('addWords', 7, 'u1', data)).resolves.toEqual({
-      async: true,
+      success: true,
       jobId: 'job-1',
+      async: true,
+      message: 'Traitement en cours.',
     });
     expect(jobTracker.create).toHaveBeenCalledWith('addWords', {
       packageId: '7',
@@ -55,14 +57,20 @@ describe('BulkWordsService', () => {
 
   it('saves fewer than 3 added words synchronously', async () => {
     await expect(service.add('addWords', 7, 'u1', words(2))).resolves.toEqual({
+      success: true,
       async: false,
-      imported: 2,
+      message: '2 mot(s) ajouté(s) avec succès.',
     });
     expect(jobTracker.create).not.toHaveBeenCalled();
   });
 
   it('queues any import, without wordCount in the job meta', async () => {
-    await expect(service.add('import', 7, 'u1', words(1))).resolves.toMatchObject({ async: true });
+    await expect(service.add('import', 7, 'u1', words(1))).resolves.toEqual({
+      success: true,
+      jobId: 'job-1',
+      async: true,
+      message: 'Import en cours de traitement.',
+    });
     expect(jobTracker.create).toHaveBeenCalledWith('import', { packageId: '7', userId: 'u1' });
   });
 
@@ -70,15 +78,22 @@ describe('BulkWordsService', () => {
     importQueue.publish.mockReturnValue(false);
 
     await expect(service.add('addWords', 7, 'u1', words(4))).resolves.toEqual({
+      success: true,
       async: false,
-      imported: 4,
+      message: '4 mot(s) ajouté(s) avec succès.',
     });
     expect(jobTracker.remove).toHaveBeenCalledWith('job-1');
+    // The unconfirmed message may still reach the worker: both saves claim the same job
+    expect(wordsService.addWords).toHaveBeenCalledWith(7, expect.any(Array), { jobId: 'job-1' });
   });
 
   it('falls back to a synchronous save without RabbitMQ or when the job cannot be created', async () => {
     rabbitmq.getChannel.mockReturnValue(null);
-    await expect(service.add('import', 7, 'u1', words(3))).resolves.toMatchObject({ async: false });
+    await expect(service.add('import', 7, 'u1', words(3))).resolves.toEqual({
+      success: true,
+      async: false,
+      message: '3 mot(s) importé(s) avec succès.',
+    });
 
     rabbitmq.getChannel.mockReturnValue({});
     jobTracker.create.mockResolvedValue(null);

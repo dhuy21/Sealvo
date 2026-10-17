@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PackageOwnershipGuard } from '../auth/guards/package-ownership.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
-import { InvalidateDashboardInterceptor } from '../packages/invalidate-dashboard.interceptor.js';
+import { InvalidateDashboardInterceptor } from '../common/interceptors/invalidate-dashboard.interceptor.js';
 import { LearningService } from './learning.service.js';
 import { TrackGameDto } from './dto/track-game.dto.js';
 import { ResetLevelDto } from './dto/reset-level.dto.js';

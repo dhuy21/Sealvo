@@ -1,65 +1,81 @@
 import { applyDecorators } from '@nestjs/common';
-import { plainToInstance, type ClassConstructor } from 'class-transformer';
-import { IsDefined, IsOptional, IsString, validateSync } from 'class-validator';
+import { plainToInstance, Transform, type ClassConstructor } from 'class-transformer';
+import {
+  IsDefined,
+  IsEmail,
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsPort,
+  IsString,
+  IsUrl,
+  validateSync,
+} from 'class-validator';
 
-// Required means "set", like ConfigService.getOrThrow: an empty value is accepted.
-// Defaults stay where each variable is read.
-const Required = () => applyDecorators(IsDefined({ message: '$property is required' }), IsString());
+export const NODE_ENVS = ['development', 'test', 'staging', 'production'] as const;
+export type NodeEnv = (typeof NODE_ENVS)[number];
+
+// Required means "set to a non-empty value": a blank `KEY=` line in .env counts as missing
+const Required = () =>
+  applyDecorators(
+    IsDefined({ message: '$property is required' }),
+    IsString(),
+    IsNotEmpty({ message: '$property must not be empty' }),
+  );
 const Optional = () => applyDecorators(IsOptional(), IsString());
+const Url = () =>
+  IsUrl({ require_tld: false, require_protocol: true }, { message: '$property must be a URL with its protocol' });
 
 class RedisEnv {
   @Optional() REDIS_URL?: string;
   @Optional() REDIS_HOST?: string;
-  @Optional() REDIS_PORT?: string;
+  @IsPort() REDIS_PORT = '6379';
   @Optional() REDIS_PASSWORD?: string;
-  @Optional() REDIS_USER?: string;
+  @Optional() REDIS_USER = 'default';
 }
 
 class SchedulerEnv extends RedisEnv {
-  @Required() SCHEDULER_API_URL!: string;
+  @Required() @Url() SCHEDULER_API_URL!: string;
   @Required() CRON_SECRET!: string;
 }
 
 class WorkerEnv extends RedisEnv {
-  @Optional() NODE_ENV?: string;
+  @IsIn(NODE_ENVS) NODE_ENV: NodeEnv = 'development';
 
   // Read by Prisma itself, which fails on connect without it
   @Required() DATABASE_URL!: string;
 
   @Optional() RABBITMQ_URL?: string;
   @Optional() RABBITMQ_HOST?: string;
-  @Optional() RABBITMQ_PORT?: string;
-  @Optional() RABBITMQ_USER?: string;
-  @Optional() RABBITMQ_PASS?: string;
+  @IsPort() RABBITMQ_PORT = '5672';
+  @Optional() RABBITMQ_USER = 'guest';
+  @Optional() RABBITMQ_PASS = 'guest';
 
   @Required() AWS_REGION!: string;
   @Required() AWS_ACCESS_KEY_ID!: string;
   @Required() AWS_SECRET_ACCESS_KEY!: string;
-  @Required() AWS_SES_FROM!: string;
-  @Optional() STAGING_EMAIL_INTERCEPT?: string;
+  @Required() @IsEmail() AWS_SES_FROM!: string;
+  @IsOptional() @IsEmail() STAGING_EMAIL_INTERCEPT?: string;
 
   @Optional() GEMINI_API_KEY?: string;
-  @Optional() GEMINI_MODIFY_TIMEOUT_MS?: string;
-  @Optional() GEMINI_GENERATE_TIMEOUT_MS?: string;
-  @Optional() GEMINI_RETRIES?: string;
-  @Optional() GEMINI_RETRY_DELAY_MS?: string;
-  @Optional() GEMINI_BREAKER_THRESHOLD?: string;
-  @Optional() GEMINI_BREAKER_RESET_MS?: string;
 }
 
 /** The API also loads the email and import services, so it needs everything the worker does. */
 class ApiEnv extends WorkerEnv {
-  @Optional() PORT?: string;
-  @Optional() API_PORT?: string;
-  @Optional() FRONTEND_URL?: string;
+  @IsOptional() @IsPort() PORT?: string;
+  @IsPort() API_PORT = '3001';
+  // Joined with paths (`${FRONTEND_URL}/login`) and compared with the Origin header (CORS)
+  @Transform(({ value }) => (typeof value === 'string' ? value.replace(/\/+$/, '') : value))
+  @Url()
+  FRONTEND_URL = 'http://localhost:3000';
   @Optional() GIT_SHA?: string;
 
   @Required() JWT_ACCESS_SECRET!: string;
 
   @Required() GOOGLE_CLIENT_ID!: string;
   @Required() GOOGLE_CLIENT_SECRET!: string;
-  @Required() GOOGLE_REDIRECT_URI!: string;
-  @Required() FEEDBACK_RECIPIENT_EMAIL!: string;
+  @Required() @Url() GOOGLE_REDIRECT_URI!: string;
+  @Required() @IsEmail() FEEDBACK_RECIPIENT_EMAIL!: string;
 
   @Optional() GOOGLE_TTS_PROJECT_ID?: string;
   @Optional() GOOGLE_TTS_CLIENT_EMAIL?: string;
@@ -68,15 +84,74 @@ class ApiEnv extends WorkerEnv {
   @Optional() CRON_SECRET?: string;
 }
 
+/** Variables that only make sense together: either all set or none. */
+const GROUPS: Partial<Record<string, string[][]>> = {
+  ApiEnv: [['GOOGLE_TTS_PROJECT_ID', 'GOOGLE_TTS_CLIENT_EMAIL', 'GOOGLE_TTS_PRIVATE_KEY']],
+};
+
+type DeployedEnv = Extract<NodeEnv, 'production' | 'staging'>;
+
+/**
+ * Optional in development, required once deployed: their default (or absence) would silently be
+ * wrong there (CORS and email links; staging emails reaching real users).
+ */
+const REQUIRED_WHEN_DEPLOYED: Partial<Record<string, Partial<Record<DeployedEnv, string[]>>>> = {
+  ApiEnv: { production: ['FRONTEND_URL'], staging: ['FRONTEND_URL', 'STAGING_EMAIL_INTERCEPT'] },
+  WorkerEnv: { staging: ['STAGING_EMAIL_INTERCEPT'] },
+};
+
+/** Signing and shared secrets: a short one can be guessed offline (JWT) or brute-forced */
+const SECRETS: Partial<Record<string, string[]>> = {
+  ApiEnv: ['JWT_ACCESS_SECRET', 'CRON_SECRET'],
+  SchedulerEnv: ['CRON_SECRET'],
+};
+const MIN_SECRET_LENGTH = 32;
+
+const deployedProblems = (schema: ClassConstructor<object>, present: Record<string, unknown>) => {
+  const nodeEnv = present.NODE_ENV;
+  if (nodeEnv !== 'production' && nodeEnv !== 'staging') return [];
+  const missing = (REQUIRED_WHEN_DEPLOYED[schema.name]?.[nodeEnv] ?? [])
+    .filter((key) => present[key] === undefined)
+    .map((key) => `${key} is required in ${nodeEnv}`);
+  const weak = (SECRETS[schema.name] ?? [])
+    .filter((key) => typeof present[key] === 'string' && present[key].length < MIN_SECRET_LENGTH)
+    .map((key) => `${key} must be at least ${MIN_SECRET_LENGTH} characters in ${nodeEnv}`);
+  return [...missing, ...weak];
+};
+
+const groupProblems = (schema: ClassConstructor<object>, env: Record<string, unknown>) =>
+  (GROUPS[schema.name] ?? []).flatMap((group) => {
+    const set = group.filter((key) => env[key] !== undefined);
+    return set.length === 0 || set.length === group.length
+      ? []
+      : [`${group.join(', ')} must be set together (missing ${group.filter((k) => !set.includes(k)).join(', ')})`];
+  });
+
+/**
+ * Validates the environment once at boot and writes the result back to process.env, so the
+ * config factories in this folder read checked values with their defaults applied.
+ * Blank values count as unset.
+ */
 const validateWith =
   (schema: ClassConstructor<object>) =>
   (config: Record<string, unknown>): Record<string, unknown> => {
-    const errors = validateSync(plainToInstance(schema, config), { stopAtFirstError: true });
-    if (errors.length > 0) {
-      const problems = errors.flatMap((error) => Object.values(error.constraints ?? {}));
+    const present = Object.fromEntries(Object.entries(config).filter(([, value]) => value !== ''));
+    const env = plainToInstance(schema, present) as Record<string, unknown>;
+    const problems = [
+      ...validateSync(env, { stopAtFirstError: true }).flatMap((error) => Object.values(error.constraints ?? {})),
+      ...groupProblems(schema, env),
+      ...deployedProblems(schema, present),
+    ];
+    if (problems.length > 0) {
       throw new Error(`Invalid environment variables:\n  - ${problems.join('\n  - ')}`);
     }
-    return config;
+    for (const [key, value] of Object.entries(config)) {
+      if (value === '') delete process.env[key];
+    }
+    for (const [key, value] of Object.entries(env)) {
+      if (typeof value === 'string') process.env[key] = value;
+    }
+    return env;
   };
 
 export const validateApiEnv = validateWith(ApiEnv);

@@ -14,10 +14,11 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
+import { IMPORT_MAX_FILE_BYTES } from '@sealvo/shared';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PackageOwnershipGuard } from '../auth/guards/package-ownership.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
-import { InvalidateDashboardInterceptor } from '../packages/invalidate-dashboard.interceptor.js';
+import { InvalidateDashboardInterceptor } from '../common/interceptors/invalidate-dashboard.interceptor.js';
 import { BulkWordsService } from './bulk-words.service.js';
 import { ImportService } from './import.service.js';
 
@@ -35,7 +36,7 @@ export class ImportController {
   @UseInterceptors(
     InvalidateDashboardInterceptor,
     FileInterceptor('file', {
-      limits: { fileSize: 5 * 1024 * 1024 },
+      limits: { fileSize: IMPORT_MAX_FILE_BYTES },
       fileFilter: (_req, file, cb) => {
         const ext = file.originalname.toLowerCase();
         if (ext.endsWith('.xlsx') || ext.endsWith('.xls')) {
@@ -68,22 +69,7 @@ export class ImportController {
 
     const words = this.importService.parseWords(file.buffer);
     const result = await this.bulkWords.add('import', packageId, userId, words);
-
-    if (result.async) {
-      res.status(HttpStatus.ACCEPTED);
-      return {
-        success: true,
-        jobId: result.jobId,
-        async: true,
-        message: 'Import en cours de traitement.',
-      };
-    }
-
-    res.status(HttpStatus.OK);
-    return {
-      success: true,
-      async: false,
-      message: `${result.imported} mot(s) importé(s) avec succès.`,
-    };
+    res.status(result.async ? HttpStatus.ACCEPTED : HttpStatus.OK);
+    return result;
   }
 }

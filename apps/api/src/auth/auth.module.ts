@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { ConfigService } from '@nestjs/config';
+import { authConfig, type AuthConfig } from '../config/auth.config.js';
+import { ACCESS_TOKEN_TTL } from './auth.constants.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
@@ -17,10 +18,11 @@ import { EmailModule } from '../email/email.module.js';
     PassportModule,
     EmailModule,
     JwtModule.registerAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.getOrThrow<string>('JWT_ACCESS_SECRET'),
-        signOptions: { expiresIn: '15m' as const },
+      inject: [authConfig.KEY],
+      useFactory: (config: AuthConfig) => ({
+        secret: config.jwtSecret,
+        signOptions: { expiresIn: ACCESS_TOKEN_TTL, algorithm: 'HS256' },
+        verifyOptions: { algorithms: ['HS256'] },
       }),
     }),
   ],

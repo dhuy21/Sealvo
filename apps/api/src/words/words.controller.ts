@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -19,8 +20,9 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PackageOwnershipGuard } from '../auth/guards/package-ownership.guard.js';
 import { PackageReadGuard } from '../auth/guards/package-read.guard.js';
-import { InvalidateDashboardInterceptor } from '../packages/invalidate-dashboard.interceptor.js';
+import { InvalidateDashboardInterceptor } from '../common/interceptors/invalidate-dashboard.interceptor.js';
 import { BulkWordsService } from '../import/bulk-words.service.js';
+import { MAX_IMPORT_ROWS } from '../import/import.service.js';
 import { WordsService } from './words.service.js';
 import { CreateWordDto } from './dto/create-word.dto.js';
 import { UpdateWordDto } from './dto/update-word.dto.js';
@@ -61,22 +63,17 @@ export class WordsController {
   async addWords(
     @Param('packageId', ParseIntPipe) packageId: number,
     @CurrentUser('id') userId: string,
-    @Body(new ParseArrayPipe({ items: CreateWordDto })) dto: CreateWordDto[],
+    @Body(new ParseArrayPipe({ items: CreateWordDto, whitelist: true, forbidNonWhitelisted: true }))
+    dto: CreateWordDto[],
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.bulkWords.add('addWords', packageId, userId, dto);
-
-    if (result.async) {
-      res.status(HttpStatus.ACCEPTED);
-      return { success: true, jobId: result.jobId, async: true, message: 'Traitement en cours.' };
+    if (dto.length > MAX_IMPORT_ROWS) {
+      throw new BadRequestException(`Vous ne pouvez pas ajouter plus de ${MAX_IMPORT_ROWS} mots à la fois.`);
     }
 
-    res.status(HttpStatus.OK);
-    return {
-      success: true,
-      async: false,
-      message: `${result.imported} mot(s) importé(s) avec succès.`,
-    };
+    const result = await this.bulkWords.add('addWords', packageId, userId, dto);
+    res.status(result.async ? HttpStatus.ACCEPTED : HttpStatus.OK);
+    return result;
   }
 
   @Patch(':detailId')

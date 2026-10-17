@@ -1,30 +1,29 @@
 import { randomBytes } from 'crypto';
-import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Inject, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
+import { AUTH_LIMITS } from '@sealvo/shared';
+import { normalizeEmail } from '../common/decorators/normalize-email.decorator.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { TokenService } from './token.service.js';
 import { createUser } from './create-user.js';
+import { authConfig, type AuthConfig } from '../config/auth.config.js';
 
-const USERNAME_MIN_LENGTH = 3; // RegisterDto / UpdateProfileDto
 const USERNAME_MAX_ATTEMPTS = 5;
 
 @Injectable()
 export class GoogleAuthService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly config: ConfigService,
+    @Inject(authConfig.KEY) private readonly config: AuthConfig,
     private readonly tokens: TokenService,
   ) {}
 
   getGoogleAuthUrl(state: string): string {
     const params = new URLSearchParams({
-      client_id: this.config.getOrThrow<string>('GOOGLE_CLIENT_ID'),
-      redirect_uri: this.config.getOrThrow<string>('GOOGLE_REDIRECT_URI'),
+      client_id: this.config.google.clientId,
+      redirect_uri: this.config.google.redirectUri,
       response_type: 'code',
       scope: 'email profile',
-      access_type: 'offline',
-      prompt: 'consent',
       state,
     });
     return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
@@ -35,9 +34,9 @@ export class GoogleAuthService {
       method: 'POST',
       body: new URLSearchParams({
         code,
-        client_id: this.config.getOrThrow<string>('GOOGLE_CLIENT_ID'),
-        client_secret: this.config.getOrThrow<string>('GOOGLE_CLIENT_SECRET'),
-        redirect_uri: this.config.getOrThrow<string>('GOOGLE_REDIRECT_URI'),
+        client_id: this.config.google.clientId,
+        client_secret: this.config.google.clientSecret,
+        redirect_uri: this.config.google.redirectUri,
         grant_type: 'authorization_code',
       }),
     });
@@ -67,10 +66,15 @@ export class GoogleAuthService {
       throw new UnauthorizedException("Votre adresse email Google n'est pas vérifiée");
     }
 
-    let user = await this.prisma.users.findUnique({ where: { email: profile.email } });
+    // Accounts registered by form store the normalized email; older Google accounts may store it raw
+    const email = normalizeEmail(profile.email);
+    const matches = await this.prisma.users.findMany({
+      where: { email: { in: [email, profile.email] } },
+    });
+    let user = matches.find((match) => match.email.toLowerCase() === email.toLowerCase()) ?? matches[0];
     if (!user) {
       user = await createUser(this.prisma, {
-        email: profile.email,
+        email,
         username: await this.generateUsername(profile.name, profile.email),
         password: await bcrypt.hash(randomBytes(16).toString('hex'), 12),
         is_verified: true,
@@ -102,7 +106,7 @@ export class GoogleAuthService {
         .slice(0, 40);
     const base =
       [sanitize(name ?? ''), sanitize(email.split('@')[0])].find(
-        (candidate) => candidate.length >= USERNAME_MIN_LENGTH,
+        (candidate) => candidate.length >= AUTH_LIMITS.USERNAME_MIN,
       ) ?? 'user';
 
     for (let attempt = 0; attempt < USERNAME_MAX_ATTEMPTS; attempt++) {

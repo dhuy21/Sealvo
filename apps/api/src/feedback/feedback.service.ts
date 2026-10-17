@@ -1,5 +1,5 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { appConfig, type AppConfig } from '../config/app.config.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
 import { EmailService } from '../email/email.service.js';
 import type { CreateFeedbackDto } from './dto/create-feedback.dto.js';
@@ -7,7 +7,7 @@ import type { CreateFeedbackDto } from './dto/create-feedback.dto.js';
 @Injectable()
 export class FeedbackService {
   constructor(
-    private readonly config: ConfigService,
+    @Inject(appConfig.KEY) private readonly app: AppConfig,
     private readonly emailQueue: EmailQueueService,
     private readonly emailService: EmailService,
   ) {}
@@ -21,9 +21,8 @@ export class FeedbackService {
       date: new Date().toISOString(),
     });
 
-    const toEmail = this.config.getOrThrow<string>('FEEDBACK_RECIPIENT_EMAIL');
     const sent = await this.emailQueue.enqueue({
-      to: toEmail,
+      to: this.app.feedbackRecipient,
       content: htmlContent,
       subject: 'Nouveau feedback pour votre site',
     });

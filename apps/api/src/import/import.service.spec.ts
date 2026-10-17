@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
+import { zipSync } from 'fflate';
 import * as xlsx from 'xlsx';
-import { ImportService, MAX_IMPORT_ROWS } from './import.service.js';
+import { ImportService, MAX_IMPORT_ROWS, MAX_UNCOMPRESSED_BYTES } from './import.service.js';
 
 const HEADER = ['Mot', 'Langue', 'Sujet', 'Type', 'Prononciation', 'Signification', 'Exemple', 'Synonymes', 'Antonymes', 'Grammaire', 'Niveau'];
 
@@ -72,5 +73,54 @@ describe('ImportService', () => {
     const rows = [HEADER, ...Array.from({ length: MAX_IMPORT_ROWS + 1 }, () => row())];
     expect(() => service.parseWords(workbook(rows))).toThrow(`limite de ${MAX_IMPORT_ROWS} mots`);
     expect(service.parseWords(workbook(rows.slice(0, MAX_IMPORT_ROWS + 1)))).toHaveLength(MAX_IMPORT_ROWS);
+  });
+
+  it('should not count blank separator rows against the limit', () => {
+    const words = Array.from({ length: MAX_IMPORT_ROWS }, (_, i) => row({ 0: `w${i}` }));
+    const rows = [HEADER, ...words.flatMap((w, i) => (i % 50 === 0 ? [[], w] : [w]))];
+
+    expect(service.parseWords(workbook(rows))).toHaveLength(MAX_IMPORT_ROWS);
+  });
+
+  it('should keep a word far below the first rows instead of dropping it', () => {
+    const rows: unknown[][] = [HEADER, row({ 0: 'first' })];
+    rows[700] = row({ 0: 'far' });
+
+    expect(service.parseWords(workbook(rows)).map((w) => w.word)).toEqual(['first', 'far']);
+  });
+
+  it('should reject a zip bomb that declares small sizes', () => {
+    const bomb = Buffer.from(
+      zipSync({ 'xl/worksheets/sheet1.xml': new Uint8Array(MAX_UNCOMPRESSED_BYTES + 1) }),
+    );
+    // Lie in the local and central headers: the entry claims to inflate to 1 byte
+    for (let i = 0; i < bomb.length - 4; i++) {
+      const signature = bomb.readUInt32LE(i);
+      if (signature === 0x04034b50) bomb.writeUInt32LE(1, i + 22);
+      if (signature === 0x02014b50) bomb.writeUInt32LE(1, i + 24);
+    }
+
+    expect(() => service.parseWords(bomb)).toThrow(
+      new BadRequestException('Le fichier est trop volumineux une fois décompressé.'),
+    );
+  });
+
+  it('should reject a small zip that inflates past the uncompressed limit', () => {
+    const bomb = Buffer.from(
+      zipSync({ 'xl/worksheets/sheet1.xml': new Uint8Array(MAX_UNCOMPRESSED_BYTES + 1) }),
+    );
+
+    expect(bomb.length).toBeLessThan(100 * 1024);
+    expect(() => service.parseWords(bomb)).toThrow(
+      new BadRequestException('Le fichier est trop volumineux une fois décompressé.'),
+    );
+  });
+
+  it('should still parse a legacy .xls, which is not a zip', () => {
+    const book = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(book, xlsx.utils.aoa_to_sheet([HEADER, row()]), 'Sheet1');
+    const xls = xlsx.write(book, { type: 'buffer', bookType: 'biff8' }) as Buffer;
+
+    expect(service.parseWords(xls)).toHaveLength(1);
   });
 });

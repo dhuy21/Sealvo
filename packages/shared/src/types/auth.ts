@@ -1,14 +1,5 @@
 export type UserRole = 'Admin' | 'User';
 
-export interface LoginRequest {
-  username: string;
-  password: string;
-}
-
-export interface AuthTokens {
-  accessToken: string;
-}
-
 export interface JwtPayload {
   sub: string;       // user id (CHAR 7)
   username: string;

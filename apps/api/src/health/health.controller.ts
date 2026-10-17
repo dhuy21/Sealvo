@@ -1,4 +1,4 @@
-import { Controller, Get, HttpStatus, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpStatus, Inject, Res, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import type { Response } from 'express';
@@ -7,8 +7,9 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { RedisService } from '../redis/redis.service.js';
 import { RabbitmqService } from '../rabbitmq/rabbitmq.service.js';
 import { CronSecretGuard } from '../auth/guards/cron-secret.guard.js';
+import { buildConfig, type BuildConfig } from '../config/build.config.js';
+import { readHeartbeats } from './heartbeat.js';
 
-@SkipThrottle()
 @ApiTags('Health')
 @Controller('health')
 export class HealthController {
@@ -16,9 +17,12 @@ export class HealthController {
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly rabbitmq: RabbitmqService,
+    @Inject(buildConfig.KEY) private readonly build: BuildConfig,
   ) {}
 
+  // Polled by the platform and the deploy; /health/deps stays throttled: it checks a secret
   @Get()
+  @SkipThrottle()
   @ApiOperation({ summary: 'Health check — DB connectivity + uptime' })
   @ApiResponse({ status: 200, description: 'Service is healthy' })
   @ApiResponse({ status: 503, description: 'Service is unhealthy' })
@@ -36,7 +40,9 @@ export class HealthController {
     const body = {
       status: isHealthy ? 'healthy' : 'unhealthy',
       // Build commit (GIT_SHA build arg): CI waits for it to know the new deployment is live
-      version: process.env.GIT_SHA || 'unknown',
+      version: this.build.gitSha,
+      // Commit each queue process reports (null: not running); not part of the API's own health
+      processes: await readHeartbeats(this.redis),
       uptime: process.uptime(),
       db: dbStatus,
       latency: Date.now() - start,

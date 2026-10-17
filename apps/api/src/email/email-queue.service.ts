@@ -1,10 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import type { Channel, ConfirmChannel, ConsumeMessage } from 'amqplib';
 import { randomUUID } from 'crypto';
 import { RabbitmqService } from '../rabbitmq/rabbitmq.service.js';
 import { CacheService } from '../redis/cache.service.js';
-import { RedisService } from '../redis/redis.service.js';
 import { EmailService } from './email.service.js';
-import { CACHE_KEYS, CACHE_TTL } from '../redis/cache-keys.constant.js';
+import { CACHE_KEYS, CACHE_TTL } from '../redis/cache-keys.constants.js';
 
 const EXCHANGE = 'email.direct';
 const RETRY_EXCHANGE = 'email.retry.direct';
@@ -23,21 +23,21 @@ export interface EmailPayload {
 }
 
 @Injectable()
-export class EmailQueueService {
+export class EmailQueueService implements OnModuleInit {
   private readonly logger = new Logger(EmailQueueService.name);
 
   constructor(
     private readonly rabbitmq: RabbitmqService,
     private readonly cache: CacheService,
-    private readonly redis: RedisService,
     private readonly emailService: EmailService,
   ) {}
 
-  /** Assert exchange + queue topology (called once on startup) */
-  async setupTopology(): Promise<void> {
-    const ch = this.rabbitmq.getChannel();
-    if (!ch) throw new Error('Channel not available');
+  onModuleInit() {
+    this.rabbitmq.onChannelReady((ch) => this.setupTopology(ch));
+  }
 
+  /** Assert exchange + queue topology (on every new channel, in the API and the worker) */
+  private async setupTopology(ch: Channel): Promise<void> {
     await ch.assertExchange(EXCHANGE, 'direct', { durable: true });
     await ch.assertExchange(RETRY_EXCHANGE, 'direct', { durable: true });
 
@@ -62,22 +62,18 @@ export class EmailQueueService {
     this.logger.log('Topology ready.');
   }
 
-  /** Publish email job to queue */
-  publish(payload: EmailPayload): boolean {
-    const ch = this.rabbitmq.getChannel();
-    if (!ch) return false;
-
-    ch.publish(EXCHANGE, ROUTING_KEY, Buffer.from(JSON.stringify(payload)), {
+  /** Publish email job to queue; false unless the broker confirmed it */
+  publish(payload: EmailPayload): Promise<boolean> {
+    return this.rabbitmq.publish(EXCHANGE, ROUTING_KEY, Buffer.from(JSON.stringify(payload)), {
       persistent: true,
       contentType: 'application/json',
       messageId: randomUUID(),
     });
-    return true;
   }
 
-  /** Enqueue via RabbitMQ, fallback to direct send if queue unavailable */
+  /** Enqueue via RabbitMQ, fallback to direct send if the queue is unavailable or rejects it */
   async enqueue(payload: EmailPayload): Promise<boolean> {
-    if (this.rabbitmq.isReady()) return this.publish(payload);
+    if (await this.publish(payload)) return true;
 
     // Fallback: send directly, without the queue's retries
     return this.emailService.sendEmail(payload.to, payload.content, payload.subject, {
@@ -87,62 +83,51 @@ export class EmailQueueService {
 
   /** Start consuming email jobs (called in worker process) */
   async startConsumer(): Promise<void> {
-    const ch = await this.rabbitmq.createChannel();
-    if (!ch) throw new Error('Channel not available');
-
-    await ch.consume(QUEUE, async (msg) => {
-      if (!msg) return;
-
-      // Dedup via Redis
-      const dedupId = msg.properties.messageId;
-      if (dedupId && this.redis.isReady()) {
-        const isNew = await this.cache.setNX(
-          CACHE_KEYS.emailDedup(dedupId),
-          1,
-          CACHE_TTL.EMAIL_DEDUP,
-        );
-        if (isNew === false) {
-          this.logger.warn(`Duplicate detected (${dedupId}) — skipping.`);
-          return ch.ack(msg);
-        }
-      }
-
-      let payload: EmailPayload;
-      try {
-        payload = JSON.parse(msg.content.toString());
-      } catch {
-        this.logger.warn('Discarding message with invalid JSON.');
-        return ch.ack(msg);
-      }
-
-      try {
-        const result = await this.emailService.sendEmail(
-          payload.to,
-          payload.content,
-          payload.subject,
-        );
-        if (!result) throw new Error('sendEmail returned false');
-        ch.ack(msg);
-      } catch (err) {
-        const retries = this.getRetryCount(msg);
-        if (retries >= MAX_RETRIES) {
-          this.logger.error(
-            `Giving up after ${retries} retries — moving to ${FAILED_QUEUE}: ${err instanceof Error ? err.message : err}`,
-          );
-          ch.sendToQueue(FAILED_QUEUE, msg.content, { persistent: true });
-          ch.ack(msg);
-        } else {
-          this.logger.warn(
-            `Send failed (retry ${retries + 1}/${MAX_RETRIES}): ${err instanceof Error ? err.message : err}`,
-          );
-          // The retry comes back with the same messageId: release it or dedup would drop the retry
-          if (dedupId) await this.cache.del(CACHE_KEYS.emailDedup(dedupId));
-          ch.nack(msg, false, false);
-        }
-      }
-    });
-
+    await this.rabbitmq.consume(QUEUE, (msg, ch) => this.handle(msg, ch));
     this.logger.log('Consumer started — waiting for email jobs.');
+  }
+
+  /**
+   * Marked as sent only once SES accepted it: a delivery interrupted before that (worker stopped)
+   * is sent on redelivery instead of being skipped. The rare stop between the two sends it twice.
+   */
+  private async handle(msg: ConsumeMessage, ch: ConfirmChannel): Promise<void> {
+    const dedupId = msg.properties.messageId as string | undefined;
+    if (dedupId && (await this.cache.get(CACHE_KEYS.emailDedup(dedupId))) !== null) {
+      this.logger.warn(`Duplicate detected (${dedupId}) — skipping.`);
+      return ch.ack(msg);
+    }
+
+    let payload: EmailPayload;
+    try {
+      payload = JSON.parse(msg.content.toString());
+    } catch {
+      this.logger.warn('Discarding message with invalid JSON.');
+      return ch.ack(msg);
+    }
+
+    try {
+      const result = await this.emailService.sendEmail(payload.to, payload.content, payload.subject);
+      if (!result) throw new Error('sendEmail returned false');
+    } catch (err) {
+      const retries = this.getRetryCount(msg);
+      if (retries >= MAX_RETRIES) {
+        this.logger.error(
+          `Giving up after ${retries} retries — moving to ${FAILED_QUEUE}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        ch.sendToQueue(FAILED_QUEUE, msg.content, { persistent: true });
+        ch.ack(msg);
+      } else {
+        this.logger.warn(
+          `Send failed (retry ${retries + 1}/${MAX_RETRIES}): ${err instanceof Error ? err.message : String(err)}`,
+        );
+        ch.nack(msg, false, false);
+      }
+      return;
+    }
+
+    if (dedupId) await this.cache.set(CACHE_KEYS.emailDedup(dedupId), 1, CACHE_TTL.EMAIL_DEDUP);
+    ch.ack(msg);
   }
 
   private getRetryCount(msg: { properties?: { headers?: Record<string, unknown> } }): number {

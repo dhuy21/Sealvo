@@ -1,22 +1,17 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import type { user_best_scores_game_type } from '@prisma/client';
+import { GAME_LEVEL, levelLabel, type GameType } from '@sealvo/shared';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { GAME_LEVEL } from '../learning/constants.js';
 import { isDue, startOfToday } from '../learning/spaced-repetition.js';
 
 /** Minimum words required per game */
-const MIN_WORDS: Record<string, number> = {
+const MIN_WORDS: Partial<Record<GameType, number>> = {
   flash_match: 6,
 };
 const DEFAULT_MIN_WORDS = 5;
 
-/** Source: WordSearchController.js + learning.js getRandomUserWords() */
 const WORD_SEARCH_MAX_WORDS = 30;
 /** The old query filtered with MySQL LENGTH(), which counts bytes, not characters */
 const WORD_SEARCH_MAX_BYTES = 13;
-/** Source: PhraseCompletionController.js getPhrasesForCompletion() */
-const PHRASE_ANSWER = /\*\*([^*]+)\*\*/g;
-const PHRASE_BLANK = '_____';
 
 function shuffle<T>(items: T[]): T[] {
   for (let i = items.length - 1; i > 0; i--) {
@@ -26,31 +21,23 @@ function shuffle<T>(items: T[]): T[] {
   return items;
 }
 
-/** Each `**answer**` of the example becomes a blank; an empty example gives an empty phrase */
-function toPhrase(example: string | null): { phrase: string; correctWords: string[] } {
-  if (!example || example.trim() === '') return { phrase: '', correctWords: [] };
-  return {
-    phrase: example.replace(PHRASE_ANSWER, PHRASE_BLANK),
-    correctWords: [...example.matchAll(PHRASE_ANSWER)].map((m) => m[1]),
-  };
+/** Route params are unvalidated: `hasOwn` also rejects prototype keys such as `constructor` */
+function isGameType(value: string): value is GameType {
+  return Object.hasOwn(GAME_LEVEL, value);
 }
 
 @Injectable()
 export class GamesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Get words for a game (filtered by level + spaced repetition interval)
-   * Source: GameController.js showGame() + learning.js findWordsWithDetailsByLevel()
-   */
+  /** Get words for a game (filtered by level + spaced repetition interval) */
   async getWordsForGame(packageId: number, gameType: string) {
-    if (!Object.hasOwn(GAME_LEVEL, gameType)) {
+    if (!isGameType(gameType)) {
       throw new BadRequestException(`Type de jeu inconnu : ${gameType}`);
     }
     const level = GAME_LEVEL[gameType];
-    const dbLevel = level.replace('level_', '');
+    const dbLevel = levelLabel(level);
 
-    // Get all words at this level in the package
     const entries = await this.prisma.learning.findMany({
       where: { package_id: packageId, level },
       include: {
@@ -60,11 +47,9 @@ export class GamesService {
       },
     });
 
-    // Filter by spaced repetition interval (due today)
     const today = startOfToday();
     const dueWords = entries.filter((e) => isDue(level, e.date_memorized, today));
 
-    // Count total words at this level (regardless of due date)
     const totalAtLevel = entries.length;
     const minRequired = MIN_WORDS[gameType] ?? DEFAULT_MIN_WORDS;
 
@@ -97,7 +82,8 @@ export class GamesService {
     };
 
     if (gameType === 'word_search') {
-      // The minimum checks above count every due word, before this filter (as the old game page did)
+      // The minimum checks above count every due word, before this filter (as the old game page did).
+      // The shuffle picks a random subset: the web keeps the words it receives.
       const playable = shuffle(
         words.filter((w) => Buffer.byteLength(w.word) <= WORD_SEARCH_MAX_BYTES),
       ).slice(0, WORD_SEARCH_MAX_WORDS);
@@ -109,20 +95,14 @@ export class GamesService {
       };
     }
 
-    if (gameType === 'phrase_completion') {
-      return { ...result, words: shuffle(words.map((w) => ({ ...w, ...toPhrase(w.example) }))) };
-    }
-
     return result;
   }
 
   /**
    * Save game score. Each statement is atomic, so concurrent saves cannot
    * overwrite a higher best score (fix #62: no read-then-write).
-   * Source: game_scores.js saveScore()
    */
-  async saveScore(userId: string, gameType: string, score: number) {
-    const gt = gameType as user_best_scores_game_type;
+  async saveScore(userId: string, gt: GameType, score: number) {
     const now = new Date();
 
     const { count: created } = await this.prisma.user_best_scores.createMany({

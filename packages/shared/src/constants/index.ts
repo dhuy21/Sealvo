@@ -1,4 +1,5 @@
 import type { GameType } from '../types/game.js';
+import type { PackageMode } from '../types/package.js';
 import type { Level, WordType } from '../types/word.js';
 
 /** 18 supported language codes (Google TTS compatible) */
@@ -23,12 +24,34 @@ export const VALID_TYPES = [
   'noun', 'verb', 'adjective', 'adverb', 'ph.v', 'idiom', 'collocation',
 ] as const;
 
+export type DbWordType = (typeof VALID_TYPES)[number];
+
 /** Levels as written in import spreadsheets (raw database values: `0`, not `level_0`) */
 export const VALID_LEVELS = ['x', '0', '1', '2', 'v'] as const;
 
+export type DbLevel = (typeof VALID_LEVELS)[number];
+
+/** Package visibility modes */
+export const PACKAGE_MODES: readonly PackageMode[] = ['private', 'public', 'protected'];
+
 /** Level as shown to users: its raw database value (`level_0` → `0`) */
-export function levelLabel(level: Level): string {
-  return level.replace('level_', '');
+export function levelLabel(level: Level): DbLevel {
+  return level.replace('level_', '') as DbLevel;
+}
+
+/** Inverse of levelLabel (`0` → `level_0`) */
+export function levelFromDb(level: DbLevel): Level {
+  return level === 'x' || level === 'v' ? level : `level_${level}`;
+}
+
+/** Word type as shown to users and written in spreadsheets (`ph_v` → `ph.v`) */
+export function wordTypeToDb(type: WordType): DbWordType {
+  return type === 'ph_v' ? 'ph.v' : type;
+}
+
+/** Inverse of wordTypeToDb (`ph.v` → `ph_v`) */
+export function wordTypeFromDb(type: DbWordType): WordType {
+  return type === 'ph.v' ? 'ph_v' : type;
 }
 
 /** Spaced repetition intervals (days) */
@@ -65,3 +88,6 @@ export const LEVEL_GAMES: Record<Exclude<Level, 'v'>, readonly GameType[]> = {
   level_1: ['speed_vocab'],
   level_2: ['word_search'],
 };
+
+export * from './auth.js';
+export * from './import.js';

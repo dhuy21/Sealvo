@@ -1,4 +1,9 @@
-import { ForbiddenException, NotFoundException, type ExecutionContext } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  type ExecutionContext,
+} from '@nestjs/common';
 import { PackageOwnershipGuard } from './package-ownership.guard.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
 
@@ -61,10 +66,27 @@ describe('PackageOwnershipGuard', () => {
     ).rejects.toThrow(ForbiddenException);
   });
 
-  it('rejects a request without package id, and an unknown package', async () => {
-    await expect(guard.canActivate(contextFor({}))).rejects.toThrow(ForbiddenException);
+  it('rejects a request without package id with a 400, and an unknown package with a 404', async () => {
+    await expect(guard.canActivate(contextFor({}))).rejects.toThrow(
+      new BadRequestException('Identifiant du package manquant ou invalide'),
+    );
     await expect(guard.canActivate(contextFor({ params: { packageId: '99' } }))).rejects.toThrow(
       NotFoundException,
+    );
+  });
+
+  it.each(['abc', '1.5', '0', '-1', ''])('rejects the malformed id %j with a 400', async (packageId) => {
+    await expect(guard.canActivate(contextFor({ params: { packageId } }))).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('rejects a non-positive or fractional body id with a 400', async () => {
+    await expect(guard.canActivate(contextFor({ body: { packageId: 1.5 } }))).rejects.toThrow(
+      BadRequestException,
+    );
+    await expect(guard.canActivate(contextFor({ body: { packageId: null } }))).rejects.toThrow(
+      BadRequestException,
     );
   });
 });

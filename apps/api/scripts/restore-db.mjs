@@ -7,9 +7,9 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { execSync, spawnSync } from 'node:child_process';
+import { loadEnv } from './load-env.mjs';
 
-const envPath = path.join(import.meta.dirname, '..', '..', '..', '.env');
-if (fs.existsSync(envPath)) process.loadEnvFile(envPath);
+loadEnv();
 
 const CONTAINER = 'sealvo_db';
 

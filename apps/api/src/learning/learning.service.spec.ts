@@ -1,8 +1,7 @@
-import { BadRequestException } from '@nestjs/common';
 import { LearningService } from './learning.service.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import type { CacheService } from '../redis/cache.service.js';
-import { CACHE_KEYS } from '../redis/cache-keys.constant.js';
+import { CACHE_KEYS } from '../redis/cache-keys.constants.js';
 
 describe('LearningService', () => {
   let service: LearningService;
@@ -39,12 +38,6 @@ describe('LearningService', () => {
   });
 
   describe('trackGameCompletion', () => {
-    it('rejects an unknown game type', async () => {
-      const error = await service.trackGameCompletion('u1', 'chess', true, 7).catch((e: unknown) => e);
-      expect(error).toBeInstanceOf(BadRequestException);
-      expect((error as Error).message).toBe('Type de jeu non reconnu');
-    });
-
     it('leaves progress untouched when the game was not completed', async () => {
       await expect(service.trackGameCompletion('u1', 'flash_match', false, 7)).resolves.toEqual({
         success: true,

@@ -1,9 +1,12 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Inject, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import type { learning_level, word_details_type } from '@prisma/client';
+import { levelLabel, wordTypeToDb } from '@sealvo/shared';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { appConfig, type AppConfig } from '../config/app.config.js';
 import { EmailService } from '../email/email.service.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
+import { CacheService } from '../redis/cache.service.js';
+import { CACHE_KEYS, CACHE_TTL } from '../redis/cache-keys.constants.js';
 import { dueWhereConditions, startOfToday } from '../learning/spaced-repetition.js';
 
 const PREVIEW_LIMIT = 5;
@@ -11,15 +14,6 @@ const UNVERIFIED_USER_RETENTION_DAYS = 3;
 const VERIFICATION_RETENTION_DAYS = 15;
 /** Far longer than a queued import job can be redelivered */
 const APPLIED_JOB_RETENTION_DAYS = 7;
-
-/** mail.hbs uses the raw DB values (`0`, `ph.v`), not the Prisma enum names. */
-const LEVEL_DB_VALUE: Record<learning_level, string> = {
-  x: 'x',
-  level_0: '0',
-  level_1: '1',
-  level_2: '2',
-  v: 'v',
-};
 
 interface DueSummary {
   total: number;
@@ -45,11 +39,21 @@ export class ReminderService {
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
     private readonly emailQueue: EmailQueueService,
-    private readonly config: ConfigService,
+    private readonly cache: CacheService,
+    @Inject(appConfig.KEY) private readonly app: AppConfig,
   ) {}
 
-  /** Email every user who has words due today (source: ReminderController.reminder) */
-  async sendReminders(): Promise<{ sent: number; failed: number }> {
+  /**
+   * Email every user who has words due today. A scheduled run and the scheduler's catch-up can land
+   * in the same hour: only the first one sends (without Redis, every run sends).
+   */
+  async sendReminders(): Promise<{ sent: number; failed: number; skipped?: true }> {
+    const hour = new Date().toISOString().slice(0, 13);
+    if ((await this.cache.setNX(CACHE_KEYS.reminderRun(hour), 1, CACHE_TTL.REMINDER_RUN)) === false) {
+      this.logger.warn(`Reminders already sent this hour (${hour} UTC) — skipping.`);
+      return { sent: 0, failed: 0, skipped: true };
+    }
+
     const dueByUser = await this.findDueWordsByUser();
     if (dueByUser.size === 0) return { sent: 0, failed: 0 };
 
@@ -81,7 +85,7 @@ export class ReminderService {
     return { sent, failed };
   }
 
-  /** Email the current user their own reminder (source: ReminderController.testEmail) */
+  /** Email the current user their own reminder */
   async sendTestReminder(userId: string): Promise<{ message: string }> {
     const summary = (await this.findDueWordsByUser(userId)).get(userId);
     if (!summary) return { message: "Aucun mot à réviser aujourd'hui" };
@@ -104,7 +108,7 @@ export class ReminderService {
     return { message: "L'email a été envoyé pour tester" };
   }
 
-  /** Delete stale verification tokens and never-verified accounts (source: ReminderController._runCleanup) */
+  /** Delete stale verification tokens and never-verified accounts */
   async cleanupExpired(): Promise<void> {
     try {
       await this.prisma.email_verification.deleteMany({
@@ -144,7 +148,7 @@ export class ReminderService {
       hasMoreWords: summary.total > PREVIEW_LIMIT,
       words,
       streak: this.toTemplateStreak(user.streak, summary.total),
-      baseUrl: this.config.get<string>('FRONTEND_URL'),
+      baseUrl: this.app.frontendUrl,
     });
 
     return this.emailQueue.enqueue({
@@ -190,10 +194,11 @@ export class ReminderService {
     },
     level: learning_level,
   ) {
-    const dbLevel = LEVEL_DB_VALUE[level];
+    // mail.hbs uses the raw DB values (`0`, `ph.v`), not the Prisma enum names
+    const dbLevel = levelLabel(level);
     return {
       word: detail.words.word,
-      type: detail.type === 'ph_v' ? 'ph.v' : detail.type,
+      type: wordTypeToDb(detail.type),
       meaning: detail.meaning,
       pronunciation: detail.pronunciation,
       example: detail.example,

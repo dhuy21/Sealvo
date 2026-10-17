@@ -1,9 +1,10 @@
 import { Test } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
+import { geminiConfig } from '../config/gemini.config.js';
 import { Prisma } from '@prisma/client';
 import { WordsService } from './words.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { GeminiService } from '../gemini/gemini.service.js';
+import { WordsEnrichmentService } from './words-enrichment.service.js';
 import type { CreateWordDto } from './dto/create-word.dto.js';
 
 describe('WordsService', () => {
@@ -17,9 +18,10 @@ describe('WordsService', () => {
   };
   let tx: {
     applied_jobs: { create: any };
-    words: { upsert: any };
-    word_details: { create: any; update: any };
-    learning: { create: any; count: any; update: any };
+    $executeRaw: any;
+    $queryRaw: any;
+    word_details: { create: any; update: any; deleteMany: any };
+    learning: { create: any; count: any; update: any; delete: any };
   };
 
   const word = (overrides: Partial<CreateWordDto> = {}): CreateWordDto => ({
@@ -39,12 +41,14 @@ describe('WordsService', () => {
   beforeEach(async () => {
     tx = {
       applied_jobs: { create: vi.fn() },
-      words: { upsert: vi.fn().mockResolvedValue({ word_id: 1 }) },
+      $executeRaw: vi.fn().mockResolvedValue(1),
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 1n }]),
       word_details: {
         create: vi.fn().mockResolvedValue({ detail_id: 1 }),
         update: vi.fn(),
+        deleteMany: vi.fn(),
       },
-      learning: { create: vi.fn(), count: vi.fn(), update: vi.fn() },
+      learning: { create: vi.fn(), count: vi.fn(), update: vi.fn(), delete: vi.fn() },
     };
     prisma = {
       $transaction: vi.fn((arg: unknown) =>
@@ -58,8 +62,9 @@ describe('WordsService', () => {
     const module = await Test.createTestingModule({
       providers: [
         WordsService,
+        WordsEnrichmentService,
         GeminiService,
-        { provide: ConfigService, useValue: { get: () => undefined } },
+        { provide: geminiConfig.KEY, useValue: { apiKey: undefined } },
         { provide: PrismaService, useValue: prisma },
       ],
     }).compile();
@@ -126,7 +131,7 @@ describe('WordsService', () => {
 
       expect(tx.applied_jobs.create).toHaveBeenCalledWith({ data: { job_id: 'job-1' } });
       expect(tx.applied_jobs.create.mock.invocationCallOrder[0]).toBeLessThan(
-        tx.words.upsert.mock.invocationCallOrder[0],
+        tx.$executeRaw.mock.invocationCallOrder[0],
       );
       expect(result).toMatchObject({ successCount: 1, alreadyApplied: false });
     });
@@ -142,7 +147,7 @@ describe('WordsService', () => {
 
       const result = await service.addWords(1, [word(), word()], { jobId: 'job-1' });
 
-      expect(tx.words.upsert).not.toHaveBeenCalled();
+      expect(tx.$executeRaw).not.toHaveBeenCalled();
       expect(tx.word_details.create).not.toHaveBeenCalled();
       expect(tx.learning.create).not.toHaveBeenCalled();
       expect(result).toEqual({
@@ -170,14 +175,15 @@ describe('WordsService', () => {
       expect(tx.learning.create).toHaveBeenCalledTimes(1);
     });
 
-    it('should upsert the base word on its unique key with a long transaction timeout', async () => {
+    it('should upsert the base word in one statement on its unique key with a long transaction timeout', async () => {
+      tx.$queryRaw.mockResolvedValue([{ id: 42n }]);
+
       await service.addWords(1, [word()]);
 
-      expect(tx.words.upsert).toHaveBeenCalledWith({
-        where: { word_subject_language_code: { word: 'cat', subject: 'Daily', language_code: 'en-US' } },
-        update: {},
-        create: { word: 'cat', subject: 'Daily', language_code: 'en-US' },
-      });
+      const [sql, ...values] = tx.$executeRaw.mock.calls[0];
+      expect(sql.join('?')).toMatch(/INSERT INTO words .* ON DUPLICATE KEY UPDATE word_id = LAST_INSERT_ID\(word_id\)/s);
+      expect(values).toEqual(['cat', 'Daily', 'en-US']);
+      expect(tx.word_details.create.mock.calls[0][0].data).toMatchObject({ word_id: 42 });
       expect(prisma.$transaction).toHaveBeenCalledWith(
         expect.any(Function),
         expect.objectContaining({ timeout: expect.any(Number), maxWait: expect.any(Number) }),
@@ -244,6 +250,69 @@ describe('WordsService', () => {
 
       expect(tx.learning.count).not.toHaveBeenCalled();
       expect(tx.word_details.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('findWordsToReview', () => {
+    it('flags the words due today from a single query', async () => {
+      const entry = (detail_id: number, date_memorized: Date | null) => ({
+        detail_id,
+        package_id: 3,
+        level: 'x',
+        date_memorized,
+        word_details: {
+          word_id: detail_id,
+          type: 'noun',
+          meaning: 'm',
+          pronunciation: null,
+          synonyms: null,
+          antonyms: null,
+          example: null,
+          grammar: null,
+          words: { word: `w${detail_id}`, language_code: 'en-US', subject: 'Daily' },
+        },
+      });
+      prisma.learning.findMany.mockResolvedValue([entry(1, new Date(2020, 0, 1)), entry(2, null)]);
+
+      const words = await service.findWordsToReview(3);
+
+      expect(prisma.learning.findMany).toHaveBeenCalledTimes(1);
+      expect(words.map((w) => [w.detail_id, w.dueToday])).toEqual([
+        [1, true],
+        [2, false],
+      ]);
+      expect(words[0]).toEqual({
+        detail_id: 1,
+        word_id: 1,
+        word: 'w1',
+        language_code: 'en-US',
+        subject: 'Daily',
+        type: 'noun',
+        meaning: 'm',
+        pronunciation: null,
+        synonyms: null,
+        antonyms: null,
+        example: null,
+        grammar: null,
+        level: 'x',
+        package_id: 3,
+        dueToday: true,
+      });
+    });
+  });
+
+  describe('deleteWord', () => {
+    it('removes the learning row, then its word_details only if no package references it', async () => {
+      prisma.learning.findUnique.mockResolvedValue({ detail_id: 7, package_id: 2 });
+
+      await expect(service.deleteWord(2, 7)).resolves.toEqual({ message: 'Mot supprimé avec succès' });
+
+      expect(tx.learning.delete).toHaveBeenCalledWith({
+        where: { detail_id_package_id: { detail_id: 7, package_id: 2 } },
+      });
+      expect(tx.word_details.deleteMany).toHaveBeenCalledWith({
+        where: { detail_id: { in: [7] }, learning: { none: {} } },
+      });
     });
   });
 

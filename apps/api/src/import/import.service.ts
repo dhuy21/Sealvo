@@ -1,9 +1,24 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { Unzip, UnzipInflate } from 'fflate';
 import * as xlsx from 'xlsx';
-import { VALID_LANGS, VALID_LEVELS, VALID_TYPES, type WordType } from '@sealvo/shared';
-import { TEXT_MAX_LENGTH, type CreateWordDto } from '../words/dto/create-word.dto.js';
+import {
+  VALID_LANGS,
+  VALID_LEVELS,
+  VALID_TYPES,
+  levelFromDb,
+  wordTypeFromDb,
+  type DbLevel,
+  type DbWordType,
+} from '@sealvo/shared';
+import type { CreateWordDto } from '../words/dto/create-word.dto.js';
+import { TEXT_MAX_LENGTH, VARCHAR_MAX_LENGTH } from '../common/constants/field-lengths.constants.js';
 
 export const MAX_IMPORT_ROWS = 500;
+
+/** Total uncompressed size allowed for an .xlsx, against decompression bombs */
+export const MAX_UNCOMPRESSED_BYTES = 20 * 1024 * 1024;
+const ZIP_SIGNATURE = [0x50, 0x4b, 0x03, 0x04];
+const INFLATE_INPUT_CHUNK_BYTES = 16 * 1024;
 
 /** One spreadsheet row, with the old app's column values (type `ph.v`, level `0`) */
 export interface ParsedWord {
@@ -34,9 +49,9 @@ const FIELD_INFO = {
   language_code: { label: 'Langue invalide', accepted: VALID_LANGS },
   type: { label: 'Type invalide', accepted: VALID_TYPES },
   level: { label: 'Niveau invalide', accepted: VALID_LEVELS },
-  word_length: { label: 'Mot trop long (255 caractères max)' },
-  subject_length: { label: 'Sujet trop long (255 caractères max)' },
-  pronunciation_length: { label: 'Prononciation trop longue (255 caractères max)' },
+  word_length: { label: `Mot trop long (${VARCHAR_MAX_LENGTH} caractères max)` },
+  subject_length: { label: `Sujet trop long (${VARCHAR_MAX_LENGTH} caractères max)` },
+  pronunciation_length: { label: `Prononciation trop longue (${VARCHAR_MAX_LENGTH} caractères max)` },
   meaning_length: { label: `Signification trop longue (${TEXT_MAX_LENGTH} caractères max)` },
   example_length: { label: `Exemple trop long (${TEXT_MAX_LENGTH} caractères max)` },
   synonyms_length: { label: `Synonymes trop longs (${TEXT_MAX_LENGTH} caractères max)` },
@@ -44,24 +59,16 @@ const FIELD_INFO = {
   grammar_length: { label: `Grammaire trop longue (${TEXT_MAX_LENGTH} caractères max)` },
 } as const satisfies Record<string, { label: string; accepted?: readonly string[] }>;
 
-/** Matches the column sizes enforced by CreateWordDto (VARCHAR 255, TEXT capped at TEXT_MAX_LENGTH). */
+/** Matches the column sizes enforced by CreateWordDto (VARCHAR_MAX_LENGTH and TEXT_MAX_LENGTH). */
 const FIELD_MAX: Partial<Record<keyof ParsedWord, { field: keyof typeof FIELD_INFO; max: number }>> = {
-  word: { field: 'word_length', max: 255 },
-  subject: { field: 'subject_length', max: 255 },
-  pronunciation: { field: 'pronunciation_length', max: 255 },
+  word: { field: 'word_length', max: VARCHAR_MAX_LENGTH },
+  subject: { field: 'subject_length', max: VARCHAR_MAX_LENGTH },
+  pronunciation: { field: 'pronunciation_length', max: VARCHAR_MAX_LENGTH },
   meaning: { field: 'meaning_length', max: TEXT_MAX_LENGTH },
   example: { field: 'example_length', max: TEXT_MAX_LENGTH },
   synonyms: { field: 'synonyms_length', max: TEXT_MAX_LENGTH },
   antonyms: { field: 'antonyms_length', max: TEXT_MAX_LENGTH },
   grammar: { field: 'grammar_length', max: TEXT_MAX_LENGTH },
-};
-
-const DB_LEVEL_TO_ENUM: Record<string, CreateWordDto['level']> = {
-  x: 'x',
-  '0': 'level_0',
-  '1': 'level_1',
-  '2': 'level_2',
-  v: 'v',
 };
 
 type Cell = string | number | boolean | null | undefined;
@@ -88,25 +95,22 @@ export class ImportService {
 
     return words.map(({ type, level, ...w }) => ({
       ...w,
-      type: (type === 'ph.v' ? 'ph_v' : type) as WordType,
-      level: level === '' ? undefined : DB_LEVEL_TO_ENUM[level],
+      type: wordTypeFromDb(type as DbWordType),
+      level: level === '' ? undefined : levelFromDb(level as DbLevel),
     }));
   }
 
   parseExcelBuffer(buffer: Buffer): ParsedWord[] {
-    // Header + limit + 1 extra row, so an oversized file is detected without parsing all of it
-    const workbook = xlsx.read(buffer, { type: 'buffer', sheetRows: MAX_IMPORT_ROWS + 2 });
+    this.assertUncompressedSize(buffer);
+    // The whole sheet is read (its real size is bounded above): cutting it at a row count would drop
+    // the words below the cut without an error
+    const workbook = xlsx.read(buffer, { type: 'buffer' });
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
     const data = worksheet ? xlsx.utils.sheet_to_json<Cell[]>(worksheet, { header: 1 }) : [];
 
     if (!data.length) return [];
 
     const startRow = data[0]?.[0] === 'Mot' || data[0]?.[0] === 'Word' ? 1 : 0;
-    if (data.length - startRow > MAX_IMPORT_ROWS) {
-      throw new BadRequestException(
-        `Le fichier dépasse la limite de ${MAX_IMPORT_ROWS} mots par import.`,
-      );
-    }
 
     const words: ParsedWord[] = [];
     for (let i = startRow; i < data.length; i++) {
@@ -128,7 +132,49 @@ export class ImportService {
       });
     }
 
+    // Blank rows (separators) do not count: only the words do
+    if (words.length > MAX_IMPORT_ROWS) {
+      throw new BadRequestException(
+        `Le fichier dépasse la limite de ${MAX_IMPORT_ROWS} mots par import.`,
+      );
+    }
     return words;
+  }
+
+  /**
+   * Rejects an .xlsx that inflates to more than MAX_UNCOMPRESSED_BYTES. The bytes are counted while
+   * inflating (and dropped), not taken from the sizes the zip declares: a crafted file can lie about those.
+   */
+  private assertUncompressedSize(buffer: Buffer): void {
+    // Legacy .xls is not a zip: the upload size limit already bounds it
+    if (!ZIP_SIGNATURE.every((byte, i) => buffer[i] === byte)) return;
+
+    let total = 0;
+    let exceeded = false;
+    const unzip = new Unzip((file) => {
+      file.ondata = (error, chunk) => {
+        if (error || exceeded) return;
+        total += chunk.length;
+        if (total > MAX_UNCOMPRESSED_BYTES) {
+          exceeded = true;
+          file.terminate();
+        }
+      };
+      file.start();
+    });
+    unzip.register(UnzipInflate);
+    try {
+      // Fed in small pieces: each push inflates at most ~1000× its input, so memory stays bounded
+      for (let start = 0; start < buffer.length && !exceeded; start += INFLATE_INPUT_CHUNK_BYTES) {
+        const end = Math.min(start + INFLATE_INPUT_CHUNK_BYTES, buffer.length);
+        unzip.push(buffer.subarray(start, end), end === buffer.length);
+      }
+    } catch {
+      /* malformed zip: xlsx.read reports it as before */
+    }
+    if (exceeded) {
+      throw new BadRequestException('Le fichier est trop volumineux une fois décompressé.');
+    }
   }
 
   validateWords(words: ParsedWord[]): ImportRowError[] {

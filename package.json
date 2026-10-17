@@ -8,6 +8,10 @@
   ],
   "scripts": {
     "dev": "turbo run dev",
+    "infra:up": "docker compose -f docker-compose.dev.yml up -d --wait",
+    "infra:down": "docker compose -f docker-compose.dev.yml down",
+    "db:migrate": "prisma migrate deploy --schema=apps/api/prisma/schema.prisma",
+    "db:status": "prisma migrate status --schema=apps/api/prisma/schema.prisma",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
@@ -27,11 +31,12 @@
   },
   "lint-staged": {
     "packages/**/*.ts": [
-      "prettier --write"
+      "prettier --write",
+      "bash -c 'npm run lint -w @sealvo/shared'"
     ]
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "packageManager": "npm@10.9.9"
 }

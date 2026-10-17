@@ -4,11 +4,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { TX_OPTIONS } from '../prisma/tx-options.constants.js';
+import { deleteOrphanDetails } from '../words/orphan-details.js';
 import type { CreatePackageDto } from './dto/create-package.dto.js';
 import type { UpdatePackageDto } from './dto/update-package.dto.js';
-
-/** Prisma's default 5 s interactive transaction timeout is too short for large copies */
-const TX_OPTIONS = { maxWait: 10_000, timeout: 60_000 };
 
 @Injectable()
 export class PackagesService {
@@ -74,7 +73,7 @@ export class PackagesService {
   }
 
   async update(packageId: number, dto: UpdatePackageDto) {
-    // Single transaction for all updates (fix #57)
+    // A package made public is deactivated in the same update
     const isPublic = dto.mode === 'public';
 
     await this.prisma.packages.update({
@@ -106,10 +105,7 @@ export class PackagesService {
       // Cascades to the package's learning rows
       await tx.packages.delete({ where: { package_id: packageId } });
 
-      // Fix #47: clean up word_details no other package references
-      await tx.word_details.deleteMany({
-        where: { detail_id: { in: entries.map((e) => e.detail_id) }, learning: { none: {} } },
-      });
+      await deleteOrphanDetails(tx, entries.map((e) => e.detail_id));
     }, TX_OPTIONS);
 
     return { message: 'Package supprimé avec succès' };
@@ -151,7 +147,6 @@ export class PackagesService {
       throw new ForbiddenException("Ce package n'est pas public");
     }
 
-    // Get all words linked to this package (via learning → word_details)
     const learningEntries = await this.prisma.learning.findMany({
       where: { package_id: packageId },
       include: {

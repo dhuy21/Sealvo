@@ -111,21 +111,23 @@ describe('GamesService', () => {
       expect(mixed.words.some((w) => w.word === 'éléphantéé')).toBe(false);
     });
 
-    it('phrase_completion: blanks every **answer** of the example', async () => {
-      prisma.learning.findMany.mockResolvedValue([
-        entry(1, 'run', 'I **run** and she **runs**.'),
-        entry(2, 'eat', 'No markers here'),
-        entry(3, 'go', '  '),
-      ]);
+    it('phrase_completion: sends the raw example, the web builds the phrases', async () => {
+      prisma.learning.findMany.mockResolvedValue([entry(1, 'run', 'I **run** and she **runs**.')]);
 
       const result = await service.getWordsForGame(1, 'phrase_completion');
-      const byWord = Object.fromEntries(result.words.map((w) => [w.word, w]));
-      expect(byWord.run).toMatchObject({
-        phrase: 'I _____ and she _____.',
-        correctWords: ['run', 'runs'],
-      });
-      expect(byWord.eat).toMatchObject({ phrase: 'No markers here', correctWords: [] });
-      expect(byWord.go).toMatchObject({ phrase: '', correctWords: [] });
+      expect(result.words).toEqual([
+        {
+          detail_id: 1,
+          word_id: 1,
+          word: 'run',
+          language_code: 'en-US',
+          type: 'ph_v',
+          meaning: 'meaning 1',
+          pronunciation: null,
+          example: 'I **run** and she **runs**.',
+          synonyms: null,
+        },
+      ]);
     });
   });
 

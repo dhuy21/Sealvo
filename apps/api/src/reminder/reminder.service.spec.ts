@@ -1,12 +1,14 @@
 import { Test } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
+import { appConfig } from '../config/app.config.js';
+import { testAppConfig } from '../config/testing.js';
 import { InternalServerErrorException } from '@nestjs/common';
 import { ReminderService } from './reminder.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { EmailService } from '../email/email.service.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
+import { CacheService } from '../redis/cache.service.js';
 
-describe('ReminderService.sendTestReminder', () => {
+describe('ReminderService', () => {
   let service: ReminderService;
   let prisma: {
     learning: { findMany: any };
@@ -15,6 +17,7 @@ describe('ReminderService.sendTestReminder', () => {
   };
   let emailService: { compileTemplate: any };
   let emailQueue: { enqueue: any };
+  let cache: { setNX: any };
 
   const dueRow = (detailId: number) => ({
     detail_id: detailId,
@@ -45,6 +48,7 @@ describe('ReminderService.sendTestReminder', () => {
     };
     emailService = { compileTemplate: vi.fn().mockReturnValue('<p>reminder</p>') };
     emailQueue = { enqueue: vi.fn().mockResolvedValue(true) };
+    cache = { setNX: vi.fn().mockResolvedValue(true) };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -52,7 +56,8 @@ describe('ReminderService.sendTestReminder', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: EmailService, useValue: emailService },
         { provide: EmailQueueService, useValue: emailQueue },
-        { provide: ConfigService, useValue: { get: vi.fn() } },
+        { provide: CacheService, useValue: cache },
+        { provide: appConfig.KEY, useValue: testAppConfig() },
       ],
     }).compile();
 
@@ -82,7 +87,12 @@ describe('ReminderService.sendTestReminder', () => {
     );
     expect(emailService.compileTemplate).toHaveBeenCalledWith(
       'mail.hbs',
-      expect.objectContaining({ wordCount: 6, wordsShown: 1, hasMoreWords: true }),
+      expect.objectContaining({
+        wordCount: 6,
+        wordsShown: 1,
+        hasMoreWords: true,
+        baseUrl: 'http://localhost:3000',
+      }),
     );
     expect(emailQueue.enqueue).toHaveBeenCalledWith({
       to: 'me@b.c',
@@ -98,5 +108,20 @@ describe('ReminderService.sendTestReminder', () => {
     const error = await service.sendTestReminder('u1').catch((e: unknown) => e);
     expect(error).toBeInstanceOf(InternalServerErrorException);
     expect((error as InternalServerErrorException).message).toBe("Échec de l'envoi de l'email");
+  });
+
+  it('sends the reminders of an hour only once (scheduled run and catch-up)', async () => {
+    cache.setNX.mockResolvedValue(false);
+
+    await expect(service.sendReminders()).resolves.toEqual({ sent: 0, failed: 0, skipped: true });
+    expect(cache.setNX).toHaveBeenCalledWith(expect.stringMatching(/^reminder:run:\d{4}-\d{2}-\d{2}T\d{2}$/), 1, 7200);
+    expect(prisma.learning.findMany).not.toHaveBeenCalled();
+  });
+
+  it('still sends when Redis cannot tell (fail open)', async () => {
+    cache.setNX.mockResolvedValue(null);
+
+    await expect(service.sendReminders()).resolves.toEqual({ sent: 0, failed: 0 });
+    expect(prisma.learning.findMany).toHaveBeenCalled();
   });
 });

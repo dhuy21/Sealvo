@@ -1,7 +1,8 @@
 import { createHash } from 'crypto';
 import { Test } from '@nestjs/testing';
 import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { appConfig } from '../config/app.config.js';
+import { testAppConfig } from '../config/testing.js';
 import * as bcrypt from 'bcryptjs';
 import { EmailVerificationService } from './email-verification.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -14,7 +15,7 @@ describe('EmailVerificationService', () => {
   let service: EmailVerificationService;
   let prisma: {
     users: { findUnique: any; update: any };
-    email_verification: { findFirst: any; create: any; update: any; updateMany: any };
+    email_verification: { findFirst: any; create: any; update: any; updateMany: any; count: any };
     $transaction: any;
   };
   let emailQueue: { enqueue: any };
@@ -28,6 +29,7 @@ describe('EmailVerificationService', () => {
         create: vi.fn(),
         update: vi.fn(),
         updateMany: vi.fn(),
+        count: vi.fn().mockResolvedValue(0),
       },
       $transaction: vi.fn(),
     };
@@ -39,7 +41,7 @@ describe('EmailVerificationService', () => {
       providers: [
         EmailVerificationService,
         { provide: PrismaService, useValue: prisma },
-        { provide: ConfigService, useValue: { get: vi.fn() } },
+        { provide: appConfig.KEY, useValue: testAppConfig() },
         { provide: EmailQueueService, useValue: emailQueue },
         { provide: EmailService, useValue: emailService },
       ],
@@ -152,6 +154,20 @@ describe('EmailVerificationService', () => {
       );
     });
 
+    it('should refuse a 4th email change within an hour, whatever the IP', async () => {
+      prisma.email_verification.count.mockResolvedValue(3);
+
+      await expect(service.requestEmailChange('abc1234', 'new@b.c', 'secret')).rejects.toMatchObject({
+        status: 429,
+        message: "Trop de demandes de changement d'email. Réessayez dans 1 heure.",
+      });
+      expect(prisma.email_verification.count.mock.calls[0][0].where).toMatchObject({
+        user_id: 'abc1234',
+        new_email: { not: null },
+      });
+      expect(emailQueue.enqueue).not.toHaveBeenCalled();
+    });
+
     it('should store a token with new_email and mail the new address without changing the email', async () => {
       await service.requestEmailChange('abc1234', 'new@b.c', 'secret');
 
@@ -166,6 +182,54 @@ describe('EmailVerificationService', () => {
       });
       expect(emailQueue.enqueue).toHaveBeenCalledWith(expect.objectContaining({ to: 'new@b.c' }));
       expect(prisma.users.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('resendVerification', () => {
+    const GENERIC = {
+      message: 'Si un compte non vérifié correspond, un nouvel email de vérification a été envoyé.',
+    };
+    const user = { id: 'abc1234', username: 'ann', email: 'ann@b.c', is_verified: false };
+
+    beforeEach(() => {
+      prisma.email_verification.findFirst.mockResolvedValue(null);
+      emailService.compileTemplate.mockReturnValue('<html />');
+      emailQueue.enqueue.mockResolvedValue(true);
+    });
+
+    it('should revoke previous tokens and mail a new one to an unverified account', async () => {
+      prisma.users.findUnique.mockResolvedValue(user);
+
+      await expect(service.resendVerification('ann')).resolves.toEqual(GENERIC);
+
+      expect(prisma.users.findUnique).toHaveBeenCalledWith({ where: { username: 'ann' } });
+      expect(prisma.email_verification.updateMany).toHaveBeenCalledWith({
+        where: { user_id: 'abc1234' },
+        data: { status: 'revoked' },
+      });
+      expect(prisma.email_verification.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ user_id: 'abc1234', new_email: undefined }),
+      });
+      expect(emailQueue.enqueue).toHaveBeenCalledWith(expect.objectContaining({ to: 'ann@b.c' }));
+    });
+
+    it.each([
+      ['an unknown username', null],
+      ['a verified account', { ...user, is_verified: true }],
+    ])('should send nothing for %s', async (_case, found) => {
+      prisma.users.findUnique.mockResolvedValue(found);
+
+      await expect(service.resendVerification('ann')).resolves.toEqual(GENERIC);
+
+      expect(prisma.email_verification.create).not.toHaveBeenCalled();
+      expect(emailQueue.enqueue).not.toHaveBeenCalled();
+    });
+
+    it('should keep the generic answer when the email cannot be queued', async () => {
+      prisma.users.findUnique.mockResolvedValue(user);
+      emailQueue.enqueue.mockResolvedValue(false);
+
+      await expect(service.resendVerification('ann')).resolves.toEqual(GENERIC);
     });
   });
 });

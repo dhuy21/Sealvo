@@ -1,8 +1,9 @@
 import { createHash } from 'crypto';
 import { Test } from '@nestjs/testing';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { appConfig } from '../config/app.config.js';
+import { testAppConfig } from '../config/testing.js';
+import { ConflictException, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { AuthService } from './auth.service.js';
 import { TokenService } from './token.service.js';
@@ -17,7 +18,7 @@ const sha256 = (value: string) => createHash('sha256').update(value).digest('hex
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: {
-    users: { findFirst: any; findUnique: any; create: any; update: any };
+    users: { findUnique: any; create: any; update: any };
     email_verification: { findFirst: any; create: any; updateMany: any };
     $transaction: any;
   };
@@ -28,7 +29,6 @@ describe('AuthService', () => {
   beforeEach(async () => {
     prisma = {
       users: {
-        findFirst: vi.fn(),
         findUnique: vi.fn(),
         create: vi.fn(),
         update: vi.fn(),
@@ -48,10 +48,10 @@ describe('AuthService', () => {
         EmailVerificationService,
         { provide: PrismaService, useValue: prisma },
         { provide: JwtService, useValue: { sign: vi.fn().mockReturnValue('token') } },
-        { provide: ConfigService, useValue: { get: vi.fn() } },
         { provide: SessionService, useValue: sessions },
         { provide: EmailQueueService, useValue: emailQueue },
         { provide: EmailService, useValue: emailService },
+        { provide: appConfig.KEY, useValue: testAppConfig() },
       ],
     }).compile();
 
@@ -103,7 +103,7 @@ describe('AuthService', () => {
         where: { id: '1' },
         data: { last_login: expect.any(Date) },
       });
-      expect(sessions.revoke).toHaveBeenCalledWith('sid.secret');
+      expect(sessions.revoke).toHaveBeenCalledWith('1', 'sid.secret');
     });
 
     it('should still revoke the session when last_login cannot be updated', async () => {
@@ -111,27 +111,88 @@ describe('AuthService', () => {
 
       await service.logout('1', 'sid.secret');
 
-      expect(sessions.revoke).toHaveBeenCalledWith('sid.secret');
+      expect(sessions.revoke).toHaveBeenCalledWith('1', 'sid.secret');
     });
   });
 
   describe('register', () => {
-    it('should throw on duplicate username', async () => {
-      prisma.users.findFirst.mockResolvedValue({ username: 'taken' });
-      const register = service.register({ username: 'taken', email: 'a@b.c', password: '123456' });
+    const takenBy = (field: 'username' | 'email') =>
+      prisma.users.findUnique.mockImplementation(({ where }: { where: object }) =>
+        Promise.resolve(field in where ? { id: 'other12' } : null),
+      );
+
+    it('should throw on duplicate username, whatever its case', async () => {
+      // The database collation matches 'john' with an existing 'John'
+      takenBy('username');
+      const register = service.register({ username: 'john', email: 'a@b.c', password: '123456' });
       await expect(register).rejects.toThrow(ConflictException);
       await expect(register).rejects.toThrow("Ce nom d'utilisateur est déjà utilisé");
+      expect(prisma.users.findUnique).toHaveBeenCalledWith({
+        where: { username: 'john' },
+        select: { id: true },
+      });
     });
 
-    it('should throw on duplicate email', async () => {
-      prisma.users.findFirst.mockResolvedValue({ username: 'other', email: 'a@b.c' });
-      await expect(
-        service.register({ username: 'new', email: 'a@b.c', password: '123456' }),
-      ).rejects.toThrow('Cette adresse email est déjà utilisée');
-    });
+    describe('with the email of an existing account', () => {
+      const owner = { id: 'own1234', username: 'owner', email: 'a@b.c' };
+      const success = {
+        success: true,
+        message: 'Un email de vérification a été envoyé à votre adresse email',
+      };
+      const ownerExists = (is_verified: boolean) =>
+        prisma.users.findUnique.mockImplementation(({ where }: { where: object }) =>
+          Promise.resolve('email' in where ? { ...owner, is_verified } : null),
+        );
+
+      beforeEach(() => {
+        emailService.compileTemplate.mockReturnValue('<html />');
+        emailQueue.enqueue.mockResolvedValue(true);
+      });
+
+      it('answers like a new registration and tells a verified owner, with login links', async () => {
+        ownerExists(true);
+
+        await expect(
+          service.register({ username: 'new', email: 'a@b.c', password: '123456' }),
+        ).resolves.toEqual(success);
+
+        expect(prisma.users.create).not.toHaveBeenCalled();
+        expect(emailService.compileTemplate).toHaveBeenCalledWith('mailAccountExists.hbs', {
+          username: 'owner',
+          loginLink: 'http://localhost:3000/login',
+          forgotPasswordLink: 'http://localhost:3000/forgot-password',
+        });
+        expect(emailQueue.enqueue).toHaveBeenCalledWith(
+          expect.objectContaining({ to: 'a@b.c', content: '<html />' }),
+        );
+      });
+
+      it('sends a new verification link to an unverified owner', async () => {
+        ownerExists(false);
+        prisma.email_verification.findFirst.mockResolvedValue(null);
+
+        await expect(
+          service.register({ username: 'new', email: 'a@b.c', password: '123456' }),
+        ).resolves.toEqual(success);
+
+        expect(prisma.users.create).not.toHaveBeenCalled();
+        expect(emailService.compileTemplate.mock.calls[0][0]).toBe('mailVerification.hbs');
+        expect(prisma.email_verification.create).toHaveBeenCalledWith({
+          data: expect.objectContaining({ user_id: 'own1234' }),
+        });
+      });
+
+      it('fails like a new registration when the email cannot be queued', async () => {
+        ownerExists(true);
+        emailQueue.enqueue.mockResolvedValue(false);
+
+        await expect(
+          service.register({ username: 'new', email: 'a@b.c', password: '123456' }),
+        ).rejects.toThrow("Une erreur est survenue lors de l'envoi de l'email de vérification.");
+      });    });
 
     it('should store a hashed verification token, revoke older ones and email the raw token', async () => {
-      prisma.users.findFirst.mockResolvedValue(null);
+      prisma.users.findUnique.mockResolvedValue(null);
       prisma.users.create.mockResolvedValue({ id: 'abc1234', username: 'new', email: 'new@b.c' });
       prisma.email_verification.findFirst.mockResolvedValue(null);
       emailService.compileTemplate.mockReturnValue('<html />');
@@ -144,7 +205,8 @@ describe('AuthService', () => {
         message: 'Un email de vérification a été envoyé à votre adresse email',
       });
 
-      const { verificationLink } = emailService.compileTemplate.mock.calls[0][1];
+      const { verificationLink, expiresIn } = emailService.compileTemplate.mock.calls[0][1];
+      expect(expiresIn).toBe('3 heures');
       const token = new URL(verificationLink).searchParams.get('token')!;
       expect(token).toMatch(/^[0-9a-f]{64}$/);
       expect(prisma.email_verification.updateMany).toHaveBeenCalledWith({
@@ -157,6 +219,18 @@ describe('AuthService', () => {
       expect(emailQueue.enqueue).toHaveBeenCalledWith(
         expect.objectContaining({ to: 'new@b.c', content: '<html />' }),
       );
+    });
+
+    it('should keep the account and report the error when the verification email cannot be queued', async () => {
+      prisma.users.findUnique.mockResolvedValue(null);
+      prisma.users.create.mockResolvedValue({ id: 'abc1234', username: 'new', email: 'new@b.c' });
+      prisma.email_verification.findFirst.mockResolvedValue(null);
+      emailQueue.enqueue.mockResolvedValue(false);
+
+      await expect(
+        service.register({ username: 'new', email: 'new@b.c', password: '123456' }),
+      ).rejects.toThrow(InternalServerErrorException);
+      expect(prisma.users.create).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -1,10 +1,10 @@
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { SESSION_TTL_MS } from './auth.constants.js';
 
-const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // expires after 7 days without a refresh
-/** Concurrent refreshes (several tabs, StrictMode) present the token that was just rotated. */
-const ROTATION_LEEWAY_MS = 30_000;
+/** A refresh whose response was lost, or concurrent ones from a browser without Web Locks, present the token just rotated. */
+const ROTATION_LEEWAY_MS = 10_000;
 const MAX_ROTATION_ATTEMPTS = 3;
 
 const hash = (secret: string) => createHash('sha256').update(secret).digest('hex');
@@ -76,8 +76,11 @@ export class SessionService {
     return null;
   }
 
-  async revoke(token: string | undefined): Promise<void> {
+  /** Only a session of this user: a cookie carrying another user's session id revokes nothing */
+  async revoke(userId: string, token: string | undefined): Promise<void> {
     const parsed = parse(token);
-    if (parsed) await this.prisma.refresh_sessions.deleteMany({ where: { id: parsed.id } });
+    if (parsed) {
+      await this.prisma.refresh_sessions.deleteMany({ where: { id: parsed.id, user_id: userId } });
+    }
   }
 }

@@ -1,6 +1,15 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { packages_mode } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
+
+const INVALID_ID_MESSAGE = 'Identifiant du package manquant ou invalide';
 
 @Injectable()
 export class PackageOwnershipGuard implements CanActivate {
@@ -16,8 +25,11 @@ export class PackageOwnershipGuard implements CanActivate {
       .map(Number);
     const packageId = ids[0];
 
-    if (!userId || ids.length === 0 || ids.some((id) => isNaN(id) || id !== packageId)) {
-      throw new ForbiddenException('Identifiant du package manquant ou invalide');
+    if (ids.length === 0 || ids.some((id) => !Number.isInteger(id) || id <= 0)) {
+      throw new BadRequestException(INVALID_ID_MESSAGE);
+    }
+    if (!userId || ids.some((id) => id !== packageId)) {
+      throw new ForbiddenException(INVALID_ID_MESSAGE);
     }
 
     const pkg = await this.prisma.packages.findUnique({

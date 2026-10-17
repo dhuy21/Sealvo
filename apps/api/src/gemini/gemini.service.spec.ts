@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
+import { geminiConfig } from '../config/gemini.config.js';
 import { GeminiService } from './gemini.service.js';
 
 const { generateContent, GoogleGenAI } = vi.hoisted(() => {
@@ -22,14 +22,11 @@ describe('GeminiService', () => {
     type: 'noun',
   };
 
-  async function createService(env: Record<string, string>) {
+  async function createService(apiKey?: string) {
     const module = await Test.createTestingModule({
       providers: [
         GeminiService,
-        {
-          provide: ConfigService,
-          useValue: { get: (key: string) => env[key] },
-        },
+        { provide: geminiConfig.KEY, useValue: { apiKey } },
       ],
     }).compile();
     return module.get(GeminiService);
@@ -39,29 +36,9 @@ describe('GeminiService', () => {
     vi.clearAllMocks();
   });
 
-  describe('replaceExample', () => {
-    it('should merge examples by index id (numeric or string) and ignore invalid entries', async () => {
-      const service = await createService({});
-      const words = [{ example: '' }, { example: 'I run' }, { example: 'keep me' }];
-
-      service.replaceExample(words, [
-        { id: 0, example: 'The **cat** sleeps.' },
-        { id: '1', example: 'I **ran** home.' },
-        { id: 2, example: null },
-        { id: 7, example: 'unknown word' },
-      ]);
-
-      expect(words.map((w) => w.example)).toEqual([
-        'The **cat** sleeps.',
-        'I **ran** home.',
-        'keep me',
-      ]);
-    });
-  });
-
   describe('generateExample / modifyExample', () => {
     it('should return [] without creating a client when GEMINI_API_KEY is missing', async () => {
-      const service = await createService({});
+      const service = await createService();
 
       await expect(service.generateExample([payload])).resolves.toEqual([]);
       await expect(service.modifyExample([{ ...payload, example: 'A cat.' }])).resolves.toEqual([]);
@@ -69,7 +46,7 @@ describe('GeminiService', () => {
     });
 
     it('should return [] instead of throwing when Gemini fails', async () => {
-      const service = await createService({ GEMINI_API_KEY: 'test-key' });
+      const service = await createService('test-key');
       generateContent.mockRejectedValue(
         Object.assign(new Error('API key not valid'), { status: 400 }),
       );
@@ -79,7 +56,7 @@ describe('GeminiService', () => {
     });
 
     it('should return [] when Gemini output is not JSON', async () => {
-      const service = await createService({ GEMINI_API_KEY: 'test-key' });
+      const service = await createService('test-key');
       generateContent.mockResolvedValue({
         text: 'Sorry, I cannot help with that.',
       });
@@ -88,7 +65,7 @@ describe('GeminiService', () => {
     });
 
     it('should parse fenced JSON, use the right model and reuse a single client', async () => {
-      const service = await createService({ GEMINI_API_KEY: 'test-key' });
+      const service = await createService('test-key');
       generateContent.mockResolvedValue({
         text: '```json\n[{ "id": 0, "example": "The **cat** sleeps." }]\n```',
       });

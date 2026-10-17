@@ -23,7 +23,6 @@ FROM base AS builder
 COPY --from=prepare /app/out/json/ .
 RUN npm ci
 COPY --from=prepare /app/out/full/ .
-RUN npx prisma generate --schema=apps/api/prisma/schema.prisma
 RUN npx turbo build --filter=@sealvo/api
 
 # ── Production dependencies only ─────────────────────────────

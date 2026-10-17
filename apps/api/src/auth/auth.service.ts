@@ -8,6 +8,11 @@ import { createUser } from './create-user.js';
 import type { RegisterDto } from './dto/register.dto.js';
 import type { LoginDto } from './dto/login.dto.js';
 
+const REGISTER_RESPONSE = {
+  success: true,
+  message: 'Un email de vérification a été envoyé à votre adresse email',
+};
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -20,30 +25,40 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const existingUser = await this.prisma.users.findFirst({
-      where: {
-        OR: [{ username: dto.username }, { email: dto.email }],
-      },
+    // Separate lookups: the case-insensitive collation matches 'john' with 'John'
+    const usernameTaken = await this.prisma.users.findUnique({
+      where: { username: dto.username },
+      select: { id: true },
     });
+    if (usernameTaken) {
+      throw new ConflictException("Ce nom d'utilisateur est déjà utilisé");
+    }
 
-    if (existingUser) {
-      throw new ConflictException(
-        existingUser.username === dto.username
-          ? "Ce nom d'utilisateur est déjà utilisé"
-          : 'Cette adresse email est déjà utilisée',
-      );
+    // Hashed before the email lookup so both outcomes below take the same time
+    const password = await bcrypt.hash(dto.password, 12);
+
+    // No user enumeration: a taken email gets the same response, its owner is emailed instead
+    const existing = await this.prisma.users.findUnique({
+      where: { email: dto.email },
+      select: { id: true, username: true, email: true, is_verified: true },
+    });
+    if (existing) {
+      await (existing.is_verified
+        ? this.emailVerification.sendAccountExistsEmail(existing)
+        : this.emailVerification.sendVerificationEmail(existing));
+      return REGISTER_RESPONSE;
     }
 
     const user = await createUser(this.prisma, {
       username: dto.username,
       email: dto.email,
-      password: await bcrypt.hash(dto.password, 12),
+      password,
       ava: dto.avatar ?? 1,
     });
 
     await this.emailVerification.sendVerificationEmail(user);
 
-    return { success: true, message: 'Un email de vérification a été envoyé à votre adresse email' };
+    return REGISTER_RESPONSE;
   }
 
   async login(dto: LoginDto) {
@@ -90,7 +105,7 @@ export class AuthService {
         `Failed to update last login for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
-    await this.sessions.revoke(refreshToken);
+    await this.sessions.revoke(userId, refreshToken);
   }
 
   async getMe(userId: string) {

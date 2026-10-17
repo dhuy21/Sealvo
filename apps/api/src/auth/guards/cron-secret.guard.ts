@@ -3,18 +3,19 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
+  Inject,
   Injectable,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { authConfig, type AuthConfig } from '../../config/auth.config.js';
 
 /** Protects internal endpoints called by the scheduler via the `X-Cron-Secret` header. */
 @Injectable()
 export class CronSecretGuard implements CanActivate {
-  constructor(private readonly config: ConfigService) {}
+  constructor(@Inject(authConfig.KEY) private readonly config: AuthConfig) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const secret = this.config.get<string>('CRON_SECRET');
+    const secret = this.config.cronSecret;
     if (!secret) {
       throw new ServiceUnavailableException('CRON_SECRET is not configured');
     }

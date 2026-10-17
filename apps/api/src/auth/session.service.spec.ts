@@ -32,7 +32,11 @@ function fakePrisma() {
       Object.assign(row, data);
       return Promise.resolve({ count: 1 });
     }),
-    deleteMany: vi.fn(({ where }: { where: { id: string } }) => {
+    deleteMany: vi.fn(({ where }: { where: { id: string; user_id?: string } }) => {
+      const row = rows.get(where.id);
+      if (!row || (where.user_id !== undefined && row.user_id !== where.user_id)) {
+        return Promise.resolve({ count: 0 });
+      }
       rows.delete(where.id);
       return Promise.resolve({ count: 1 });
     }),
@@ -77,7 +81,7 @@ describe('SessionService', () => {
     vi.useFakeTimers();
     const token = await service.create('u1');
     const rotated = await service.rotate(token);
-    vi.advanceTimersByTime(31_000);
+    vi.advanceTimersByTime(11_000);
 
     await expect(service.rotate(token)).resolves.toBeNull();
     expect(rows.size).toBe(0);
@@ -104,8 +108,14 @@ describe('SessionService', () => {
   it('logout revokes only that device', async () => {
     const laptop = await service.create('u1');
     const phone = await service.create('u1');
-    await service.revoke(laptop);
+    await service.revoke('u1', laptop);
     await expect(service.rotate(laptop)).resolves.toBeNull();
     await expect(service.rotate(phone)).resolves.toMatchObject({ userId: 'u1' });
+  });
+
+  it("logout never revokes another user's session", async () => {
+    const victim = await service.create('u2');
+    await service.revoke('u1', victim);
+    await expect(service.rotate(victim)).resolves.toMatchObject({ userId: 'u2' });
   });
 });

@@ -1,7 +1,6 @@
 import { Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
-import { ThrottleMessage } from '../common/decorators/throttle-message.decorator.js';
+import { THROTTLE, Throttled } from '../common/throttler/throttle-policies.js';
 import { CronSecretGuard } from '../auth/guards/cron-secret.guard.js';
 import { ReminderService } from './reminder.service.js';
 
@@ -13,15 +12,16 @@ export class ReminderController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { ttl: 60 * 60_000, limit: 3 } })
-  @ThrottleMessage("Trop d'emails envoyés. Réessayez dans 1 heure.")
+  @Throttled(THROTTLE.REMINDER_EMAIL)
   async triggerReminder() {
-    const { sent, failed } = await this.reminderService.sendReminders();
+    const { sent, failed, skipped } = await this.reminderService.sendReminders();
     await this.reminderService.cleanupExpired();
 
     return {
       success: true,
-      message: `Rappels traités : ${sent} envoyé(s), ${failed} échoué(s).`,
+      message: skipped
+        ? 'Rappels déjà envoyés cette heure-ci.'
+        : `Rappels traités : ${sent} envoyé(s), ${failed} échoué(s).`,
       sent,
       failed,
     };
