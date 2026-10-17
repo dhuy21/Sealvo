@@ -62,4 +62,6 @@ jobs:
     with:
       environment: ${{ inputs.environment }}
       version: ${{ inputs.sha }}
+      # The tag's previous images are the release being rolled back: a failed check must not restore them
+      restore-tag-on-failure: false
     secrets: inherit

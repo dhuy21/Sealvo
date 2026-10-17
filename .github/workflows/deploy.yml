@@ -23,6 +23,11 @@ on:
         required: false
         type: boolean
         default: false
+      restore-tag-on-failure:
+        description: 'Put the environment tag back on its previous images when the deploy fails (false for rollbacks: the previous images are the release being rolled back)'
+        required: false
+        type: boolean
+        default: true
     outputs:
       deployed:
         description: "'true' unless skipped as superseded"
@@ -43,7 +48,6 @@ jobs:
       group: deploy-${{ inputs.environment }}
       cancel-in-progress: false
     env:
-      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       RAILWAY_CLI_VERSION: 5.70.0
       API_URL: ${{ vars.API_URL }}
       WEB_URL: ${{ inputs.environment == 'production' && (vars.PRODUCTION_URL || 'https://www.sealvo.it.com') || vars.STAGING_URL }}
@@ -61,6 +65,7 @@ jobs:
           if [ "$TAG" = latest ] && [ -z "$BACKUP_SERVICE_ID" ]; then missing="$missing BACKUP_SERVICE_ID"; fi
           [ -z "$missing" ] || { echo "::error::Not set for ${{ inputs.environment }}:$missing (docs/railway-setup.md)"; exit 1; }
         env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           API_SERVICE_ID: ${{ secrets.RAILWAY_API_SERVICE_ID }}
           WEB_SERVICE_ID: ${{ secrets.RAILWAY_WEB_SERVICE_ID }}
           WORKER_SERVICE_ID: ${{ secrets.RAILWAY_WORKER_SERVICE_ID }}
@@ -85,6 +90,7 @@ jobs:
         if: steps.head.outputs.superseded != 'true'
         with:
           sparse-checkout: .github/scripts
+          persist-credentials: false
 
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
         if: steps.head.outputs.superseded != 'true'
@@ -128,6 +134,7 @@ jobs:
         run: railway redeploy --service "$SERVICE_ID" --yes
         env:
           SERVICE_ID: ${{ secrets.RAILWAY_API_SERVICE_ID }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
       - name: Health check (API)
         if: steps.head.outputs.superseded != 'true'
@@ -138,6 +145,7 @@ jobs:
         run: railway redeploy --service "$SERVICE_ID" --yes
         env:
           SERVICE_ID: ${{ secrets.RAILWAY_WEB_SERVICE_ID }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
       - name: Health check (Web)
         if: steps.head.outputs.superseded != 'true'
@@ -153,6 +161,7 @@ jobs:
           .github/scripts/wait-for-version.sh "$API_URL/health" "$VERSION" .processes.worker 60
         env:
           SERVICE_ID: ${{ secrets.RAILWAY_WORKER_SERVICE_ID }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
       - name: Redeploy Scheduler
         if: steps.head.outputs.superseded != 'true'
@@ -161,6 +170,7 @@ jobs:
           .github/scripts/wait-for-version.sh "$API_URL/health" "$VERSION" .processes.scheduler 60
         env:
           SERVICE_ID: ${{ secrets.RAILWAY_SCHEDULER_SERVICE_ID }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
       # A cron job: it only runs at its schedule, so there is nothing to wait for here
       - name: Redeploy Backup (cron)
@@ -168,11 +178,12 @@ jobs:
         run: railway redeploy --service "$SERVICE_ID" --yes
         env:
           SERVICE_ID: ${{ secrets.RAILWAY_BACKUP_SERVICE_ID }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
       # Otherwise the next redeploy for any reason (a variable change, a restart from the dashboard)
-      # would pull the commit that just failed
+      # would pull the commit that just failed. Also after a cancel or the job timeout.
       - name: Put the environment tag back
-        if: failure() && steps.tag.outcome != 'skipped'
+        if: (failure() || cancelled()) && inputs.restore-tag-on-failure && steps.tag.outcome != 'skipped'
         run: |
           base="ghcr.io/${GITHUB_REPOSITORY,,}"
           [ -s "$RUNNER_TEMP/previous-tags" ] || { echo "::warning::No previous $TAG tag to put back"; exit 0; }

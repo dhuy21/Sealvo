@@ -26,6 +26,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
@@ -70,6 +72,8 @@ jobs:
         working-directory: apps/api
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
@@ -93,11 +97,13 @@ jobs:
             --exit-code
 
   # ── 2. BUILD, SCAN & PUSH ──────────────────────────────────
+  # Pull requests build and scan every image without pushing: a Dockerfile or dependency change
+  # (Dependabot) that breaks the build or brings a critical CVE fails the PR, not the next release
   docker-build-push:
-    name: Build & Push (${{ matrix.image }})
+    name: Build & ${{ github.event_name == 'push' && 'Push' || 'Scan' }} (${{ matrix.image }})
     runs-on: ubuntu-latest
     needs: [lint-and-test, migrations-check]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'))
     timeout-minutes: 20
     # staging and main fast-forwarded to the same commit build it once: the second run waits, then
     # finds the image and reuses it instead of pushing a different digest under the same tag
@@ -112,11 +118,13 @@ jobs:
     strategy:
       matrix:
         # The backup cron only runs in production: staging does not build its image
-        include: ${{ fromJSON(github.ref == 'refs/heads/main' && '[{"image":"api","dockerfile":"apps/api/Dockerfile"},{"image":"web","dockerfile":"apps/web/Dockerfile"},{"image":"backup","dockerfile":"apps/api/Dockerfile.backup"}]' || '[{"image":"api","dockerfile":"apps/api/Dockerfile"},{"image":"web","dockerfile":"apps/web/Dockerfile"}]') }}
+        include: ${{ fromJSON(github.ref == 'refs/heads/staging' && '[{"image":"api","dockerfile":"apps/api/Dockerfile"},{"image":"web","dockerfile":"apps/web/Dockerfile"}]' || '[{"image":"api","dockerfile":"apps/api/Dockerfile"},{"image":"web","dockerfile":"apps/web/Dockerfile"},{"image":"backup","dockerfile":"apps/api/Dockerfile.backup"}]') }}
     env:
       REGISTRY: ghcr.io
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Set image name
         id: image
@@ -130,6 +138,7 @@ jobs:
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
       - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        if: github.event_name == 'push'
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -138,27 +147,38 @@ jobs:
       # A commit tag is never overwritten: staging is fast-forwarded into main, so production gets the
       # exact image built and scanned on staging (a hotfix later fast-forwarded into staging, or a re-run,
       # reuses its image the same way). Only a commit with no image yet is built below.
+      # Only "not found" means build: a registry error must not rebuild and overwrite an existing tag
       - name: Reuse an existing build
         id: existing
+        if: github.event_name == 'push'
         run: |
-          if docker buildx imagetools inspect "$IMAGE" >/dev/null 2>&1; then
+          if error=$(docker buildx imagetools inspect "$IMAGE" 2>&1 >/dev/null); then
             echo "found=true" >> "$GITHUB_OUTPUT"
             echo "::notice::$IMAGE already exists: reused, not rebuilt"
+          elif ! grep -qiE 'not found|manifest unknown' <<< "$error"; then
+            echo "::error::Cannot tell whether $IMAGE exists: $error"
+            exit 1
           fi
         env:
           IMAGE: ${{ steps.meta.outputs.ref }}
 
-      # Promotion: production reuses the staging image only once it passed E2E on staging.
-      # A commit pushed to main directly has no staging image and is built above (the approver gates it).
+      # Promotion: a commit that is on staging reaches production only once it passed E2E on staging,
+      # whether or not its image exists yet. A commit pushed to main directly (not on staging) is
+      # built here and gated by the production approver.
       - name: Check staging passed
-        if: steps.existing.outputs.found == 'true' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
+          status=$(gh api "repos/$GITHUB_REPOSITORY/compare/$GITHUB_SHA...staging" --jq .status)
+          if [ "$status" != identical ] && [ "$status" != ahead ]; then
+            echo "::notice::$GITHUB_SHA is not on staging ($status): no staging E2E to require"
+            exit 0
+          fi
           run_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$GITHUB_SHA&branch=staging&event=push" \
             --jq '[.workflow_runs[] | select(.path == ".github/workflows/ci-cd.yml")] | sort_by(.run_number) | last | .id // empty')
-          [ -n "$run_id" ] || { echo "::error::No staging CI/CD run for $GITHUB_SHA"; exit 1; }
+          [ -n "$run_id" ] || { echo "::error::No staging CI/CD run for $GITHUB_SHA yet: re-run once E2E Staging passed"; exit 1; }
           e2e=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" \
             --jq '[.jobs[] | select(.name | startswith("E2E Staging"))] | first | .conclusion // "missing"')
-          [ "$e2e" = success ] || { echo "::error::E2E Staging is '$e2e' for $GITHUB_SHA (run $run_id): not promoted"; exit 1; }
+          [ "$e2e" = success ] || { echo "::error::E2E Staging is '${e2e:-pending}' for $GITHUB_SHA (run $run_id): not promoted (re-run once it passed)"; exit 1; }
         env:
           GH_TOKEN: ${{ github.token }}
 
@@ -180,7 +200,7 @@ jobs:
           build-args: |
             ${{ matrix.image != 'backup' && format('GIT_SHA={0}', github.sha) || '' }}
           cache-from: type=gha,scope=${{ matrix.image }}
-          cache-to: type=gha,scope=${{ matrix.image }},mode=max
+          cache-to: ${{ github.event_name == 'push' && format('type=gha,scope={0},mode=max', matrix.image) || '' }}
 
       # Pinned by digest (aquasec/trivy:0.76.0). The scanner reads an exported copy of the image
       # (read-only mount): no Docker socket, no registry credentials.
@@ -205,7 +225,7 @@ jobs:
 
       # The scanned image itself
       - name: Push
-        if: steps.existing.outputs.found != 'true'
+        if: github.event_name == 'push' && steps.existing.outputs.found != 'true'
         run: docker push "$IMAGE"
         env:
           IMAGE: ${{ steps.meta.outputs.ref }}
@@ -258,4 +278,5 @@ jobs:
     uses: ./.github/workflows/e2e.yml
     with:
       target: staging
+      version: ${{ github.sha }}
     secrets: inherit

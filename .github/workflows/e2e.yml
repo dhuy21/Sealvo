@@ -21,6 +21,11 @@ on:
       target:
         required: true
         type: string
+      version:
+        description: 'Commit the environment must run during the whole test (empty: not checked)'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   e2e:
@@ -29,8 +34,14 @@ jobs:
     timeout-minutes: 15
     # Environment-scoped variables and secrets (STAGING_URL, E2E_USERNAME, E2E_PASSWORD)
     environment: ${{ inputs.target }}
+    env:
+      BASE_URL: ${{ inputs.target == 'production' && (vars.PRODUCTION_URL || 'https://www.sealvo.it.com') || vars.STAGING_URL }}
+      API_URL: ${{ vars.API_URL }}
+      VERSION: ${{ inputs.version }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
@@ -39,16 +50,23 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install chromium --with-deps
         working-directory: apps/web
+      # A newer deploy may start while the tests run: the result only vouches for VERSION if both the
+      # web and the API ran it before and after
+      - name: Check the deployed version (before)
+        if: inputs.version != ''
+        run: .github/scripts/check-version.sh
       - name: Run E2E
         # An empty BASE_URL would make playwright.config.ts fall back to localhost
         run: |
           : "${BASE_URL:?BASE_URL is empty: set vars.STAGING_URL}"
           npx turbo test:e2e --filter=@sealvo/web
         env:
-          BASE_URL: ${{ inputs.target == 'production' && (vars.PRODUCTION_URL || 'https://www.sealvo.it.com') || vars.STAGING_URL }}
           # Seeded account (apps/api/prisma/seed.mjs); the protected-page specs skip when unset
           E2E_USERNAME: ${{ secrets.E2E_USERNAME }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+      - name: Check the deployed version (after)
+        if: inputs.version != ''
+        run: .github/scripts/check-version.sh
       - name: Upload report
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
