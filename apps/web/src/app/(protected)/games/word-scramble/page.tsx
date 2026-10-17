@@ -79,7 +79,7 @@ function WordScrambleInner() {
   // Old app rules: checking can be repeated on the same word (each correct check scores), the
   // attempt is counted when moving to the next word
   function checkAnswer() {
-    if (!currentWord || !input.trim()) return;
+    if (!currentWord || !input.trim() || !shell.playing) return;
 
     if (input.trim().toLowerCase() === currentWord.word.toLowerCase()) {
       setScore((prev) => prev + POINTS_PER_WORD);
@@ -94,6 +94,7 @@ function WordScrambleInner() {
   }
 
   const goToNextWord = useCallback(() => {
+    if (!shell.playing) return;
     setTotalAttempts((prev) => prev + 1);
     setCanSkip(false);
     setInput('');
@@ -101,7 +102,7 @@ function WordScrambleInner() {
     setResultType('');
 
     setCurrentIndex(randomIndexExcept(words.length, currentIndex));
-  }, [words.length, currentIndex]);
+  }, [words.length, currentIndex, shell.playing]);
 
   if (!packageId) {
     return (

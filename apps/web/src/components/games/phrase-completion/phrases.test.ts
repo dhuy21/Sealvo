@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { gameWord } from '@/test-utils/fixtures';
 import { mockRandom, seedRandom } from '@/test-utils/random';
-import { escapeHtml, generatePhrases, repeatPhrases, revealAnswers, type Phrase } from './phrases';
+import {
+  escapeHtml,
+  generatePhrases,
+  isCorrectAnswer,
+  repeatPhrases,
+  revealAnswers,
+  type Phrase,
+} from './phrases';
 
 const phrase = (overrides: Partial<Phrase>): Phrase => ({
   phrase: '',
@@ -77,5 +84,18 @@ describe('revealAnswers', () => {
 
   it('leaves a phrase without blanks unchanged', () => {
     expect(revealAnswers(phrase({ phrase: 'Plain "text"' }), 'x')).toBe('Plain &quot;text&quot;');
+  });
+});
+
+describe('isCorrectAnswer', () => {
+  it('compares the answers in order, ignoring case and spaces around them', () => {
+    expect(isCorrectAnswer(' Paris ', ['paris'])).toBe(true);
+    expect(isCorrectAnswer('take ; OFF', ['take', 'off'])).toBe(true);
+    expect(isCorrectAnswer('off; take', ['take', 'off'])).toBe(false);
+  });
+
+  it('needs one answer per blank', () => {
+    expect(isCorrectAnswer('take', ['take', 'off'])).toBe(false);
+    expect(isCorrectAnswer('take; off; now', ['take', 'off'])).toBe(false);
   });
 });

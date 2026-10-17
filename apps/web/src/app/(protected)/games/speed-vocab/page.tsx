@@ -16,6 +16,7 @@ import { useSpeedBackground } from '@/components/games/speed-vocab/use-speed-bac
 import { isPassed, timeLimit, wordPoints } from '@/components/games/speed-vocab/scoring';
 import { useTransientFlag } from '@/components/games/use-transient-flag';
 import { cx } from '@/lib/css-module';
+import { formatTypeMeaning } from '@/lib/word-type';
 import styles from '@/styles/games/speed-vocab.module.css';
 
 function SpeedVocabInner() {
@@ -76,7 +77,10 @@ function SpeedVocabInner() {
       return;
     }
 
-    const prepared = gameData.words.map((w) => ({ word: w.word, meaning: w.meaning }));
+    const prepared = gameData.words.map((w) => ({
+      word: w.word,
+      meaning: formatTypeMeaning(w.type, w.meaning),
+    }));
     const shuffled = shuffleArray(prepared);
     setWords(shuffled);
     showWord(0);

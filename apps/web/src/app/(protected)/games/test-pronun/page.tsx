@@ -19,7 +19,13 @@ import { SoundBackground } from '@/components/games/test-pronun/SoundBackground'
 import { TestPronunRules } from '@/components/games/test-pronun/TestPronunRules';
 import { PronunciationBoard } from '@/components/games/test-pronun/PronunciationBoard';
 import { TestPronunSummary } from '@/components/games/test-pronun/TestPronunSummary';
-import { WORDS_PER_GAME, averageAccuracy, isPassed } from '@/components/games/test-pronun/scoring';
+import {
+  PERFECT_ACCURACY,
+  WORDS_PER_GAME,
+  accuracyFeedback,
+  averageAccuracy,
+  isPassed,
+} from '@/components/games/test-pronun/scoring';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/games/test-pronun.module.css';
 
@@ -75,22 +81,8 @@ function TestPronunInner() {
     setAccuracy(acc);
     setMeterWidth(acc);
 
-    let message: string;
-    if (acc >= 90) {
-      message = 'Excellent ! Prononciation parfaite !';
-      setPerfectCount((prev) => prev + 1);
-    } else if (acc >= 75) {
-      message = 'Très bien ! Bonne prononciation !';
-    } else if (acc >= 60) {
-      message = 'Bien ! Prononciation correcte !';
-    } else if (acc >= 40) {
-      message = 'Pas mal ! Continuez à vous entraîner !';
-    } else if (acc >= 20) {
-      message = 'Essayez encore ! Écoutez bien la prononciation.';
-    } else {
-      message = 'Mot incorrect. Réessayez en écoutant attentivement.';
-    }
-    setFeedback(message);
+    if (acc >= PERFECT_ACCURACY) setPerfectCount((prev) => prev + 1);
+    setFeedback(accuracyFeedback(acc));
 
     setTotalAccuracy((prev) => prev + acc);
     setCompletedWords((prev) => prev + 1);

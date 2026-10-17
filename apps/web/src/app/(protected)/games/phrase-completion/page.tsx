@@ -20,6 +20,7 @@ import { useTypewriter } from '@/components/games/phrase-completion/use-typewrit
 import {
   escapeHtml,
   generatePhrases,
+  isCorrectAnswer,
   NO_PHRASE_MESSAGE,
   repeatPhrases,
   revealAnswers,
@@ -105,13 +106,7 @@ function PhraseCompletionInner() {
   }
 
   function checkAnswer() {
-    if (!currentPhrase || answered) return;
-
-    const userInputs = input
-      .trim()
-      .split(';')
-      .map((s) => s.trim().toLowerCase());
-    const correctWordsLower = currentPhrase.correctWords.map((w) => w.toLowerCase());
+    if (!currentPhrase || answered || !shell.playing) return;
 
     if (!input.trim()) {
       setFeedbackMessage('Veuillez saisir un mot');
@@ -123,9 +118,7 @@ function PhraseCompletionInner() {
 
     const questionTime = (Date.now() - questionStartRef.current) / 1000;
 
-    const isCorrect =
-      userInputs.length === correctWordsLower.length &&
-      userInputs.every((val, i) => val === correctWordsLower[i]);
+    const isCorrect = isCorrectAnswer(input, currentPhrase.correctWords);
 
     setAnswered(true);
     typewriter.stop();
@@ -159,6 +152,7 @@ function PhraseCompletionInner() {
   }
 
   function goToNext() {
+    if (!shell.playing) return;
     const nextIdx = currentIndex + 1;
 
     if (nextIdx >= totalQuestions) {

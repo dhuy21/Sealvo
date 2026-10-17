@@ -34,6 +34,18 @@ export function generatePhrases(words: GameWord[]): Phrase[] {
   return shuffleArray(phrases);
 }
 
+/** Answers separated by `;`, compared in order with the bold words; case is ignored */
+export function isCorrectAnswer(input: string, correctWords: string[]): boolean {
+  const answers = input
+    .trim()
+    .split(';')
+    .map((s) => s.trim().toLowerCase());
+  return (
+    answers.length === correctWords.length &&
+    answers.every((answer, i) => answer === correctWords[i].toLowerCase())
+  );
+}
+
 /** `count` phrases, cycling through `phrases` in order. */
 export function repeatPhrases(phrases: Phrase[], count: number): Phrase[] {
   return Array.from({ length: count }, (_, i) => phrases[i % phrases.length]);

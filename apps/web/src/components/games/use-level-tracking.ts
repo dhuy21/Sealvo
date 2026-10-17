@@ -2,6 +2,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import type { GameType } from '@sealvo/shared';
 import { useTrackLevelProgress } from '@/hooks/use-games';
+import { getApiErrorMessage } from '@/lib/api-error';
 import { levelCompletedMessage } from './level-progress';
 
 /**
@@ -23,6 +24,10 @@ export function useLevelTracking(gameType: GameType) {
             setLevelFinished(true);
           }
         },
+        onError: (err) =>
+          toast.error(
+            getApiErrorMessage(err, "La progression du niveau n'a pas pu être enregistrée"),
+          ),
       },
     );
   };
