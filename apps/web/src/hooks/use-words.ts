@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { Level, WordType } from '@sealvo/shared';
 import api from '@/lib/api';
+import { stripBoldMarkup } from '@/lib/bold-markup';
+import { queryKeys } from '@/lib/query-keys';
 
 export interface Word {
   detail_id: number;
@@ -7,15 +10,19 @@ export interface Word {
   word: string;
   language_code: string;
   subject: string;
-  type: string;
+  type: WordType;
   meaning: string;
   pronunciation: string | null;
   synonyms: string | null;
   antonyms: string | null;
   example: string | null;
   grammar: string | null;
-  level: string;
+  level: Level;
   package_id: number;
+}
+
+export interface ReviewWord extends Word {
+  dueToday: boolean;
 }
 
 export interface CreateWordPayload {
@@ -44,10 +51,22 @@ export interface WordsSubmitResponse {
 
 export function useWords(packageId: number | null) {
   return useQuery({
-    queryKey: ['words', packageId],
+    queryKey: queryKeys.words(packageId),
     queryFn: async () => {
       const { data } = await api.get<Word[]>(`/packages/${packageId}/words`);
       return data;
+    },
+    enabled: !!packageId,
+  });
+}
+
+/** All words of the package, flagged `dueToday` by spaced repetition, with `**` markers stripped from examples. */
+export function useReviewWords(packageId: number | null) {
+  return useQuery({
+    queryKey: queryKeys.reviewWords(packageId),
+    queryFn: async () => {
+      const { data } = await api.get<ReviewWord[]>(`/packages/${packageId}/words/review`);
+      return data.map((w) => ({ ...w, example: stripBoldMarkup(w.example || '') }));
     },
     enabled: !!packageId,
   });
@@ -65,8 +84,9 @@ export function useAddWords(packageId: number) {
     },
     onSuccess: (data) => {
       if (data.async) return;
-      void qc.invalidateQueries({ queryKey: ['words', packageId] });
-      void qc.invalidateQueries({ queryKey: ['dashboard'] });
+      void qc.invalidateQueries({ queryKey: queryKeys.words(packageId) });
+      void qc.invalidateQueries({ queryKey: queryKeys.games() });
+      void qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
     },
   });
 }
@@ -79,7 +99,8 @@ export function useUpdateWord(packageId: number) {
       return data;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['words', packageId] });
+      void qc.invalidateQueries({ queryKey: queryKeys.words(packageId) });
+      void qc.invalidateQueries({ queryKey: queryKeys.games() });
     },
   });
 }
@@ -92,8 +113,9 @@ export function useDeleteWord(packageId: number) {
       return data;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['words', packageId] });
-      void qc.invalidateQueries({ queryKey: ['dashboard'] });
+      void qc.invalidateQueries({ queryKey: queryKeys.words(packageId) });
+      void qc.invalidateQueries({ queryKey: queryKeys.games() });
+      void qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
     },
   });
 }
@@ -107,7 +129,8 @@ export function useDeleteAllWords(packageId: number) {
     },
     // The words queries are invalidated by the caller once its exit animation has played
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['dashboard'] });
+      void qc.invalidateQueries({ queryKey: queryKeys.games() });
+      void qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
     },
   });
 }

@@ -1,4 +1,5 @@
 import type { GameWord } from '@/hooks/use-games';
+import { BOLD_MARKUP } from '@/lib/bold-markup';
 import { shuffleArray } from '@/lib/shuffle';
 
 export interface Phrase {
@@ -21,9 +22,8 @@ export function generatePhrases(words: GameWord[]): Phrase[] {
     let correctWords: string[] = [];
 
     if (w.example && w.example.trim() !== '') {
-      const regex = /\*\*([^*]+)\*\*/g;
-      correctWords = [...w.example.matchAll(regex)].map((m) => m[1]);
-      phrase = w.example.replace(regex, BLANK);
+      correctWords = [...w.example.matchAll(BOLD_MARKUP)].map((m) => m[1]);
+      phrase = w.example.replace(BOLD_MARKUP, BLANK);
     }
     return { phrase, word: w.word, meaningWord: w.meaning, correctWords };
   });
@@ -39,7 +39,8 @@ export function repeatPhrases(phrases: Phrase[], count: number): Phrase[] {
 export function revealAnswers(phrase: Phrase, className: string): string {
   let html = escapeHtml(phrase.phrase);
   for (const w of phrase.correctWords) {
-    html = html.replace(BLANK, `<span class="${className}">${escapeHtml(w)}</span>`);
+    // A function: a replacement string would expand `$&`, `$'`... typed in the word
+    html = html.replace(BLANK, () => `<span class="${className}">${escapeHtml(w)}</span>`);
   }
   return html;
 }

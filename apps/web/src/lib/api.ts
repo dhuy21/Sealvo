@@ -1,13 +1,14 @@
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth.store';
+import { apiUrl } from '@/env';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
   withCredentials: true, // send refresh cookie automatically
 });
 
 // ── Request interceptor: attach Bearer token ──
 api.interceptors.request.use((config) => {
+  config.baseURL = apiUrl();
   const token = useAuthStore.getState().accessToken;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -22,7 +23,7 @@ let refreshPromise: Promise<string | null> | null = null;
 export async function renewAccessToken(): Promise<string | null> {
   // Deduplicate concurrent refresh calls
   if (!refreshPromise) {
-    refreshPromise = refreshAccessToken().finally(() => {
+    refreshPromise = refreshAcrossTabs().finally(() => {
       refreshPromise = null;
     });
   }
@@ -62,10 +63,19 @@ function isAuthRefreshSkip(url?: string): boolean {
   return /\/auth\/(login|register|refresh)(\?|$)/.test(url);
 }
 
-export async function refreshAccessToken(): Promise<string | null> {
+/**
+ * Tabs share the refresh cookie: one refresh at a time, so a waiting tab sends the token the
+ * previous one just received instead of the rotated one (which the API only accepts for 10 s).
+ */
+async function refreshAcrossTabs(): Promise<string | null> {
+  if (!('locks' in navigator)) return refreshAccessToken();
+  return await navigator.locks.request('sealvo-refresh', refreshAccessToken);
+}
+
+async function refreshAccessToken(): Promise<string | null> {
   try {
     const { data } = await axios.post<{ accessToken: string }>(
-      `${api.defaults.baseURL}/auth/refresh`,
+      `${apiUrl()}/auth/refresh`,
       null,
       { withCredentials: true },
     );

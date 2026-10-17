@@ -6,23 +6,28 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
-import api from '@/lib/api';
+import { AUTH_LIMITS, AVATAR_COUNT } from '@sealvo/shared';
+import { AuthDecor } from '@/components/auth/AuthDecor';
+import { useRegister } from '@/hooks/use-auth';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/auth.module.css';
 
-const AVATARS = Array.from({ length: 11 }, (_, i) => i + 1);
+const AVATARS = Array.from({ length: AVATAR_COUNT }, (_, i) => i + 1);
 
 const registerSchema = z
   .object({
     username: z
       .string()
-      .min(3, 'Minimum 3 caractères')
-      .max(50, "Le nom d'utilisateur doit contenir entre 3 et 50 caractères"),
+      .min(AUTH_LIMITS.USERNAME_MIN, `Minimum ${AUTH_LIMITS.USERNAME_MIN} caractères`)
+      .max(
+        AUTH_LIMITS.USERNAME_MAX,
+        `Le nom d'utilisateur doit contenir entre ${AUTH_LIMITS.USERNAME_MIN} et ${AUTH_LIMITS.USERNAME_MAX} caractères`,
+      ),
     email: z.email('Email invalide'),
-    password: z.string().min(6, 'Minimum 6 caractères'),
+    password: z.string().min(AUTH_LIMITS.PASSWORD_MIN, `Minimum ${AUTH_LIMITS.PASSWORD_MIN} caractères`),
     password2: z.string(),
-    avatar: z.number().int().min(1).max(11),
+    avatar: z.number().int().min(1).max(AVATAR_COUNT),
     terms: z.literal(true, { message: 'Vous devez accepter les conditions' }),
   })
   .refine((data) => data.password === data.password2, {
@@ -35,6 +40,7 @@ type RegisterForm = z.infer<typeof registerSchema>;
 type Status = { type: 'success' | 'error'; message: string };
 
 export default function RegisterPage() {
+  const registerAccount = useRegister();
   const [status, setStatus] = useState<Status | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -54,13 +60,13 @@ export default function RegisterPage() {
 
   const onSubmit = async (data: RegisterForm) => {
     try {
-      const res = await api.post<{ message: string }>('/auth/register', {
+      const res = await registerAccount.mutateAsync({
         username: data.username,
         email: data.email,
         password: data.password,
         avatar: data.avatar,
       });
-      setStatus({ type: 'success', message: res.data.message });
+      setStatus({ type: 'success', message: res.message });
     } catch (err: unknown) {
       setStatus({
         type: 'error',
@@ -71,31 +77,7 @@ export default function RegisterPage() {
 
   return (
     <div className={cx(styles, 'page', 'auth-page')}>
-      <div className={cx(styles, 'floating-card', 'card-1')}>
-        <i className="fas fa-quote-left" />
-        <span> 🌱 It always seems impossible until it&apos;s done.</span>
-        <i className="fas fa-quote-right" />
-      </div>
-      <div className={cx(styles, 'floating-card', 'card-2')}>
-        <i className="fas fa-quote-left" />
-        <span> 🚀 Well done is better than well said.</span>
-        <i className="fas fa-quote-right" />
-      </div>
-      <div className={cx(styles, 'floating-card', 'card-3')}>
-        <i className="fas fa-quote-left" />
-        <span> 🌍 Rejoignez la communauté</span>
-        <i className="fas fa-quote-right" />
-      </div>
-      <div className={cx(styles, 'floating-card', 'card-4')}>
-        <i className="fas fa-quote-left" />
-        <span> 🌟 Act as if what you do makes a difference. It does.</span>
-        <i className="fas fa-quote-right" />
-      </div>
-      <div className={cx(styles, 'floating-card', 'card-5')}>
-        <i className="fas fa-quote-left" />
-        <span> 💡 N&apos;oubliez pas de prendre des pauses!</span>
-        <i className="fas fa-quote-right" />
-      </div>
+      <AuthDecor />
 
       <div className={styles['auth-container']}>
         <div className={styles['auth-header']}>
@@ -205,7 +187,7 @@ export default function RegisterPage() {
         </div>
 
         <div className={styles['social-login']} data-delay="800">
-          <a href={`${api.defaults.baseURL}/auth/google`} className={cx(styles, 'social-btn', 'google-btn')}>
+          <a href="/auth/google" className={cx(styles, 'social-btn', 'google-btn')}>
             <i className="fa-brands fa-google" /> Continuer avec Google
           </a>
         </div>

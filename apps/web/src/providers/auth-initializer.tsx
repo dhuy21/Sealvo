@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
-import api, { refreshAccessToken } from '@/lib/api';
-import { useAuthStore, type User } from '@/stores/auth.store';
+import { fetchMe } from '@/hooks/use-auth';
+import { renewAccessToken } from '@/lib/api';
+import { useAuthStore } from '@/stores/auth.store';
 
 /**
  * On app load: try POST /auth/refresh (httpOnly cookie, path /auth).
@@ -18,13 +19,14 @@ export function AuthInitializer({ children }: { children: ReactNode }) {
 
     async function restore() {
       try {
-        const token = await refreshAccessToken();
+        // Shared with the 401 interceptor and StrictMode's second run: one rotation, not two
+        const token = await renewAccessToken();
         if (!token) {
           if (!cancelled) logout();
           return;
         }
-        const { data } = await api.get<User>('/auth/me');
-        if (!cancelled) login(data, token);
+        const user = await fetchMe();
+        if (!cancelled) login(user, token);
       } catch {
         if (!cancelled) logout();
       } finally {

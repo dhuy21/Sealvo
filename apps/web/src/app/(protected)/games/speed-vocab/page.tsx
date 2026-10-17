@@ -13,13 +13,11 @@ import { SpeedVocabBoard } from '@/components/games/speed-vocab/SpeedVocabBoard'
 import { SpeedVocabSummary } from '@/components/games/speed-vocab/SpeedVocabSummary';
 import { playErrorSound, playSuccessSound } from '@/components/games/speed-vocab/speed-sounds';
 import { useSpeedBackground } from '@/components/games/speed-vocab/use-speed-background';
+import { isPassed, timeLimit, wordPoints } from '@/components/games/speed-vocab/scoring';
 import { useTransientFlag } from '@/components/games/use-transient-flag';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/games/speed-vocab.module.css';
 
-/* ================================================================
-   INNER COMPONENT
-   ================================================================ */
 function SpeedVocabInner() {
   const shell = useGameShell('speed_vocab', { celebration: launchEmbers, trackOnSummary: true });
   const { packageId, gameData, screen } = shell;
@@ -39,13 +37,14 @@ function SpeedVocabInner() {
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // Its callback moves to the next word: it must not run once the page is left
+  useEffect(() => () => clearTimeout(feedbackTimeoutRef.current), []);
   const wrongPendingRef = useRef(false);
 
   const currentWord = words[currentIndex] ?? null;
 
   function endGame() {
-    const accuracy = wordsTyped > 0 ? Math.round((correctWords / wordsTyped) * 100) : 0;
-    shell.finish(score, accuracy >= 70);
+    shell.finish(score, isPassed(correctWords, wordsTyped));
   }
 
   const [timer, setTimer] = useCountdownTimer(shell.playing, endGame);
@@ -91,7 +90,7 @@ function SpeedVocabInner() {
     wrongPendingRef.current = false;
     setInputFeedback('');
 
-    setTimer(100 + shuffled.length * 6);
+    setTimer(timeLimit(shuffled.length));
     shell.start();
 
     setTimeout(() => inputRef.current?.focus(), 100);
@@ -126,10 +125,8 @@ function SpeedVocabInner() {
       setStreak(newStreak);
       setBestStreak((p) => Math.max(p, newStreak));
 
-      let wordPoints = 10;
-      wordPoints += Math.max(0, correctWord.length - 4); // length bonus
-      wordPoints += Math.floor(newStreak / 3) * 5; // streak bonus
-      setScore((p) => p + wordPoints);
+      const points = wordPoints(correctWord, newStreak);
+      setScore((p) => p + points);
 
       if (newStreak % 3 === 0) triggerStreakCelebration(800);
       flashInput('correct');
@@ -151,8 +148,6 @@ function SpeedVocabInner() {
     }
   }
 
-  const wpm = Math.round((correctWords / 60) * 60);
-
   if (!packageId) {
     return (
       <div className={cx(styles, 'game-container')} id="speed-vocab">
@@ -170,7 +165,6 @@ function SpeedVocabInner() {
       id="speed-vocab"
       data-package={packageId}
     >
-      {/* Header */}
       <div className={cx(styles, 'game-header')}>
         <h1>Vitesse Vocab</h1>
         <p className={cx(styles, 'game-description')}>Tapez les mots le plus vite possible</p>
@@ -204,7 +198,7 @@ function SpeedVocabInner() {
             <SpeedVocabSummary
               score={score}
               bestStreak={bestStreak}
-              wpm={wpm}
+              wpm={correctWords}
               levelMessage={shell.levelMessage}
               levelStatus={shell.levelStatus}
               levelFinished={shell.levelFinished}
@@ -220,9 +214,6 @@ function SpeedVocabInner() {
   );
 }
 
-/* ================================================================
-   PAGE
-   ================================================================ */
 export default function SpeedVocabPage() {
   return (
     <Suspense>

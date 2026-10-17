@@ -36,17 +36,10 @@ export function useMouseTracker() {
   }, []);
 }
 
-/** Ripple at every click, plus a short pulse on the clicked button. */
-export function useWaveEffect() {
+/** A short pulse on the clicked button. */
+export function useButtonPulse() {
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      const wave = document.createElement('div');
-      wave.className = 'wave-effect';
-      wave.style.left = `${e.clientX}px`;
-      wave.style.top = `${e.clientY}px`;
-      document.body.appendChild(wave);
-      setTimeout(() => wave.remove(), 1000);
-
       const target = e.target as HTMLElement;
       const btn = target.closest(`button, .${styles['dashboard-btn']}`) as HTMLElement | null;
       if (btn) {

@@ -7,10 +7,11 @@ import { AuthInitializer } from './auth-initializer';
 import { Toaster } from 'react-hot-toast';
 import { JobWatcher } from '@/components/jobs/JobWatcher';
 
-export function AppProviders({ children }: { children: ReactNode }) {
+/** `nonce`: the CSP nonce of this request (proxy.ts), for the inline theme script */
+export function AppProviders({ children, nonce }: { children: ReactNode; nonce?: string }) {
   return (
     <QueryProvider>
-      <ThemeProvider>
+      <ThemeProvider nonce={nonce}>
         <AuthInitializer>{children}</AuthInitializer>
         <JobWatcher />
         <Toaster

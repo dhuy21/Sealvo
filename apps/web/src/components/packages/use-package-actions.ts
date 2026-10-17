@@ -129,6 +129,8 @@ export function usePackageActions() {
     confirmDelete,
     deleting: deletePkg.isPending,
     toggle,
+    togglingId: togglePkg.isPending ? togglePkg.variables : undefined,
     copy,
+    copyingId: copyPkg.isPending ? copyPkg.variables : undefined,
   };
 }

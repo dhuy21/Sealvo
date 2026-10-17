@@ -16,7 +16,7 @@ import { useProfileActions } from '@/components/dashboard/use-profile-actions';
 import {
   useCardTilt,
   useMouseTracker,
-  useWaveEffect,
+  useButtonPulse,
 } from '@/components/dashboard/use-dashboard-effects';
 import styles from '@/styles/dashboard.module.css';
 import { cx } from '@/lib/css-module';
@@ -30,7 +30,7 @@ export default function DashboardPage() {
 
   // Decorative effects
   useMouseTracker();
-  useWaveEffect();
+  useButtonPulse();
   useCardTilt(!!data);
 
   if (isLoading) {
@@ -44,7 +44,8 @@ export default function DashboardPage() {
     );
   }
 
-  if (error || !data) {
+  // A failed background refetch keeps the data already shown
+  if (!data) {
     return (
       <div
         className={cx(styles, 'home-container')}

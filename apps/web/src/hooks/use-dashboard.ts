@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { queryKeys } from '@/lib/query-keys';
 
 export interface PackageToReview {
   package_id: number;
@@ -22,7 +23,7 @@ interface DashboardResponse extends DashboardStats {
 
 export function useDashboard() {
   return useQuery({
-    queryKey: ['dashboard'],
+    queryKey: queryKeys.dashboard(),
     queryFn: async () => {
       const { data } = await api.get<DashboardResponse>('/dashboard');
       return data;
@@ -62,7 +63,7 @@ export function useUpdateProfile() {
       return data;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
     },
   });
 }

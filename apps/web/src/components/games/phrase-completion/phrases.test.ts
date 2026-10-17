@@ -71,6 +71,11 @@ describe('revealAnswers', () => {
     );
   });
 
+  it('inserts answers containing $ patterns literally', () => {
+    const p = phrase({ phrase: 'Pay _____ now', correctWords: ["$&$'"] });
+    expect(revealAnswers(p, 'x')).toBe(`Pay <span class="x">$&amp;$'</span> now`);
+  });
+
   it('leaves a phrase without blanks unchanged', () => {
     expect(revealAnswers(phrase({ phrase: 'Plain "text"' }), 'x')).toBe('Plain &quot;text&quot;');
   });

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useDeleteAllWords } from '@/hooks/use-words';
 import { useTimeouts } from '@/hooks/use-timeouts';
 import { getApiErrorMessage } from '@/lib/api-error';
+import { queryKeys } from '@/lib/query-keys';
 import type { DeleteAllStatus } from './DeleteAllModal';
 
 /**
@@ -33,7 +34,7 @@ export function useDeleteAllFlow(packageId: number, levels: string[]) {
           later(() => {
             // Prefix match: also refreshes the Learn review list and other per-package word queries
             void queryClient
-              .invalidateQueries({ queryKey: ['words', packageId] })
+              .invalidateQueries({ queryKey: queryKeys.words(packageId) })
               .then(() => setDeletingLevels(new Set()));
             toast.success(data.message);
           }, levels.length * 100 + 600);

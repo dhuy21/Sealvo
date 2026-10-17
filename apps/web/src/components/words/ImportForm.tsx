@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import toast from 'react-hot-toast';
+import { IMPORT_MAX_FILE_BYTES } from '@sealvo/shared';
 import { useImportFile } from '@/hooks/use-import';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { notifyLongError } from '@/lib/notify';
@@ -11,7 +12,6 @@ import { settleWordsResponse } from './settle-words-response';
 import styles from '@/styles/add-word.module.css';
 import { cx } from '@/lib/css-module';
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const EXCEL_MIME_TYPES = [
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.ms-excel',
@@ -35,7 +35,7 @@ export function ImportForm({ packageId }: { packageId: number }) {
       setFileName(null);
       return;
     }
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > IMPORT_MAX_FILE_BYTES) {
       toast.error('Le fichier est trop volumineux (max 5MB)');
       resetFile();
       return;

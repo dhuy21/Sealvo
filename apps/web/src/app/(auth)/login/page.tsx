@@ -7,10 +7,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
 import toast from 'react-hot-toast';
-import api from '@/lib/api';
+import { AuthDecor } from '@/components/auth/AuthDecor';
+import { UNVERIFIED_ACCOUNT_MESSAGE, useLogin, useResendVerification } from '@/hooks/use-auth';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { useAuthStore } from '@/stores/auth.store';
-import type { User } from '@/stores/auth.store';
 import { safeRedirect } from '@/lib/safe-redirect';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/auth.module.css';
@@ -38,10 +38,12 @@ export default function LoginPage() {
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const login = useAuthStore((s) => s.login);
+  const login = useLogin();
+  const resend = useResendVerification();
   const isReady = useAuthStore((s) => s.isReady);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [showPassword, setShowPassword] = useState(false);
+  const [unverified, setUnverified] = useState(false);
   const googleError = GOOGLE_ERRORS.get(searchParams.get('error') ?? '');
 
   useEffect(() => {
@@ -53,50 +55,27 @@ function LoginForm() {
   const {
     register,
     handleSubmit,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
 
   const onSubmit = async (data: LoginForm) => {
+    setUnverified(false);
+    resend.reset();
     try {
-      const res = await api.post<{ accessToken: string }>('/auth/login', data);
-      const meRes = await api.get<User>('/auth/me', {
-        headers: { Authorization: `Bearer ${res.data.accessToken}` },
-      });
-      login(meRes.data, res.data.accessToken);
+      await login.mutateAsync(data);
+      // The isAuthenticated effect above navigates
       toast.success('Connexion réussie !');
-      router.push(safeRedirect(searchParams.get('redirect')));
     } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err, 'Identifiants invalides'));
+      const message = getApiErrorMessage(err, 'Identifiants invalides');
+      setUnverified(message === UNVERIFIED_ACCOUNT_MESSAGE);
+      toast.error(message);
     }
   };
 
   return (
     <div className={cx(styles, 'page', 'auth-page')}>
-      <div className={cx(styles, 'floating-card', 'card-1')}>
-        <i className="fas fa-quote-left" />
-        <span> 🌱 It always seems impossible until it&apos;s done.</span>
-        <i className="fas fa-quote-right" />
-      </div>
-      <div className={cx(styles, 'floating-card', 'card-2')}>
-        <i className="fas fa-quote-left" />
-        <span> 🚀 Well done is better than well said.</span>
-        <i className="fas fa-quote-right" />
-      </div>
-      <div className={cx(styles, 'floating-card', 'card-3')}>
-        <i className="fas fa-quote-left" />
-        <span> 🌍 Rejoignez la communauté</span>
-        <i className="fas fa-quote-right" />
-      </div>
-      <div className={cx(styles, 'floating-card', 'card-4')}>
-        <i className="fas fa-quote-left" />
-        <span> 🌟 Act as if what you do makes a difference. It does.</span>
-        <i className="fas fa-quote-right" />
-      </div>
-      <div className={cx(styles, 'floating-card', 'card-5')}>
-        <i className="fas fa-quote-left" />
-        <span> 💡 N&apos;oubliez pas de prendre des pauses!</span>
-        <i className="fas fa-quote-right" />
-      </div>
+      <AuthDecor />
 
       <div className={styles['auth-container']}>
         <div className={styles['auth-header']}>
@@ -112,6 +91,35 @@ function LoginForm() {
             <i className="fas fa-exclamation-circle" />
             {googleError}
           </div>
+        )}
+
+        {unverified && (
+          <>
+            <div className={cx(styles, 'alert', 'alert-error')}>
+              <i className="fas fa-exclamation-circle" />
+              {UNVERIFIED_ACCOUNT_MESSAGE}
+            </div>
+            <button
+              type="button"
+              className={cx(styles, 'auth-link', 'link-button')}
+              disabled={resend.isPending}
+              onClick={() => resend.mutate(getValues('username'))}
+            >
+              Renvoyer l&apos;email de vérification
+            </button>
+            {resend.isSuccess && (
+              <div className={cx(styles, 'alert', 'alert-success')}>
+                <i className="fas fa-check-circle" />
+                {resend.data.message}
+              </div>
+            )}
+            {resend.isError && (
+              <div className={cx(styles, 'alert', 'alert-error')}>
+                <i className="fas fa-exclamation-circle" />
+                {getApiErrorMessage(resend.error, 'Une erreur est survenue. Veuillez réessayer plus tard.')}
+              </div>
+            )}
+          </>
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className={styles['auth-form']}>
@@ -166,7 +174,7 @@ function LoginForm() {
         </div>
 
         <div className={styles['social-login']} data-delay="600">
-          <a href={`${api.defaults.baseURL}/auth/google`} className={cx(styles, 'social-btn', 'google-btn')}>
+          <a href="/auth/google" className={cx(styles, 'social-btn', 'google-btn')}>
             <i className="fa-brands fa-google" /> Continuer avec Google
           </a>
         </div>

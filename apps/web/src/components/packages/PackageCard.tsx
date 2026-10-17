@@ -14,6 +14,8 @@ export function PackageCard({
   onView,
   onLearn,
   onCopy,
+  togglePending,
+  copyPending,
 }: {
   pkg: Package;
   isPublicView: boolean;
@@ -24,6 +26,8 @@ export function PackageCard({
   onView: (id: number) => void;
   onLearn: (id: number) => void;
   onCopy: (id: number) => void;
+  togglePending: boolean;
+  copyPending: boolean;
 }) {
   const modeIcon =
     pkg.mode === 'private' ? 'fa-lock' : pkg.mode === 'public' ? 'fa-globe' : 'fa-shield-alt';
@@ -125,6 +129,7 @@ export function PackageCard({
                 pkg.is_active ? 'pushable-warning' : 'pushable-success',
               )}
               onClick={() => onToggle(pkg.package_id)}
+              disabled={togglePending}
             >
               <span
                 className={cx(
@@ -157,6 +162,7 @@ export function PackageCard({
           <button
             className={cx(styles, 'pushable', 'copy-package-btn')}
             onClick={() => onCopy(pkg.package_id)}
+            disabled={copyPending}
           >
             <span className={cx(styles, 'shadow-copy')}></span>
             <span className={cx(styles, 'edge-copy')}></span>

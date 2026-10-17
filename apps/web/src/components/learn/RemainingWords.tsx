@@ -1,5 +1,5 @@
 import type { CardProgress } from './deck';
-import type { ReviewWord } from './use-review-words';
+import type { ReviewWord } from '@/hooks/use-words';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/learn.module.css';
 

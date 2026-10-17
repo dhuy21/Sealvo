@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { headers } from 'next/headers';
+import Script from 'next/script';
 import { AppProviders } from '@/providers/app-providers';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -26,7 +28,11 @@ export const viewport: Viewport = {
   themeColor: '#2575fc',
 };
 
-export default function RootLayout({ children }: LayoutProps<'/'>) {
+// Every page renders per request so its scripts carry the CSP nonce (proxy.ts): no static shell
+export const instant = false;
+
+export default async function RootLayout({ children }: LayoutProps<'/'>) {
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
   return (
     <html
       lang="en"
@@ -34,7 +40,8 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <AppProviders>
+        <Script src="/env.js" strategy="beforeInteractive" nonce={nonce} />
+        <AppProviders nonce={nonce}>
           <div className="app flex-1">
             <Header />
             <main className="content flex-1">

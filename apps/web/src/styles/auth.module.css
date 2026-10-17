@@ -2657,6 +2657,23 @@
   text-decoration: underline;
 }
 
+/* A <button> styled as .auth-link, under the alert it relates to */
+.link-button {
+  display: block;
+  margin: -10px 0 20px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+.link-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Floating cards for login/register pages */
 .floating-card {
   position: absolute;

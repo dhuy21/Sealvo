@@ -7,7 +7,7 @@ import {
   type WordType,
 } from '@sealvo/shared';
 
-/** `label`: table and inline edit. `formLabel`: add-word form (old addWord.hbs). */
+/** `label`: words table and inline edit. `formLabel`: add-word form (old addWord.hbs). */
 const WORD_TYPE_LABELS: Record<WordType, { label: string; formLabel: string }> = {
   noun: { label: 'Nom', formLabel: 'Nom' },
   verb: { label: 'Verbe', formLabel: 'Verbe' },
@@ -20,8 +20,8 @@ const WORD_TYPE_LABELS: Record<WordType, { label: string; formLabel: string }> =
 
 export const WORD_TYPE_OPTIONS = WORD_TYPES.map((value) => ({ value, ...WORD_TYPE_LABELS[value] }));
 
-export function wordTypeLabel(type: string): string {
-  return WORD_TYPE_OPTIONS.find((t) => t.value === type)?.label ?? type;
+export function wordTypeLabel(type: WordType): string {
+  return WORD_TYPE_LABELS[type].label;
 }
 
 /** Shown next to each code in the add-word language select. */
@@ -58,8 +58,3 @@ export const LEVEL_OPTIONS = LEVELS.map((value) => ({
   value,
   label: `${levelLabel(value)} - ${LEVEL_NAMES[value]}`,
 }));
-
-/** Display-only: examples store the target word as `**word**`. */
-export function stripBoldMarkup(text: string): string {
-  return text.replace(/\*\*([^*]+)\*\*/g, '$1');
-}

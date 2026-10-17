@@ -18,9 +18,6 @@ FROM base AS builder
 COPY --from=prepare /app/out/json/ .
 RUN npm ci
 COPY --from=prepare /app/out/full/ .
-# NEXT_PUBLIC_* values are inlined into the client bundle at build time
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 RUN npx turbo build --filter=@sealvo/web
 
 # ── Runtime (Next.js standalone output) ──────────────────────
@@ -40,5 +37,8 @@ ENV GIT_SHA=${GIT_SHA}
 
 USER appuser
 EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
 
 CMD ["node", "apps/web/server.js"]

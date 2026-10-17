@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { LEVELS } from '@sealvo/shared';
 import { INITIAL_LEVELS, buildDeck, freshProgress } from './deck';
-import type { ReviewWord } from './use-review-words';
+import type { ReviewWord } from '@/hooks/use-words';
 
 function reviewWord(id: number, level: string, dueToday: boolean): ReviewWord {
   return { detail_id: id, level, dueToday } as ReviewWord;

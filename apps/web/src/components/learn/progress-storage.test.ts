@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadProgress, saveProgress } from './progress-storage';
-import type { ReviewWord } from './use-review-words';
+import type { ReviewWord } from '@/hooks/use-words';
 
 const STORAGE_KEY = 'flashcards_progress';
 

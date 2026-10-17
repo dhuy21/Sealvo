@@ -12,7 +12,8 @@ export function useProfileActions({ onAvatarSaved }: { onAvatarSaved: () => void
   const testReminder = useTestReminder();
 
   const saveField = useCallback(
-    (fieldName: string, newValue: string, currentPassword?: string) => {
+    (fieldName: string, rawValue: string, currentPassword?: string) => {
+      const newValue = rawValue.trim();
       updateProfile.mutate(
         { [fieldName]: newValue, current_password: currentPassword },
         {

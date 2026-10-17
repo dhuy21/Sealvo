@@ -7,41 +7,9 @@ import type {
   SpeechRecognitionEvent,
   SpeechRecognitionInstance,
 } from './speech-recognition';
+import { browserOptimizations, errorInfo } from './speech-errors';
 
 const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent);
-
-function browserOptimizations() {
-  const ua = navigator.userAgent;
-  if (/iPad|iPhone|iPod/.test(ua)) return { delay: 300, maxRetries: 2, timeout: 8000 };
-  if (/Chrome|Edge/.test(ua)) return { delay: 50, maxRetries: 3, timeout: 12000 };
-  if (/Firefox/.test(ua)) return { delay: 150, maxRetries: 2, timeout: 10000 };
-  return { delay: 100, maxRetries: 3, timeout: 10000 };
-}
-
-function errorInfo(error: string, canRetry: boolean): { message: string; retry: boolean } {
-  switch (error) {
-    case 'no-speech':
-      return { message: 'Aucune parole détectée. Parlez plus fort et plus clairement.', retry: canRetry };
-    case 'audio-capture':
-      return { message: "Impossible d'accéder au microphone. Vérifiez les permissions.", retry: false };
-    case 'not-allowed':
-      return {
-        message: 'Permission microphone refusée. Activez le microphone dans les paramètres.',
-        retry: false,
-      };
-    case 'network':
-      return { message: 'Erreur réseau. Vérifiez votre connexion internet.', retry: canRetry };
-    case 'aborted':
-      return { message: 'Reconnaissance interrompue. Essayez à nouveau.', retry: canRetry };
-    case 'service-not-allowed':
-      return {
-        message: 'Service de reconnaissance non autorisé. Essayez de recharger la page.',
-        retry: false,
-      };
-    default:
-      return { message: `Erreur: ${error}. Essayez de recharger la page.`, retry: canRetry };
-  }
-}
 
 /**
  * One Web Speech recognition instance for the page, with the old client's
@@ -159,7 +127,7 @@ export function useSpeechRecognition({
     setFeedback("Préparation de l'enregistrement...", 'info');
     recognition.lang = languageRef.current;
 
-    const { delay, maxRetries } = browserOptimizations();
+    const { delay, maxRetries } = browserOptimizations(navigator.userAgent);
     maxRetriesRef.current = maxRetries;
     later(() => {
       try {
@@ -177,7 +145,7 @@ export function useSpeechRecognition({
     setFeedback('Écoute en cours... Parlez maintenant.', 'info');
     timeoutRef.current = setTimeout(() => {
       if (listeningRef.current) stop();
-    }, browserOptimizations().timeout);
+    }, browserOptimizations(navigator.userAgent).timeout);
   });
 
   const handleResult = useEffectEvent((event: SpeechRecognitionEvent) => {

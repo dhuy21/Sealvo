@@ -87,6 +87,8 @@ export default function PackagesPage() {
         onDelete={actions.askDelete}
         onToggle={actions.toggle}
         onCopy={actions.copy}
+        togglingId={actions.togglingId}
+        copyingId={actions.copyingId}
       />
 
       {/* Modals */}

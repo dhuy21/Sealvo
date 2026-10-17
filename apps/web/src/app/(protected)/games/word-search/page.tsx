@@ -24,12 +24,18 @@ import { RotationNotice } from '@/components/games/word-search/RotationNotice';
 import { WordSearchRules } from '@/components/games/word-search/WordSearchRules';
 import { WordSearchBoard } from '@/components/games/word-search/WordSearchBoard';
 import { WordSearchSummary } from '@/components/games/word-search/WordSearchSummary';
+import {
+  HINT_COST,
+  MAX_WORDS,
+  finalScore,
+  foundWordPoints,
+  isPassed,
+  selectionAccuracy,
+  timeLimit,
+} from '@/components/games/word-search/scoring';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/games/word-search.module.css';
 
-/* ================================================================
-   INNER COMPONENT
-   ================================================================ */
 function WordSearchInner() {
   const shell = useGameShell('word_search', { celebration: launchFireworks });
   const { packageId, gameData, screen } = shell;
@@ -51,9 +57,10 @@ function WordSearchInner() {
   function endGame() {
     gameActiveRef.current = false;
 
-    const bonusScore = foundWords.length === wordsToFind.length ? 100 : 0;
-    const minWordsFound = Math.ceil(wordsToFind.length * 0.7);
-    shell.finish(score + bonusScore, foundWords.length >= minWordsFound);
+    shell.finish(
+      finalScore(score, foundWords.length, wordsToFind.length),
+      isPassed(foundWords.length, wordsToFind.length),
+    );
   }
 
   const [timer, setTimer] = useCountdownTimer(shell.playing, endGame);
@@ -75,7 +82,7 @@ function WordSearchInner() {
       return;
     }
 
-    const wordStrings = gameData.words.slice(0, 30).map((w) => w.word);
+    const wordStrings = gameData.words.slice(0, MAX_WORDS).map((w) => w.word);
     const newGrid = generateGrid(wordStrings);
 
     setGrid(newGrid);
@@ -87,7 +94,7 @@ function WordSearchInner() {
     setAttempts(0);
     gameActiveRef.current = true;
 
-    setTimer(300 + wordStrings.length * 13);
+    setTimer(timeLimit(wordStrings.length));
     shell.start();
   }
 
@@ -98,7 +105,7 @@ function WordSearchInner() {
     if (word !== undefined) {
       setFoundWords([...foundWords, word]);
       letters.wordFound(word);
-      setScore((s) => s + selectedWord.length * 5);
+      setScore((s) => s + foundWordPoints(selectedWord));
       setFoundCells((fc) => {
         const newSet = new Set(fc);
         cells.forEach((c) => newSet.add(cellKey(c.row, c.col)));
@@ -113,7 +120,7 @@ function WordSearchInner() {
 
   function showHint() {
     if (!gameActiveRef.current || foundWords.length >= wordsToFind.length) return;
-    if (score < 100) {
+    if (score < HINT_COST) {
       showLowScoreToast();
       return;
     }
@@ -130,10 +137,10 @@ function WordSearchInner() {
 
     showHintToast(word);
     hint.flash(cells);
-    setScore((s) => Math.max(0, s - 100));
+    setScore((s) => Math.max(0, s - HINT_COST));
   }
 
-  const accuracy = attempts > 0 ? Math.round((foundWords.length / attempts) * 100) : 0;
+  const accuracy = selectionAccuracy(foundWords.length, attempts);
   const selectedSet = new Set(selection.selected.map((c) => cellKey(c.row, c.col)));
 
   if (!packageId) {
@@ -159,7 +166,6 @@ function WordSearchInner() {
       </button>
       <RotationNotice visible={portraitBlocked} />
       <div className={cx(styles, 'game-container', 'letter-explosion-mode')} id="package-id" data-package={packageId}>
-        {/* Header */}
         <div className={cx(styles, 'game-header')}>
           <h1>Mots Cachés</h1>
           <p className={cx(styles, 'game-description')}>Trouvez les mots cachés dans la grille</p>
@@ -217,9 +223,6 @@ function WordSearchInner() {
   );
 }
 
-/* ================================================================
-   PAGE
-   ================================================================ */
 export default function WordSearchPage() {
   return (
     <Suspense>

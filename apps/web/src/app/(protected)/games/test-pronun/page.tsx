@@ -17,17 +17,18 @@ import { SoundBackground } from '@/components/games/test-pronun/SoundBackground'
 import { TestPronunRules } from '@/components/games/test-pronun/TestPronunRules';
 import { PronunciationBoard } from '@/components/games/test-pronun/PronunciationBoard';
 import { TestPronunSummary } from '@/components/games/test-pronun/TestPronunSummary';
+import {
+  WORDS_PER_GAME,
+  averageAccuracy,
+  isPassed,
+} from '@/components/games/test-pronun/scoring';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/games/test-pronun.module.css';
 
-/* ================================================================
-   INNER COMPONENT (needs useSearchParams)
-   ================================================================ */
 function TestPronunInner() {
   const shell = useGameShell('test_pronun', { celebration: launchFireworks });
   const { packageId, gameData, screen } = shell;
 
-  // Game state
   const [words, setWords] = useState<GameWord[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [completedWords, setCompletedWords] = useState(0);
@@ -43,12 +44,11 @@ function TestPronunInner() {
   const [wordFadeIn, triggerWordFadeIn] = useTransientFlag();
 
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const playbackRef = useRef<AbortController | null>(null);
   const unmountSignal = useUnmountSignal();
 
-  const WORDS_PER_GAME = 10;
   const currentWord = words[currentIndex] ?? null;
 
-  // Timer
   useEffect(() => {
     if (screen === 'active' && startTime > 0) {
       timerRef.current = setInterval(() => {
@@ -97,7 +97,14 @@ function TestPronunInner() {
     getFeedbackText,
   });
 
+  /** Stops the word being played, so a replay or the next word never overlaps it. */
+  function stopPlayback() {
+    playbackRef.current?.abort();
+    playbackRef.current = null;
+  }
+
   function showWord(index: number) {
+    stopPlayback();
     setCurrentIndex(index);
     setMeterWidth(0);
     setRecognizedText('');
@@ -126,7 +133,11 @@ function TestPronunInner() {
   function playCurrentWord() {
     if (!currentWord) return;
     triggerSpeaking(2000);
-    void playWordAudio(currentWord, setFeedback, unmountSignal());
+    stopPlayback();
+    const playback = new AbortController();
+    playbackRef.current = playback;
+    unmountSignal().addEventListener('abort', () => playback.abort(), { once: true });
+    void playWordAudio(currentWord, setFeedback, playback.signal);
   }
 
   function skipWord() {
@@ -134,13 +145,12 @@ function TestPronunInner() {
   }
 
   function endGame() {
-    const avgAccuracy = completedWords > 0 ? totalAccuracy / completedWords : 0;
-    if (!shell.finish(Math.round(avgAccuracy), avgAccuracy >= 70 && completedWords >= 5)) return;
+    const avgAccuracy = averageAccuracy(totalAccuracy, completedWords);
+    if (!shell.finish(Math.round(avgAccuracy), isPassed(avgAccuracy, completedWords))) return;
     clearInterval(timerRef.current);
     setElapsed(Date.now() - startTime);
   }
 
-  // Move to next word when completedWords changes
   useEffect(() => {
     if (screen !== 'active' || completedWords === 0) return;
 
@@ -155,7 +165,7 @@ function TestPronunInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [completedWords]);
 
-  const avgAccuracy = completedWords > 0 ? Math.round(totalAccuracy / completedWords) : 0;
+  const avgAccuracy = Math.round(averageAccuracy(totalAccuracy, completedWords));
 
   if (!packageId) {
     return (
@@ -174,7 +184,6 @@ function TestPronunInner() {
         mode={speech.isListening ? 'listening' : speech.hasListened ? 'normal' : 'idle'}
       />
 
-      {/* Header */}
       <div className={cx(styles, 'game-header')}>
         <h1>
           <i className="fas fa-bolt" style={{ color: '#e9e919' }}></i>
@@ -236,9 +245,6 @@ function TestPronunInner() {
   );
 }
 
-/* ================================================================
-   PAGE
-   ================================================================ */
 export default function TestPronunPage() {
   return (
     <Suspense>

@@ -1,8 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import toast from 'react-hot-toast';
+import { VALID_LANGS } from '@sealvo/shared';
 import type { Word, UpdateWordPayload } from '@/hooks/use-words';
-import { WORD_TYPE_OPTIONS, stripBoldMarkup, wordTypeLabel } from './constants';
+import { stripBoldMarkup } from '@/lib/bold-markup';
+import { WORD_TYPE_OPTIONS, wordTypeLabel } from './constants';
+import { REQUIRED_FIELDS_MESSAGE, toUpdatePayload, wordEditForm, type WordEditForm } from './word-edit-form';
 import styles from '@/styles/vocabs.module.css';
 import { cx } from '@/lib/css-module';
 
@@ -10,30 +14,37 @@ export function WordRow({
   w,
   onSave,
   onDelete,
-  savePending,
   readOnly = false,
 }: {
   w: Word;
-  onSave: (detailId: number, dto: UpdateWordPayload) => void;
+  /** Resolves to `true` once saved; the editor stays open otherwise. */
+  onSave: (detailId: number, dto: UpdateWordPayload) => Promise<boolean>;
   onDelete: (detailId: number) => void;
-  savePending: boolean;
   readOnly?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({
-    word: w.word,
-    language_code: w.language_code,
-    type: w.type,
-    meaning: w.meaning,
-    pronunciation: w.pronunciation ?? '',
-    synonyms: w.synonyms ?? '',
-    antonyms: w.antonyms ?? '',
-    example: w.example ?? '',
-    grammar: w.grammar ?? '',
-  });
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState(() => wordEditForm(w));
 
-  const handleChange = (field: string, value: string) =>
+  const handleChange = (field: keyof WordEditForm, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
+
+  const startEditing = () => {
+    setForm(wordEditForm(w));
+    setEditing(true);
+  };
+
+  const save = async () => {
+    const dto = toUpdatePayload(form);
+    if (!dto) {
+      toast.error(REQUIRED_FIELDS_MESSAGE);
+      return;
+    }
+    setSaving(true);
+    const saved = await onSave(w.detail_id, dto);
+    setSaving(false);
+    if (saved) setEditing(false);
+  };
 
   if (editing) {
     return (
@@ -50,12 +61,18 @@ export function WordRow({
         </td>
         <td className={cx(styles, 'table-cell')}>
           <div className={cx(styles, 'table-cell-content')}>
-            <input
+            <select
               className={cx(styles, 'edit-input')}
               value={form.language_code}
               onChange={(e) => handleChange('language_code', e.target.value)}
               required
-            />
+            >
+              {VALID_LANGS.map((code) => (
+                <option key={code} value={code}>
+                  {code}
+                </option>
+              ))}
+            </select>
           </div>
         </td>
         <td className={cx(styles, 'table-cell')}>
@@ -133,13 +150,10 @@ export function WordRow({
             <button
               className={cx(styles, 'save-btn')}
               title="Valider"
-              disabled={savePending}
-              onClick={() => {
-                onSave(w.detail_id, form);
-                setEditing(false);
-              }}
+              disabled={saving}
+              onClick={save}
             >
-              <i className={savePending ? 'fas fa-spinner fa-spin' : 'fas fa-check'}></i>
+              <i className={saving ? 'fas fa-spinner fa-spin' : 'fas fa-check'}></i>
             </button>
             <button className={cx(styles, 'cancel-btn')} title="Annuler" onClick={() => setEditing(false)}>
               <i className="fas fa-times"></i>
@@ -182,7 +196,7 @@ export function WordRow({
       {!readOnly && (
         <td className={cx(styles, 'table-cell')}>
           <div className={cx(styles, 'action-buttons')}>
-            <button className={cx(styles, 'edit-btn')} title="Modifier" onClick={() => setEditing(true)}>
+            <button className={cx(styles, 'edit-btn')} title="Modifier" onClick={startEditing}>
               <i className="fas fa-edit"></i>
             </button>
             <button className={cx(styles, 'delete-btn')} title="Supprimer" onClick={() => onDelete(w.detail_id)}>

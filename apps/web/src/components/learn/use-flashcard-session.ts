@@ -10,7 +10,7 @@ import {
 import { loadProgress, saveProgress } from './progress-storage';
 import { useTimeouts } from '@/hooks/use-timeouts';
 import type { LearnMode } from './Flashcard';
-import type { ReviewWord } from './use-review-words';
+import type { ReviewWord } from '@/hooks/use-words';
 
 const UNSAVED_PROGRESS_MESSAGE =
   'Vous avez des progrès non sauvegardés. Êtes-vous sûr de vouloir quitter ?';

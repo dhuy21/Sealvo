@@ -11,15 +11,13 @@ export function WordsLevelTable({
   deleting,
   onSave,
   onDelete,
-  savePending,
 }: {
   level: Level;
   words: Word[];
   isOwner: boolean;
   deleting: boolean;
-  onSave: (detailId: number, dto: UpdateWordPayload) => void;
+  onSave: (detailId: number, dto: UpdateWordPayload) => Promise<boolean>;
   onDelete: (detailId: number) => void;
-  savePending: boolean;
 }) {
   return (
     <div
@@ -52,7 +50,6 @@ export function WordsLevelTable({
               w={w}
               onSave={onSave}
               onDelete={onDelete}
-              savePending={savePending}
               readOnly={!isOwner}
             />
           ))}

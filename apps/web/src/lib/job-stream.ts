@@ -1,5 +1,6 @@
 import { EventStreamContentType, fetchEventSource } from '@microsoft/fetch-event-source';
-import api, { renewAccessToken } from './api';
+import { renewAccessToken } from './api';
+import { apiUrl } from '@/env';
 import { useAuthStore } from '@/stores/auth.store';
 
 /** A `data:` message of GET /jobs/:id/stream. */
@@ -37,7 +38,7 @@ export async function streamJob(
 ): Promise<StreamEnd> {
   let retries = 0;
   try {
-    await fetchEventSource(`${api.defaults.baseURL}/jobs/${encodeURIComponent(jobId)}/stream`, {
+    await fetchEventSource(`${apiUrl()}/jobs/${encodeURIComponent(jobId)}/stream`, {
       signal,
       openWhenHidden: true,
       // Read the token on every attempt so a reconnect after a refresh uses the new one.

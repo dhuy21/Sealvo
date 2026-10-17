@@ -1,3 +1,5 @@
+import { JOB_TTL_SECONDS } from '@sealvo/shared';
+
 /** Jobs the watcher follows, kept across reloads in `localStorage` (same key and shape as the old app). */
 export interface StoredJob {
   id: string;
@@ -5,7 +7,6 @@ export interface StoredJob {
 }
 
 const STORAGE_KEY = 'activeJobs';
-const MAX_AGE_MS = 3_600_000;
 
 export function getStoredJobs(): StoredJob[] {
   try {
@@ -34,11 +35,11 @@ export function removeStoredJob(jobId: string): void {
   saveStoredJobs(getStoredJobs().filter((j) => j.id !== jobId));
 }
 
-/** Stored jobs younger than one hour (the server job TTL). Older entries are dropped from storage. */
+/** Stored jobs younger than the server job TTL. Older entries are dropped from storage. */
 export function getFreshStoredJobs(): StoredJob[] {
   const jobs = getStoredJobs();
-  const oneHourAgo = Date.now() - MAX_AGE_MS;
-  const fresh = jobs.filter((j) => j.ts > oneHourAgo);
+  const oldest = Date.now() - JOB_TTL_SECONDS * 1000;
+  const fresh = jobs.filter((j) => j.ts > oldest);
   if (fresh.length !== jobs.length) saveStoredJobs(fresh);
   return fresh;
 }

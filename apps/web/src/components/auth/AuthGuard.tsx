@@ -1,21 +1,12 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { Suspense, useEffect, type ReactNode } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth.store';
 
 export function AuthGuard({ children }: { children: ReactNode }) {
-  const router = useRouter();
-  const pathname = usePathname();
   const isReady = useAuthStore((s) => s.isReady);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-
-  useEffect(() => {
-    if (isReady && !isAuthenticated) {
-      const loginUrl = `/login?redirect=${encodeURIComponent(pathname)}`;
-      router.replace(loginUrl);
-    }
-  }, [isReady, isAuthenticated, pathname, router]);
 
   if (!isReady) {
     return (
@@ -25,7 +16,28 @@ export function AuthGuard({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!isAuthenticated) return null;
+  if (!isAuthenticated) {
+    // useSearchParams needs a Suspense boundary; keeping it here leaves the guarded pages unsuspended
+    return (
+      <Suspense>
+        <RedirectToLogin />
+      </Suspense>
+    );
+  }
 
   return children;
+}
+
+/** Back to the current URL, query included (e.g. `?package=`), once logged in. */
+function RedirectToLogin() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const search = useSearchParams().toString();
+
+  useEffect(() => {
+    const current = search ? `${pathname}?${search}` : pathname;
+    router.replace(`/login?redirect=${encodeURIComponent(current)}`);
+  }, [pathname, search, router]);
+
+  return null;
 }

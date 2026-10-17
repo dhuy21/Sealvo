@@ -1,13 +1,11 @@
-import type { WordType } from '@sealvo/shared';
+import { wordTypeToDb, type WordType } from '@sealvo/shared';
 
-const PHRASAL_VERB: WordType = 'ph_v';
-
-/** Word types are Prisma enum names; phrasal verbs are stored as `ph.v` and displayed that way. */
-export function displayWordType(type: string): string {
-  return type === PHRASAL_VERB ? 'ph.v' : type;
+/** Word types are displayed as stored in the database: phrasal verbs as `ph.v`. */
+export function displayWordType(type: WordType): string {
+  return wordTypeToDb(type);
 }
 
 /** `type : meaning`, or just the meaning when the word has no type. */
-export function formatTypeMeaning(type: string | null | undefined, meaning: string): string {
+export function formatTypeMeaning(type: WordType | null | undefined, meaning: string): string {
   return type ? `${displayWordType(type)} : ${meaning}` : meaning;
 }

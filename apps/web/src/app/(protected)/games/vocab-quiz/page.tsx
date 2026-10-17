@@ -16,6 +16,7 @@ import {
   generateQuestions,
   hasEnoughWords,
 } from '@/components/games/vocab-quiz/generate-questions';
+import { isPassed, scoreAfterAnswer } from '@/components/games/vocab-quiz/scoring';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/games/vocab-quiz.module.css';
 
@@ -76,12 +77,11 @@ function VocabQuizContent() {
       setAnswered(true);
       const isCorrect = nextSelected.every((i) => q.correctIndex.includes(i));
       effects.answer(isCorrect);
+      setScore((s) => scoreAfterAnswer(s, isCorrect, nextSelected.length));
       if (isCorrect) {
-        setScore((s) => s + 10 * nextSelected.length);
         setCorrectCount((c) => c + 1);
         setResultMsg({ text: 'Excellent ! 🎉', correct: true });
       } else {
-        setScore((s) => Math.max(0, s - 5 * nextSelected.length));
         setResultMsg({ text: 'Pas tout à fait... 💭', correct: false });
       }
     },
@@ -97,9 +97,8 @@ function VocabQuizContent() {
       setResultMsg(null);
       effects.showQuestion();
     } else {
-      // End game
       const total = questions.length;
-      if (!shell.finish(score, correctCount >= Math.ceil(total * 0.7))) return;
+      if (!shell.finish(score, isPassed(correctCount, total))) return;
       clearInterval(timerRef.current);
       effects.finish(Math.round((correctCount / total) * 100));
     }

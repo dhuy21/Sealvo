@@ -11,12 +11,10 @@ import { FlashMatchBoard, type Card } from '@/components/games/flash-match/Flash
 import { FlashMatchSummary } from '@/components/games/flash-match/FlashMatchSummary';
 import { generateCards } from '@/components/games/flash-match/generate-cards';
 import { Bubbles } from '@/components/games/flash-match/Bubbles';
+import { isPassed } from '@/components/games/flash-match/scoring';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/games/flash-match.module.css';
 
-/* ═══════════════════════════ */
-/* FLASH MATCH GAME            */
-/* ═══════════════════════════ */
 function FlashMatchContent() {
   const shell = useGameShell('flash_match');
   const { packageId, gameData, screen } = shell;
@@ -32,7 +30,6 @@ function FlashMatchContent() {
   const checkingRef = useRef(false);
   const later = useTimeouts();
 
-  // Timer
   useEffect(() => {
     if (gameActive) {
       timerRef.current = setInterval(() => setCurrentTime((t) => t + 1), 1000);
@@ -78,7 +75,6 @@ function FlashMatchContent() {
           const c2 = newCards[newSelected[1]];
 
           if (c1.pairId === c2.pairId && c1.type !== c2.type) {
-            // Match
             const updated = [...newCards];
             updated[newSelected[0]] = { ...updated[newSelected[0]], matched: true };
             updated[newSelected[1]] = { ...updated[newSelected[1]], matched: true };
@@ -87,14 +83,12 @@ function FlashMatchContent() {
             setMatchedPairs(newMatched);
 
             if (newMatched === totalPairs) {
-              // Game over
               setGameActive(false);
               clearInterval(timerRef.current);
 
-              shell.finish(newMatched, newMatched >= Math.ceil(totalPairs * 0.8));
+              shell.finish(newMatched, isPassed(newMatched, totalPairs));
             }
           } else {
-            // No match
             const updated = [...newCards];
             updated[newSelected[0]] = { ...updated[newSelected[0]], flipped: false };
             updated[newSelected[1]] = { ...updated[newSelected[1]], flipped: false };

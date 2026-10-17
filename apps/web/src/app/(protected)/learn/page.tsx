@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useReviewWords } from '@/components/learn/use-review-words';
+import { useReviewWords } from '@/hooks/use-words';
 import { LearnSession } from '@/components/learn/LearnSession';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { cx } from '@/lib/css-module';

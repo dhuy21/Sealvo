@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type CSSProperties } from 'react';
+import { useTimeouts } from '@/hooks/use-timeouts';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/learn.module.css';
 
@@ -15,19 +16,20 @@ export function FlashcardHint({ target, autoHide }: { target: string; autoHide: 
   const [text, setText] = useState('');
   const [style, setStyle] = useState<CSSProperties | undefined>(undefined);
   const [pulse, setPulse] = useState(false);
+  const later = useTimeouts();
 
   const showHint = (e: React.MouseEvent) => {
     e.stopPropagation();
     setPulse(true);
-    setTimeout(() => setPulse(false), 500);
+    later(() => setPulse(false), 500);
 
     setText(hintFor(target));
     setStyle({ opacity: 1, transform: 'translateY(0)', display: 'block' });
 
     if (autoHide) {
-      setTimeout(() => {
+      later(() => {
         setStyle((s) => ({ ...s, opacity: 0 }));
-        setTimeout(() => setStyle((s) => ({ ...s, display: 'none' })), 500);
+        later(() => setStyle((s) => ({ ...s, display: 'none' })), 500);
       }, 5000);
     }
   };

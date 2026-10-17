@@ -14,12 +14,15 @@ import { WordScrambleRules } from '@/components/games/word-scramble/WordScramble
 import { ScrambleBoard, type ScrambledWord } from '@/components/games/word-scramble/ScrambleBoard';
 import { WordScrambleSummary } from '@/components/games/word-scramble/WordScrambleSummary';
 import { scrambleWord } from '@/components/games/word-scramble/scramble-word';
+import {
+  POINTS_PER_WORD,
+  accuracy as scrambleAccuracy,
+  isPassed,
+  timeLimit,
+} from '@/components/games/word-scramble/scoring';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/games/word-scramble.module.css';
 
-/* ================================================================
-   INNER COMPONENT
-   ================================================================ */
 function WordScrambleInner() {
   const shell = useGameShell('word_scramble', { celebration: launchSideCannons });
   const { packageId, gameData, screen } = shell;
@@ -36,10 +39,10 @@ function WordScrambleInner() {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const currentWord = words[currentIndex] ?? null;
-  const accuracy = totalAttempts > 0 ? Math.round((correctAnswers / totalAttempts) * 100) : 0;
+  const accuracy = scrambleAccuracy(correctAnswers, totalAttempts);
 
   function endGame() {
-    shell.finish(score, accuracy >= 80);
+    shell.finish(score, isPassed(accuracy));
   }
 
   const [timer, setTimer] = useCountdownTimer(shell.playing, endGame);
@@ -67,7 +70,7 @@ function WordScrambleInner() {
     setResultType('');
     setCanSkip(false);
 
-    setTimer(110 + shuffled.length * 9);
+    setTimer(timeLimit(shuffled.length));
     shell.start();
 
     setTimeout(() => inputRef.current?.focus(), 100);
@@ -79,7 +82,7 @@ function WordScrambleInner() {
 
     setTotalAttempts((prev) => prev + 1);
     if (input.trim().toLowerCase() === currentWord.word.toLowerCase()) {
-      setScore((prev) => prev + 10);
+      setScore((prev) => prev + POINTS_PER_WORD);
       setCorrectAnswers((prev) => prev + 1);
       setResultMessage('Correct !');
       setResultType('correct');
@@ -114,7 +117,6 @@ function WordScrambleInner() {
     <div className={cx(styles, 'game-container')}>
       <MagicalBackground />
 
-      {/* Header */}
       <div className={cx(styles, 'game-header')}>
         <h1>Mots Mélangés</h1>
         <p className={cx(styles, 'game-description')}>Retrouvez les mots mélangés</p>
@@ -170,9 +172,6 @@ function WordScrambleInner() {
   );
 }
 
-/* ================================================================
-   PAGE
-   ================================================================ */
 export default function WordScramblePage() {
   return (
     <Suspense>

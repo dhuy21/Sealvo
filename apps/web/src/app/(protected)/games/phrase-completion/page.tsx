@@ -19,12 +19,15 @@ import {
   revealAnswers,
   type Phrase,
 } from '@/components/games/phrase-completion/phrases';
+import {
+  answerPoints,
+  isPassed,
+  questionCount,
+  timeLimit,
+} from '@/components/games/phrase-completion/scoring';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/games/phrase-completion.module.css';
 
-/* ================================================================
-   INNER COMPONENT
-   ================================================================ */
 function PhraseCompletionInner() {
   const shell = useGameShell('phrase_completion', { celebration: launchStars });
   const { packageId, gameData, screen } = shell;
@@ -51,8 +54,7 @@ function PhraseCompletionInner() {
 
   function endGame() {
     typewriter.stop();
-    const accuracy = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
-    shell.finish(score, accuracy >= 80);
+    shell.finish(score, isPassed(correctAnswers, totalQuestions));
   }
 
   const [timer, setTimer] = useCountdownTimer(shell.playing, endGame);
@@ -65,8 +67,7 @@ function PhraseCompletionInner() {
 
     const generated = generatePhrases(gameData.words);
 
-    const availableWords = gameData.wordCount;
-    const totalQ = Math.min(availableWords, 100) + Math.floor(0.5 * availableWords);
+    const totalQ = questionCount(gameData.wordCount);
     setTotalQuestions(totalQ);
 
     const extendedPhrases = repeatPhrases(generated, totalQ);
@@ -84,7 +85,7 @@ function PhraseCompletionInner() {
     setMeaningText('');
     typewriter.type(extendedPhrases[0].phrase);
 
-    setTimer(200 + 4 * totalQ);
+    setTimer(timeLimit(totalQ));
     questionStartRef.current = Date.now();
     attemptsRef.current = 0;
     shell.start();
@@ -98,13 +99,13 @@ function PhraseCompletionInner() {
     const userInputs = input.trim().split(';').map((s) => s.trim().toLowerCase());
     const correctWordsLower = currentPhrase.correctWords.map((w) => w.toLowerCase());
 
-    attemptsRef.current++;
-
     if (!input.trim()) {
       setFeedbackMessage('Veuillez saisir un mot');
       setFeedbackType('');
       return;
     }
+
+    attemptsRef.current++;
 
     const questionTime = (Date.now() - questionStartRef.current) / 1000;
 
@@ -122,11 +123,7 @@ function PhraseCompletionInner() {
       setStreak(newStreak);
       setBestStreak((prev) => Math.max(prev, newStreak));
 
-      const basePoints = 10;
-      const timeBonus = Math.max(0, Math.min(5, Math.round(10 - questionTime)));
-      const streakBonus = Math.floor(newStreak / 3) * 5;
-      const attemptsPenalty = Math.max(0, attemptsRef.current - 1) * 2;
-      const totalPoints = basePoints + timeBonus + streakBonus - attemptsPenalty;
+      const totalPoints = answerPoints(questionTime, newStreak, attemptsRef.current);
       setScore((prev) => prev + totalPoints);
 
       setFeedbackMessage(`Correct ! +${totalPoints} points`);
@@ -177,7 +174,6 @@ function PhraseCompletionInner() {
     <div className={cx(styles, 'game-container', 'enhanced-starry-mode')}>
       <StarryBackground />
 
-      {/* Header */}
       <div className={cx(styles, 'game-header')}>
         <h1>Complétion de Phrase</h1>
         <p className={cx(styles, 'game-description')}>Complétez les phrases avec les mots appris</p>
@@ -233,9 +229,6 @@ function PhraseCompletionInner() {
   );
 }
 
-/* ================================================================
-   PAGE
-   ================================================================ */
 export default function PhraseCompletionPage() {
   return (
     <Suspense>

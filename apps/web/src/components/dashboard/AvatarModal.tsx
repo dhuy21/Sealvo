@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { AVATAR_COUNT } from '@sealvo/shared';
 import styles from '@/styles/dashboard.module.css';
 import { cx } from '@/lib/css-module';
 
@@ -46,7 +47,7 @@ function AvatarModalContent({ currentAva, onClose, onSave, saving }: AvatarModal
         </div>
         <div className={cx(styles, 'avatar-modal-body')}>
           <div className={cx(styles, 'avatar-grid')}>
-            {Array.from({ length: 11 }, (_, i) => i + 1).map((n) => (
+            {Array.from({ length: AVATAR_COUNT }, (_, i) => i + 1).map((n) => (
               <div
                 key={n}
                 className={cx(styles, 'avatar-option', selected === n && 'selected')}

@@ -1,5 +1,5 @@
 import { LEVELS } from '@sealvo/shared';
-import type { ReviewWord } from './use-review-words';
+import type { ReviewWord } from '@/hooks/use-words';
 
 export type VocabMode = 'today-words' | 'all-words';
 

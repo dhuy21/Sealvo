@@ -1,5 +1,6 @@
 import type { Word } from '@/hooks/use-words';
-import { stripBoldMarkup, wordTypeLabel } from './constants';
+import { stripBoldMarkup } from '@/lib/bold-markup';
+import { wordTypeLabel } from './constants';
 
 /** Text of the cells `WordRow` displays, in column order, so search matches what is on screen. */
 function displayedText(w: Word): string {

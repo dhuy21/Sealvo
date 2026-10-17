@@ -1,5 +1,5 @@
 import type { CardProgress } from './deck';
-import type { ReviewWord } from './use-review-words';
+import type { ReviewWord } from '@/hooks/use-words';
 
 const STORAGE_KEY = 'flashcards_progress';
 

@@ -107,7 +107,6 @@ function WordsContent() {
             deleting={deleteAll.deletingLevels.has(level)}
             onSave={wordActions.saveWord}
             onDelete={wordActions.removeWord}
-            savePending={wordActions.savePending}
           />
         ))
       ) : (

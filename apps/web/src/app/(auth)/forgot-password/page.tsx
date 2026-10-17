@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
 import toast from 'react-hot-toast';
-import api from '@/lib/api';
+import { useForgotPassword } from '@/hooks/use-auth';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/password-reset.module.css';
@@ -18,6 +18,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function ForgotPasswordPage() {
+  const forgotPassword = useForgotPassword();
   const [submitted, setSubmitted] = useState(false);
   const {
     register,
@@ -27,8 +28,8 @@ export default function ForgotPasswordPage() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const res = await api.post('/auth/forgot-password', data);
-      toast.success(res.data.message);
+      const res = await forgotPassword.mutateAsync(data.email);
+      toast.success(res.message);
       setSubmitted(true);
     } catch (err: unknown) {
       toast.error(getApiErrorMessage(err, 'Une erreur est survenue'));

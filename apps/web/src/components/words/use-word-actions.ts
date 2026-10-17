@@ -9,15 +9,17 @@ export function useWordActions(packageId: number) {
   const updateWord = useUpdateWord(packageId);
   const deleteWord = useDeleteWord(packageId);
 
+  /** Resolves to whether the word was saved. */
   const saveWord = useCallback(
-    (detailId: number, dto: UpdateWordPayload) => {
-      updateWord.mutate(
-        { detailId, dto },
-        {
-          onSuccess: () => toast.success('Mot modifié avec succès'),
-          onError: (err) => toast.error(getApiErrorMessage(err, 'Erreur')),
-        },
-      );
+    async (detailId: number, dto: UpdateWordPayload): Promise<boolean> => {
+      try {
+        await updateWord.mutateAsync({ detailId, dto });
+        toast.success('Mot modifié avec succès');
+        return true;
+      } catch (err) {
+        toast.error(getApiErrorMessage(err, 'Erreur lors de la modification du mot'));
+        return false;
+      }
     },
     [updateWord],
   );
@@ -32,5 +34,5 @@ export function useWordActions(packageId: number) {
     [deleteWord],
   );
 
-  return { saveWord, removeWord, savePending: updateWord.isPending };
+  return { saveWord, removeWord };
 }

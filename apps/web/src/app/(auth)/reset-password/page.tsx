@@ -7,15 +7,18 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
 import toast from 'react-hot-toast';
-import api from '@/lib/api';
+import { AUTH_LIMITS } from '@sealvo/shared';
+import { useResetPassword } from '@/hooks/use-auth';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/password-reset.module.css';
 
+const PASSWORD_MIN_MESSAGE = `Minimum ${AUTH_LIMITS.RESET_PASSWORD_MIN} caractères`;
+
 const schema = z
   .object({
-    password: z.string().min(8, 'Minimum 8 caractères'),
-    confirmPassword: z.string().min(8, 'Minimum 8 caractères'),
+    password: z.string().min(AUTH_LIMITS.RESET_PASSWORD_MIN, PASSWORD_MIN_MESSAGE),
+    confirmPassword: z.string().min(AUTH_LIMITS.RESET_PASSWORD_MIN, PASSWORD_MIN_MESSAGE),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Les mots de passe ne correspondent pas',
@@ -28,6 +31,7 @@ function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
+  const resetPassword = useResetPassword();
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
@@ -48,11 +52,8 @@ function ResetPasswordForm() {
       return;
     }
     try {
-      const res = await api.post('/auth/reset-password', {
-        token,
-        password: data.password,
-      });
-      toast.success(res.data.message);
+      const res = await resetPassword.mutateAsync({ token, password: data.password });
+      toast.success(res.message);
       setSuccess(true);
     } catch (err: unknown) {
       toast.error(getApiErrorMessage(err, 'Une erreur est survenue'));
@@ -82,7 +83,7 @@ function ResetPasswordForm() {
           <div className={styles['input-icon-wrapper']}>
             <input
               type="password"
-              placeholder="Nouveau mot de passe (min 8 caractères)"
+              placeholder={`Nouveau mot de passe (min ${AUTH_LIMITS.RESET_PASSWORD_MIN} caractères)`}
               {...register('password')}
             />
             <i className={cx(styles, 'input-icon', 'fas', 'fa-lock')} />

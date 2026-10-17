@@ -107,9 +107,11 @@ sealvo/
 │   │   │   ├── worker.ts       # RabbitMQ consumer entry
 │   │   │   ├── scheduler.ts    # Cron scheduler entry
 │   │   │   ├── app.module.ts
+│   │   │   ├── worker.module.ts, scheduler.module.ts  # modules booted by worker / scheduler
+│   │   │   ├── config/         # env.validation.ts (one schema per process) + one registerAs factory per domain
 │   │   │   ├── auth/           # AuthModule (JWT, refresh sessions, Google OAuth, guards)
 │   │   │   ├── packages/       # PackagesModule
-│   │   │   ├── words/          # WordsModule (controller) + WordsCoreModule (WordsService)
+│   │   │   ├── words/          # WordsModule (controller) + WordsCoreModule (WordsService, WordsEnrichmentService); orphan-details.ts
 │   │   │   ├── learning/       # LearningModule
 │   │   │   ├── games/          # GamesModule (single GamesService + GAME_LEVEL map)
 │   │   │   ├── dashboard/      # DashboardModule
@@ -120,8 +122,8 @@ sealvo/
 │   │   │   ├── email/          # EmailModule (queue + SES)
 │   │   │   ├── import/         # ImportModule (queue + Excel parsing + jobs)
 │   │   │   ├── health/         # HealthModule (/health + /health/deps, custom checks, no terminus)
-│   │   │   ├── prisma/ redis/ rabbitmq/  # global PrismaModule, RedisModule, RabbitmqModule
-│   │   │   └── common/         # PrismaExceptionFilter, RedisThrottlerStorage, @ThrottleMessage, @NormalizeEmail (guards: auth/guards)
+│   │   │   ├── prisma/ redis/ rabbitmq/  # global PrismaModule (+ tx-options.constants.ts), RedisModule, RabbitmqModule
+│   │   │   └── common/         # PrismaExceptionFilter, RedisThrottlerStorage, InvalidateDashboardInterceptor, @ThrottleMessage, @NormalizeEmail, @Trim, @IsOptionalDefined (guards: auth/guards)
 │   │   ├── prisma/
 │   │   │   ├── schema.prisma
 │   │   │   ├── migrations/
@@ -134,9 +136,9 @@ sealvo/
 │   └── web/                    # Next.js 16 frontend
 │       ├── src/
 │       │   ├── app/            # App Router pages ((auth), (protected) route groups)
-│       │   ├── components/     # React components (81 .tsx + 45 .ts hooks/helpers)
-│       │   ├── hooks/          # React Query hooks (packages, words, games, import, …)
-│       │   ├── lib/            # API client, job watcher, cx(), utils
+│       │   ├── components/     # React components (91 .tsx + 62 .ts hooks/helpers, tests excluded)
+│       │   ├── hooks/          # React Query hooks (auth, packages, words, games, import, feedback, …)
+│       │   ├── lib/            # API client, query keys, job watcher, cx(), utils
 │       │   ├── providers/ stores/  # app providers, Zustand auth store
 │       │   └── styles/         # CSS Modules (*.module.css) + global main/header/footer/dark-mode
 │       ├── Dockerfile
@@ -146,7 +148,7 @@ sealvo/
 │   └── shared/                 # Shared types, constants, utils
 │       ├── src/
 │       │   ├── types/          # DTOs, enums, interfaces
-│       │   ├── constants/      # VALID_LANGS, VALID_TYPES, VALID_LEVELS
+│       │   ├── constants/      # VALID_LANGS, LEVELS, WORD_TYPES, GAME_LEVEL, LEVEL_GAMES, PACKAGE_MODES, AUTH_LIMITS, AVATAR_COUNT, level/type helpers
 │       │   └── resilience/     # CircuitBreaker, retry, timeout
 │       └── package.json
 │
@@ -176,11 +178,11 @@ Request → Express: trust proxy (production/staging), helmet (default headers),
        → Controller method
        → Interceptors (after): InvalidateDashboardInterceptor deletes the owner's cached dashboard
                  after a successful non-GET request
-       → Exception filters: PrismaExceptionFilter (global: P2002 → 409, P2025 → 404, P2000 → 400),
-                 then Nest's built-in filter
+       → Exception filters: PrismaExceptionFilter (global: P2002 → 409, P2025 → 404, P2000 → 400,
+                 PrismaClientValidationError → 400 "Données invalides."), then Nest's built-in filter
 ```
 
-Not registered: compression, morgan, `RolesGuard` (exists with `@Roles`, unused: no route needs a
+Not registered: compression, morgan, a roles guard (`RolesGuard` / `@Roles` removed: no route needs a
 role; the package guards are owner-only, no Admin bypass), SanitizationPipe (#29) and
 TransformInterceptor (#68).
 
@@ -188,9 +190,9 @@ TransformInterceptor (#68).
 
 ```
 Same Docker image, different CMD:
-  api:       CMD ["node", "dist/main.js"]
-  worker:    CMD ["node", "dist/worker.js"]
-  scheduler: CMD ["node", "dist/scheduler.js"]
+  api:       CMD ["sh", "-c", "npx --no prisma migrate deploy --schema=./prisma/schema.prisma && exec node dist/main.js"]
+  worker:    command ["node", "dist/worker.js"]     (boots WorkerModule)
+  scheduler: command ["node", "dist/scheduler.js"]  (boots SchedulerModule)
 ```
 
 ---
@@ -200,9 +202,9 @@ Same Docker image, different CMD:
 ### Status summary (Oct 17, 2026)
 
 Verified against the code on `fix/full-project-audit` (not merged into `develop` yet): **91 ✅ Done · 1 🟡 Partial · 0 🔲 Open · 13 ➖ N/A** (N/A = made obsolete by a design or product decision, or "chosen: …" another tool). Remaining partial item:
-- **#19** CSP is static with `script-src 'unsafe-inline'` (pages are prerendered: no per-request nonce). Kept on purpose: a per-request nonce would force every page to render dynamically.
+- **#19** CSP `script-src 'self' 'nonce-…' 'strict-dynamic'`: `apps/web/src/proxy.ts` generates a nonce per request and builds the policy at runtime (its `connect-src` takes the runtime `API_URL`); Next.js adds the nonce to its scripts, the root layout passes it to `/env.js` and to the next-themes script. Every page therefore renders per request (root layout `instant = false` + `headers()`, no static shell). `style-src` keeps `'unsafe-inline'`: React `style` attributes cannot carry a nonce.
 
-Not a finding but still open for production: the E2E workflow is manual only (Phase 6, step 6).
+E2E: runs automatically against staging after each staging deploy (`ci-cd.yml` → `e2e.yml` via `workflow_call`), and on demand (`workflow_dispatch`).
 
 Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 ✅ → ➖ (old question generation kept).
 
@@ -210,23 +212,67 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 
 - 429 messages per route, in French: `@ThrottleMessage` (`common/decorators/throttle-message.decorator.ts`), read by the throttler `errorMessage` in `app.module.ts`; default "Trop de requêtes. Réessayez dans 1 minute."
 - `helmet()` (default options) on the API in `main.ts`.
-- Level progress: Redis hash `lvlprog:h:<userId>` (`CACHE_KEYS.levelProgress`), one field per game (`HSET` + `EXPIRE` 3 h); only the request whose `HDEL` removes every field of the level promotes. Streak: conditional `updateMany` (`streak_updated_at` null or before today), so concurrent requests count once (`learning/learning.service.ts`).
+- Level progress: Redis hash `cache:lvlprog:h:<userId>` (`CACHE_KEYS.levelProgress`, `cache:` added by `CacheService`), one field per game (`HSET` + `EXPIRE` 3 h); only the request whose `HDEL` removes every field of the level promotes. Streak: conditional `updateMany` (`streak_updated_at` null or before today), so concurrent requests count once (`learning/learning.service.ts`).
 - `AuthService` split: `TokenService` (access JWT + new session), `EmailVerificationService`, `PasswordResetService`, `GoogleAuthService`, `create-user.ts` (id retry, #48); `AuthService` keeps register / login / refresh / logout / me.
 - Email: every SES send wrapped in `withTimeout` (10 s) inside `withRetry` (transient errors only); the direct fallback when RabbitMQ is down retries 2 times, 1 s apart (`email.service.ts`, `email-queue.service.ts`), like the old `mailersend.js`.
 - `docker-compose.prod.yml`: shared `x-api-image` anchor (`build` + `image: sealvo-api`) for api, worker and scheduler: worker/scheduler had only `image`, so Compose tried to pull `sealvo-api` and failed. `NODE_ENV: production` forced in the shared environment (api, worker, scheduler, backup), over the `.env` value.
 - CI: Trivy lists fixable CRITICAL + HIGH, then fails the job (and so the deploy) on fixable CRITICAL only (`--ignore-unfixed`).
 - User-facing API messages use the old app's French texts (some old English texts kept as in the old app, e.g. `Job not found.`).
-- Migrations: `001_baseline` uses `utf8mb4_general_ci` like the real DB (with `unicode_ci` a fresh `migrate deploy` failed with MySQL error 3780 on the foreign keys). New `004_applied_jobs`.
+- Migrations: `001_baseline` uses `utf8mb4_general_ci` like the real DB (with `unicode_ci` a fresh `migrate deploy` failed with MySQL error 3780 on the foreign keys). New `004_applied_jobs`. New `005_check_constraints`: the old schema's CHECKs (avatar 1–11, email format, language code), added only where no CHECK covers the column (no-op on production); a violation (MySQL 3819, Prisma `P2010` for raw queries or an unknown request error for model queries) maps to 400 "Données invalides.".
 - Import idempotency: `WordsService.addWords(..., { jobId })` inserts an `applied_jobs` row first, in the same transaction as the words; a redelivered RabbitMQ job hits the primary key, saves nothing, is completed with the full count and acked (`words/words.service.ts`, `import/import-queue.service.ts`). Markers older than 7 days are deleted by the reminder cleanup. A marker found before the Gemini enrichment skips it too.
 - Import progress is written every `max(1, floor(total / 20))` words instead of every word.
 - Level progress: with Redis up, the current game only counts once its `HSET` succeeded (a failed write no longer lets the `HDEL` wipe the saved games without promoting).
 - Email: a send that times out is not retried (it may still be delivered) and counts as sent; other transient errors are retried as before.
 - Env validation at boot, one class per process (`config/env.validation.ts`): API (`app.module.ts`), worker and scheduler fail fast on a missing required variable. Google OAuth (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`) and `FEEDBACK_RECIPIENT_EMAIL` are required by the API; TTS and Gemini are optional.
+- Config layer: only `apps/api/src/config/` reads `process.env`. The schema checks types (URLs, emails, ports, `NODE_ENV` enum, the three `GOOGLE_TTS_*` together), applies the defaults and lists every problem at once; typed factories (`app`, `auth`, `mail`, `redis`, `rabbitmq`, `gemini`, `tts`, `scheduler`) are injected with `@Inject(xConfig.KEY)`. Each process loads only the factories it needs; the `.env` path no longer depends on the cwd. Fixes the daily reminder links (`undefined/...` without `FRONTEND_URL`). Web: `apps/web/src/env.ts` is the only reader of `API_URL`, read at runtime (server: `process.env`; browser: `/env.js`), so one web image runs in any environment. Token lifetimes, Gemini timeouts and rate limits are constants (`auth/auth.constants.ts`, `gemini.service.ts`, `common/throttler/throttle-policies.ts`), not variables; `JWT_REFRESH_SECRET`, `JWT_*_EXPIRES_IN`, `GEMINI_*` tuning and three unused `GOOGLE_TTS_*` were dropped.
+- Dependent values written once: 429 messages built from each policy's `ttl` (`@Throttled`, `formatDuration`); the verification and reset emails receive their link lifetime (`{{expiresIn}}`) from the token TTL constants; the scheduler derives its cron and catch-up gap from `REMINDER_HOURS` (`daily-schedule.ts`); local `.env` URLs reuse `${API_PORT}` / `${WEB_PORT}` (`expandVariables`), and `docker-compose.dev.yml` takes the MySQL / RabbitMQ credentials and ports from `.env`.
+- Constants: API/web contracts in `@sealvo/shared` (`IMPORT_MAX_FILE_BYTES`, `JOB_TTL_SECONDS`); column lengths in `common/constants/field-lengths.constants.ts`; files named `*.constants.ts`.
 - `WorkerModule` / `SchedulerModule` (`worker.module.ts`, `scheduler.module.ts`): the worker and scheduler boot only the modules they use instead of the whole `AppModule`. `app.enableShutdownHooks()` in `main.ts`.
-- `@sealvo/shared` is the single source for levels, word types and game types (DTOs, `learning/constants.ts`, web hooks, stores and components); its unused/incorrect `api.ts` types were removed.
+- `@sealvo/shared` is the single source for levels, word types and game types (DTOs, `learning/learning.constants.ts`, web hooks, stores and components); its unused/incorrect `api.ts` types were removed.
 - Web: `app/not-found.tsx` (old texts "Erreur" / "La route GET <url> n'existe pas"), `app/error.tsx`, `app/global-error.tsx` replace `ErrorBoundary.tsx`. Learn and packages pages show the old error texts when loading fails.
 - Web: packages and words pages split into hooks (`use-package-filters`, `use-package-actions`, `use-delete-all-flow`, `use-word-actions`, `use-words-by-level`) and components. The 7 game pages share `useGameShell` (screen, data, score save, level tracking, celebration, finish once) and `useCountdownTimer`; per-game timings, success rules and texts are unchanged. Pure game logic moved out of the pages (`generate-cards.ts`, `phrases.ts`, `scramble-word.ts`).
-- Web unit tests: Vitest in `apps/web` (`npm test`, picked up by `turbo run test`), 59 tests on the pure modules (deck, progress storage, quiz questions, word-search grid, pronunciation, shuffle, game generators).
+- Web unit tests: Vitest in `apps/web` (`npm test`, picked up by `turbo run test`) on the pure modules (deck, progress storage, quiz questions, word-search grid, pronunciation, shuffle, game generators, per-game scoring, speech errors, word edit form, bold markup, safe redirect, the shared token refresh): 123 tests in 22 files.
+- RabbitMQ: API and worker (re)declare their topology on every new main channel (`RabbitmqService.onChannelReady`, registered by `EmailQueueService` / `ImportQueueService`). An unexpected channel close (e.g. broker error) closes the connection, which reconnects after a fixed 5 s. Publishing uses a confirm channel and resolves only on the broker ack; on nack, error or no channel the caller falls back (direct email send, synchronous import / add words).
+- Redis: the reconnect strategy never gives up (delay `min(retries × 500 ms, 10 s)`); boot waits only for the first connection attempt, then retries continue in the background (`redis.service.ts`).
+- TTS (`tts.service.ts`): audio (24 h) and voices (6 h) cached through `CacheService` (cache failures never fail the request); every Google call wrapped in breaker (5 failures, 30 s reset) → retry (2 retries, 500 ms, transient errors only) → timeout (voices 8 s, synthesis 5 s); 422 when the language has no Wavenet voice, 503 on other failures. `GenerateAudioDto` (`tts/dto/`): text 1–500 chars (example sentences), `language` in `VALID_LANGS`.
+- Job SSE (`job.controller.ts`): ownership via `JobTrackerService.getOwned` (404 missing, 403 not owner), updates via `JobTrackerService.subscribe`; the stream ends when the job finishes or after the job TTL (1 h), and unsubscribes when the client disconnects, including before the subscription is ready.
+- Import: an `.xlsx` that inflates to more than 20 MB is rejected before parsing (bytes counted while inflating, in 16 KB input chunks, so forged zip headers do not help) ("Le fichier est trop volumineux une fois décompressé.", `fflate`, `import.service.ts`).
+- Env validation: a required variable must also be non-empty (a blank `KEY=` counts as missing). Required: scheduler `SCHEDULER_API_URL`, `CRON_SECRET`; worker `DATABASE_URL`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SES_FROM`; API the worker's list + `JWT_ACCESS_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `FEEDBACK_RECIPIENT_EMAIL`.
+- Validation: `@Trim` on usernames (login, register, profile, resend-verification); register checks username and email with separate lookups (case-insensitive collation: `john` = `John`); `@IsOptionalDefined` rejects `null` on optional non-nullable fields (register avatar, profile fields, package name / mode, word level, feedback email; `UpdateWordDto` validates `null` on every field via `skipNullProperties: false`); package ids from path / query / body must be positive integers (400, mismatch still 403); `PrismaClientValidationError` → 400 "Données invalides."; `POST /packages/:id/words` accepts at most 500 items and rejects unknown properties; the synchronous add-words message says "ajouté(s)" (import keeps "importé(s)").
+- Feedback DTO: subject and content trimmed, subject ≤ 255, content ≤ 5000 chars, French messages.
+- Google login: the Google email is normalized like register (`normalizeEmail`); an existing account matches on the normalized or the raw stored email.
+- New `POST /auth/resend-verification` `{username}` (3 / h): resends the verification email of an unverified account; always the same 200 message. `POST /auth/reset-password` has its own 429 message.
+- Dead code removed: `RolesGuard` / `@Roles`, unused cache keys and TTLs (packages, words, high score, session), unused shared types (`LoginRequest`, `AuthTokens`, `CreatePackageRequest`), unused deps (`@heroui/react`, `@react-aria/ssr`, `@react-aria/utils`, `framer-motion`, `@nestjs/mau`, `source-map-support`); `fflate` added.
+- API structure: `words/words-enrichment.service.ts` (Gemini enrichment), `words/orphan-details.ts`, `prisma/tx-options.constants.ts` (interactive transactions: 10 s wait, 60 s timeout), `common/interceptors/invalidate-dashboard.interceptor.ts` (moved from `packages/`), dashboard counts via `groupBy`; shared `levelFromDb` / `wordTypeToDb` / `wordTypeFromDb`, `PACKAGE_MODES`, `AUTH_LIMITS`, `AVATAR_COUNT`.
+- Web structure: `hooks/use-auth.ts`, `hooks/use-feedback.ts`, `lib/query-keys.ts`, per-game `scoring.ts` + `PASS_RULES` (`components/games/level-progress.ts`), `test-pronun/speech-errors.ts`, `components/auth/AuthDecor.tsx`, `useReviewWords` in `hooks/use-words.ts`.
+- Web fixes: game data invalidated on every word change; `WordRow` edit form reset when opened, values trimmed, required-field message, stays open until the save succeeds; package toggle / Copier buttons disabled while pending; login redirect keeps the query string (e.g. `?package=`); French feedback type message; an empty Phrase Completion answer no longer counts as an attempt; login shows a "Renvoyer l'email de vérification" button when the account is not verified.
+- Infra: CI `migrations-check` job (empty MySQL 8, `prisma migrate deploy`, then `prisma migrate diff --exit-code` against `schema.prisma`) gates the image builds; buildx GHA cache scoped per image; turbo cache (`.turbo/cache`) in CI; prod compose requires `API_URL`; web image `HEALTHCHECK` on `/health`; dev compose starts an empty MySQL (no old SQL mount), schema from the Prisma migrations. The `001_baseline` checksum must be updated once on staging and production (`docs/railway-setup.md`).
+
+### Changes Oct 17, 2026 — second audit pass
+
+- Web: the API URL is runtime configuration (`API_URL`, `/env.js`, `proxy.ts` CSP); a missing or invalid value makes `/health` answer 503 instead of every page failing; in a production build the browser never falls back to `localhost`.
+- Open redirect: `safeRedirect` resolves the target against a placeholder origin and keeps only same-origin paths (tab / CR / LF / backslash tricks such as `/\t/evil.com` are rejected).
+- Fresh clone: `db:generate` (prisma generate) runs before `build`, `dev`, `lint` and `test` in the turbo graph.
+- Password reset: the token is consumed atomically (a second concurrent request gets 400) and also revokes pending email changes; email change requests limited to 3 per hour; `PATCH /dashboard/profile` throttled (10 / 15 min). Passwords over 72 bytes are rejected (bcrypt would ignore the rest).
+- Logout only revokes a session of the caller; JWT pinned to HS256 (sign and verify); Google OAuth no longer asks for offline access and consent on every login; `/health/deps` (secret-protected) is throttled.
+- `FRONTEND_URL` is required in staging and production (no silent `localhost`), trailing `/` removed.
+- Deployed environments (staging, production): `JWT_ACCESS_SECRET` and `CRON_SECRET` must be at least 32 characters (startup fails otherwise); staging also requires `STAGING_EMAIL_INTERCEPT` (API and worker), so no real user is emailed from staging; Swagger is off.
+- Sessions: tabs refresh one at a time (Web Locks `sealvo-refresh`), so the rotated token's leeway drops from 30 s to 10 s; `SameOriginGuard` refuses a browser `Origin` other than `FRONTEND_URL` (or the API's own, for Swagger) on login / register / refresh / logout — `SameSite=Strict` does not cover sibling subdomains.
+- Registration with a taken email: same 201 answer as a new account (no user enumeration); the owner gets a "your account already exists" email with login and forgot-password links, or a new verification link if unverified. A taken username is still reported (409).
+- Database CHECK constraints (`005_check_constraints`): a violation answers 400 instead of 500. TTS text limit raised to 500 characters (example sentences).
+- Web CSP: inline scripts need the per-request nonce (`'strict-dynamic'`) instead of `'unsafe-inline'`; all pages render per request.
+- Games: Word Search accuracy is found words / all selections (the old app divided by wrong selections only, so it could exceed 100 %); Test Pronun stops the word being played on replay or on the next word instead of overlapping.
+- Job SSE: one Redis Pub/Sub connection per process, at most 10 open streams per user (429).
+- Import: blank rows no longer count toward the 500-word limit (rows past 500 are read); inflated size counted while inflating.
+- Words: concurrent saves of the same new word no longer fail on the unique key (`INSERT … ON DUPLICATE KEY UPDATE` + `LAST_INSERT_ID()`); progress updates are not awaited inside the transaction.
+- Redis: a PING watchdog replaces a connection that stopped answering (node-redis command timeouts stop once the command is written); offline queue disabled, connect timeout 5 s.
+- RabbitMQ: consumers go through `RabbitmqService.consume()` (dedicated channel, error / close listeners, unhandled handler errors dead-lettered); the worker stops consumers and waits up to 25 s for messages in flight before closing; an import payload with the wrong shape is discarded; an interrupted import goes through the retry queue (bounded attempts); an email is marked as sent only after SES accepted it; credentials URL-encoded; an unconfirmed publish falls back synchronously with the same job id (no double save).
+- Reminders: one batch per hour (`reminder:run:<hour>` with `SET NX`), so a catch-up and a scheduled run cannot both send.
+- Worker / scheduler heartbeat (`health/heartbeat.ts`, `config/build.config.ts`): each writes its commit to Redis every 15 s (45 s TTL); `GET /health` lists them under `processes`, which the deploy waits for.
+- CI/CD: images pushed only as immutable `:sha-<commit>` (reused, never overwritten); `deploy.yml` moves `:latest` / `:staging` after approval, inside the environment's concurrency group; rollback = commit check + the same deploy (one approval); Railway CLI pinned and installed once; deadline-based waits; Node version from `.nvmrc`.
+- Web: startup refresh shares the deduplicated refresh; a failed logout shows an error instead of reloading into the still-valid session; login navigates once; a failed background refetch keeps the dashboard data; renaming / toggling a package refreshes the dashboard and game pickers; the speed-vocab feedback timer is cleared on unmount; Phrase Completion inserts answers containing `$` literally; the dashboard's invisible click "wave" element removed.
+- Docs: notes written for the old app moved to `docs/legacy/` (with `ANALYSE_PROJET.md`); `docs/` keeps `local-dev.md` and `railway-setup.md`; new root `README.md` (English).
+- Infra: prod compose MySQL health check escapes `$$`; web `@types/node` matches Node 22; `SCHEDULER_API_URL` references the API's `PORT`.
 
 ### Legend
 - 🔴🔴🔴 CRITICAL security
@@ -247,7 +293,7 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 | 4 | 🟠 | Prisma migration conflicts with existing schema | Use `prisma db pull` → baseline → migrate | ✅ Done — `001_baseline` + resolve step in `railway-setup.md` |
 | 5 | 🟠 | importFile.js SRP not addressed | Split into ImportController + ImportService + FileUploadPipe | ✅ Done — `ImportService` parses and validates (400 listing bad rows, 500-row cap); controller only uploads (`FileInterceptor`: .xlsx/.xls, 5 MB) and queues |
 | 6 | 🟡 | Email templates location unclear | @nestjs-modules/mailer with Handlebars adapter | ✅ Done — chosen: plain Handlebars; templates in `apps/api/templates/mails` |
-| 7 | 🟠 | Role column not implemented in plan | Add RolesGuard with @Roles('Admin') decorator | ✅ Done — `RolesGuard` + `@Roles` exist (unused). No Admin bypass: package guards are owner-only (specs assert Admin is rejected); the old app had no Admin logic either (only the `role` column) |
+| 7 | 🟠 | Role column not implemented in plan | Add RolesGuard with @Roles('Admin') decorator | ✅ Done — no role guard: `RolesGuard` + `@Roles` were added, never used, then removed (no route needs a role). No Admin bypass: package guards are owner-only (specs assert Admin is rejected); the old app had no Admin logic either (only the `role` column) |
 | 8 | 🟡 | Health endpoint has 2 versions (/ and /deps) | Both in HealthModule via @nestjs/terminus | ✅ Done — `/health` + `/health/deps` (custom checks, no terminus) |
 | 9 | 🔴 | RabbitMQ topology won't work with @nestjs/microservices | Use amqplib directly in RabbitmqService | ✅ Done — amqplib topology in queue services |
 | 10 | 🟠 | Docker architecture not redesigned | New docker-compose with 7 services | ✅ Done — `docker-compose.prod.yml`: 7 services + `backup` profile |
@@ -264,18 +310,18 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 | 16 | 🟡 | Game "providers" naming wrong | Rename to services + Strategy pattern | ➖ N/A — chosen: single `GamesService` + `GAME_LEVEL` map |
 | 17 | 🟡 | Missing business rules documentation | Create BUSINESS_RULES.md | ✅ Done — `BUSINESS_RULES.md`, written from the code (levels, games, streak, modes, import, auth lifetimes, cleanup, rate limits, timezone) |
 | 18 | 🟡 | Missing font/icon strategy | lucide-react + npm packages | ➖ N/A — chosen: Font Awesome (npm) + `next/font` |
-| 19 | 🟡 | CSP nonce handling changes with SPA | Next.js middleware for nonce injection | 🟡 Partial — static CSP in `next.config.ts` with `'unsafe-inline'`: the pages are statically prerendered, a per-request nonce would force dynamic rendering of every page |
+| 19 | 🟡 | CSP nonce handling changes with SPA | Next.js middleware for nonce injection | ✅ Done — per-request nonce + `'strict-dynamic'` in `proxy.ts`, every page rendered per request; styles keep `'unsafe-inline'` (React `style` attributes) |
 | 20 | 🟡 | Multer disk storage unnecessary | Use memoryStorage() | ✅ Done — `FileInterceptor` default memory storage, 5 MB limit |
 | 21 | 🟡 | jobWatcher.js localStorage pattern | Custom useJobWatcher React hook | ✅ Done — global `JobWatcher` (`apps/web/src/components/jobs/`: `JobWatcher.tsx`, `use-job-subscription.ts`, `use-resume-active-jobs.ts`, `job-messages.ts`; mounted in `providers/app-providers.tsx`) streams every queued job (import and add words). After a reload it resumes from `GET /jobs`, else from `localStorage` key `activeJobs` (`lib/active-jobs.ts`, entries < 1 h). `useImportFile` only uploads |
 | 22 | 🔴 | `updateWord` hardcodes subject='Daily' when word base changes | Use correct subject from wordData | ✅ Done — `dto.subject ?? current subject` in `updateWord` |
 | 23 | 🔴 | GoogleAuthController hardcodes `http://` in redirect URI | Use `${BASE_URL}/auth/google/callback` | ✅ Done — `GOOGLE_REDIRECT_URI` from config |
-| 24 | 🟡 | Level progress stored only in Redis (TTL 3h) | Keep Redis, increase TTL | ➖ N/A — chosen: Redis with 3h TTL is intended (product decision); stored as a hash `lvlprog:h:<userId>` (atomic `HSET`/`HDEL`, promotion runs once) |
+| 24 | 🟡 | Level progress stored only in Redis (TTL 3h) | Keep Redis, increase TTL | ➖ N/A — chosen: Redis with 3h TTL is intended (product decision); stored as a hash `cache:lvlprog:h:<userId>` (atomic `HSET`/`HDEL`, promotion runs once) |
 | 25 | 🟠 | GeminiService creates new client per request | One client, created lazily on first use | ✅ Done — one lazily created client (`this.client ??=`) in `gemini.service.ts` |
 | 26 | 🟠 | MailersendService reads templates with fs.readFileSync every call | Pre-compile templates at module init | ✅ Done — each template compiled once and cached (`EmailService`) |
 | 27 | 🟠 | ReminderController N+1 queries (ALL users → words per user → details per word) | Batch queries (2-3 total) | ✅ Done — 3 queries in `reminder.service.ts` |
 | 28 | 🟡 | Interval SQL duplicated 5 times in learning.js | Reusable query builder / Prisma scope | ✅ Done — `learning/spaced-repetition.ts` |
 | 29 | 🟠 | Sanitization migration not addressed | Custom SanitizationPipe | ➖ N/A — chosen: output escaping by React and Handlebars instead of input sanitizing (stored text stays as typed; no SanitizationPipe) |
-| 30 | 🟠 | RabbitMQ has no auto-reconnect | Auto-reconnect in RabbitmqService | ✅ Done — API reconnects every 5 s; worker exits on connection loss so the platform restarts it and re-subscribes |
+| 30 | 🟠 | RabbitMQ has no auto-reconnect | Auto-reconnect in RabbitmqService | ✅ Done — API reconnects after a fixed 5 s delay (also after an unexpected channel close; topology re-declared on each new channel); worker exits on connection loss so the platform restarts it and re-subscribes |
 | 31 | 🟠 | UserModel.updateUserInfo makes 3 separate UPDATEs | Single Prisma update() | ✅ Done — single `users.update` in `dashboard.service.ts` |
 | 32 | 🟡 | CSRF unnecessary with JWT | Remove CSRF entirely | ➖ N/A — JWT Bearer; refresh cookie `SameSite=strict` |
 | 33 | 🟠 | Rate limiting migration incomplete | @nestjs/throttler with Redis store | ✅ Done — per-route limits + trust proxy; `RedisThrottlerStorage` on the shared Redis client (in-memory fallback when Redis is down); per-route French 429 messages (`@ThrottleMessage`) |
@@ -287,8 +333,8 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 |---|---|---|---|---|
 | 35 | 🟡 | `editVocabs.hbs` referenced in code but file doesn't exist | Don't port dead reference | ✅ Done — not ported |
 | 36 | 🔴 | Google OAuth creates user without `is_verified=true` | Set `is_verified: true` for OAuth users | ✅ Done — `is_verified: true` in `googleLogin` |
-| 37 | 🟠 | 52 unit + 5 e2e tests with no migration strategy | Jest + @nestjs/testing + Playwright | ✅ Done — Vitest (142 API tests in 26 files, incl. guards; 59 web unit tests in 10 files) + 31 Playwright (26 public + 5 protected with the seeded account, #58); E2E workflow still manual (Phase 6) |
-| 38 | 🟠 | 22 JS files (~5500 lines) not 6 as initially estimated | Full decomposition into ~40 React components | ✅ Done — 81 `.tsx` components + 45 `.ts` hooks/helpers in `components/` (about, auth, dashboard, games ×7, home, jobs, layout, learn, packages, words); largest pages: packages 349, phrase-completion 342, words 310, other games 226–296, dashboard 130 lines (split into `components/dashboard/`) |
+| 37 | 🟠 | 52 unit + 5 e2e tests with no migration strategy | Jest + @nestjs/testing + Playwright | ✅ Done — Vitest (352 API tests in 49 files, incl. guards and DTOs; 123 web unit tests in 22 files) + 31 Playwright (26 public + 5 protected with the seeded account, #58); E2E runs on staging after each staging deploy |
+| 38 | 🟠 | 22 JS files (~5500 lines) not 6 as initially estimated | Full decomposition into ~40 React components | ✅ Done — 91 `.tsx` components + 62 `.ts` hooks/helpers in `components/`, tests excluded (about, auth, dashboard, games ×7, home, jobs, layout, learn, packages, words); largest pages: test-pronun 242, phrase-completion 238, word-search 232, speed-vocab 221, register 205, other games 179–193, words 149, dashboard 130, packages 110 lines |
 | 39 | 🟡 | theme-init.js FOUC prevention | Cookie-based theme detection in Next.js | ✅ Done — `next-themes` inline script (localStorage, not cookie) |
 | 40 | 🟡 | /update-streak orphan route (registered on app, not router) | Move into LearningController | ✅ Done — `POST /learning/streak` |
 | 41 | 🟡 | Dockerfile.backup missing from migration plan | Add to Docker Compose with backup profile | ✅ Done — `Dockerfile.backup` + compose `backup` profile + CI image |
@@ -304,7 +350,7 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 | 46 | 🔴 | Package copy shares word_details via batchStockWords → cross-user data mutation | Clone word_details during copy (new detail_ids) | ✅ Done — `copyPublicPackage` clones `word_details` |
 | 47 | 🔴 | deleteWord only deletes from learning table → orphaned word_details | Check refs after delete, clean up if zero | ✅ Done — orphan cleanup in `deleteWord` / `deleteAllWords` |
 | 48 | 🟠 | User ID generation (7-char hex) has race condition (check-then-insert) | Retry on Prisma P2002 unique constraint violation | ✅ Done — `createUser` retries on PRIMARY P2002 (5 attempts) |
-| 49 | 🟠 | JWT implementation details missing from plan | Full flow: access 15min, refresh 7d, rotation, Axios interceptor | ✅ Done — opaque refresh sessions in DB: rotation, reuse detection, 30 s leeway, revoked on logout/reset |
+| 49 | 🟠 | JWT implementation details missing from plan | Full flow: access 15min, refresh 7d, rotation, Axios interceptor | ✅ Done — opaque refresh sessions in DB: rotation, reuse detection, 10 s leeway, revoked on logout/reset |
 | 50 | 🟠 | Logging strategy missing | NestJS Logger or nestjs-pino | ✅ Done — NestJS Logger (worker/scheduler use console) |
 
 ### Round 6: CI/CD, Security, Config (#51-55)
@@ -323,7 +369,7 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 |---|---|---|---|---|
 | 56 | 🔴 | `updateWord` SELECT missing `subject` in WHERE → can link to wrong word_id | Prisma `findUnique` with composite key enforces all 3 fields | ✅ Done — `upsertWord` on the `(word, subject, language_code)` unique key, inside the `updateWord` transaction |
 | 57 | 🟠 | `editPackagePost` makes 3 non-transactional DB calls → inconsistent state | Single Prisma `$transaction()` | ✅ Done — single `packages.update` call (atomic on its own: no `$transaction`) |
-| 58 | 🟡 | `intialize.sql` (typo) + `test.sql` have invalid language codes | Don't port; use Prisma seed | ✅ Done — not ported; `prisma/seed.mjs` (idempotent E2E account, refuses production). Dev DB still created by the old `001_initial.sql` + one-time baseline resolve (`docs/local-dev.md`) |
+| 58 | 🟡 | `intialize.sql` (typo) + `test.sql` have invalid language codes | Don't port; use Prisma seed | ✅ Done — not ported; `prisma/seed.mjs` (idempotent E2E account, refuses production). dev DB starts empty and gets its schema from `prisma migrate deploy` (`docs/local-dev.md`) |
 | 59 | 🟠 | Scripts (backup/restore/build/migrate) migration strategy missing | Port backup-db.ts + restore-db.ts; Prisma replaces migrate + build replaced by Next.js | ✅ Done — `apps/api/scripts/backup-db.mjs` + `restore-db.mjs` |
 | 60 | 🟠 | Prisma schema must model shared word pool correctly | Composite unique + correct relations | ✅ Done — `uq_words_word_subject_lang` + relations |
 
@@ -331,7 +377,7 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 
 | # | Severity | Issue | Fix | Status |
 |---|---|---|---|---|
-| 61 | 🟠 | Cache keys fragmented across controllers (no registry) | Centralized CacheKeys constant + CacheInvalidationService | ✅ Done — `CACHE_KEYS` / `CACHE_TTL` include TTS audio (24h) and voices (6h). Invalidation stays an explicit `del` of a known key (`InvalidateDashboardInterceptor`, import queue); a SCAN-based invalidation service was removed on purpose |
+| 61 | 🟠 | Cache keys fragmented across controllers (no registry) | Centralized CacheKeys constant + CacheInvalidationService | ✅ Done — `CACHE_KEYS` / `CACHE_TTL` hold only the keys in use (dashboard, level progress, email dedup, TTS audio 24h and voices 6h; `CacheService` prefixes `cache:`). Invalidation stays an explicit `del` of a known key (`InvalidateDashboardInterceptor`, import queue); a SCAN-based invalidation service was removed on purpose |
 | 62 | 🟠 | GameScores.saveScore has redundant query + TOCTOU race | Remove pre-query; determine isHighScore from single upsert | ✅ Done — `createMany(skipDuplicates)` + conditional `updateMany` |
 | 63 | 🟠 | saveWords inserts sequentially (100 words = 100 transactions) | Wrap in single Prisma $transaction() | ✅ Done — single `$transaction` in `addWords` |
 | 64 | 🟠 | NestJS execution order differs from Express — must document | Map Express middleware → NestJS lifecycle | ✅ Done — section 2 "NestJS Execution Order" lists what is registered (guards, pipes, interceptors, filter, throttler) and what was not ported |
@@ -362,7 +408,7 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 | # | Severity | Issue | Fix | Status |
 |---|---|---|---|---|
 | 76 | 🔴🔴🔴 | IDOR: 7 game endpoints leak other users' words (no package ownership check) | PackageOwnershipGuard on all ?package= routes | ✅ Done — `GET /games/:type/data?packageId` guarded |
-| 77 | 🟡 | shuffleArray duplicated in 5 game controllers | Shared utility in packages/shared | ✅ Done — chosen: one Fisher–Yates `shuffleArray` in `apps/web/src/lib/shuffle.ts` (only the web shuffles); no local copies or random sorts left |
+| 77 | 🟡 | shuffleArray duplicated in 5 game controllers | Shared utility in packages/shared | ✅ Done — chosen: one Fisher–Yates `shuffleArray` in `apps/web/src/lib/shuffle.ts` for the games; the API shuffles only for Word Search, to pick a random subset of at most 30 words (`games.service.ts`); phrases are built and shuffled by the web only (`phrase-completion/phrases.ts`) |
 | 78 | 🔴🔴🔴 | IDOR: trackGameCompletion can WRITE to other users' data | PackageOwnershipGuard | ✅ Done — guard checks every id source, mismatch → 403 (`package-ownership.guard.spec.ts`) |
 | 79 | 🟡 | VocabQuizController O(n²) complexity | Pre-shuffle once, build options linearly | ➖ N/A — chosen: old generation kept, client-side (`components/games/vocab-quiz/generate-questions.ts`): one fresh shuffle per question (O(n²) on the due words of one package), 6 options; quiz length `min(n, MAX_QUESTIONS = 300) + ⌊n/2⌋` |
 | 80 | 🔴🔴 | learnVocabs — same IDOR pattern | PackageOwnershipGuard | ✅ Done — `GET /packages/:packageId/words/review` guarded |
@@ -384,7 +430,7 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 | 86 | 🟠 | Docker Compose builds same image 3 times | Build once, reference by image name | ✅ Done — compose: api/worker/scheduler share the `x-api-image` anchor (same `build` + `image: sealvo-api`); CI builds the api image once |
 | 87 | 🟡 | uploads_data volume unnecessary with memoryStorage | Remove volume, use memoryStorage() | ✅ Done — no uploads volume; memory storage |
 | 88 | 🟡 | cache.invalidatePattern — exported but never called | Note as dead code; port if needed | ✅ Done — dead `invalidatePattern` removed from `cache.service.ts` |
-| 89 | 🟡 | secrets.js must add JWT secrets | Add JWT_ACCESS_SECRET, JWT_REFRESH_SECRET | ✅ Done — `JWT_ACCESS_SECRET` via `ConfigService.getOrThrow`; `JWT_REFRESH_SECRET` no longer needed (opaque refresh sessions, #49) |
+| 89 | 🟡 | secrets.js must add JWT secrets | Add JWT_ACCESS_SECRET, JWT_REFRESH_SECRET | ✅ Done — `JWT_ACCESS_SECRET` required by the env schema (`config/auth.config.ts`); `JWT_REFRESH_SECRET` no longer needed (opaque refresh sessions, #49) |
 | 90 | 🟢 | Email template CSS uses hover/transitions — stripped by email clients | Remove animation CSS from email templates | ✅ Done — hover/transition/animation CSS removed from `apps/api/templates/mails` |
 
 ### Round 14: Test Config, Sanitization (#91-95)
@@ -401,9 +447,9 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 
 | # | Severity | Issue | Fix | Status |
 |---|---|---|---|---|
-| 96 | 🟠 | Worker prefetch(1) blocks email during long imports | Separate channels per queue | ✅ Done — `createChannel()` per consumer |
+| 96 | 🟠 | Worker prefetch(1) blocks email during long imports | Separate channels per queue | ✅ Done — `RabbitmqService.consume()`: one channel per consumer |
 | 97 | 🟡 | Express 5 → NestJS uses Express 4 adapter | No real impact (NestJS abstracts Express) | ➖ N/A — NestJS 12 platform-express runs Express 5.2 |
-| 98 | 🟡 | MySQL connection pool sizing for 3 processes | Coordinate pool sizes: api=8, worker=4, scheduler=2 | ✅ Done — `connection_limit` 8/4/2 documented in `railway-setup.md` |
+| 98 | 🟡 | MySQL connection pool sizing for 3 processes | Coordinate pool sizes: api=8, worker=4, scheduler=2 | ✅ Done — `connection_limit` 8 (API) / 4 (worker) documented in `railway-setup.md`; the scheduler has no database connection |
 | 99 | 🟢 | resilience.js — excellent quality, port as-is | Port to packages/shared/src/resilience/ | ✅ Done — `packages/shared/src/resilience/` |
 | 100 | 🟢 | TTS lazy client init — good pattern | Preserve via onModuleInit() | ✅ Done — `TtsService.onModuleInit` |
 
@@ -422,32 +468,34 @@ Status changes on Oct 17: #11 ➖ → ✅ (page CSS moved to CSS Modules), #79 �
 ## 4. Prisma Schema
 
 Source of truth: `apps/api/prisma/schema.prisma`, introspected from the old MySQL DB (#4); migrations
-`001_baseline`, `002_refresh_sessions_and_reset_tokens`, `003_email_change`. Model names are the
-table names (no `@@map`). 10 models, 6 enums:
+`001_baseline`, `002_refresh_sessions_and_reset_tokens`, `003_email_change`, `004_applied_jobs`, `005_check_constraints`. Model
+names are the table names (no `@@map`). 11 models, 6 enums:
 
 | Model | Key facts |
 |---|---|
 | `users` | `id` Char(7) random hex (#48); `username`, `email` unique; `role` `users_role` (`Admin` / `User`, default `User`; no route checks it); `streak`, `streak_updated_at`, `is_verified`, `ava`. No `auth_provider` column (#71) |
 | `email_verification` | `token_hash` Char(64), `status` pending / used / revoked, `expires_at`; `new_email` for an email change (migration 003) |
-| `refresh_sessions` | one row per device (migration 002): `token_hash`, `previous_hash` + `rotated_at` (30 s leeway), `expires_at` |
+| `refresh_sessions` | one row per device (migration 002): `token_hash`, `previous_hash` + `rotated_at` (10 s leeway), `expires_at` |
 | `password_reset_tokens` | migration 002: `token_hash` Char(64) primary key, `user_id`, `expires_at`, `created_at`. No email / `used` column: the user's rows are deleted on a new request and on reset |
 | `packages` | `mode` `packages_mode` (`private` default, `protected`, `public`), `is_active` |
 | `words` | shared pool, unique `(word, subject, language_code)` (`uq_words_word_subject_lang`) |
 | `word_details` | per-package meaning, pronunciation, synonyms, antonyms, example, grammar; `type` `word_details_type` (`ph_v` ↔ DB `ph.v`) |
 | `learning` | PK `(detail_id, package_id)`; `level` `learning_level`: `x`, `level_0` / `level_1` / `level_2` ↔ DB `0` / `1` / `2`, `v`; `date_memorized` (nullable); index `(package_id, level, date_memorized)` |
 | `user_best_scores` | PK `(user_id, game_type)`; `best_score`, `play_count`, `last_played_at`; `game_type` enum of the 7 games |
+| `applied_jobs` | migration 004: `job_id` Char(36) primary key, `created_at` (indexed); one row per applied import job (idempotency), deleted after 7 days |
 | `schema_migrations` | table of the old app's SQL migrator, kept as introspected |
 
 ---
 
 ## 5. Module Dependency Graph
 
-Real `imports:` of `app.module.ts` and each `*.module.ts`. The worker and scheduler boot the same
-`AppModule` (`NestFactory.createApplicationContext`).
+Real `imports:` of `app.module.ts` and each `*.module.ts`. Prisma, RabbitMQ and Redis modules are
+`@Global`: feature modules use their services without importing them. The worker and scheduler
+boot their own root module (`NestFactory.createApplicationContext`).
 
 ```
 AppModule (+ ThrottlerGuard APP_GUARD, PrismaExceptionFilter APP_FILTER)
-├── ConfigModule (isGlobal)
+├── ConfigModule (isGlobal, validateApiEnv)
 ├── ThrottlerModule (100/min default, RedisThrottlerStorage, @ThrottleMessage errorMessage)
 ├── PrismaModule (@Global)
 ├── RabbitmqModule (@Global)
@@ -464,7 +512,7 @@ AppModule (+ ThrottlerGuard APP_GUARD, PrismaExceptionFilter APP_FILTER)
 │   └── JwtModule (JWT_ACCESS_SECRET, 15m)
 ├── PackagesModule
 ├── WordsModule (WordsController only)
-│   ├── WordsCoreModule (WordsService)
+│   ├── WordsCoreModule (WordsService, WordsEnrichmentService)
 │   │   └── GeminiModule
 │   └── ImportModule (BulkWordsService)
 ├── LearningModule
@@ -472,17 +520,26 @@ AppModule (+ ThrottlerGuard APP_GUARD, PrismaExceptionFilter APP_FILTER)
 ├── DashboardModule
 │   └── AuthModule (EmailVerificationService, for the email change)
 ├── TtsModule
-│   └── RedisModule
 ├── FeedbackModule
 │   └── EmailModule
 └── ReminderModule (ReminderController, TestReminderController)
-    ├── PrismaModule
     └── EmailModule
+
+WorkerModule (worker.ts; providers ImportQueueService, JobTrackerService, no controllers)
+├── ConfigModule (isGlobal, validateWorkerEnv)
+├── PrismaModule, RabbitmqModule, RedisModule (@Global)
+├── EmailModule
+└── WordsCoreModule
+    └── GeminiModule
+
+SchedulerModule (scheduler.ts)
+├── ConfigModule (isGlobal, validateSchedulerEnv)
+└── RedisModule (@Global)
 ```
 
-Guards (`JwtAuthGuard`, `PackageOwnershipGuard`, `PackageReadGuard`, `CronSecretGuard`, unused
-`RolesGuard`) live in `auth/guards/` and are applied with `@UseGuards`; they use the global
-`PrismaService`. `InvalidateDashboardInterceptor` lives in `packages/`.
+Guards (`JwtAuthGuard`, `PackageOwnershipGuard`, `PackageReadGuard`, `CronSecretGuard`) live in
+`auth/guards/` and are applied with `@UseGuards`; they use the global `PrismaService`.
+`InvalidateDashboardInterceptor` lives in `common/interceptors/`.
 
 **No circular dependencies.**
 
@@ -492,7 +549,7 @@ Guards (`JwtAuthGuard`, `PackageOwnershipGuard`, `PackageReadGuard`, `CronSecret
 
 From the controllers (`apps/api/src/**/*.controller.ts`). No global prefix: the only `/api` route is
 the cron `POST /api/reminder` (hidden from Swagger). Every route needs `JwtAuthGuard` except auth
-(register, login, refresh, forgot/reset password, verify-email, Google), feedback, `GET /health`,
+(register, login, refresh, forgot/reset password, verify-email, resend-verification, Google), feedback, `GET /health`,
 `GET /`, and the `CronSecretGuard` routes (`GET /health/deps`, `POST /api/reminder`).
 "Owner" = `PackageOwnershipGuard`, "Read" = `PackageReadGuard` (owner, or a `public` / `protected`
 package).
@@ -507,6 +564,7 @@ package).
 | GET /auth/google | GET /auth/google | 302 to Google (state cookie) |
 | GET /auth/google/callback | GET /auth/google/callback | 302 to `/dashboard` (refresh cookie) or `/login?error=…` |
 | GET /auth/verify/:token | POST /auth/verify-email | body `{token}`, called by the `/verify-email` page |
+| — (new) | POST /auth/resend-verification | body `{username}`; same 200 message whether or not an unverified account matches |
 | POST /login/forgotPassword | POST /auth/forgot-password | same answer whether the account exists or not |
 | POST /login/resetPassword, POST /dashboard/resetPassword | POST /auth/reset-password | |
 | POST /dashboard/changePassword | — | removed: the dashboard links to `/forgot-password` (#101) |
@@ -539,7 +597,7 @@ package).
 |---|---|---|
 | GET /monVocabs?package=X | GET /packages/:packageId/words | Read |
 | GET /monVocabs/learn?package=X | GET /packages/:packageId/words/review | Owner; due words |
-| POST /monVocabs/add?package=X | POST /packages/:packageId/words | Owner; `CreateWordDto[]`; ≥ 3 words queued (`{async, jobId}`) |
+| POST /monVocabs/add?package=X | POST /packages/:packageId/words | Owner; `CreateWordDto[]` (≤ 500); ≥ 3 words queued (`{async, jobId}`) |
 | POST /monVocabs/add/import?package=X | POST /packages/:packageId/import | Owner; multipart `file`; queued when RabbitMQ is up |
 | POST /monVocabs/edit/:id?package=X | PATCH /packages/:packageId/words/:detailId | Owner |
 | POST /monVocabs/delete/:id?package=X | DELETE /packages/:packageId/words/:detailId | Owner |
@@ -574,11 +632,11 @@ package).
 | POST /api/tts/generate | POST /tts/generate | binary (audio/mpeg) |
 | GET /api/jobs/active | GET /jobs | user's active jobs |
 | GET /api/jobs/:id | GET /jobs/:id | job owner only; not throttled |
-| GET /api/jobs/:id/stream | GET /jobs/:id/stream | SSE; job owner only |
+| GET /api/jobs/:id/stream | GET /jobs/:id/stream | SSE; job owner only; ends when the job finishes or after the job TTL (1 h) |
 | POST /feedback | POST /feedback | |
 | — | GET / | `AppController` ("Hello World!") |
 
-Swagger UI at `/api/docs` outside production.
+Swagger UI at `/api/docs` in development only (off in staging and production).
 
 ---
 
@@ -592,7 +650,7 @@ Routes that write, or read package data, with their security layers (Global = 10
 | 2 | POST /auth/register | — | 5 / 15 min | RegisterDto | — |
 | 3 | POST /auth/forgot-password | — | 3 / h | ForgotPasswordDto | — |
 | 4 | POST /auth/reset-password | — | 10 / 15 min | ResetPasswordDto | — |
-| 5 | POST /packages/:packageId/words | JwtAuthGuard | Global | `ParseArrayPipe` CreateWordDto[] | **PackageOwnershipGuard** |
+| 5 | POST /packages/:packageId/words | JwtAuthGuard | Global | `ParseArrayPipe` CreateWordDto[] (≤ 500, unknown properties rejected) | **PackageOwnershipGuard** |
 | 6 | POST /packages/:packageId/import | JwtAuthGuard | Global | file .xlsx/.xls ≤ 5 MB, rows checked | **PackageOwnershipGuard** |
 | 7 | DELETE /packages/:packageId/words | JwtAuthGuard | Global | ParseIntPipe | **PackageOwnershipGuard** |
 | 8 | DELETE /packages/:packageId/words/:detailId | JwtAuthGuard | Global | ParseIntPipe | **PackageOwnershipGuard** |
@@ -617,15 +675,17 @@ Routes that write, or read package data, with their security layers (Global = 10
 | 27 | GET /packages/:packageId/words/review | JwtAuthGuard | Global | ParseIntPipe | **PackageOwnershipGuard** |
 | 28 | GET /jobs/:id, GET /jobs/:id/stream | JwtAuthGuard | none / Global | — | job `meta.userId` |
 | 29 | GET /health/deps | CronSecretGuard | none | — | — |
+| 30 | POST /auth/resend-verification | — | 3 / h | ResendVerificationDto | — (generic answer) |
 
-All package guards are owner-only (no Admin bypass) and reject a request whose `packageId` differs
-between path, query and body (403).
+All package guards are owner-only (no Admin bypass); a `packageId` that is not a positive integer is
+a 400, one that differs between path, query and body a 403.
 
 ---
 
 ## 8. Frontend Decomposition
 
-22 vanilla JS files (~11 200 lines) → App Router pages + 81 `.tsx` components + hooks:
+22 vanilla JS files (~11 200 lines) → App Router pages + 91 `.tsx` components + 62 `.ts` hooks/helpers
+in `components/` (tests excluded; `apps/web/src` overall: 142 `.tsx` + 87 `.ts`, plus 2 `test-utils/` files):
 
 ### Pages (`apps/web/src/app`)
 
@@ -651,7 +711,7 @@ Most page folders have a `layout.tsx` that only sets the page `metadata`.
 ```
 components/
 ├── layout/      Header, Footer
-├── auth/        AuthGuard
+├── auth/        AuthGuard, AuthDecor
 ├── home/        Hero, Showcase, Stats, Cta sections, WordCard, MouseGlow
 ├── about/       SocialClock
 ├── dashboard/   ProfileCard, StatsCard, StreakSection, PackagesToReview, AvatarModal, … + use-* hooks
@@ -660,18 +720,20 @@ components/
 ├── learn/       LearnSession, Flashcard, KnowledgeButtons, LearnProgress, … + use-* hooks
 ├── jobs/        JobWatcher + use-job-subscription, use-resume-active-jobs, job-messages
 ├── games/       shared GameStats, GameFooter, GameDataStatus, PlayAgainActions, TrackLevelMessage,
-│                use-game-shell, use-countdown-timer, use-level-tracking, use-celebration;
-│                one folder per game (Board, Rules, Summary, effects, pure generators)
+│                use-game-shell, use-countdown-timer, use-level-tracking, use-celebration,
+│                level-progress (PASS_RULES); one folder per game (Board, Rules, Summary, effects,
+│                pure generators, scoring.ts)
 └── ErrorPanel.tsx, RouteNotFound.tsx   # used by app/not-found, error, global-error
 ```
 
 ### Hooks and state
 
 ```
-hooks/      use-packages, use-words, use-import, use-games, use-learning, use-dashboard (React Query),
-            use-timeouts, use-unmount-signal, use-is-client
-lib/        api.ts (Axios + Bearer + refresh interceptor), job-watcher.ts (Zustand) + active-jobs.ts
-            (localStorage) + job-stream.ts (SSE via fetch-event-source), css-module.ts (cx), shuffle.ts, tts.ts
+hooks/      use-auth, use-packages, use-words (incl. useReviewWords), use-import, use-games, use-learning,
+            use-dashboard, use-feedback (React Query), use-timeouts, use-unmount-signal, use-is-client
+lib/        api.ts (Axios + Bearer + refresh interceptor), query-keys.ts, job-watcher.ts (Zustand) +
+            active-jobs.ts (localStorage) + job-stream.ts (SSE via fetch-event-source), css-module.ts (cx),
+            shuffle.ts, bold-markup.ts, tts.ts
 stores/     auth.store.ts (Zustand: user + access token in memory)
 providers/  QueryProvider, ThemeProvider (next-themes), AuthInitializer, JobWatcher, Toaster
 ```
@@ -684,16 +746,25 @@ The original YAML sketch is obsolete. Source of truth: `.github/workflows/ci-cd.
 `.github/workflows/e2e.yml`; setup (environments, secrets, variables) in `docs/railway-setup.md`.
 
 - **PR + push** (`main`, `staging`, `develop`): `npm ci` → `npm audit --omit=dev` (critical) →
-  `prisma generate` → `turbo lint` → `turbo test` → `turbo build`
-- **Push `main` / `staging`**: matrix build of the `api`, `web` and `backup` images → GHCR
-  (`:latest` / `:staging` + `:sha-<commit>`), `GIT_SHA` build arg, empty `NEXT_PUBLIC_API_URL`
-  fails the web build; Trivy (pinned by digest) scans the pushed digest (`--ignore-unfixed`): lists
-  CRITICAL + HIGH, fails the job (so no deploy) on CRITICAL only
-- **Deploy** (GitHub environment `production` / `staging`): `railway redeploy` of the API → poll
-  `/health` until `version` equals the commit → web, worker, scheduler (+ backup cron in production).
-  Skipped when `RAILWAY_TOKEN` / `API_URL` are unset
-- **E2E** (`e2e.yml`, manual `workflow_dispatch`; `workflow_call` not used yet): Playwright against
-  the environment URL; protected-page specs only when `E2E_USERNAME` / `E2E_PASSWORD` are set
+  `prisma generate` → `turbo lint` → `turbo test` → `turbo build` (`.turbo/cache` kept with
+  `actions/cache`)
+- **Migrations check** (same triggers, job `migrations-check`): MySQL 8 service, empty database →
+  `prisma migrate deploy` → `prisma migrate diff --from-migrations … --to-schema-datamodel …
+  --exit-code`: fails when `schema.prisma` has changes no migration contains
+- **Push `main` / `staging`** (needs both jobs above): matrix build of the `api`, `web` and `backup`
+  images (buildx GHA cache scoped per image) → GHCR
+  (`:sha-<commit>` only, never overwritten: an existing one is reused, so production runs the
+  images built on staging), `GIT_SHA` build arg; Trivy (pinned by digest) scans the image before
+  it is pushed (`--ignore-unfixed`): lists CRITICAL + HIGH, fails the job (so no push, no deploy)
+  on CRITICAL only
+- **Deploy** (`deploy.yml`, GitHub environment `production` / `staging`, one at a time per
+  environment): points `:latest` / `:staging` at the commit's images, then `railway redeploy` (CLI
+  pinned) of the API → poll `/health` until `version` equals the commit → web (same check) →
+  worker and scheduler (their Redis heartbeat, listed by the API's `/health` under `processes`) →
+  backup cron in production. Skipped when `RAILWAY_TOKEN` / `API_URL` are unset. `rollback.yml`
+  checks the commit is on the branch, then runs the same workflow
+- **E2E** (`e2e.yml`, after each staging deploy via `workflow_call`, or `workflow_dispatch`):
+  Playwright against the environment URL; protected-page specs only when `E2E_USERNAME` / `E2E_PASSWORD` are set
 
 ---
 
@@ -822,7 +893,8 @@ apps/api/src/health/health.module.ts
 ### Audits: 4 rounds, issues found & fixed
 - HealthController always returned 200 → fixed with @Res() + proper status code
 - AppController Swagger misleading → fixed tag/summary
-- prisma in dependencies → moved to devDependencies
+- prisma in dependencies → moved to devDependencies (since moved back: the API image runs
+  `prisma migrate deploy` at startup)
 - tsbuildinfo tracked by git → added to .gitignore
 
 ---
@@ -880,7 +952,7 @@ apps/api/src/auth/
 
 Since replaced: `JwtRefreshStrategy` / `JwtRefreshGuard` by opaque refresh sessions (`SessionService`,
 #49); `AuthService` split into `TokenService`, `EmailVerificationService`, `PasswordResetService`,
-`GoogleAuthService` + `create-user.ts`.
+`GoogleAuthService` + `create-user.ts`; `RolesGuard` / `@Roles` removed (never used).
 
 ---
 
@@ -978,7 +1050,8 @@ No global `/api` prefix (only the cron `POST /api/reminder`). Words and games ne
 ```
 Step 1: RabbitmqModule — connection + channel management
   Source: rabbitmq.js
-  - Auto-reconnect with exponential backoff
+  - Auto-reconnect after a fixed 5 s delay, on connection loss and on an unexpected channel close
+  - Topology declared by every process (API and worker) on each new channel (onChannelReady)
   - Separate channels per queue (fix #96)
   - Graceful shutdown (onModuleDestroy)
   → verify: connects to RabbitMQ, auto-reconnects on disconnect
@@ -1052,10 +1125,11 @@ Step 6: Remaining pages ✅
   - Games hub page (grid of 7 games)
   - About page (static profile/skills/timeline/contact)
   - Feedback page + POST /feedback endpoint
-  - Forgot Password page + POST /auth/forgot-password endpoint (Redis token, email queue)
+  - Forgot Password page + POST /auth/forgot-password endpoint (hashed token in DB table
+    password_reset_tokens, email queue)
   - Reset Password page + POST /auth/reset-password endpoint (token validation)
   - 3 CSS files (aboutme, feedback, password-reset)
-  - html-entities dependency for XSS protection in feedback
+  - Feedback email escaped by Handlebars (`{{ }}` in feedback.hbs); no html-entities dependency
 
 Step 7: Verify + Audit (deferred to post-deploy)
   - Manual testing after turbo dev
@@ -1077,15 +1151,21 @@ Step 1: Merge Phase 5 → develop ✅
   - 99 files, +44,764 lines, no conflicts
 
 Step 2: GitHub Actions CI ✅ (reworked)
-  - .github/workflows/ci-cd.yml (Turborepo monorepo), Node 22
-  - PR + push: npm audit (critical, prod deps) → prisma generate → turbo lint → turbo test → turbo build
-  - Push main/staging: Docker matrix (api + web + backup) → GHCR (:latest / :staging + :sha-<commit>)
-  - Build fails when NEXT_PUBLIC_API_URL is empty; GIT_SHA=<commit> build arg (api, web)
-  - Trivy scan: aquasec/trivy:0.76.0 pinned by digest, scans the pushed image digest, registry
-    credentials passed through env only, `--ignore-unfixed`; lists CRITICAL + HIGH (exit-code 0),
-    then fails the job on CRITICAL (exit-code 1), which blocks the deploy jobs
-  - Deploy: `railway redeploy` per service (api → poll /health until `version` = commit → web,
-    worker, scheduler; backup on prod); skipped when RAILWAY_TOKEN / API_URL are unset
+  - .github/workflows/ci-cd.yml (Turborepo monorepo), Node from `.nvmrc`
+  - PR + push: npm audit (critical, prod deps) → turbo lint → turbo test → turbo build (each runs
+    `db:generate` = prisma generate first, also on a fresh clone)
+    (turbo cache via actions/cache)
+  - migrations-check job (MySQL 8 service, empty DB): prisma migrate deploy + prisma migrate diff
+    --exit-code; required by the image builds
+  - Push main/staging: Docker matrix (api + web + backup, buildx cache scope per image) → GHCR
+    (:sha-<commit> only; reused when it already exists)
+  - GIT_SHA=<commit> build arg (api, web); the web image has no build-time configuration (API_URL at runtime)
+  - Trivy scan: aquasec/trivy:0.76.0 pinned by digest, scans the image before the push (no registry
+    access, no Docker socket), `--ignore-unfixed`; lists CRITICAL + HIGH (exit-code 0),
+    then fails the job on CRITICAL (exit-code 1), which blocks the push and the deploy
+  - Deploy (deploy.yml): moves :latest / :staging after approval, then `railway redeploy` per service,
+    each waited for until it runs the commit (api and web: /health `version`; worker and scheduler:
+    Redis heartbeat shown on the API's /health); backup on prod; skipped when RAILWAY_TOKEN / API_URL are unset
   - turbo.json: "test" + "test:e2e" tasks (BASE_URL, E2E_USERNAME, E2E_PASSWORD)
 
 Step 3: Dockerfiles production ✅ (reworked — first version did not build)
@@ -1094,22 +1174,26 @@ Step 3: Dockerfiles production ✅ (reworked — first version did not build)
     GIT_SHA); 1.98 GB → ~580 MB
     Same image for api/worker/scheduler; default CMD = prisma migrate deploy + dist/main.js
     Email templates copied from apps/api/templates (the image no longer needs src/, #6)
-  - apps/web/Dockerfile — turbo prune @sealvo/web → build (NEXT_PUBLIC_API_URL build arg) → standalone runner
+  - apps/web/Dockerfile — turbo prune @sealvo/web → build → standalone runner (API_URL read at runtime),
+    HEALTHCHECK on GET /health
   - apps/api/Dockerfile.backup — mysqldump + @aws-sdk/client-s3 (backup-db.mjs / restore-db.mjs)
   - docker-compose.prod.yml — project `sealvo-prod`, 7 services + backup (profile "backup"),
     service-network URLs override .env, MySQL bound to 127.0.0.1, RabbitMQ UI not published,
-    worker waits for a healthy API; docker-compose.dev.yml = infra only
+    worker waits for a healthy API, API_URL required; docker-compose.dev.yml = infra only
+    (empty MySQL, schema from the Prisma migrations)
   - .dockerignore — nested node_modules / dist / .next / tsbuildinfo
-  - next.config.ts: output "standalone" + security headers (static CSP, HSTS, Permissions-Policy)
+  - next.config.ts: output "standalone"; security headers (CSP, HSTS, Permissions-Policy) set at runtime by src/proxy.ts
 
 Step 4: Railway deploy configuration ✅ (revised)
   - Railway services use GHCR image sources, not the repo → apps/*/railway.toml removed
   - Worker / Scheduler: start command override (node dist/worker.js / dist/scheduler.js), health check disabled
   - Backup: cron set in the Railway dashboard (02:00 UTC), production only
   - docs/railway-setup.md — services, env vars, GitHub environment secrets/vars,
-    one-time `prisma migrate resolve --applied 001_baseline` on the existing prod DB, TZ,
+    one-time `prisma migrate resolve --applied 001_baseline` on the existing prod DB, one-time
+    `001_baseline` checksum update on staging and production, TZ,
     RAILWAY_TOKEN = project token per Railway environment (GitHub environment secret)
-  - docs/local-dev.md — same baseline step for the dev DB, seed, Playwright
+  - docs/local-dev.md — `prisma migrate deploy` on the empty dev DB (baseline resolve / checksum
+    update only for volumes created from the old SQL), seed, Playwright
 
 Step 5: Semantic versioning + Changelog ✅
   - @changesets/cli + @changesets/changelog-github
@@ -1140,4 +1224,4 @@ Step 6: Post-deploy verification 🟡
 | **Phase 4** | Workers + Queues (RabbitMQ + Redis + Email + Import) | `feature/phase-4-workers` | ✅ DONE | 8 commits, +1838 lines, 7 audit rounds, 8 issues fixed |
 | **Phase 5** | Frontend Migration (Next.js + React + Tailwind) | `feature/phase-5-frontend` | ✅ DONE | 9 commits: auth pages, dashboard, packages, vocabs, learn, 7 games, TTS endpoint, remaining pages (about, feedback, forgot/reset password, games hub) |
 | **Phase 6** | CI/CD + Deploy (GitHub Actions + Docker + GHCR → Railway) | `feature/phase-6-cicd` | 🟡 DELIVERED, prod not verified | `develop`; reworked on `fix/full-project-audit`: turbo prune images, GHCR image deploy (railway.toml removed), backup image, version-checked deploy, manual E2E (31 tests incl. 5 protected) |
-| **Audit fixes** | Findings of section 3 (91 ✅ / 1 🟡 / 0 🔲 / 13 ➖) | `fix/full-project-audit` | 🟡 IN REVIEW | Not merged (21 commits ahead of `develop` at 3c3764f, plus the infra/test/docs commit); remaining items in section 3 status summary |
+| **Audit fixes** | Findings of section 3 (91 ✅ / 1 🟡 / 0 🔲 / 13 ➖) | `fix/full-project-audit` | 🟡 IN REVIEW | Not merged (32 commits ahead of `develop`); remaining items in section 3 status summary |

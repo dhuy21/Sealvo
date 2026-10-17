@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { queryKeys } from '@/lib/query-keys';
 
 export interface StreakResult {
   updated: boolean;
@@ -15,7 +16,7 @@ export function useRecordStreak() {
       return data;
     },
     onSuccess: (data) => {
-      if (data.updated) void qc.invalidateQueries({ queryKey: ['dashboard'] });
+      if (data.updated) void qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
     },
   });
 }

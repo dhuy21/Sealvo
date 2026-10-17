@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
 import toast from 'react-hot-toast';
-import api from '@/lib/api';
+import { useSendFeedback } from '@/hooks/use-feedback';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { useAuthStore } from '@/stores/auth.store';
 import { cx } from '@/lib/css-module';
@@ -13,7 +13,9 @@ import authStyles from '@/styles/auth.module.css';
 import feedbackStyles from '@/styles/feedback.module.css';
 
 const schema = z.object({
-  type: z.enum(['suggestion', 'bug', 'question', 'appreciation', 'other']),
+  type: z.enum(['suggestion', 'bug', 'question', 'appreciation', 'other'], {
+    message: 'Veuillez sélectionner un type',
+  }),
   subject: z.string().min(1, 'Sujet requis'),
   content: z.string().min(1, 'Détails requis'),
   email: z.union([z.email('Email invalide'), z.literal('')]).optional(),
@@ -23,6 +25,7 @@ type FormData = z.infer<typeof schema>;
 
 export default function FeedbackPage() {
   const user = useAuthStore((s) => s.user);
+  const sendFeedback = useSendFeedback();
 
   const {
     register,
@@ -33,8 +36,8 @@ export default function FeedbackPage() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const res = await api.post('/feedback', { ...data, email: data.email || undefined });
-      toast.success(res.data.message);
+      const res = await sendFeedback.mutateAsync({ ...data, email: data.email || undefined });
+      toast.success(res.message);
       reset();
     } catch (err: unknown) {
       toast.error(getApiErrorMessage(err, 'Une erreur est survenue'));

@@ -3,7 +3,7 @@
 import { displayWordType } from '@/lib/word-type';
 import { FlashcardHint } from './FlashcardHint';
 import { PronunciationButton } from './PronunciationButton';
-import type { ReviewWord } from './use-review-words';
+import type { ReviewWord } from '@/hooks/use-words';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/learn.module.css';
 

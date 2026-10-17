@@ -16,6 +16,8 @@ export function PackagesGrid({
   onDelete,
   onToggle,
   onCopy,
+  togglingId,
+  copyingId,
 }: {
   packages: Package[];
   isPublicView: boolean;
@@ -26,6 +28,8 @@ export function PackagesGrid({
   onDelete: (id: number) => void;
   onToggle: (id: number) => void;
   onCopy: (id: number) => void;
+  togglingId: number | undefined;
+  copyingId: number | undefined;
 }) {
   const router = useRouter();
 
@@ -44,6 +48,8 @@ export function PackagesGrid({
             onView={(id) => router.push(`/words?package=${id}`)}
             onLearn={(id) => router.push(`/learn?package=${id}`)}
             onCopy={onCopy}
+            togglePending={togglingId === pkg.package_id}
+            copyPending={copyingId === pkg.package_id}
           />
         ))
       ) : (

@@ -16,7 +16,7 @@ import { useLearnShortcuts } from './use-learn-shortcuts';
 import { useRecordSessionStreak } from './use-record-session-streak';
 import { useSessionTimer } from './use-session-timer';
 import { useStaggeredEntrance } from './use-staggered-entrance';
-import type { ReviewWord } from './use-review-words';
+import type { ReviewWord } from '@/hooks/use-words';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/learn.module.css';
 

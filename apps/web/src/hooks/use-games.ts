@@ -8,12 +8,13 @@ import type {
   TrackLevelProgressResult,
 } from '@sealvo/shared';
 import api from '@/lib/api';
+import { queryKeys } from '@/lib/query-keys';
 
 export type { GameData, GameWord, TrackLevelProgressResult } from '@sealvo/shared';
 
 export function useGameData(gameType: GameType, packageId: number | null) {
   return useQuery({
-    queryKey: ['game', gameType, packageId],
+    queryKey: queryKeys.game(gameType, packageId),
     queryFn: async () => {
       const { data } = await api.get<GameData>(`/games/${gameType}/data`, {
         params: { packageId },
@@ -32,7 +33,7 @@ export function useSaveScore() {
       return data;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['scores'] });
+      void qc.invalidateQueries({ queryKey: queryKeys.scores() });
     },
   });
 }
@@ -45,16 +46,16 @@ export function useTrackLevelProgress() {
       return data;
     },
     onSuccess: (_data, { packageId }) => {
-      void qc.invalidateQueries({ queryKey: ['game'] });
-      void qc.invalidateQueries({ queryKey: ['words', packageId] });
-      void qc.invalidateQueries({ queryKey: ['dashboard'] });
+      void qc.invalidateQueries({ queryKey: queryKeys.games() });
+      void qc.invalidateQueries({ queryKey: queryKeys.words(packageId) });
+      void qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
     },
   });
 }
 
 export function useUserScores() {
   return useQuery({
-    queryKey: ['scores'],
+    queryKey: queryKeys.scores(),
     queryFn: async () => {
       const { data } = await api.get<GameScore[]>('/games/scores');
       return data;
