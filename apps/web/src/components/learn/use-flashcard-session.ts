@@ -8,6 +8,7 @@ import {
   type VocabMode,
 } from './deck';
 import { loadProgress, saveProgress } from './progress-storage';
+import { useLeaveConfirmation } from '@/hooks/use-leave-confirmation';
 import { useTimeouts } from '@/hooks/use-timeouts';
 import type { LearnMode } from './Flashcard';
 import type { ReviewWord } from '@/hooks/use-words';
@@ -67,15 +68,10 @@ export function useFlashcardSession(
     saveProgress(deck, progress);
   }, [deck, progress]);
 
-  useEffect(() => {
-    if (!progress.some((p) => p !== -1)) return;
-    const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = UNSAVED_PROGRESS_MESSAGE;
-    };
-    window.addEventListener('beforeunload', onBeforeUnload);
-    return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [progress]);
+  useLeaveConfirmation(
+    progress.some((p) => p !== -1),
+    UNSAVED_PROGRESS_MESSAGE,
+  );
 
   const setDeck = (next: ReviewWord[]) => {
     deckRef.current = next;

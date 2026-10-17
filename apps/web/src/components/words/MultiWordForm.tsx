@@ -3,12 +3,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import toast from 'react-hot-toast';
+import { useLeaveConfirmation } from '@/hooks/use-leave-confirmation';
 import { useAddWords } from '@/hooks/use-words';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { notifyLongError } from '@/lib/notify';
 import { clearFieldValidation, isFormField, validateField } from './field-validation';
 import { settleWordsResponse } from './settle-words-response';
-import { useUnsavedChangesWarning } from './use-unsaved-changes-warning';
 import { useWordCards } from './use-word-cards';
 import { isCardEdited } from './word-card';
 import { WordCardForm } from './WordCardForm';
@@ -17,6 +17,8 @@ import { cx } from '@/lib/css-module';
 
 const SAVE_ERROR = "Erreur lors de l'enregistrement";
 const REQUIRED_FIELDS = 'input[required], select[required], textarea[required]';
+const UNSAVED_CHANGES_MESSAGE =
+  'Vous avez des modifications non sauvegardées. Êtes-vous sûr de vouloir quitter?';
 
 /** Several word cards sent in one request. */
 export function MultiWordForm({ packageId }: { packageId: number }) {
@@ -28,7 +30,7 @@ export function MultiWordForm({ packageId }: { packageId: number }) {
   // Card to scroll to (and focus) once it is rendered.
   const revealRef = useRef<{ key: number; focus: boolean } | null>(null);
 
-  useUnsavedChangesWarning(cards.some(isCardEdited));
+  useLeaveConfirmation(cards.some(isCardEdited), UNSAVED_CHANGES_MESSAGE);
 
   useEffect(() => {
     const target = revealRef.current;
