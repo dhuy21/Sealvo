@@ -9,6 +9,7 @@ describe('PackagesService', () => {
     learning: { findMany: any };
     word_details: { deleteMany: any };
     $transaction: any;
+    $executeRaw: any;
   };
 
   beforeEach(() => {
@@ -17,6 +18,7 @@ describe('PackagesService', () => {
       learning: { findMany: vi.fn() },
       word_details: { deleteMany: vi.fn() },
       $transaction: vi.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
+      $executeRaw: vi.fn(),
     };
     service = new PackagesService(prisma as unknown as PrismaService);
   });
@@ -72,5 +74,29 @@ describe('PackagesService', () => {
       expect.any(Function),
       expect.objectContaining({ timeout: expect.any(Number) }),
     );
+  });
+
+  describe('toggleActivation', () => {
+    it('flips the flag in one statement and reports the new state', async () => {
+      prisma.$executeRaw.mockResolvedValue(1);
+      prisma.packages.findUnique.mockResolvedValue({ is_active: false });
+
+      await expect(service.toggleActivation(5)).resolves.toEqual({
+        message: 'Package désactivé avec succès',
+        isActive: false,
+      });
+      const [sql, packageId] = prisma.$executeRaw.mock.calls[0];
+      expect(sql.join('?')).toBe(
+        'UPDATE packages SET is_active = NOT is_active WHERE package_id = ?',
+      );
+      expect(packageId).toBe(5);
+    });
+
+    it('answers 404 when the package no longer exists', async () => {
+      prisma.$executeRaw.mockResolvedValue(0);
+
+      await expect(service.toggleActivation(5)).rejects.toThrow(NotFoundException);
+      expect(prisma.packages.findUnique).not.toHaveBeenCalled();
+    });
   });
 });

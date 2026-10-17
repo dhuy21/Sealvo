@@ -111,21 +111,23 @@ export class PackagesService {
   }
 
   async toggleActivation(packageId: number) {
-    const pkg = await this.prisma.packages.findUnique({
-      where: { package_id: packageId },
-      select: { is_active: true },
+    // Flipped in SQL: two concurrent toggles cannot both read the same state and cancel out.
+    // The row stays locked until commit, so the read returns this toggle's result.
+    const pkg = await this.prisma.$transaction(async (tx) => {
+      const updated =
+        await tx.$executeRaw`UPDATE packages SET is_active = NOT is_active WHERE package_id = ${packageId}`;
+      if (updated === 0) return null;
+      return tx.packages.findUnique({
+        where: { package_id: packageId },
+        select: { is_active: true },
+      });
     });
 
     if (!pkg) {
       throw new NotFoundException('Package non trouvé');
     }
 
-    const newStatus = !pkg.is_active;
-
-    await this.prisma.packages.update({
-      where: { package_id: packageId },
-      data: { is_active: newStatus },
-    });
+    const newStatus = pkg.is_active;
 
     return {
       message: `Package ${newStatus ? 'activé' : 'désactivé'} avec succès`,
