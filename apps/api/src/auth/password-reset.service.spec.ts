@@ -57,7 +57,17 @@ describe('PasswordResetService', () => {
       const known = await service.forgotPassword('a@b.c');
 
       expect(unknown).toEqual(known);
-      expect(emailQueue.enqueue).toHaveBeenCalledTimes(1);
+      await vi.waitFor(() => expect(emailQueue.enqueue).toHaveBeenCalledTimes(1));
+    });
+
+    it('should answer before the token and email work finishes, as fast as for an unknown email', async () => {
+      prisma.users.findUnique.mockResolvedValue({ id: 'u1', username: 'ann', email: 'a@b.c' });
+      emailQueue.enqueue.mockReturnValue(new Promise(() => {}));
+
+      await expect(service.forgotPassword('a@b.c')).resolves.toEqual({
+        message:
+          'Si un compte est associé à cet email, un lien de réinitialisation vous a été envoyé',
+      });
     });
   });
 
@@ -67,6 +77,7 @@ describe('PasswordResetService', () => {
       emailQueue.enqueue.mockResolvedValue(true);
 
       await service.forgotPassword('a@b.c');
+      await vi.waitFor(() => expect(emailQueue.enqueue).toHaveBeenCalled());
 
       expect(prisma.password_reset_tokens.deleteMany).toHaveBeenCalledWith({
         where: { user_id: 'u1' },

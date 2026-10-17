@@ -27,10 +27,18 @@ export class PasswordResetService {
   async forgotPassword(email: string): Promise<{ message: string }> {
     // Same response whether or not the account exists (OWASP: no user enumeration)
     const user = await this.prisma.users.findUnique({ where: { email } });
-    if (!user) {
-      return { message: FORGOT_PASSWORD_MESSAGE };
+    // Not awaited: the response time must not tell whether the account exists
+    if (user) {
+      void this.sendResetLink(user).catch((error: unknown) =>
+        this.logger.error(
+          `Password reset link failed for user ${user.id}: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+      );
     }
+    return { message: FORGOT_PASSWORD_MESSAGE };
+  }
 
+  private async sendResetLink(user: { id: string; username: string; email: string }) {
     const token = randomBytes(32).toString('hex');
     const tokenHash = createHash('sha256').update(token).digest('hex');
 
@@ -55,7 +63,7 @@ export class PasswordResetService {
     });
 
     const sent = await this.emailQueue.enqueue({
-      to: email,
+      to: user.email,
       content: htmlContent,
       subject: 'Réinitialisation de mot de passe',
     });
@@ -63,8 +71,6 @@ export class PasswordResetService {
     if (!sent) {
       this.logger.error(`Password reset email could not be queued for user ${user.id}`);
     }
-
-    return { message: FORGOT_PASSWORD_MESSAGE };
   }
 
   async resetPassword(token: string, password: string): Promise<{ message: string }> {

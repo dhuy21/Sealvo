@@ -7,8 +7,12 @@ import helmet from 'helmet';
 import { AppModule } from './app.module.js';
 import { appConfig, type AppConfig } from './config/app.config.js';
 
+/** POST words takes up to 500 words; at the longest allowed fields that is about 5.5 MB (default: 100 KB) */
+const JSON_BODY_LIMIT = '6mb';
+
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.useBodyParser('json', { limit: JSON_BODY_LIMIT });
   app.enableShutdownHooks();
   const config = app.get<AppConfig>(appConfig.KEY);
 

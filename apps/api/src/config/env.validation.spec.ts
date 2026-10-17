@@ -117,6 +117,12 @@ describe('env validation', () => {
     });
   });
 
+  it('removes the trailing slash of SCHEDULER_API_URL, which the scheduler joins with /reminders/...', () => {
+    expect(
+      validateSchedulerEnv({ ...SCHEDULER_ENV, SCHEDULER_API_URL: 'http://api:3000/' }),
+    ).toMatchObject({ SCHEDULER_API_URL: 'http://api:3000' });
+  });
+
   it('rejects a missing required variable', () => {
     const { JWT_ACCESS_SECRET: _, ...env } = API_ENV;
 

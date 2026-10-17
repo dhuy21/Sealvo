@@ -121,6 +121,18 @@ describe('RabbitmqService', () => {
 
       await expect(send()).resolves.toBe(false);
     });
+
+    it('is false when a blocked broker never confirms', async () => {
+      await service.connect();
+      vi.useFakeTimers();
+      latest().channel.publish.mockImplementation(() => true);
+
+      const pending = send();
+      await vi.advanceTimersByTimeAsync(5_000);
+
+      await expect(pending).resolves.toBe(false);
+      vi.useRealTimers();
+    });
   });
 });
 

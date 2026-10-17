@@ -103,15 +103,20 @@ export class ImportQueueService implements OnModuleInit {
     }
 
     const { jobId, wordsData, packageId, userId } = payload;
+    const total = wordsData.length;
 
     // A redelivery means the previous attempt never finished (the worker stopped or crashed on it):
-    // it goes through the retry queue so that a job crashing the worker is attempted a bounded number of times
+    // it goes through the retry queue so that a job crashing the worker is attempted a bounded number of times.
+    // Unless it stopped after its transaction committed: then the words are saved.
     if (msg.fields.redelivered) {
+      if (await this.wordsService.isJobApplied(jobId)) {
+        await this.complete(jobId, userId, total, total);
+        return ch.ack(msg);
+      }
       this.logger.warn(`Job ${jobId} was interrupted — counting it as a failed attempt.`);
       return this.fail(msg, ch, jobId, new Error('Traitement interrompu.'));
     }
 
-    const total = wordsData.length;
     // Publish saving progress about every 5%
     const step = Math.max(1, Math.floor(total / 20));
     // update() rewrites the whole job: one at a time, so a late progress never overwrites the final status
@@ -138,14 +143,8 @@ export class ImportQueueService implements OnModuleInit {
         );
       }
 
-      await report({
-        status: 'completed',
-        progress: { current: total, total, phase: 'done' },
-        result: { imported: result.successCount, errors: total - result.successCount, total },
-      });
-
-      await this.cache.del(CACHE_KEYS.dashboard(userId));
-
+      await progress;
+      await this.complete(jobId, userId, total, result.successCount);
       ch.ack(msg);
       this.logger.log(`Job ${jobId} completed: ${result.successCount} imported.`);
     } catch (err) {
@@ -153,6 +152,15 @@ export class ImportQueueService implements OnModuleInit {
       await progress;
       await this.fail(msg, ch, jobId, err);
     }
+  }
+
+  private async complete(jobId: string, userId: string, total: number, imported: number) {
+    await this.jobTracker.update(jobId, {
+      status: 'completed',
+      progress: { current: total, total, phase: 'done' },
+      result: { imported, errors: total - imported, total },
+    });
+    await this.cache.del(CACHE_KEYS.dashboard(userId));
   }
 
   /** Retries once through the retry queue, then parks the job in the failed queue */

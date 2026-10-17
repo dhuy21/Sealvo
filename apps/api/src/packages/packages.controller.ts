@@ -19,6 +19,7 @@ import { PackagesService } from './packages.service.js';
 import { CreatePackageDto } from './dto/create-package.dto.js';
 import { UpdatePackageDto } from './dto/update-package.dto.js';
 import { InvalidateDashboardInterceptor } from '../common/interceptors/invalidate-dashboard.interceptor.js';
+import { THROTTLE, Throttled } from '../common/throttler/throttle-policies.js';
 
 @ApiTags('Packages')
 @Controller('packages')
@@ -101,12 +102,14 @@ export class PackagesController {
   }
 
   @Post(':packageId/copy')
+  @Throttled(THROTTLE.COPY_PACKAGE)
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Copy a public package to own collection' })
   @ApiResponse({ status: 201, description: 'Package copied' })
   @ApiResponse({ status: 403, description: 'Package is not public' })
   @ApiResponse({ status: 404, description: 'Package not found' })
+  @ApiResponse({ status: 429, description: 'Too many copies' })
   async copy(
     @Param('packageId', ParseIntPipe) packageId: number,
     @CurrentUser('id') userId: string,

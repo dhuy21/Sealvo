@@ -28,6 +28,9 @@ const Url = () =>
     { require_tld: false, require_protocol: true },
     { message: '$property must be a URL with its protocol' },
   );
+/** For a base URL joined with paths (`${url}/login`) */
+const WithoutTrailingSlash = () =>
+  Transform(({ value }) => (typeof value === 'string' ? value.replace(/\/+$/, '') : value));
 
 class RedisEnv {
   @Optional() REDIS_URL?: string;
@@ -38,7 +41,7 @@ class RedisEnv {
 }
 
 class SchedulerEnv extends RedisEnv {
-  @Required() @Url() SCHEDULER_API_URL!: string;
+  @WithoutTrailingSlash() @Required() @Url() SCHEDULER_API_URL!: string;
   @Required() CRON_SECRET!: string;
 }
 
@@ -67,8 +70,8 @@ class WorkerEnv extends RedisEnv {
 class ApiEnv extends WorkerEnv {
   @IsOptional() @IsPort() PORT?: string;
   @IsPort() API_PORT = '3001';
-  // Joined with paths (`${FRONTEND_URL}/login`) and compared with the Origin header (CORS)
-  @Transform(({ value }) => (typeof value === 'string' ? value.replace(/\/+$/, '') : value))
+  // Also compared with the Origin header (CORS), which never ends with a slash
+  @WithoutTrailingSlash()
   @Url()
   FRONTEND_URL = 'http://localhost:3000';
   @Optional() GIT_SHA?: string;

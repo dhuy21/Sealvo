@@ -34,6 +34,8 @@ export const THROTTLE = {
   REMINDER_EMAIL: { ttl: HOUR_MS, limit: 3, reason: "Trop d'emails envoyés." },
   FEEDBACK: { ttl: HOUR_MS, limit: 5, reason: 'Trop de feedbacks envoyés.' },
   TTS: { ttl: MINUTE_MS, limit: 30, reason: 'Trop de requêtes TTS.' },
+  // Each copy duplicates every word of the public package
+  COPY_PACKAGE: { ttl: HOUR_MS, limit: 20, reason: 'Trop de copies de packages.' },
 } as const satisfies Record<string, ThrottlePolicy>;
 
 export const throttleMessage = ({ reason, ttl }: ThrottlePolicy) =>

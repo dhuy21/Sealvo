@@ -39,7 +39,7 @@ describe('ImportQueueService consumer', () => {
   let handler: (msg: unknown, ch: unknown) => Promise<void>;
   let channel: { ack: any; nack: any; sendToQueue: any };
   let jobTracker: { update: any };
-  let wordsService: { addWords: any };
+  let wordsService: { addWords: any; isJobApplied: any };
 
   const message = (count: number, { redelivered = false, deaths = 0 } = {}) => ({
     content: Buffer.from(
@@ -76,6 +76,7 @@ describe('ImportQueueService consumer', () => {
         for (let i = 0; i <= data.length; i++) await onProgress('saving', i);
         return { successCount: data.length, alreadyApplied: false };
       }),
+      isJobApplied: vi.fn().mockResolvedValue(false),
     };
 
     const service = new ImportQueueService(
@@ -151,6 +152,22 @@ describe('ImportQueueService consumer', () => {
 
     expect(wordsService.addWords).not.toHaveBeenCalled();
     expect(channel.nack).toHaveBeenCalledWith(msg, false, false);
+  });
+
+  it('completes an interrupted delivery whose transaction had already committed', async () => {
+    wordsService.isJobApplied.mockResolvedValue(true);
+    const msg = message(3, { redelivered: true, deaths: 1 });
+
+    await run(msg);
+
+    expect(wordsService.addWords).not.toHaveBeenCalled();
+    expect(jobTracker.update).toHaveBeenLastCalledWith('job-1', {
+      status: 'completed',
+      progress: { current: 3, total: 3, phase: 'done' },
+      result: { imported: 3, errors: 0, total: 3 },
+    });
+    expect(channel.ack).toHaveBeenCalledWith(msg);
+    expect(channel.sendToQueue).not.toHaveBeenCalled();
   });
 
   it('fails a job interrupted again after its retry (a job that crashes the worker)', async () => {

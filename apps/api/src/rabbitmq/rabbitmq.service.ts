@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { rabbitmqConfig, type RabbitmqConfig } from '../config/rabbitmq.config.js';
 import amqp from 'amqplib';
+import { withTimeout } from '@sealvo/shared';
 
 type ChannelReadyHandler = (channel: amqp.ConfirmChannel) => Promise<void>;
 /** Acks or nacks the message on the channel it was delivered on */
@@ -23,6 +24,7 @@ interface Consumer {
 
 /** Longest wait for the messages being handled when the process stops; the rest are redelivered */
 const DRAIN_TIMEOUT_MS = 25_000;
+const PUBLISH_CONFIRM_TIMEOUT_MS = 5_000;
 
 @Injectable()
 export class RabbitmqService implements OnApplicationBootstrap, OnModuleDestroy {
@@ -149,11 +151,16 @@ export class RabbitmqService implements OnApplicationBootstrap, OnModuleDestroy 
     const ch = this.channel;
     if (!ch) return false;
     try {
-      await new Promise<void>((resolve, reject) => {
-        ch.publish(exchange, routingKey, content, options, (err) =>
-          err ? reject(err instanceof Error ? err : new Error(String(err))) : resolve(),
-        );
-      });
+      // A blocked broker (memory or disk alarm) never confirms: the callers fall back instead of hanging
+      await withTimeout(
+        () =>
+          new Promise<void>((resolve, reject) => {
+            ch.publish(exchange, routingKey, content, options, (err) =>
+              err ? reject(err instanceof Error ? err : new Error(String(err))) : resolve(),
+            );
+          }),
+        PUBLISH_CONFIRM_TIMEOUT_MS,
+      );
       return true;
     } catch (err) {
       this.logger.warn(
