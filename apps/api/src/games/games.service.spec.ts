@@ -1,5 +1,4 @@
 import { Test } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
 import { GamesService } from './games.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
@@ -31,15 +30,6 @@ describe('GamesService', () => {
   });
 
   describe('getWordsForGame', () => {
-    it('should throw on unknown game type', async () => {
-      await expect(service.getWordsForGame(1, 'invalid_game')).rejects.toThrow(BadRequestException);
-    });
-
-    it('should throw on prototype keys used as game type', async () => {
-      await expect(service.getWordsForGame(1, 'constructor')).rejects.toThrow(BadRequestException);
-      await expect(service.getWordsForGame(1, '__proto__')).rejects.toThrow(BadRequestException);
-    });
-
     it('should return error message when not enough words', async () => {
       prisma.learning.findMany.mockResolvedValue([]);
 

@@ -1,7 +1,7 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { GAME_LEVEL, levelLabel, type GameType } from '@sealvo/shared';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { isDue, startOfToday } from '../learning/spaced-repetition.js';
+import { isDue, startOfToday } from '../common/domain/spaced-repetition.js';
 
 /** Minimum words required per game */
 const MIN_WORDS: Partial<Record<GameType, number>> = {
@@ -21,20 +21,12 @@ function shuffle<T>(items: T[]): T[] {
   return items;
 }
 
-/** Route params are unvalidated: `hasOwn` also rejects prototype keys such as `constructor` */
-function isGameType(value: string): value is GameType {
-  return Object.hasOwn(GAME_LEVEL, value);
-}
-
 @Injectable()
 export class GamesService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** Get words for a game (filtered by level + spaced repetition interval) */
-  async getWordsForGame(packageId: number, gameType: string) {
-    if (!isGameType(gameType)) {
-      throw new BadRequestException(`Type de jeu inconnu : ${gameType}`);
-    }
+  async getWordsForGame(packageId: number, gameType: GameType) {
     const level = GAME_LEVEL[gameType];
     const dbLevel = levelLabel(level);
 

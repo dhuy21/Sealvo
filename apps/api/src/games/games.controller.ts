@@ -11,11 +11,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import type { GameType } from '@sealvo/shared';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PackageOwnershipGuard } from '../auth/guards/package-ownership.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { GamesService } from './games.service.js';
 import { SaveScoreDto } from './dto/save-score.dto.js';
+import { ParseGameTypePipe } from './parse-game-type.pipe.js';
 
 @ApiTags('Games')
 @Controller('games')
@@ -29,7 +31,7 @@ export class GamesController {
   @ApiOperation({ summary: 'Get words for a game (filtered by level + spaced repetition)' })
   @ApiResponse({ status: 200, description: 'Game data with words' })
   async getGameData(
-    @Param('gameType') gameType: string,
+    @Param('gameType', ParseGameTypePipe) gameType: GameType,
     @Query('packageId', ParseIntPipe) packageId: number,
   ) {
     return this.gamesService.getWordsForGame(packageId, gameType);

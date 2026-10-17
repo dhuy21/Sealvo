@@ -1,7 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import * as xlsx from 'xlsx';
-import { ImportService, MAX_IMPORT_ROWS, MAX_UNCOMPRESSED_BYTES } from './import.service.js';
+import { MAX_IMPORT_ROWS } from '@sealvo/shared';
+import { ImportService, MAX_UNCOMPRESSED_BYTES } from './import.service.js';
 
 const HEADER = [
   'Mot',

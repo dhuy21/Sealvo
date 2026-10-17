@@ -3,7 +3,7 @@ import { Prisma, type learning_level, type word_details_type } from '@prisma/cli
 import { PrismaService } from '../prisma/prisma.service.js';
 import { retryOnDeadlock } from '../prisma/deadlock.js';
 import { TX_OPTIONS } from '../prisma/tx-options.constants.js';
-import { isDue, startOfToday } from '../learning/spaced-repetition.js';
+import { isDue, startOfToday } from '../common/domain/spaced-repetition.js';
 import type { CreateWordDto } from './dto/create-word.dto.js';
 import type { UpdateWordDto } from './dto/update-word.dto.js';
 import { deleteOrphanDetails } from './orphan-details.js';

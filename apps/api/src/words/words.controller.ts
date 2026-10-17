@@ -16,13 +16,13 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
+import { MAX_IMPORT_ROWS } from '@sealvo/shared';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PackageOwnershipGuard } from '../auth/guards/package-ownership.guard.js';
 import { PackageReadGuard } from '../auth/guards/package-read.guard.js';
 import { InvalidateDashboardInterceptor } from '../common/interceptors/invalidate-dashboard.interceptor.js';
 import { BulkWordsService } from '../import/bulk-words.service.js';
-import { MAX_IMPORT_ROWS } from '../import/import.service.js';
 import { WordsService } from './words.service.js';
 import { CreateWordDto } from './dto/create-word.dto.js';
 import { UpdateWordDto } from './dto/update-word.dto.js';

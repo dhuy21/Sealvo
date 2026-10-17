@@ -7,7 +7,7 @@ import { EmailService } from '../email/email.service.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
 import { CacheService } from '../redis/cache.service.js';
 import { CACHE_KEYS, CACHE_TTL } from '../redis/cache-keys.constants.js';
-import { dueWhereConditions, startOfToday } from '../learning/spaced-repetition.js';
+import { dueWhereConditions, startOfToday } from '../common/domain/spaced-repetition.js';
 import { errorMessage } from '../common/utils/error-message.js';
 
 const PREVIEW_LIMIT = 5;

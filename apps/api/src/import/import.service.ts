@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { Unzip, UnzipInflate } from 'fflate';
 import * as xlsx from 'xlsx';
 import {
+  MAX_IMPORT_ROWS,
   VALID_LANGS,
   VALID_LEVELS,
   VALID_TYPES,
@@ -15,8 +16,6 @@ import {
   TEXT_MAX_LENGTH,
   VARCHAR_MAX_LENGTH,
 } from '../common/constants/field-lengths.constants.js';
-
-export const MAX_IMPORT_ROWS = 500;
 
 /** Total uncompressed size allowed for an .xlsx, against decompression bombs */
 export const MAX_UNCOMPRESSED_BYTES = 20 * 1024 * 1024;

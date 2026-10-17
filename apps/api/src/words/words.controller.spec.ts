@@ -9,7 +9,7 @@ import { CacheService } from '../redis/cache.service.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PackageOwnershipGuard } from '../auth/guards/package-ownership.guard.js';
 import { PackageReadGuard } from '../auth/guards/package-read.guard.js';
-import { MAX_IMPORT_ROWS } from '../import/import.service.js';
+import { MAX_IMPORT_ROWS } from '@sealvo/shared';
 
 const word = {
   word: 'cat',

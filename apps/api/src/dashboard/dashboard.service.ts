@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { EmailVerificationService } from '../auth/email-verification.service.js';
 import { CacheService } from '../redis/cache.service.js';
 import { CACHE_KEYS, CACHE_TTL } from '../redis/cache-keys.constants.js';
-import { dueWhereConditions } from '../learning/spaced-repetition.js';
+import { dueWhereConditions } from '../common/domain/spaced-repetition.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 
 export interface PackageToReview {
