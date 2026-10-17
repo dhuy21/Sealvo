@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import type { Channel, ConfirmChannel, ConsumeMessage } from 'amqplib';
+import type { ConfirmChannel, ConsumeMessage } from 'amqplib';
 import { RabbitmqService } from '../rabbitmq/rabbitmq.service.js';
+import { RetryQueue } from '../rabbitmq/retry-queue.js';
 import { CacheService } from '../redis/cache.service.js';
 import { WordsService } from '../words/words.service.js';
 import { JobTrackerService } from './job-tracker.service.js';
@@ -8,14 +9,12 @@ import { CACHE_KEYS } from '../redis/cache-keys.constants.js';
 import type { CreateWordDto } from '../words/dto/create-word.dto.js';
 import { errorMessage } from '../common/utils/error-message.js';
 
-const EXCHANGE = 'import.direct';
-const RETRY_EXCHANGE = 'import.retry.direct';
-const QUEUE = 'import.process';
-const RETRY_QUEUE = 'import.retry';
-const FAILED_QUEUE = 'import.failed';
-const ROUTING_KEY = 'import';
-const RETRY_TTL = 30_000;
-const MAX_RETRIES = 1;
+const QUEUE = new RetryQueue({
+  name: 'import',
+  queue: 'import.process',
+  retryTtl: 30_000,
+  maxRetries: 1,
+});
 
 export interface ImportPayload {
   jobId: string;
@@ -46,46 +45,28 @@ export class ImportQueueService implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    this.rabbitmq.onChannelReady((ch) => this.setupTopology(ch));
-  }
-
-  /** Assert exchange + queue topology (on every new channel, in the API and the worker) */
-  private async setupTopology(ch: Channel): Promise<void> {
-    await ch.assertExchange(EXCHANGE, 'direct', { durable: true });
-    await ch.assertExchange(RETRY_EXCHANGE, 'direct', { durable: true });
-
-    await ch.assertQueue(QUEUE, {
-      durable: true,
-      arguments: { 'x-dead-letter-exchange': RETRY_EXCHANGE },
+    this.rabbitmq.onChannelReady(async (ch) => {
+      await QUEUE.assertTopology(ch);
+      this.logger.log('Topology ready.');
     });
-
-    await ch.assertQueue(RETRY_QUEUE, {
-      durable: true,
-      arguments: {
-        'x-message-ttl': RETRY_TTL,
-        'x-dead-letter-exchange': EXCHANGE,
-      },
-    });
-
-    await ch.assertQueue(FAILED_QUEUE, { durable: true });
-
-    await ch.bindQueue(QUEUE, EXCHANGE, ROUTING_KEY);
-    await ch.bindQueue(RETRY_QUEUE, RETRY_EXCHANGE, ROUTING_KEY);
-
-    this.logger.log('Topology ready.');
   }
 
   /** False unless the broker confirmed the job */
   publish(payload: ImportPayload): Promise<boolean> {
-    return this.rabbitmq.publish(EXCHANGE, ROUTING_KEY, Buffer.from(JSON.stringify(payload)), {
-      persistent: true,
-      contentType: 'application/json',
-    });
+    return this.rabbitmq.publish(
+      QUEUE.exchange,
+      QUEUE.routingKey,
+      Buffer.from(JSON.stringify(payload)),
+      {
+        persistent: true,
+        contentType: 'application/json',
+      },
+    );
   }
 
   /** Start consuming import jobs (called in worker process) */
   async startConsumer(): Promise<void> {
-    await this.rabbitmq.consume(QUEUE, (msg, ch) => this.handle(msg, ch));
+    await this.rabbitmq.consume(QUEUE.queue, (msg, ch) => this.handle(msg, ch));
     this.logger.log('Consumer started — waiting for import jobs.');
   }
 
@@ -169,22 +150,8 @@ export class ImportQueueService implements OnModuleInit {
     jobId: string,
     err: unknown,
   ): Promise<void> {
-    if (this.getRetryCount(msg) >= MAX_RETRIES) {
-      await this.jobTracker.update(jobId, { status: 'failed', error: errorMessage(err) });
-      ch.sendToQueue(FAILED_QUEUE, msg.content, { persistent: true });
-      ch.ack(msg);
-    } else {
-      await this.jobTracker.update(jobId, { status: 'retrying', error: errorMessage(err) });
-      ch.nack(msg, false, false);
-    }
-  }
-
-  private getRetryCount(msg: { properties?: { headers?: Record<string, unknown> } }): number {
-    const deaths = msg.properties?.headers?.['x-death'];
-    if (!Array.isArray(deaths)) return 0;
-    const entry = deaths.find(
-      (d: Record<string, unknown>) => d.queue === QUEUE && d.reason === 'rejected',
-    );
-    return (entry?.count as number) || 0;
+    const status = QUEUE.exhausted(msg) ? 'failed' : 'retrying';
+    await this.jobTracker.update(jobId, { status, error: errorMessage(err) });
+    QUEUE.reject(msg, ch);
   }
 }
