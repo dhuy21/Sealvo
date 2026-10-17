@@ -69,7 +69,7 @@
 
 1. **NO DELETE Old Code** — Không được xóa bất kỳ code cũ nào (src/) cho đến khi toàn bộ migration hoàn tất và verified. Code cũ là source of truth để tham khảo, đảm bảo migration không lạc hướng.
    - Nếu code cũ và code mới nằm cùng file → **comment out** code cũ, KHÔNG xóa, để đó làm reference.
-   - Chỉ xóa src/ sau khi Phase 6 hoàn tất + production verified.
+   - Chỉ xóa src/ sau khi Phase 6 hoàn tất + staging verified (E2E Staging xanh trên commit đã deploy).
 
 2. **Strangler Fig Pattern** — Build hệ thống mới song song, feature-by-feature. App cũ vẫn tồn tại trong repo.
 
@@ -843,7 +843,7 @@ The original YAML sketch is obsolete. Source of truth: `.github/workflows/ci-cd.
 - src/ folder MUST remain untouched throughout all phases
 - Old code is the reference for migration — never delete, only read
 - If old and new code coexist in the same file → comment out old code, do NOT delete
-- Deletion of src/ only happens AFTER Phase 6 complete + production verified
+- Deletion of src/ only happens AFTER Phase 6 complete + staging verified (E2E Staging green on the deployed commit)
 
 ### Steps
 
