@@ -9,12 +9,18 @@ import {
 } from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
 import { Prisma } from '@prisma/client';
+import { isDeadlock } from '../../prisma/deadlock.js';
 
 const PRISMA_ERRORS: Record<string, () => HttpException> = {
   P2000: () => new BadRequestException('Une valeur fournie est trop longue.'),
   P2002: () => new ConflictException('Cette ressource existe déjà.'),
+  // A row it points to was deleted meanwhile (e.g. the package, during an import)
+  P2003: () => new ConflictException("Une ressource liée n'existe plus."),
   P2025: () => new NotFoundException('Ressource introuvable.'),
 };
+
+const CONCURRENT_UPDATE = () =>
+  new ConflictException('Ces données sont modifiées par une autre opération, réessayez.');
 
 /**
  * MySQL 3819: a CHECK constraint rejected the row. Prisma has no code for it: raw queries
@@ -52,6 +58,7 @@ export class PrismaExceptionFilter extends BaseExceptionFilter {
     if (exception instanceof Prisma.PrismaClientUnknownRequestError) {
       return super.catch(exception, host);
     }
+    if (isDeadlock(exception)) return super.catch(CONCURRENT_UPDATE(), host);
     const mapped = PRISMA_ERRORS[exception.code];
     super.catch(mapped ? mapped() : exception, host);
   }

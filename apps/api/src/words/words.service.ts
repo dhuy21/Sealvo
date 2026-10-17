@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, type learning_level, type word_details_type } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { retryOnDeadlock } from '../prisma/deadlock.js';
 import { TX_OPTIONS } from '../prisma/tx-options.constants.js';
 import { isDue, startOfToday } from '../learning/spaced-repetition.js';
 import type { CreateWordDto } from './dto/create-word.dto.js';
@@ -45,6 +46,31 @@ async function upsertWord(
     ON DUPLICATE KEY UPDATE word_id = LAST_INSERT_ID(word_id)`;
   const [{ id }] = await tx.$queryRaw<[{ id: bigint }]>`SELECT LAST_INSERT_ID() AS id`;
   return { word_id: Number(id) };
+}
+
+type WordKey = Pick<CreateWordDto, 'word' | 'subject' | 'language_code'>;
+const wordKey = (w: WordKey) => JSON.stringify([w.word, w.subject, w.language_code]);
+
+/**
+ * Upserts each distinct base word once, in sorted order: two imports sharing words then lock them
+ * in the same order instead of deadlocking. Returns the word_id of each wordKey.
+ */
+async function upsertWords(
+  tx: Prisma.TransactionClient,
+  words: WordKey[],
+): Promise<Map<string, number>> {
+  const distinct = [...new Map(words.map((w) => [wordKey(w), w])).entries()].sort(([a], [b]) =>
+    a < b ? -1 : a > b ? 1 : 0,
+  );
+  const ids = new Map<string, number>();
+  for (const [key, w] of distinct) {
+    ids.set(
+      key,
+      (await upsertWord(tx, { word: w.word, subject: w.subject, language_code: w.language_code }))
+        .word_id,
+    );
+  }
+  return ids;
 }
 
 /** Record the job inside the import transaction; false when an earlier delivery already committed it */
@@ -108,7 +134,7 @@ export class WordsService {
       onProgress?: (phase: 'gemini' | 'saving', current: number) => Promise<unknown>;
     } = {},
   ) {
-    if (jobId && (await this.prisma.applied_jobs.findUnique({ where: { job_id: jobId } }))) {
+    if (jobId && (await this.isJobApplied(jobId))) {
       return this.addWordsResult(wordsData.length, true);
     }
 
@@ -118,49 +144,52 @@ export class WordsService {
 
     let successCount = 0;
 
-    const applied = await this.prisma.$transaction(async (tx) => {
-      if (jobId && !(await claimJob(tx, jobId))) return false;
+    const applied = await retryOnDeadlock(() =>
+      this.prisma.$transaction(async (tx) => {
+        if (jobId && !(await claimJob(tx, jobId))) return false;
+        successCount = 0;
 
-      for (const wordData of wordsData) {
-        const wordRecord = await upsertWord(tx, {
-          word: wordData.word,
-          subject: wordData.subject,
-          language_code: wordData.language_code,
-        });
+        const wordIds = await upsertWords(tx, wordsData);
+        for (const wordData of wordsData) {
+          const detail = await tx.word_details.create({
+            data: {
+              word_id: wordIds.get(wordKey(wordData))!,
+              type: wordData.type as word_details_type,
+              meaning: wordData.meaning,
+              pronunciation: wordData.pronunciation ?? '',
+              synonyms: wordData.synonyms ?? '',
+              antonyms: wordData.antonyms ?? '',
+              example: wordData.example ?? '',
+              grammar: wordData.grammar ?? '',
+            },
+          });
 
-        const detail = await tx.word_details.create({
-          data: {
-            word_id: wordRecord.word_id,
-            type: wordData.type as word_details_type,
-            meaning: wordData.meaning,
-            pronunciation: wordData.pronunciation ?? '',
-            synonyms: wordData.synonyms ?? '',
-            antonyms: wordData.antonyms ?? '',
-            example: wordData.example ?? '',
-            grammar: wordData.grammar ?? '',
-          },
-        });
+          const level = (wordData.level ?? 'x') as learning_level;
 
-        const level = (wordData.level ?? 'x') as learning_level;
+          await tx.learning.create({
+            data: {
+              package_id: packageId,
+              detail_id: detail.detail_id,
+              level,
+            },
+          });
 
-        await tx.learning.create({
-          data: {
-            package_id: packageId,
-            detail_id: detail.detail_id,
-            level,
-          },
-        });
-
-        successCount++;
-        // Not awaited: a Redis round trip per word would keep the transaction (and its locks) open longer
-        void onProgress?.('saving', successCount)?.catch(() => {});
-      }
-      return true;
-    }, TX_OPTIONS);
+          successCount++;
+          // Not awaited: a Redis round trip per word would keep the transaction (and its locks) open longer
+          void onProgress?.('saving', successCount)?.catch(() => {});
+        }
+        return true;
+      }, TX_OPTIONS),
+    );
 
     return applied
       ? this.addWordsResult(successCount, false)
       : this.addWordsResult(wordsData.length, true);
+  }
+
+  /** Whether an import job's transaction committed (its id is recorded in that transaction) */
+  async isJobApplied(jobId: string): Promise<boolean> {
+    return (await this.prisma.applied_jobs.findUnique({ where: { job_id: jobId } })) !== null;
   }
 
   /** An already applied job reports every word: the earlier transaction was all-or-nothing */
@@ -185,70 +214,72 @@ export class WordsService {
 
     if (dto.example !== undefined) await this.enrichment.enrichWithGemini([dto]);
 
-    const targetId = await this.prisma.$transaction(async (tx) => {
-      const current = entry.word_details;
-      const currentWord = current.words;
-      let targetId = detailId;
+    const targetId = await retryOnDeadlock(() =>
+      this.prisma.$transaction(async (tx) => {
+        const current = entry.word_details;
+        const currentWord = current.words;
+        let targetId = detailId;
 
-      // Check if base word changed (all 3 fields form unique key: word + subject + language_code)
-      const wordChanged =
-        (dto.word !== undefined && dto.word !== currentWord.word) ||
-        (dto.language_code !== undefined && dto.language_code !== currentWord.language_code) ||
-        (dto.subject !== undefined && dto.subject !== currentWord.subject);
+        // Check if base word changed (all 3 fields form unique key: word + subject + language_code)
+        const wordChanged =
+          (dto.word !== undefined && dto.word !== currentWord.word) ||
+          (dto.language_code !== undefined && dto.language_code !== currentWord.language_code) ||
+          (dto.subject !== undefined && dto.subject !== currentWord.subject);
 
-      const detailUpdate: Record<string, unknown> = {};
-      if (dto.type !== undefined) detailUpdate.type = dto.type as word_details_type;
-      if (dto.meaning !== undefined) detailUpdate.meaning = dto.meaning;
-      if (dto.pronunciation !== undefined) detailUpdate.pronunciation = dto.pronunciation;
-      if (dto.synonyms !== undefined) detailUpdate.synonyms = dto.synonyms;
-      if (dto.antonyms !== undefined) detailUpdate.antonyms = dto.antonyms;
-      if (dto.example !== undefined) detailUpdate.example = dto.example;
-      if (dto.grammar !== undefined) detailUpdate.grammar = dto.grammar;
+        const detailUpdate: Record<string, unknown> = {};
+        if (dto.type !== undefined) detailUpdate.type = dto.type as word_details_type;
+        if (dto.meaning !== undefined) detailUpdate.meaning = dto.meaning;
+        if (dto.pronunciation !== undefined) detailUpdate.pronunciation = dto.pronunciation;
+        if (dto.synonyms !== undefined) detailUpdate.synonyms = dto.synonyms;
+        if (dto.antonyms !== undefined) detailUpdate.antonyms = dto.antonyms;
+        if (dto.example !== undefined) detailUpdate.example = dto.example;
+        if (dto.grammar !== undefined) detailUpdate.grammar = dto.grammar;
 
-      if (wordChanged) {
-        const newWord = dto.word ?? currentWord.word;
-        const newLang = dto.language_code ?? currentWord.language_code;
-        const newSubject = dto.subject ?? currentWord.subject;
+        if (wordChanged) {
+          const newWord = dto.word ?? currentWord.word;
+          const newLang = dto.language_code ?? currentWord.language_code;
+          const newSubject = dto.subject ?? currentWord.subject;
 
-        const wordRecord = await upsertWord(tx, {
-          word: newWord,
-          subject: newSubject,
-          language_code: newLang,
-        });
-
-        detailUpdate.word_id = wordRecord.word_id;
-      }
-
-      if (Object.keys(detailUpdate).length > 0) {
-        // Packages copied by the old app share word_details rows: give this package its own copy
-        // before editing, so other packages keep their version
-        const refs = await tx.learning.count({ where: { detail_id: detailId } });
-        if (refs > 1) {
-          const { detail_id: _, words: __, ...fields } = current;
-          const clone = await tx.word_details.create({ data: fields });
-          await tx.learning.update({
-            where: { detail_id_package_id: { detail_id: detailId, package_id: packageId } },
-            data: { detail_id: clone.detail_id },
+          const wordRecord = await upsertWord(tx, {
+            word: newWord,
+            subject: newSubject,
+            language_code: newLang,
           });
-          targetId = clone.detail_id;
+
+          detailUpdate.word_id = wordRecord.word_id;
         }
 
-        // Single word_details update (merged word_id + fields)
-        await tx.word_details.update({
-          where: { detail_id: targetId },
-          data: detailUpdate,
-        });
-      }
+        if (Object.keys(detailUpdate).length > 0) {
+          // Packages copied by the old app share word_details rows: give this package its own copy
+          // before editing, so other packages keep their version
+          const refs = await tx.learning.count({ where: { detail_id: detailId } });
+          if (refs > 1) {
+            const { detail_id: _, words: __, ...fields } = current;
+            const clone = await tx.word_details.create({ data: fields });
+            await tx.learning.update({
+              where: { detail_id_package_id: { detail_id: detailId, package_id: packageId } },
+              data: { detail_id: clone.detail_id },
+            });
+            targetId = clone.detail_id;
+          }
 
-      if (dto.level !== undefined) {
-        await tx.learning.update({
-          where: { detail_id_package_id: { detail_id: targetId, package_id: packageId } },
-          data: { level: dto.level as learning_level },
-        });
-      }
+          // Single word_details update (merged word_id + fields)
+          await tx.word_details.update({
+            where: { detail_id: targetId },
+            data: detailUpdate,
+          });
+        }
 
-      return targetId;
-    });
+        if (dto.level !== undefined) {
+          await tx.learning.update({
+            where: { detail_id_package_id: { detail_id: targetId, package_id: packageId } },
+            data: { level: dto.level as learning_level },
+          });
+        }
+
+        return targetId;
+      }),
+    );
 
     return { message: 'Mot modifié avec succès', detailId: targetId };
   }

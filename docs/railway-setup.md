@@ -103,11 +103,11 @@ it the site fails to load (`/env.js` and `/health` return errors) instead of cal
 Set these on the Backup service only (never put `AWS_ENDPOINT_URL` in the shared variables:
 the AWS SDK reads it globally and would redirect SES email):
 
-| Variable                                                                                                     | Notes                                                                                                                                                     |
-| ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                                                                                               | `${{MySQL.MYSQL_URL}}`                                                                                                                                    |
-| `AWS_S3_BUCKET_NAME`, `AWS_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION` | S3-compatible bucket (Railway "AWS SDK Generic" naming; the old `BUCKET_*` names also work). Without a bucket the dump stays in the container and is lost |
-| `BACKUP_RETENTION`                                                                                           | number of dumps kept, default 7                                                                                                                           |
+| Variable                                                                                                     | Notes                                                                                                                                                                                                                                                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                                                                               | `${{MySQL.MYSQL_URL}}`                                                                                                                                                                                                                                                                                                                                           |
+| `AWS_S3_BUCKET_NAME`, `AWS_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION` | S3-compatible bucket (Railway "AWS SDK Generic" naming). Railway's plain bucket names also work: `BUCKET`, `ENDPOINT`, `ACCESS_KEY_ID`, `SECRET_ACCESS_KEY`, `REGION`; the keys are always read from the same set as the bucket name. A bucket name without its endpoint and keys fails the backup. Without a bucket the dump stays in the container and is lost |
+| `BACKUP_RETENTION`                                                                                           | number of dumps kept, default 7                                                                                                                                                                                                                                                                                                                                  |
 
 Restore (manual): `npm run restore:db -w @sealvo/api` — see `apps/api/scripts/restore-db.mjs` for options.
 
@@ -122,12 +122,16 @@ DATABASE_URL="<production url>" npx prisma migrate resolve --applied 001_baselin
   --schema=apps/api/prisma/schema.prisma
 ```
 
-Migrations `002` to `005` (applied automatically by the API on startup) are additive: `002` adds
-the `refresh_sessions` and `password_reset_tokens` tables, `003` the `email_verification.new_email`
+Migrations `002` to `006` are applied automatically by the API on startup. `002` adds the
+`refresh_sessions` and `password_reset_tokens` tables, `003` the `email_verification.new_email`
 column, `004` the `applied_jobs` table (import idempotency), `005` the old schema's CHECK
 constraints (avatar 1–11, email format, language code) on databases that lack them — a no-op on
-production, which already has them. On any other database with existing data (staging, a restored
-copy), run these first: every row returned would make `005` fail and the API restart in a loop.
+production, which already has them. `006` makes `words.word` and `words.subject` case- and
+accent-sensitive (`utf8mb4_0900_as_cs`), so "résumé" no longer reuses the "resume" row.
+
+On staging and production, and on any other database with existing data (a restored copy), run
+these first. Every row returned would make `005` or `006` fail and the API restart in a loop; the
+failed `ALTER` changes nothing, so fix the rows and redeploy.
 
 ```sql
 SELECT id, ava FROM users WHERE ava NOT BETWEEN 1 AND 11;
@@ -135,6 +139,12 @@ SELECT id, email FROM users WHERE email NOT REGEXP '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-
 SELECT word_id, language_code FROM words WHERE language_code NOT IN ('en-US', 'en-GB', 'fr-FR',
   'es-ES', 'de-DE', 'it-IT', 'ja-JP', 'zh-CN', 'zh-HK', 'zh-TW', 'pt-PT', 'ru-RU', 'vi-VN',
   'ko-KR', 'id-ID', 'hi-IN', 'pl-PL', 'nl-NL');
+-- 006: words the new collation would merge (they differ only by invisible characters such as a
+-- zero-width space); merge their word_details onto one word_id, then delete the others
+SELECT GROUP_CONCAT(word_id) AS word_ids, MIN(word) AS word, MIN(subject) AS subject, language_code
+FROM words
+GROUP BY word COLLATE utf8mb4_0900_as_cs, subject COLLATE utf8mb4_0900_as_cs, language_code
+HAVING COUNT(*) > 1;
 ```
 
 Refresh tokens are now server-side sessions, so refresh cookies issued before this release

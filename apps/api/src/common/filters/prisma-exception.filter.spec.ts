@@ -23,6 +23,8 @@ describe('PrismaExceptionFilter', () => {
     ['P2002', 409],
     ['P2025', 404],
     ['P2000', 400],
+    ['P2003', 409],
+    ['P2034', 409],
   ])('maps %s to %i without leaking details', (code, status) => {
     filter.catch(prismaError(code), host);
 
@@ -45,8 +47,23 @@ describe('PrismaExceptionFilter', () => {
     expect(JSON.stringify(body)).not.toContain('internal details');
   });
 
+  it('maps a raw query deadlock (P2010, MySQL 1213) to 409', () => {
+    filter.catch(
+      new Prisma.PrismaClientKnownRequestError('Deadlock found', {
+        code: 'P2010',
+        clientVersion: 'test',
+        meta: { code: '1213' },
+      }),
+      host,
+    );
+
+    const [, body, status] = adapter.reply.mock.calls[0];
+    expect(status).toBe(409);
+    expect(body.message).toBe('Ces données sont modifiées par une autre opération, réessayez.');
+  });
+
   it('falls through to the default 500 for other codes', () => {
-    filter.catch(prismaError('P2003'), host);
+    filter.catch(prismaError('P2024'), host);
 
     const [, body, status] = adapter.reply.mock.calls[0];
     expect(status).toBe(500);

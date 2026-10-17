@@ -191,6 +191,44 @@ describe('WordsService', () => {
         expect.objectContaining({ timeout: expect.any(Number), maxWait: expect.any(Number) }),
       );
     });
+
+    it('should upsert each base word once, in sorted order, so concurrent imports lock alike', async () => {
+      tx.$queryRaw
+        .mockResolvedValueOnce([{ id: 1n }])
+        .mockResolvedValueOnce([{ id: 2n }])
+        .mockResolvedValueOnce([{ id: 3n }]);
+
+      await service.addWords(1, [
+        word({ word: 'dog' }),
+        word({ word: 'cat' }),
+        word({ word: 'dog', type: 'verb' }),
+        word({ word: 'Cat' }),
+      ]);
+
+      expect(tx.$executeRaw.mock.calls.map((call: unknown[]) => call[1])).toEqual([
+        'Cat',
+        'cat',
+        'dog',
+      ]);
+      expect(
+        tx.word_details.create.mock.calls.map(
+          ([arg]: [{ data: { word_id: number } }]) => arg.data.word_id,
+        ),
+      ).toEqual([3, 2, 3, 1]);
+    });
+
+    it('should rerun the transaction InnoDB picked as a deadlock victim', async () => {
+      tx.$executeRaw.mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError('Deadlock found', {
+          code: 'P2010',
+          clientVersion: 'test',
+          meta: { code: '1213' },
+        }),
+      );
+
+      await expect(service.addWords(1, [word()])).resolves.toMatchObject({ successCount: 1 });
+      expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('updateWord', () => {
