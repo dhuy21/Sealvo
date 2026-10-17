@@ -1,6 +1,7 @@
-import { IsEmail, IsInt, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsInt, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { AUTH_LIMITS, AVATAR_COUNT } from '@sealvo/shared';
+import { IsAccountEmail } from '../../common/decorators/is-account-email.decorator.js';
 import { IsOptionalDefined } from '../../common/decorators/is-optional-defined.decorator.js';
 import { NormalizeEmail } from '../../common/decorators/normalize-email.decorator.js';
 import { Trim } from '../../common/decorators/trim.decorator.js';
@@ -17,7 +18,7 @@ export class UpdateProfileDto {
   @ApiPropertyOptional()
   @IsOptionalDefined()
   @NormalizeEmail()
-  @IsEmail()
+  @IsAccountEmail()
   email?: string;
 
   @ApiPropertyOptional({ description: 'Required when `email` differs from the current email' })

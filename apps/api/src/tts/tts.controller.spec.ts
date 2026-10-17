@@ -39,6 +39,13 @@ describe('GenerateAudioDto', () => {
     ]);
   });
 
+  it('trims the text, so blank text is rejected and spaces do not change the cached audio', async () => {
+    expect(await errorsFor({ text: '   ', language: 'en-US' })).toEqual(['text']);
+    expect(plainToInstance(GenerateAudioDto, { text: ' hello ', language: 'en-US' }).text).toBe(
+      'hello',
+    );
+  });
+
   it('rejects a well-formed but unsupported language', async () => {
     expect(await errorsFor({ text: 'hello', language: 'sv-SE' })).toEqual(['language']);
   });

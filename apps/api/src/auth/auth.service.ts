@@ -37,15 +37,15 @@ export class AuthService {
     // Hashed before the email lookup so both outcomes below take the same time
     const password = await bcrypt.hash(dto.password, 12);
 
-    // No user enumeration: a taken email gets the same response, its owner is emailed instead
+    // No user enumeration: a taken email gets the same response, its owner is emailed instead.
+    // Never a verification link, even for an unverified account: whoever registered it first knows
+    // its password, so the owner must go through the password reset.
     const existing = await this.prisma.users.findUnique({
       where: { email: dto.email },
-      select: { id: true, username: true, email: true, is_verified: true },
+      select: { username: true, email: true },
     });
     if (existing) {
-      await (existing.is_verified
-        ? this.emailVerification.sendAccountExistsEmail(existing)
-        : this.emailVerification.sendVerificationEmail(existing));
+      await this.emailVerification.sendAccountExistsEmail(existing);
       return REGISTER_RESPONSE;
     }
 

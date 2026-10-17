@@ -179,19 +179,16 @@ describe('AuthService', () => {
         );
       });
 
-      it('sends a new verification link to an unverified owner', async () => {
+      it('never sends a verification link for an unverified account someone else registered', async () => {
         ownerExists(false);
-        prisma.email_verification.findFirst.mockResolvedValue(null);
 
         await expect(
           service.register({ username: 'new', email: 'a@b.c', password: '123456' }),
         ).resolves.toEqual(success);
 
         expect(prisma.users.create).not.toHaveBeenCalled();
-        expect(emailService.compileTemplate.mock.calls[0][0]).toBe('mailVerification.hbs');
-        expect(prisma.email_verification.create).toHaveBeenCalledWith({
-          data: expect.objectContaining({ user_id: 'own1234' }),
-        });
+        expect(emailService.compileTemplate.mock.calls[0][0]).toBe('mailAccountExists.hbs');
+        expect(prisma.email_verification.create).not.toHaveBeenCalled();
       });
 
       it('fails like a new registration when the email cannot be queued', async () => {

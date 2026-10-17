@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { zipSync } from 'fflate';
+import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import * as xlsx from 'xlsx';
 import { ImportService, MAX_IMPORT_ROWS, MAX_UNCOMPRESSED_BYTES } from './import.service.js';
 
@@ -120,6 +120,23 @@ describe('ImportService', () => {
     rows[700] = row({ 0: 'far' });
 
     expect(service.parseWords(workbook(rows)).map((w) => w.word)).toEqual(['first', 'far']);
+  });
+
+  it('should parse a tiny sheet that declares the whole grid as its range quickly', () => {
+    const files = unzipSync(workbook([HEADER, row()]));
+    files['xl/worksheets/sheet1.xml'] = strToU8(
+      strFromU8(files['xl/worksheets/sheet1.xml'])
+        .replace(/<dimension ref="[^"]*"\/>/, '<dimension ref="A1:XFD1048576"/>')
+        .replace(
+          '</sheetData>',
+          '<row r="1048576"><c r="XFD1048576" t="inlineStr"><is><t>x</t></is></c></row></sheetData>',
+        ),
+    );
+    const sparse = Buffer.from(zipSync(files));
+
+    const start = performance.now();
+    expect(service.parseWords(sparse)).toHaveLength(1);
+    expect(performance.now() - start).toBeLessThan(1000);
   });
 
   it('should reject a zip bomb that declares small sizes', () => {

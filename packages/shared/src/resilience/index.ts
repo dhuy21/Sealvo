@@ -152,6 +152,8 @@ interface CircuitBreakerOptions {
   threshold?: number;
   /** ms before trying half-open probe */
   resetTimeout?: number;
+  /** predicate(err) → whether the error counts toward opening; default: every error */
+  isFailure?: (err: unknown) => boolean;
 }
 
 /**
@@ -175,11 +177,18 @@ export class CircuitBreaker {
   failureCount = 0;
   private state: CircuitState = 'CLOSED';
   private lastFailureTime = 0;
+  private readonly isFailure: (err: unknown) => boolean;
 
-  constructor({ name, threshold = 5, resetTimeout = 30000 }: CircuitBreakerOptions) {
+  constructor({
+    name,
+    threshold = 5,
+    resetTimeout = 30000,
+    isFailure = () => true,
+  }: CircuitBreakerOptions) {
     this.name = name;
     this.threshold = threshold;
     this.resetTimeout = resetTimeout;
+    this.isFailure = isFailure;
     CircuitBreaker.registry.set(name, this);
   }
 
@@ -201,7 +210,9 @@ export class CircuitBreaker {
       this.onSuccess();
       return result;
     } catch (err) {
-      this.onFailure();
+      // An error the service answered with (bad input) shows it is up
+      if (this.isFailure(err)) this.onFailure();
+      else this.onSuccess();
       throw err;
     }
   }

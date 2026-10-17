@@ -103,6 +103,7 @@ describe('PasswordResetService', () => {
         where: { user_id: 'u1' },
       });
       expect(prisma.users.update.mock.calls[0][0].where).toEqual({ id: 'u1' });
+      expect(prisma.users.update.mock.calls[0][0].data.is_verified).toBe(true);
       expect(prisma.refresh_sessions.deleteMany).toHaveBeenCalledWith({ where: { user_id: 'u1' } });
       expect(prisma.email_verification.updateMany).toHaveBeenCalledWith({
         where: { user_id: 'u1', status: 'pending' },

@@ -26,6 +26,15 @@ describe('auth DTOs', () => {
       ]);
     });
 
+    it('rejects an email the users_email_format CHECK would refuse', async () => {
+      expect((await check(RegisterDto, { ...valid, email: "a'b@example.com" })).messages).toEqual([
+        "Format d'email invalide",
+      ]);
+      expect((await check(RegisterDto, { ...valid, email: 'a+b@example.com' })).messages).toEqual(
+        [],
+      );
+    });
+
     it('accepts a missing avatar but rejects null and out-of-range values', async () => {
       expect((await check(RegisterDto, valid)).messages).toEqual([]);
       expect((await check(RegisterDto, { ...valid, avatar: null })).messages).not.toEqual([]);

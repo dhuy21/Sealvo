@@ -22,6 +22,8 @@ export const MAX_IMPORT_ROWS = 500;
 export const MAX_UNCOMPRESSED_BYTES = 20 * 1024 * 1024;
 const ZIP_SIGNATURE = [0x50, 0x4b, 0x03, 0x04];
 const INFLATE_INPUT_CHUNK_BYTES = 16 * 1024;
+/** Mot … Niveau: the 11 columns of the import template */
+const LAST_COLUMN_INDEX = 10;
 
 /** One spreadsheet row, with the old app's column values (type `ph.v`, level `0`) */
 export interface ParsedWord {
@@ -111,9 +113,9 @@ export class ImportService {
     this.assertUncompressedSize(buffer);
     // The whole sheet is read (its real size is bounded above): cutting it at a row count would drop
     // the words below the cut without an error
-    const workbook = xlsx.read(buffer, { type: 'buffer' });
+    const workbook = xlsx.read(buffer, { type: 'buffer', dense: true });
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-    const data = worksheet ? xlsx.utils.sheet_to_json<Cell[]>(worksheet, { header: 1 }) : [];
+    const data = worksheet?.['!ref'] ? this.readRows(worksheet) : [];
 
     if (!data.length) return [];
 
@@ -148,6 +150,16 @@ export class ImportService {
       );
     }
     return words;
+  }
+
+  /**
+   * Rows of the columns the import reads (A to K). The sheet's declared range can span XFD1048576
+   * in a tiny file, and sheet_to_json walks every cell of that range.
+   */
+  private readRows(worksheet: xlsx.WorkSheet): Cell[][] {
+    const range = xlsx.utils.decode_range(worksheet['!ref']!);
+    range.e.c = Math.min(range.e.c, range.s.c + LAST_COLUMN_INDEX);
+    return xlsx.utils.sheet_to_json<Cell[]>(worksheet, { header: 1, range, blankrows: false });
   }
 
   /**

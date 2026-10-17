@@ -28,6 +28,8 @@ export class TtsService implements OnModuleInit {
     name: 'google-tts',
     threshold: 5,
     resetTimeout: 30_000,
+    // A text Google rejects (INVALID_ARGUMENT) must not cut TTS off for every user
+    isFailure: isTransientError,
   });
 
   constructor(

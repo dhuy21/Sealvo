@@ -79,6 +79,7 @@ export class PasswordResetService {
 
     // New password: consume the token and log out every device (RFC 9700 §4.14.2). A pending email
     // change may come from whoever forced this reset: its confirmation link must stop working too.
+    // The link reached the account's inbox, which verifies the email as a confirmation link would.
     await this.prisma.$transaction(async (tx) => {
       // Two requests with the same token: only the one that deletes it changes the password
       const consumed = await tx.password_reset_tokens.deleteMany({
@@ -86,7 +87,10 @@ export class PasswordResetService {
       });
       if (consumed.count === 0) throw new BadRequestException(INVALID_TOKEN_MESSAGE);
       await tx.password_reset_tokens.deleteMany({ where: { user_id: userId } });
-      await tx.users.update({ where: { id: userId }, data: { password: hashedPassword } });
+      await tx.users.update({
+        where: { id: userId },
+        data: { password: hashedPassword, is_verified: true },
+      });
       await tx.refresh_sessions.deleteMany({ where: { user_id: userId } });
       await tx.email_verification.updateMany({
         where: { user_id: userId, status: 'pending' },

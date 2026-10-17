@@ -1,15 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsByteLength,
-  IsEmail,
-  IsInt,
-  IsString,
-  Max,
-  MaxLength,
-  Min,
-  MinLength,
-} from 'class-validator';
+import { IsByteLength, IsInt, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { AUTH_LIMITS, AVATAR_COUNT } from '@sealvo/shared';
+import { IsAccountEmail } from '../../common/decorators/is-account-email.decorator.js';
 import { IsOptionalDefined } from '../../common/decorators/is-optional-defined.decorator.js';
 import { NormalizeEmail } from '../../common/decorators/normalize-email.decorator.js';
 import { Trim } from '../../common/decorators/trim.decorator.js';
@@ -32,7 +24,7 @@ export class RegisterDto {
 
   @ApiProperty({ example: 'john@example.com' })
   @NormalizeEmail()
-  @IsEmail()
+  @IsAccountEmail()
   email!: string;
 
   @ApiProperty({ example: 'mypassword', minLength: AUTH_LIMITS.PASSWORD_MIN })

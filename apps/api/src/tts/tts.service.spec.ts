@@ -81,6 +81,16 @@ describe('TtsService', () => {
     expect(synthesizeSpeech).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps serving other users after many texts Google rejects', async () => {
+    const invalidArgument = Object.assign(new Error('INVALID_ARGUMENT'), { code: 3 });
+    synthesizeSpeech.mockRejectedValue(invalidArgument);
+    for (let i = 0; i < 6; i++) await service.synthesize(`bad ${i}`, 'en-US').catch(() => {});
+
+    synthesizeSpeech.mockResolvedValue([{ audioContent: Buffer.from('mp3') }]);
+
+    await expect(service.synthesize('hello', 'en-US')).resolves.toEqual(Buffer.from('mp3'));
+  });
+
   it('gives up with a 503 when Google never answers', async () => {
     vi.useFakeTimers();
     listVoices.mockReturnValue(new Promise(() => {}));
