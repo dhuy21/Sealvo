@@ -7,9 +7,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
 import toast from 'react-hot-toast';
+import { API_ERROR_CODES } from '@sealvo/shared';
 import { AuthDecor } from '@/components/auth/AuthDecor';
-import { UNVERIFIED_ACCOUNT_MESSAGE, useLogin, useResendVerification } from '@/hooks/use-auth';
-import { getApiErrorMessage } from '@/lib/api-error';
+import { useLogin, useResendVerification } from '@/hooks/use-auth';
+import { getApiErrorCode, getApiErrorMessage } from '@/lib/api-error';
 import { useAuthStore } from '@/stores/auth.store';
 import { safeRedirect } from '@/lib/safe-redirect';
 import { cx } from '@/lib/css-module';
@@ -43,7 +44,7 @@ function LoginForm() {
   const isReady = useAuthStore((s) => s.isReady);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [showPassword, setShowPassword] = useState(false);
-  const [unverified, setUnverified] = useState(false);
+  const [unverifiedMessage, setUnverifiedMessage] = useState<string | null>(null);
   const googleError = GOOGLE_ERRORS.get(searchParams.get('error') ?? '');
 
   useEffect(() => {
@@ -60,7 +61,7 @@ function LoginForm() {
   } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
 
   const onSubmit = async (data: LoginForm) => {
-    setUnverified(false);
+    setUnverifiedMessage(null);
     resend.reset();
     try {
       await login.mutateAsync(data);
@@ -68,7 +69,8 @@ function LoginForm() {
       toast.success('Connexion réussie !');
     } catch (err: unknown) {
       const message = getApiErrorMessage(err, 'Identifiants invalides');
-      setUnverified(message === UNVERIFIED_ACCOUNT_MESSAGE);
+      if (getApiErrorCode(err) === API_ERROR_CODES.ACCOUNT_UNVERIFIED)
+        setUnverifiedMessage(message);
       toast.error(message);
     }
   };
@@ -95,11 +97,11 @@ function LoginForm() {
           </div>
         )}
 
-        {unverified && (
+        {unverifiedMessage && (
           <>
             <div className={cx(styles, 'alert', 'alert-error')}>
               <i className="fas fa-exclamation-circle" />
-              {UNVERIFIED_ACCOUNT_MESSAGE}
+              {unverifiedMessage}
             </div>
             <button
               type="button"

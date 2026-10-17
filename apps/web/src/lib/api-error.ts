@@ -7,3 +7,8 @@ export function getApiErrorMessage(err: unknown, fallback: string): string {
   if (Array.isArray(message)) return message.join(', ') || fallback;
   return message || fallback;
 }
+
+/** `code` of an API error body (API_ERROR_CODES), for the errors the UI reacts to */
+export function getApiErrorCode(err: unknown): string | undefined {
+  return isAxiosError<{ code?: string }>(err) ? err.response?.data?.code : undefined;
+}

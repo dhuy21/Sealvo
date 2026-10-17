@@ -82,12 +82,18 @@ describe('AuthService', () => {
       await expect(login).rejects.toThrow("Nom d'utilisateur ou mot de passe incorrect");
     });
 
-    it('should throw on unverified account', async () => {
+    it('should throw on unverified account, with the code the web reacts to', async () => {
       const hashed = await bcrypt.hash('pass', 12);
       prisma.users.findUnique.mockResolvedValue({ id: '1', password: hashed, is_verified: false });
-      const login = service.login({ username: 'user', password: 'pass' });
-      await expect(login).rejects.toThrow(UnauthorizedException);
-      await expect(login).rejects.toThrow("Votre compte n'est pas vérifié");
+      const error: unknown = await service
+        .login({ username: 'user', password: 'pass' })
+        .catch((e) => e);
+      expect(error).toBeInstanceOf(UnauthorizedException);
+      expect((error as UnauthorizedException).getResponse()).toMatchObject({
+        statusCode: 401,
+        message: "Votre compte n'est pas vérifié",
+        code: 'ACCOUNT_UNVERIFIED',
+      });
     });
 
     it('should return tokens on valid login without touching last_login', async () => {

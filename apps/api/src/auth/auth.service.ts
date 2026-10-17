@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
+import { API_ERROR_CODES } from '@sealvo/shared';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SessionService } from './session.service.js';
 import { TokenService } from './token.service.js';
@@ -78,7 +79,12 @@ export class AuthService {
     }
 
     if (!user.is_verified) {
-      throw new UnauthorizedException("Votre compte n'est pas vérifié");
+      throw new UnauthorizedException({
+        statusCode: 401,
+        message: "Votre compte n'est pas vérifié",
+        error: 'Unauthorized',
+        code: API_ERROR_CODES.ACCOUNT_UNVERIFIED,
+      });
     }
 
     return this.tokens.issueTokens(user);

@@ -8,5 +8,10 @@ export const AUTH_LIMITS = {
   PASSWORD_MAX_BYTES: 72,
 } as const;
 
+/** `code` of the API error bodies the web reacts to: their message is only displayed */
+export const API_ERROR_CODES = {
+  ACCOUNT_UNVERIFIED: 'ACCOUNT_UNVERIFIED',
+} as const;
+
 /** Avatars are numbered 1..AVATAR_COUNT */
 export const AVATAR_COUNT = 11;

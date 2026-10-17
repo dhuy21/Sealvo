@@ -15,9 +15,6 @@ interface RegisterPayload {
   avatar: number;
 }
 
-/** Message of POST /auth/login when the account's email is not verified yet. */
-export const UNVERIFIED_ACCOUNT_MESSAGE = "Votre compte n'est pas vérifié";
-
 /** GET /auth/me. Pass `accessToken` when the store does not hold it yet. */
 export async function fetchMe(accessToken?: string): Promise<User> {
   const { data } = await api.get<User>(
