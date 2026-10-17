@@ -49,6 +49,7 @@ jobs:
       cancel-in-progress: false
     env:
       RAILWAY_CLI_VERSION: 5.70.0
+      DEPLOY_ENV: ${{ inputs.environment }}
       API_URL: ${{ vars.API_URL }}
       WEB_URL: ${{ inputs.environment == 'production' && (vars.PRODUCTION_URL || 'https://www.sealvo.it.com') || vars.STAGING_URL }}
       VERSION: ${{ inputs.version }}
@@ -63,7 +64,7 @@ jobs:
             [ -n "${!name}" ] || missing="$missing $name"
           done
           if [ "$TAG" = latest ] && [ -z "$BACKUP_SERVICE_ID" ]; then missing="$missing BACKUP_SERVICE_ID"; fi
-          [ -z "$missing" ] || { echo "::error::Not set for ${{ inputs.environment }}:$missing (docs/railway-setup.md)"; exit 1; }
+          [ -z "$missing" ] || { echo "::error::Not set for $DEPLOY_ENV:$missing (docs/railway-setup.md)"; exit 1; }
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           API_SERVICE_ID: ${{ secrets.RAILWAY_API_SERVICE_ID }}
@@ -196,7 +197,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "### Deploy ${{ inputs.environment }}"
+            echo "### Deploy $DEPLOY_ENV"
             echo "- **Commit:** \`$VERSION\`"
             echo "- **Status:** ${{ steps.head.outputs.superseded == 'true' && 'skipped (superseded by a newer commit)' || job.status }}"
           } >> "$GITHUB_STEP_SUMMARY"

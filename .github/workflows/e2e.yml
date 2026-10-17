@@ -38,6 +38,7 @@ jobs:
       BASE_URL: ${{ inputs.target == 'production' && (vars.PRODUCTION_URL || 'https://www.sealvo.it.com') || vars.STAGING_URL }}
       API_URL: ${{ vars.API_URL }}
       VERSION: ${{ inputs.version }}
+      TARGET: ${{ inputs.target }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -77,4 +78,4 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          echo "### E2E ${{ inputs.target }} — ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "### E2E $TARGET — ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
