@@ -5,6 +5,5 @@ import { TtsService } from './tts.service.js';
 @Module({
   controllers: [TtsController],
   providers: [TtsService],
-  exports: [TtsService],
 })
 export class TtsModule {}

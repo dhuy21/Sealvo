@@ -3,7 +3,7 @@ import cron from 'node-cron';
 import { schedulerConfig, type SchedulerConfig } from '../config/scheduler.config.js';
 import { RedisService } from '../redis/redis.service.js';
 import { REDIS_KEYS } from '../redis/cache-keys.constants.js';
-import { dailyCron, maxGapMs } from '../daily-schedule.js';
+import { dailyCron, maxGapMs } from './daily-schedule.js';
 import { errorMessage } from '../common/utils/error-message.js';
 
 export interface ScheduledTask {

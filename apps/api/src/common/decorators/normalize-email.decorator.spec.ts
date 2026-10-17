@@ -1,7 +1,7 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { IsEmail } from 'class-validator';
-import { NormalizeEmail, normalizeEmail } from './normalize-email.decorator.js';
+import { NormalizeEmail } from './normalize-email.decorator.js';
 
 class EmailDto {
   @NormalizeEmail()
@@ -26,15 +26,5 @@ describe('NormalizeEmail', () => {
 
   it('leaves non-string values untouched', () => {
     expect(transform(42).email).toBe(42);
-  });
-});
-
-describe('normalizeEmail', () => {
-  it('normalizes a valid email like the decorator', () => {
-    expect(normalizeEmail('Jane.Doe@GoogleMail.com')).toBe('janedoe@gmail.com');
-  });
-
-  it('returns an invalid email untouched', () => {
-    expect(normalizeEmail(' not-an-email ')).toBe(' not-an-email ');
   });
 });

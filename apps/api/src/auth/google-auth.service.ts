@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { AUTH_LIMITS } from '@sealvo/shared';
-import { normalizeEmail } from '../common/decorators/normalize-email.decorator.js';
+import { normalizeEmail } from '../common/utils/normalize-email.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { TokenService } from './token.service.js';
 import { hashPassword, newToken } from './crypto.js';
