@@ -10,6 +10,7 @@ import { type RedisClientType } from 'redis';
 import { JOB_TTL_SECONDS } from '@sealvo/shared';
 import { RedisService } from '../redis/redis.service.js';
 import { REDIS_KEYS } from '../redis/cache-keys.constants.js';
+import type { JobProgress, JobStatus } from '@sealvo/shared';
 
 export interface JobMeta {
   /** Owner: only they can read the job or follow its events */
@@ -21,8 +22,8 @@ export interface JobMeta {
 export interface Job {
   id: string;
   type: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed' | 'retrying';
-  progress: { current: number; total: number; phase: string } | null;
+  status: JobStatus;
+  progress: JobProgress | null;
   result: Record<string, unknown> | null;
   error: string | null;
   meta: JobMeta;

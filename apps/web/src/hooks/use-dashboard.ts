@@ -1,21 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import type { DashboardStats } from '@sealvo/shared';
 import { queryKeys } from '@/lib/query-keys';
 
-export interface PackageToReview {
-  package_id: number;
-  package_name: string;
-  num_words: number;
-}
-
-export interface DashboardStats {
-  streak: number;
-  totalWords: number;
-  learnedWords: number;
-  newWords: number;
-  islearningWords: number;
-  packagesToReview: PackageToReview[];
-}
+export type { DashboardStats, PackageToReview } from '@sealvo/shared';
 
 interface DashboardResponse extends DashboardStats {
   success: boolean;

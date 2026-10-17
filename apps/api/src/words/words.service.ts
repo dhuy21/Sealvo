@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, type learning_level, type word_details_type } from '@prisma/client';
+import type { ReviewWordDto, WordDto } from '@sealvo/shared';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { retryOnDeadlock } from '../prisma/deadlock.js';
 import { TX_OPTIONS } from '../prisma/tx-options.constants.js';
@@ -13,7 +14,7 @@ type WordEntry = Prisma.learningGetPayload<{
   include: { word_details: { include: { words: true } } };
 }>;
 
-function toWordDto(e: WordEntry) {
+function toWordDto(e: WordEntry): WordDto {
   return {
     detail_id: e.detail_id,
     word_id: e.word_details.word_id,
@@ -93,12 +94,12 @@ export class WordsService {
   ) {}
 
   /** Get all words for a package (joined: words + word_details + learning) */
-  async findByPackageId(packageId: number) {
+  async findByPackageId(packageId: number): Promise<WordDto[]> {
     return (await this.findEntries(packageId)).map(toWordDto);
   }
 
   /** Get the package's words, flagged with whether they are due for review today */
-  async findWordsToReview(packageId: number) {
+  async findWordsToReview(packageId: number): Promise<ReviewWordDto[]> {
     const today = startOfToday();
     return (await this.findEntries(packageId)).map((e) => ({
       ...toWordDto(e),

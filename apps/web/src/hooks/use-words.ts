@@ -1,29 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Level, WordType } from '@sealvo/shared';
+import type { ReviewWordDto, WordDto } from '@sealvo/shared';
 import api from '@/lib/api';
 import { stripBoldMarkup } from '@/lib/bold-markup';
 import { invalidate, invalidateWords, queryKeys } from '@/lib/query-keys';
 
-export interface Word {
-  detail_id: number;
-  word_id: number;
-  word: string;
-  language_code: string;
-  subject: string;
-  type: WordType;
-  meaning: string;
-  pronunciation: string | null;
-  synonyms: string | null;
-  antonyms: string | null;
-  example: string | null;
-  grammar: string | null;
-  level: Level;
-  package_id: number;
-}
-
-export interface ReviewWord extends Word {
-  dueToday: boolean;
-}
+export type Word = WordDto;
+export type ReviewWord = ReviewWordDto;
 
 export interface CreateWordPayload {
   word: string;

@@ -1,24 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import type { Level } from '@sealvo/shared';
+import type { DashboardStats, Level, PackageToReview } from '@sealvo/shared';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CacheService } from '../redis/cache.service.js';
 import { CACHE_KEYS, CACHE_TTL } from '../redis/cache-keys.constants.js';
 import { dueWhereConditions } from '../common/domain/spaced-repetition.js';
-
-export interface PackageToReview {
-  package_id: number;
-  package_name: string;
-  num_words: number;
-}
-
-export interface DashboardStats {
-  streak: number;
-  totalWords: number;
-  learnedWords: number;
-  newWords: number;
-  islearningWords: number;
-  packagesToReview: PackageToReview[];
-}
 
 @Injectable()
 export class DashboardService {

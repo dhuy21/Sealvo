@@ -1,4 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import type { PackageDetailDto, PackageDto } from '@sealvo/shared';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { TX_OPTIONS } from '../prisma/tx-options.constants.js';
 import { deleteOrphanDetails } from '../words/orphan-details.js';
@@ -9,14 +10,14 @@ import type { UpdatePackageDto } from './dto/update-package.dto.js';
 export class PackagesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByUserId(userId: string) {
+  async findByUserId(userId: string): Promise<PackageDto[]> {
     return this.prisma.packages.findMany({
       where: { user_id: userId },
       orderBy: { created_at: 'desc' },
     });
   }
 
-  async findPublicPackages() {
+  async findPublicPackages(): Promise<PackageDto[]> {
     const packages = await this.prisma.packages.findMany({
       where: { mode: { in: ['public', 'protected'] } },
       include: { users: { select: { username: true } } },
@@ -25,7 +26,7 @@ export class PackagesService {
     return packages.map(({ users, ...pkg }) => ({ ...pkg, username: users.username }));
   }
 
-  async findOne(packageId: number, userId: string) {
+  async findOne(packageId: number, userId: string): Promise<PackageDetailDto> {
     const pkg = await this.prisma.packages.findUnique({
       where: { package_id: packageId },
       select: {

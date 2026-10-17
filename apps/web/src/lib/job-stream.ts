@@ -1,4 +1,5 @@
 import { EventStreamContentType, fetchEventSource } from '@microsoft/fetch-event-source';
+import type { JobProgress, JobStatus } from '@sealvo/shared';
 import { renewAccessToken } from './api';
 import { apiUrl } from '@/env';
 import { useAuthStore } from '@/stores/auth.store';
@@ -6,8 +7,8 @@ import { useAuthStore } from '@/stores/auth.store';
 /** A `data:` message of GET /jobs/:id/stream. */
 export interface JobUpdate {
   id?: string;
-  status: 'pending' | 'processing' | 'retrying' | 'completed' | 'failed' | 'stream_unavailable';
-  progress?: { current: number; total: number; phase: string } | null;
+  status: JobStatus | 'stream_unavailable';
+  progress?: JobProgress | null;
   result?: { imported?: number; total?: number; errors?: number } | null;
   error?: string | null;
 }

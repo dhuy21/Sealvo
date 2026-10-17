@@ -1,17 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { PackageMode } from '@sealvo/shared';
+import type { PackageDetailDto, PackageDto, PackageMode } from '@sealvo/shared';
 import api from '@/lib/api';
 import { invalidate, queryKeys } from '@/lib/query-keys';
 
-export interface Package {
-  package_id: number;
-  package_name: string;
-  package_description: string | null;
-  mode: PackageMode;
-  is_active: boolean;
-  user_id: string;
-  username?: string;
-}
+export type Package = PackageDto;
+export type PackageDetail = PackageDetailDto;
 
 export function useMyPackages() {
   return useQuery({
@@ -31,16 +24,6 @@ export function usePublicPackages() {
       return data;
     },
   });
-}
-
-export interface PackageDetail {
-  package_id: number;
-  package_name: string;
-  package_description: string | null;
-  mode: PackageMode;
-  is_active: boolean;
-  username: string;
-  isOwner: boolean;
 }
 
 export function usePackage(packageId: number | null) {
