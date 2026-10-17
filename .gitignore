@@ -37,3 +37,6 @@ redis_data/
 rabbitmq_data/
 *.tsbuildinfo
 apps/api/backups/
+
+# Local Semgrep output
+.semgrep-out.json

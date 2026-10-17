@@ -6,6 +6,7 @@ import { IsOptionalDefined } from '../../common/decorators/is-optional-defined.d
 import { NormalizeEmail } from '../../common/decorators/normalize-email.decorator.js';
 import { Trim } from '../../common/decorators/trim.decorator.js';
 
+// nosemgrep: ajinabraham.njsscan.generic.hardcoded_secrets.node_password (a message, not a password)
 export const PASSWORD_TOO_LONG_MESSAGE = 'Le mot de passe est trop long';
 
 export const AVATAR_RANGE_MESSAGE = `L'avatar doit être un nombre entre 1 et ${AVATAR_COUNT}`;

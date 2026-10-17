@@ -42,8 +42,30 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-turbo-
       - run: npx turbo lint
+      - name: Architecture rules (dependency-cruiser)
+        run: npm run lint:deps
       - run: npx turbo test
       - run: npx turbo build
+
+  # ── 1a. SAST ───────────────────────────────────────────────
+  # Semgrep OSS rulesets: an ERROR finding fails the run. A triaged false positive carries a
+  # `nosemgrep: <rule id> (reason)` comment on the line it reports.
+  semgrep:
+    name: Semgrep
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: semgrep/semgrep@sha256:529ee8a277ec8adc5b534d7c74eea0a47e9de21d62852b6ba7ac6ba9566845c3 # 1.180.0
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - run: >-
+          semgrep scan --metrics off --error --severity ERROR
+          --config p/default --config p/nodejsscan --config p/typescript --config p/react
+          --config p/nextjs --config p/jwt --config p/github-actions --config p/dockerfile
+          --config p/secrets
+          apps packages .github docker-compose.dev.yml docker-compose.prod.yml
 
   # ── 1b. MIGRATIONS ─────────────────────────────────────────
   # Applies every migration to an empty MySQL, then fails if schema.prisma has changes
@@ -102,7 +124,7 @@ jobs:
   docker-build-push:
     name: Build & ${{ github.event_name == 'push' && 'Push' || 'Scan' }} (${{ matrix.image }})
     runs-on: ubuntu-latest
-    needs: [lint-and-test, migrations-check]
+    needs: [lint-and-test, migrations-check, semgrep]
     if: github.event_name == 'pull_request' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'))
     timeout-minutes: 20
     # staging and main fast-forwarded to the same commit build it once: the second run waits, then
@@ -253,7 +275,8 @@ jobs:
       environment: production
       version: ${{ github.sha }}
       skip-if-superseded: true
-    secrets: inherit
+    # Same-repo workflows that need the environment's Railway and E2E secrets
+    secrets: inherit # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
 
   deploy-staging:
     name: Deploy Staging
@@ -267,7 +290,8 @@ jobs:
       environment: staging
       version: ${{ github.sha }}
       skip-if-superseded: true
-    secrets: inherit
+    # Same-repo workflows that need the environment's Railway and E2E secrets
+    secrets: inherit # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
 
   # ── 4. E2E ON STAGING ──────────────────────────────────────
   e2e-staging:
@@ -279,4 +303,5 @@ jobs:
     with:
       target: staging
       version: ${{ github.sha }}
-    secrets: inherit
+    # Same-repo workflows that need the environment's Railway and E2E secrets
+    secrets: inherit # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit

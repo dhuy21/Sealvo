@@ -47,6 +47,7 @@ export class TtsService implements OnModuleInit {
 
     this.ttsClient = new TextToSpeechClient({
       credentials: {
+        // nosemgrep: generic.secrets.security.detected-google-gcm-service-account.detected-google-gcm-service-account (the key comes from env)
         type: 'service_account',
         project_id: credentials.projectId,
         private_key: credentials.privateKey,

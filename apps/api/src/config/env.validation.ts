@@ -55,6 +55,7 @@ class WorkerEnv extends RedisEnv {
   @Optional() RABBITMQ_HOST?: string;
   @IsPort() RABBITMQ_PORT = '5672';
   @Optional() RABBITMQ_USER = 'guest';
+  // nosemgrep: ajinabraham.njsscan.generic.hardcoded_secrets.node_password (RabbitMQ's local default; production sets its own)
   @Optional() RABBITMQ_PASS = 'guest';
 
   @Required() AWS_REGION!: string;

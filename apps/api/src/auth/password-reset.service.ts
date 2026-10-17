@@ -8,6 +8,7 @@ import { EmailQueueService } from '../email/email-queue.service.js';
 import { EmailService } from '../email/email.service.js';
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+// nosemgrep: ajinabraham.njsscan.generic.hardcoded_secrets.node_password (a message, not a password)
 const FORGOT_PASSWORD_MESSAGE =
   'Si un compte est associé à cet email, un lien de réinitialisation vous a été envoyé';
 const INVALID_TOKEN_MESSAGE =

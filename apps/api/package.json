@@ -16,6 +16,7 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "oxlint --type-aware src/ && tsc --noEmit --incremental false -p tsconfig.json",
+    "lint:deps": "depcruise src --config .dependency-cruiser.cjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",

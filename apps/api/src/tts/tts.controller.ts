@@ -21,6 +21,7 @@ export class TtsController {
   @ApiResponse({ status: 422, description: 'No voice available for the language' })
   @ApiResponse({ status: 503, description: 'Speech synthesis unavailable' })
   async generateAudio(@Body() dto: GenerateAudioDto, @Res() res: Response): Promise<void> {
+    // nosemgrep: ajinabraham.njsscan.xss.xss_node.express_xss (binary MP3 sent as audio/mpeg)
     const audioBuffer = await this.ttsService.synthesize(dto.text, dto.language);
 
     res.setHeader('Content-Type', 'audio/mpeg');

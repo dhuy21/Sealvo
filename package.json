@@ -14,6 +14,7 @@
     "db:status": "prisma migrate status --schema=apps/api/prisma/schema.prisma",
     "build": "turbo run build",
     "lint": "turbo run lint",
+    "lint:deps": "npm run lint:deps -w @sealvo/api -w @sealvo/web",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "changeset": "changeset",
     "version-packages": "changeset version",
@@ -23,6 +24,7 @@
   "devDependencies": {
     "@changesets/changelog-github": "^1.0.1",
     "@changesets/cli": "^3.0.3",
+    "dependency-cruiser": "^18.6.0",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
