@@ -114,6 +114,8 @@ Source: `learning/constants.ts` (same values in `packages/shared/src/constants`)
   level, nothing is imported and the 400 message lists the rows per error.
 - Processed by the worker through RabbitMQ when RabbitMQ and Redis are available (job status
   `GET /jobs/:id`, kept 1 h), otherwise synchronously in the request.
+- A worker job is applied at most once: a redelivered job (worker crash after the commit) saves
+  nothing again and reports the words of the first delivery (`applied_jobs`, kept 7 days).
 
 ## Accounts, email and sessions
 
@@ -140,7 +142,10 @@ after a restart it catches up if the last run is older than 7 h (`scheduler.ts`)
   only, if they have due words in an active package (`reminder/test-reminder.controller.ts`).
 - cleanup (`reminder/reminder.service.ts`): email verification tokens created ≥ 15 days ago and
   **never-verified accounts created ≥ 3 days ago** are deleted (calendar days:
-  `DATE(created_at) + n <= today`), as well as expired refresh sessions and reset tokens.
+  `DATE(created_at) + n <= today`), as well as expired refresh sessions and reset tokens, and
+  import markers (`applied_jobs`) older than 7 days.
+- Emails: a send that times out (10 s) is not retried and counts as sent, so an email is never
+  sent twice but may be lost.
 
 ## Rate limits
 
