@@ -73,13 +73,21 @@ export class RetryQueue {
     return this.retryCount(msg) >= this.config.maxRetries;
   }
 
-  /** Back through the retry queue, or into the failed queue once exhausted */
-  reject(msg: ConsumeMessage, ch: ConfirmChannel): void {
-    if (this.exhausted(msg)) {
-      ch.sendToQueue(this.failedQueue, msg.content, { persistent: true });
-      ch.ack(msg);
-    } else {
-      ch.nack(msg, false, false);
+  /**
+   * Back through the retry queue, or into the failed queue once exhausted. The original is acked
+   * only once the broker confirmed the parked copy; otherwise it goes round the retry queue again.
+   */
+  async reject(msg: ConsumeMessage, ch: ConfirmChannel): Promise<void> {
+    if (!this.exhausted(msg)) return ch.nack(msg, false, false);
+    try {
+      await new Promise<void>((resolve, reject) =>
+        ch.sendToQueue(this.failedQueue, msg.content, { persistent: true }, (err) =>
+          err ? reject(err instanceof Error ? err : new Error(String(err))) : resolve(),
+        ),
+      );
+    } catch {
+      return ch.nack(msg, false, false);
     }
+    ch.ack(msg);
   }
 }

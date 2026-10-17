@@ -152,6 +152,6 @@ export class ImportQueueService implements OnModuleInit {
   ): Promise<void> {
     const status = QUEUE.exhausted(msg) ? 'failed' : 'retrying';
     await this.jobTracker.update(jobId, { status, error: errorMessage(err) });
-    QUEUE.reject(msg, ch);
+    await QUEUE.reject(msg, ch);
   }
 }

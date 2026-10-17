@@ -58,7 +58,8 @@ export class TtsService implements OnModuleInit {
   }
 
   private audioKey(text: string, language: string): string {
-    const hash = crypto.createHash('sha256').update(text).digest('hex').slice(0, 12);
+    // The full digest: a shortened one lets a chosen text collide with another and get its audio
+    const hash = crypto.createHash('sha256').update(text).digest('hex');
     return CACHE_KEYS.ttsAudio(language, hash);
   }
 

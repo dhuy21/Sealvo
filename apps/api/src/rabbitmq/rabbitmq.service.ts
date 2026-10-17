@@ -27,6 +27,9 @@ interface Consumer {
 const DRAIN_TIMEOUT_MS = 25_000;
 const PUBLISH_CONFIRM_TIMEOUT_MS = 5_000;
 
+/** TCP connect and AMQP handshake: a black-holed broker address must fail, then retry */
+const CONNECT_TIMEOUT_MS = 10_000;
+
 @Injectable()
 export class RabbitmqService implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(RabbitmqService.name);
@@ -74,7 +77,7 @@ export class RabbitmqService implements OnApplicationBootstrap, OnModuleDestroy 
 
     let conn: amqp.ChannelModel | null = null;
     try {
-      conn = await amqp.connect(url);
+      conn = await amqp.connect(url, { timeout: CONNECT_TIMEOUT_MS });
       this.connection = conn;
 
       conn.on('error', (err: Error) => {

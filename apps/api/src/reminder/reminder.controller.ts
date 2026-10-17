@@ -18,8 +18,14 @@ export class ReminderController {
   @HttpCode(HttpStatus.OK)
   @Throttled(THROTTLE.REMINDER_EMAIL)
   async triggerReminder() {
-    const { sent, failed, skipped } = await this.reminderService.sendReminders();
-    await this.maintenance.cleanupExpired();
+    // The hourly call is the only cleanup trigger: a reminder failure must not skip it
+    let result;
+    try {
+      result = await this.reminderService.sendReminders();
+    } finally {
+      await this.maintenance.cleanupExpired();
+    }
+    const { sent, failed, skipped } = result;
 
     return {
       success: true,

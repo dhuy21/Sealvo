@@ -13,9 +13,19 @@ import { errorMessage } from '../common/utils/error-message.js';
 const SEND_TIMEOUT_MS = 10_000;
 const SEND_RETRY_DELAY_MS = 1_000;
 
+/** AWS SDK errors (nodemailer tags them `code: 'ESES'`) carry their HTTP status in `$metadata` */
+function isTransientSesError(err: unknown): boolean {
+  const { $retryable, $metadata } = err as {
+    $retryable?: unknown;
+    $metadata?: { httpStatusCode?: number };
+  };
+  const status = $metadata?.httpStatusCode;
+  return !!$retryable || (typeof status === 'number' && (status === 429 || status >= 500));
+}
+
 // The timeout does not cancel the underlying send, which may still be delivered: never resend after it
 const isRetryableSendError = (err: unknown) =>
-  !(err instanceof TimeoutError) && isTransientError(err);
+  !(err instanceof TimeoutError) && (isTransientError(err) || isTransientSesError(err));
 
 // Same depth from src/email (tests) and dist/email (runtime), independent of the process cwd
 const TEMPLATES_DIR = fileURLToPath(new URL('../../templates/mails/', import.meta.url));

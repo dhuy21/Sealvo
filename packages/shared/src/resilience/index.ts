@@ -177,6 +177,8 @@ export class CircuitBreaker {
   failureCount = 0;
   private state: CircuitState = 'CLOSED';
   private lastFailureTime = 0;
+  /** A HALF_OPEN probe is running: the other calls are rejected until it settles */
+  private probing = false;
   private readonly isFailure: (err: unknown) => boolean;
 
   constructor({
@@ -205,6 +207,12 @@ export class CircuitBreaker {
       }
     }
 
+    const isProbe = this.state === 'HALF_OPEN';
+    if (isProbe) {
+      if (this.probing) throw new CircuitOpenError(this.name);
+      this.probing = true;
+    }
+
     try {
       const result = await fn();
       this.onSuccess();
@@ -214,6 +222,8 @@ export class CircuitBreaker {
       if (this.isFailure(err)) this.onFailure();
       else this.onSuccess();
       throw err;
+    } finally {
+      if (isProbe) this.probing = false;
     }
   }
 

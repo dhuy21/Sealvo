@@ -62,7 +62,12 @@ describe('EmailQueueService consumer dedup', () => {
   };
 
   beforeEach(async () => {
-    channel = { ack: vi.fn(), nack: vi.fn(), sendToQueue: vi.fn() };
+    channel = {
+      ack: vi.fn(),
+      nack: vi.fn(),
+      // Broker confirm
+      sendToQueue: vi.fn((_q, _c, _o, cb: (err: null) => void) => cb(null)),
+    };
     cache = { get: vi.fn().mockResolvedValue(null), set: vi.fn() };
     emailService = { sendEmail: vi.fn().mockResolvedValue(true) };
 

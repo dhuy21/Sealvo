@@ -11,6 +11,13 @@ import { JOB_TTL_SECONDS } from '@sealvo/shared';
 import { RedisService } from '../redis/redis.service.js';
 import { REDIS_KEYS } from '../redis/cache-keys.constants.js';
 
+export interface JobMeta {
+  /** Owner: only they can read the job or follow its events */
+  userId?: string;
+  packageId?: string;
+  wordCount?: number;
+}
+
 export interface Job {
   id: string;
   type: string;
@@ -18,7 +25,7 @@ export interface Job {
   progress: { current: number; total: number; phase: string } | null;
   result: Record<string, unknown> | null;
   error: string | null;
-  meta: Record<string, unknown>;
+  meta: JobMeta;
   createdAt: number;
   updatedAt: number;
 }
@@ -32,7 +39,7 @@ export class JobTrackerService implements OnModuleDestroy {
 
   constructor(private readonly redis: RedisService) {}
 
-  async create(type: string, meta: Record<string, unknown> = {}): Promise<Job | null> {
+  async create(type: string, meta: JobMeta = {}): Promise<Job | null> {
     if (!this.redis.isReady()) return null;
     const id = randomUUID();
     const job: Job = {
@@ -51,8 +58,8 @@ export class JobTrackerService implements OnModuleDestroy {
       const client = this.redis.getClient()!;
       await client.set(REDIS_KEYS.job(id), JSON.stringify(job), { EX: JOB_TTL_SECONDS });
       if (meta.userId) {
-        await client.sAdd(REDIS_KEYS.userJobs(String(meta.userId)), id);
-        await client.expire(REDIS_KEYS.userJobs(String(meta.userId)), JOB_TTL_SECONDS);
+        await client.sAdd(REDIS_KEYS.userJobs(meta.userId), id);
+        await client.expire(REDIS_KEYS.userJobs(meta.userId), JOB_TTL_SECONDS);
       }
       await client.publish(REDIS_KEYS.jobEvents(id), JSON.stringify(job));
       return job;
@@ -158,7 +165,7 @@ export class JobTrackerService implements OnModuleDestroy {
       if (raw) {
         const job = JSON.parse(raw) as Job;
         if (job.meta?.userId) {
-          await client.sRem(REDIS_KEYS.userJobs(String(job.meta.userId)), id);
+          await client.sRem(REDIS_KEYS.userJobs(job.meta.userId), id);
         }
       }
       await client.del(REDIS_KEYS.job(id));

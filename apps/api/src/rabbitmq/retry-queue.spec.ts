@@ -39,18 +39,39 @@ describe('RetryQueue', () => {
     ).toBe(1);
   });
 
-  it('retries until maxRetries, then parks the message in the failed queue', () => {
-    const ch = { ack: vi.fn(), nack: vi.fn(), sendToQueue: vi.fn() };
+  const confirmingChannel = (err: Error | null = null) => ({
+    ack: vi.fn(),
+    nack: vi.fn(),
+    sendToQueue: vi.fn((_q: string, _c: Buffer, _o: object, cb: (e: Error | null) => void) =>
+      cb(err),
+    ),
+  });
+
+  it('retries until maxRetries, then parks the message in the failed queue', async () => {
+    const ch = confirmingChannel();
     const retried = message([{ queue: 'job.process', reason: 'rejected', count: 1 }]);
-    queue.reject(retried, ch as unknown as ConfirmChannel);
+    await queue.reject(retried, ch as unknown as ConfirmChannel);
     expect(ch.nack).toHaveBeenCalledWith(retried, false, false);
     expect(ch.sendToQueue).not.toHaveBeenCalled();
 
     const exhausted = message([{ queue: 'job.process', reason: 'rejected', count: 2 }]);
-    queue.reject(exhausted, ch as unknown as ConfirmChannel);
-    expect(ch.sendToQueue).toHaveBeenCalledWith('job.failed', exhausted.content, {
-      persistent: true,
-    });
+    await queue.reject(exhausted, ch as unknown as ConfirmChannel);
+    expect(ch.sendToQueue).toHaveBeenCalledWith(
+      'job.failed',
+      exhausted.content,
+      { persistent: true },
+      expect.any(Function),
+    );
     expect(ch.ack).toHaveBeenCalledWith(exhausted);
+  });
+
+  it('keeps the message (retry queue) when the broker does not confirm the parked copy', async () => {
+    const ch = confirmingChannel(new Error('nack'));
+    const exhausted = message([{ queue: 'job.process', reason: 'rejected', count: 2 }]);
+
+    await queue.reject(exhausted, ch as unknown as ConfirmChannel);
+
+    expect(ch.ack).not.toHaveBeenCalled();
+    expect(ch.nack).toHaveBeenCalledWith(exhausted, false, false);
   });
 });

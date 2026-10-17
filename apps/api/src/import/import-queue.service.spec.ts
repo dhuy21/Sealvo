@@ -68,7 +68,12 @@ describe('ImportQueueService consumer', () => {
       .map((p: { current: number }) => p.current);
 
   beforeEach(async () => {
-    channel = { ack: vi.fn(), nack: vi.fn(), sendToQueue: vi.fn() };
+    channel = {
+      ack: vi.fn(),
+      nack: vi.fn(),
+      // Broker confirm
+      sendToQueue: vi.fn((_q, _c, _o, cb: (err: null) => void) => cb(null)),
+    };
     jobTracker = { update: vi.fn().mockResolvedValue(true) };
     wordsService = {
       addWords: vi.fn(async (_packageId: number, data: unknown[], { onProgress }) => {
@@ -175,9 +180,12 @@ describe('ImportQueueService consumer', () => {
 
     await run(msg);
 
-    expect(channel.sendToQueue).toHaveBeenCalledWith('import.failed', msg.content, {
-      persistent: true,
-    });
+    expect(channel.sendToQueue).toHaveBeenCalledWith(
+      'import.failed',
+      msg.content,
+      { persistent: true },
+      expect.any(Function),
+    );
     expect(channel.ack).toHaveBeenCalledWith(msg);
     expect(jobTracker.update).toHaveBeenLastCalledWith(
       'job-1',
