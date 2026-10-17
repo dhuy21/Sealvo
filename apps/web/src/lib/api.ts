@@ -19,15 +19,15 @@ api.interceptors.request.use((config) => {
 
 // ── Response interceptor: 401 → refresh → retry ──
 /** sessionEnded: the API rejected the refresh cookie, as opposed to the API being unreachable */
-type RefreshResult = { token: string } | { token: null; sessionEnded: boolean };
+export type RefreshResult = { token: string } | { token: null; sessionEnded: boolean };
 
 let refreshPromise: Promise<RefreshResult> | null = null;
 
 /**
- * Refresh after a 401, shared by every caller. Logs out only when the refresh cookie is no longer
- * valid: an API outage or a 429 keeps the session, the next request refreshes again.
+ * Refresh shared by every caller. Logs out only when the refresh cookie is no longer valid: an
+ * API outage or a 429 keeps the session, the next request refreshes again.
  */
-export async function renewAccessToken(): Promise<string | null> {
+export async function renewSession(): Promise<RefreshResult> {
   // Deduplicate concurrent refresh calls
   if (!refreshPromise) {
     refreshPromise = refreshAcrossTabs().finally(() => {
@@ -37,7 +37,12 @@ export async function renewAccessToken(): Promise<string | null> {
 
   const result = await refreshPromise;
   if (result.token === null && result.sessionEnded) useAuthStore.getState().logout();
-  return result.token;
+  return result;
+}
+
+/** The new access token, or null (see renewSession) */
+export async function renewAccessToken(): Promise<string | null> {
+  return (await renewSession()).token;
 }
 
 api.interceptors.response.use(

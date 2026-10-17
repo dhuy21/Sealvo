@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
-import { fetchMe } from '@/hooks/use-auth';
-import { renewAccessToken } from '@/lib/api';
+import { restoreSession } from '@/lib/restore-session';
 import { useAuthStore } from '@/stores/auth.store';
+
+/** While the API cannot answer, guarded pages wait (spinner) instead of sending to /login */
+const RETRY_DELAYS_MS = [2_000, 5_000, 10_000, 30_000];
 
 /**
  * On app load: try POST /auth/refresh (httpOnly cookie, path /auth).
@@ -16,27 +18,28 @@ export function AuthInitializer({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
-    async function restore() {
-      try {
-        // Shared with the 401 interceptor and StrictMode's second run: one rotation, not two
-        const token = await renewAccessToken();
-        if (!token) {
-          if (!cancelled) logout();
-          return;
-        }
-        const user = await fetchMe();
-        if (!cancelled) login(user, token);
-      } catch {
-        if (!cancelled) logout();
-      } finally {
-        if (!cancelled) setReady();
+    async function restore(attempt: number) {
+      const session = await restoreSession();
+      if (cancelled) return;
+      // Logged in from the login page meanwhile: nothing to restore
+      if (useAuthStore.getState().isAuthenticated) return setReady();
+
+      if (session.status === 'unreachable') {
+        const delay = RETRY_DELAYS_MS[Math.min(attempt, RETRY_DELAYS_MS.length - 1)];
+        timer = setTimeout(() => void restore(attempt + 1), delay);
+        return;
       }
+      if (session.status === 'restored') login(session.user, session.token);
+      else logout();
+      setReady();
     }
 
-    void restore();
+    void restore(0);
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
   }, [login, logout, setReady]);
 
