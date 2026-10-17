@@ -89,19 +89,28 @@ export class ImportQueueService {
       }
 
       const { jobId, wordsData, packageId, userId } = payload;
+      const total = wordsData.length;
+      // Publish saving progress about every 5%
+      const step = Math.max(1, Math.floor(total / 20));
 
       try {
         await this.jobTracker.update(jobId, {
           status: 'processing',
-          progress: { current: 0, total: wordsData.length, phase: 'parsing' },
+          progress: { current: 0, total, phase: 'parsing' },
         });
 
         // Reuse WordsService.addWords (Gemini enrichment + find-or-create + transaction)
-        const result = await this.wordsService.addWords(packageId, wordsData, (phase) =>
-          this.jobTracker.update(jobId, {
-            progress: { current: 0, total: wordsData.length, phase },
-          }),
-        );
+        const result = await this.wordsService.addWords(packageId, wordsData, {
+          jobId,
+          onProgress: async (phase, current) => {
+            if (current % step === 0 || current === total) {
+              await this.jobTracker.update(jobId, { progress: { current, total, phase } });
+            }
+          },
+        });
+        if (result.alreadyApplied) {
+          this.logger.warn(`Job ${jobId} was already applied by an earlier delivery — not saving again.`);
+        }
 
         await this.jobTracker.update(jobId, {
           status: 'completed',

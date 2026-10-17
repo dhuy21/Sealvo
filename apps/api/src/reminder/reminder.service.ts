@@ -9,6 +9,8 @@ import { dueWhereConditions, startOfToday } from '../learning/spaced-repetition.
 const PREVIEW_LIMIT = 5;
 const UNVERIFIED_USER_RETENTION_DAYS = 3;
 const VERIFICATION_RETENTION_DAYS = 15;
+/** Far longer than a queued import job can be redelivered */
+const APPLIED_JOB_RETENTION_DAYS = 7;
 
 /** mail.hbs uses the raw DB values (`0`, `ph.v`), not the Prisma enum names. */
 const LEVEL_DB_VALUE: Record<learning_level, string> = {
@@ -117,6 +119,9 @@ export class ReminderService {
       const now = new Date();
       await this.prisma.refresh_sessions.deleteMany({ where: { expires_at: { lt: now } } });
       await this.prisma.password_reset_tokens.deleteMany({ where: { expires_at: { lt: now } } });
+      await this.prisma.applied_jobs.deleteMany({
+        where: { created_at: { lt: this.retentionCutoff(APPLIED_JOB_RETENTION_DAYS) } },
+      });
     } catch (err) {
       this.logger.error(`Cleanup failed: ${err instanceof Error ? err.message : String(err)}`);
     }

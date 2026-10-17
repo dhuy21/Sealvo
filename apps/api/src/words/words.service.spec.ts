@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
+import { Prisma } from '@prisma/client';
 import { WordsService } from './words.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { GeminiService } from '../gemini/gemini.service.js';
@@ -10,10 +11,12 @@ describe('WordsService', () => {
   let gemini: GeminiService;
   let prisma: {
     $transaction: any;
+    applied_jobs: { findUnique: any };
     learning: { findUnique: any; findMany: any; deleteMany: any };
     word_details: { deleteMany: any };
   };
   let tx: {
+    applied_jobs: { create: any };
     words: { upsert: any };
     word_details: { create: any; update: any };
     learning: { create: any; count: any; update: any };
@@ -35,6 +38,7 @@ describe('WordsService', () => {
 
   beforeEach(async () => {
     tx = {
+      applied_jobs: { create: vi.fn() },
       words: { upsert: vi.fn().mockResolvedValue({ word_id: 1 }) },
       word_details: {
         create: vi.fn().mockResolvedValue({ detail_id: 1 }),
@@ -46,6 +50,7 @@ describe('WordsService', () => {
       $transaction: vi.fn((arg: unknown) =>
         typeof arg === 'function' ? arg(tx) : Promise.all(arg as Promise<unknown>[]),
       ),
+      applied_jobs: { findUnique: vi.fn().mockResolvedValue(null) },
       learning: { findUnique: vi.fn(), findMany: vi.fn(), deleteMany: vi.fn() },
       word_details: { deleteMany: vi.fn() },
     };
@@ -97,13 +102,72 @@ describe('WordsService', () => {
     });
 
     it('should still save words unchanged when GEMINI_API_KEY is missing', async () => {
-      const onPhase = vi.fn().mockResolvedValue(undefined);
-
-      const result = await service.addWords(1, [word(), word({ example: 'A cat.' })], onPhase);
+      const result = await service.addWords(1, [word(), word({ example: 'A cat.' })]);
 
       expect(result.successCount).toBe(2);
       expect(savedExamples()).toEqual(['', 'A cat.']);
-      expect(onPhase.mock.calls).toEqual([['gemini'], ['saving']]);
+    });
+
+    it('should report the gemini phase, then saving progress after each word', async () => {
+      const onProgress = vi.fn().mockResolvedValue(undefined);
+
+      await service.addWords(1, [word(), word()], { onProgress });
+
+      expect(onProgress.mock.calls).toEqual([
+        ['gemini', 0],
+        ['saving', 0],
+        ['saving', 1],
+        ['saving', 2],
+      ]);
+    });
+
+    it('should record the job id in the transaction before saving the words', async () => {
+      const result = await service.addWords(1, [word()], { jobId: 'job-1' });
+
+      expect(tx.applied_jobs.create).toHaveBeenCalledWith({ data: { job_id: 'job-1' } });
+      expect(tx.applied_jobs.create.mock.invocationCallOrder[0]).toBeLessThan(
+        tx.words.upsert.mock.invocationCallOrder[0],
+      );
+      expect(result).toMatchObject({ successCount: 1, alreadyApplied: false });
+    });
+
+    it('should save nothing again when the job was already applied by an earlier delivery', async () => {
+      tx.applied_jobs.create.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+          code: 'P2002',
+          clientVersion: 'test',
+          meta: { target: 'PRIMARY' },
+        }),
+      );
+
+      const result = await service.addWords(1, [word(), word()], { jobId: 'job-1' });
+
+      expect(tx.words.upsert).not.toHaveBeenCalled();
+      expect(tx.word_details.create).not.toHaveBeenCalled();
+      expect(tx.learning.create).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        message: '2 mot(s) ajouté(s) avec succès',
+        successCount: 2,
+        alreadyApplied: true,
+      });
+    });
+
+    it('should skip Gemini and the transaction when the job is already recorded', async () => {
+      prisma.applied_jobs.findUnique.mockResolvedValue({ job_id: 'job-1' });
+      const generate = vi.spyOn(gemini, 'generateExample');
+
+      const result = await service.addWords(1, [word(), word()], { jobId: 'job-1' });
+
+      expect(generate).not.toHaveBeenCalled();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(result).toMatchObject({ successCount: 2, alreadyApplied: true });
+    });
+
+    it('should not record a marker without a job id (synchronous save)', async () => {
+      await service.addWords(1, [word()]);
+
+      expect(tx.applied_jobs.create).not.toHaveBeenCalled();
+      expect(tx.learning.create).toHaveBeenCalledTimes(1);
     });
 
     it('should upsert the base word on its unique key with a long transaction timeout', async () => {

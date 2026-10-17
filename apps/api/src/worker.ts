@@ -8,13 +8,13 @@
  */
 
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module.js';
+import { WorkerModule } from './worker.module.js';
 import { RabbitmqService } from './rabbitmq/rabbitmq.service.js';
 import { EmailQueueService } from './email/email-queue.service.js';
 import { ImportQueueService } from './import/import-queue.service.js';
 
 async function bootstrap() {
-  const app = await NestFactory.createApplicationContext(AppModule);
+  const app = await NestFactory.createApplicationContext(WorkerModule);
 
   const rabbitmq = app.get(RabbitmqService);
   if (!rabbitmq.isReady()) {

@@ -8,6 +8,7 @@ import { AppModule } from './app.module.js';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.enableShutdownHooks();
 
   // Behind Railway's proxy: rate limiting must key on the client IP, not the proxy's
   if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging') {

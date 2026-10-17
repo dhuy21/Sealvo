@@ -11,7 +11,7 @@ CREATE TABLE `email_verification` (
     INDEX `idx_user_id`(`user_id`),
     INDEX `ux_token_hash`(`token_hash`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
 -- CreateTable
 CREATE TABLE `learning` (
@@ -23,7 +23,7 @@ CREATE TABLE `learning` (
 
     INDEX `idx_learning_pkg_lvl_date`(`package_id`, `level`, `date_memorized`),
     PRIMARY KEY (`detail_id`, `package_id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
 -- CreateTable
 CREATE TABLE `packages` (
@@ -38,7 +38,7 @@ CREATE TABLE `packages` (
     INDEX `idx_packages_mode_created`(`mode`, `created_at`),
     INDEX `user_id`(`user_id`),
     PRIMARY KEY (`package_id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
 -- CreateTable
 CREATE TABLE `schema_migrations` (
@@ -46,7 +46,7 @@ CREATE TABLE `schema_migrations` (
     `applied_at` TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
 
     PRIMARY KEY (`name`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
 -- CreateTable
 CREATE TABLE `user_best_scores` (
@@ -57,7 +57,7 @@ CREATE TABLE `user_best_scores` (
     `last_played_at` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
 
     PRIMARY KEY (`user_id`, `game_type`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
 -- CreateTable
 CREATE TABLE `users` (
@@ -78,7 +78,7 @@ CREATE TABLE `users` (
     UNIQUE INDEX `email`(`email`),
     INDEX `idx_users_verified_created`(`is_verified`, `created_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
 -- CreateTable
 CREATE TABLE `word_details` (
@@ -94,7 +94,7 @@ CREATE TABLE `word_details` (
 
     INDEX `word_id`(`word_id`),
     PRIMARY KEY (`detail_id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
 -- CreateTable
 CREATE TABLE `words` (
@@ -106,7 +106,7 @@ CREATE TABLE `words` (
 
     UNIQUE INDEX `uq_words_word_subject_lang`(`word`, `subject`, `language_code`),
     PRIMARY KEY (`word_id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
 -- AddForeignKey
 ALTER TABLE `email_verification` ADD CONSTRAINT `email_verification_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

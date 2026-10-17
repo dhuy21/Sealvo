@@ -11,6 +11,16 @@ const LEVEL_PROGRESS_TTL = 3 * 60 * 60; // 3 hours
 /** Hash field of the level-progress key: one per completed game */
 const progressField = (level: string, gameType: string) => `${level}:${gameType}`;
 
+/** Rebuild the { level: { game: true } } shape from the hash fields */
+function toProgress(fields: Record<string, string>): Record<string, Record<string, boolean>> {
+  const progress: Record<string, Record<string, boolean>> = {};
+  for (const field of Object.keys(fields)) {
+    const [level, gameType] = field.split(':');
+    progress[level] = { ...progress[level], [gameType]: true };
+  }
+  return progress;
+}
+
 @Injectable()
 export class LearningService {
   constructor(
@@ -38,10 +48,15 @@ export class LearningService {
     }
 
     const key = CACHE_KEYS.levelProgress(userId);
-    await this.cache.hSet(key, progressField(currentLevel, gameType), '1', LEVEL_PROGRESS_TTL);
+    const stored = await this.cache.hSet(key, progressField(currentLevel, gameType), '1', LEVEL_PROGRESS_TTL);
 
-    const progress = await this.getUserProgress(userId);
-    progress[currentLevel] = { ...progress[currentLevel], [gameType]: true };
+    const fields = await this.cache.hGetAll(key);
+    const progress = toProgress(fields ?? {});
+    // Without Redis (null) the current game alone counts; with Redis it counts only once stored,
+    // otherwise the HDEL below would wipe the saved games without promoting
+    if (stored || fields === null) {
+      progress[currentLevel] = { ...progress[currentLevel], [gameType]: true };
+    }
 
     // Check if all required games are done
     const requiredGames = LEVEL_GAMES[currentLevel];
@@ -87,7 +102,7 @@ export class LearningService {
    * Get current level progress for a user
    */
   async getLevelProgress(userId: string) {
-    return this.getUserProgress(userId);
+    return toProgress((await this.cache.hGetAll(CACHE_KEYS.levelProgress(userId))) ?? {});
   }
 
   /**
@@ -186,15 +201,5 @@ export class LearningService {
     });
 
     return result.count;
-  }
-
-  private async getUserProgress(userId: string): Promise<Record<string, Record<string, boolean>>> {
-    const fields = (await this.cache.hGetAll(CACHE_KEYS.levelProgress(userId))) ?? {};
-    const progress: Record<string, Record<string, boolean>> = {};
-    for (const field of Object.keys(fields)) {
-      const [level, gameType] = field.split(':');
-      progress[level] = { ...progress[level], [gameType]: true };
-    }
-    return progress;
   }
 }

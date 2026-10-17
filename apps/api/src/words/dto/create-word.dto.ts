@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
-import { VALID_LANGS } from '@sealvo/shared';
+import { LEVELS, VALID_LANGS, WORD_TYPES, type Level, type WordType } from '@sealvo/shared';
 
 /** Upper bound for TEXT columns (meaning, synonyms, antonyms, example, grammar) */
 export const TEXT_MAX_LENGTH = 2000;
@@ -23,9 +23,9 @@ export class CreateWordDto {
   @MaxLength(255)
   subject!: string;
 
-  @ApiProperty({ enum: ['noun', 'verb', 'adjective', 'adverb', 'ph_v', 'idiom', 'collocation'] })
-  @IsEnum(['noun', 'verb', 'adjective', 'adverb', 'ph_v', 'idiom', 'collocation'] as const)
-  type!: string;
+  @ApiProperty({ enum: WORD_TYPES })
+  @IsEnum(WORD_TYPES)
+  type!: WordType;
 
   @ApiProperty({ example: 'a greeting' })
   @IsString()
@@ -63,8 +63,8 @@ export class CreateWordDto {
   @MaxLength(TEXT_MAX_LENGTH)
   grammar?: string;
 
-  @ApiProperty({ enum: ['x', 'level_0', 'level_1', 'level_2', 'v'], default: 'x' })
+  @ApiProperty({ enum: LEVELS, default: 'x' })
   @IsOptional()
-  @IsEnum(['x', 'level_0', 'level_1', 'level_2', 'v'] as const)
-  level?: string;
+  @IsEnum(LEVELS)
+  level?: Level;
 }

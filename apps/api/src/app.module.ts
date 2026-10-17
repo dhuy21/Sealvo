@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_FILTER, APP_GUARD, Reflector } from '@nestjs/core';
+import { validateApiEnv } from './config/env.validation.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { RabbitmqModule } from './rabbitmq/rabbitmq.module.js';
 import { RedisModule } from './redis/redis.module.js';
@@ -32,6 +33,7 @@ import { AppService } from './app.service.js';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '../../.env',
+      validate: validateApiEnv,
     }),
     ThrottlerModule.forRootAsync({
       inject: [RedisService, Reflector],

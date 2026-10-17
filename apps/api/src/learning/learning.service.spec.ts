@@ -101,6 +101,22 @@ describe('LearningService', () => {
       expect(prisma.learning.updateMany).toHaveBeenCalledTimes(1);
     });
 
+    it('does not count a game whose HSET failed while Redis is up, keeping the stored progress', async () => {
+      await service.trackGameCompletion('u1', 'flash_match', true, 7);
+      await service.trackGameCompletion('u1', 'vocab_quiz', true, 7);
+      cache.hSet.mockResolvedValueOnce(false);
+
+      await expect(service.trackGameCompletion('u1', 'test_pronun', true, 7)).resolves.toEqual({
+        success: true,
+        level_completed: false,
+        game_tracked: 'test_pronun',
+        missing_games: ['test_pronun'],
+      });
+      expect(cache.hDel).not.toHaveBeenCalled();
+      expect(prisma.learning.updateMany).not.toHaveBeenCalled();
+      await expect(service.getLevelProgress('u1')).resolves.toEqual({ x: { flash_match: true, vocab_quiz: true } });
+    });
+
     it('still promotes a single-game level when Redis is unavailable', async () => {
       cache.hSet.mockResolvedValue(false);
       cache.hGetAll.mockResolvedValue(null);

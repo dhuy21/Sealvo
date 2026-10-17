@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { learning_level, Prisma, word_details_type } from '@prisma/client';
+import { Prisma, type learning_level, type word_details_type } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { GeminiService, type ExamplePayload } from '../gemini/gemini.service.js';
 import { isDue, startOfToday } from '../learning/spaced-repetition.js';
@@ -28,6 +28,17 @@ function upsertWord(
     update: {},
     create: key,
   });
+}
+
+/** Record the job inside the import transaction; false when an earlier delivery already committed it */
+async function claimJob(tx: Prisma.TransactionClient, jobId: string): Promise<boolean> {
+  try {
+    await tx.applied_jobs.create({ data: { job_id: jobId } });
+    return true;
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') return false;
+    throw error;
+  }
 }
 
 @Injectable()
@@ -129,19 +140,33 @@ export class WordsService {
   /**
    * Add words to a package (Gemini enrichment, then single transaction)
    * Source: wordProcessingService.js processWords() + words.js create() — fix #63: batch in single transaction
+   * With a jobId, a job already applied by an earlier delivery saves nothing again.
    */
   async addWords(
     packageId: number,
     wordsData: CreateWordDto[],
-    onPhase?: (phase: 'gemini' | 'saving') => Promise<unknown>,
+    {
+      jobId,
+      onProgress,
+    }: {
+      jobId?: string;
+      /** current = words saved so far */
+      onProgress?: (phase: 'gemini' | 'saving', current: number) => Promise<unknown>;
+    } = {},
   ) {
-    await onPhase?.('gemini');
+    if (jobId && (await this.prisma.applied_jobs.findUnique({ where: { job_id: jobId } }))) {
+      return this.addWordsResult(wordsData.length, true);
+    }
+
+    await onProgress?.('gemini', 0);
     await this.enrichWithGemini(wordsData);
-    await onPhase?.('saving');
+    await onProgress?.('saving', 0);
 
     let successCount = 0;
 
-    await this.prisma.$transaction(async (tx) => {
+    const applied = await this.prisma.$transaction(async (tx) => {
+      if (jobId && !(await claimJob(tx, jobId))) return false;
+
       for (const wordData of wordsData) {
         const wordRecord = await upsertWord(tx, {
           word: wordData.word,
@@ -173,12 +198,20 @@ export class WordsService {
         });
 
         successCount++;
+        await onProgress?.('saving', successCount);
       }
+      return true;
     }, TX_OPTIONS);
 
+    return applied ? this.addWordsResult(successCount, false) : this.addWordsResult(wordsData.length, true);
+  }
+
+  /** An already applied job reports every word: the earlier transaction was all-or-nothing */
+  private addWordsResult(successCount: number, alreadyApplied: boolean) {
     return {
       message: `${successCount} mot(s) ajouté(s) avec succès`,
       successCount,
+      alreadyApplied,
     };
   }
 

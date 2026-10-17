@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import * as xlsx from 'xlsx';
-import { VALID_LANGS, VALID_LEVELS, VALID_TYPES } from '@sealvo/shared';
+import { VALID_LANGS, VALID_LEVELS, VALID_TYPES, type WordType } from '@sealvo/shared';
 import { TEXT_MAX_LENGTH, type CreateWordDto } from '../words/dto/create-word.dto.js';
 
 export const MAX_IMPORT_ROWS = 500;
@@ -88,7 +88,7 @@ export class ImportService {
 
     return words.map(({ type, level, ...w }) => ({
       ...w,
-      type: type === 'ph.v' ? 'ph_v' : type,
+      type: (type === 'ph.v' ? 'ph_v' : type) as WordType,
       level: level === '' ? undefined : DB_LEVEL_TO_ENUM[level],
     }));
   }

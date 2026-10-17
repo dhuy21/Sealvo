@@ -11,7 +11,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import cron from 'node-cron';
-import { AppModule } from './app.module.js';
+import { SchedulerModule } from './scheduler.module.js';
 import { RedisService } from './redis/redis.service.js';
 
 interface ScheduledTask {
@@ -37,7 +37,7 @@ const REDIS_PREFIX = 'scheduler:';
 const REQUEST_TIMEOUT_MS = 120_000;
 
 async function bootstrap() {
-  const app = await NestFactory.createApplicationContext(AppModule);
+  const app = await NestFactory.createApplicationContext(SchedulerModule);
 
   const config = app.get(ConfigService);
   const redis = app.get(RedisService);

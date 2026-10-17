@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
-import { VALID_LANGS } from '@sealvo/shared';
+import { LEVELS, VALID_LANGS, WORD_TYPES, type Level, type WordType } from '@sealvo/shared';
 import { LANGUAGE_CODE_MESSAGE, TEXT_MAX_LENGTH } from './create-word.dto.js';
 
 export class UpdateWordDto {
@@ -23,10 +23,10 @@ export class UpdateWordDto {
   @MaxLength(255)
   subject?: string;
 
-  @ApiProperty({ enum: ['noun', 'verb', 'adjective', 'adverb', 'ph_v', 'idiom', 'collocation'], required: false })
+  @ApiProperty({ enum: WORD_TYPES, required: false })
   @IsOptional()
-  @IsEnum(['noun', 'verb', 'adjective', 'adverb', 'ph_v', 'idiom', 'collocation'] as const)
-  type?: string;
+  @IsEnum(WORD_TYPES)
+  type?: WordType;
 
   @ApiProperty({ example: 'a greeting', required: false })
   @IsOptional()
@@ -65,8 +65,8 @@ export class UpdateWordDto {
   @MaxLength(TEXT_MAX_LENGTH)
   grammar?: string;
 
-  @ApiProperty({ enum: ['x', 'level_0', 'level_1', 'level_2', 'v'], required: false })
+  @ApiProperty({ enum: LEVELS, required: false })
   @IsOptional()
-  @IsEnum(['x', 'level_0', 'level_1', 'level_2', 'v'] as const)
-  level?: string;
+  @IsEnum(LEVELS)
+  level?: Level;
 }

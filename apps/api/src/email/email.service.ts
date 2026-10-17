@@ -7,10 +7,13 @@ import handlebars from 'handlebars';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { isTransientError, withRetry, withTimeout } from '@sealvo/shared';
+import { isTransientError, TimeoutError, withRetry, withTimeout } from '@sealvo/shared';
 
 const SEND_TIMEOUT_MS = 10_000;
 const SEND_RETRY_DELAY_MS = 1_000;
+
+// The timeout does not cancel the underlying send, which may still be delivered: never resend after it
+const isRetryableSendError = (err: unknown) => !(err instanceof TimeoutError) && isTransientError(err);
 
 // Same depth from src/email (tests) and dist/email (runtime), independent of the process cwd
 const TEMPLATES_DIR = fileURLToPath(new URL('../../templates/mails/', import.meta.url));
@@ -74,7 +77,7 @@ export class EmailService {
               }),
             SEND_TIMEOUT_MS,
           ),
-        { retries, delay: SEND_RETRY_DELAY_MS, shouldRetry: isTransientError },
+        { retries, delay: SEND_RETRY_DELAY_MS, shouldRetry: isRetryableSendError },
       );
 
       if (result?.messageId) {
@@ -86,6 +89,10 @@ export class EmailService {
       }
       return true;
     } catch (error) {
+      if (error instanceof TimeoutError) {
+        this.logger.warn(`Email possibly sent, not retrying: ${error.message}`);
+        return true;
+      }
       this.logger.error(
         `Failed to send email: ${error instanceof Error ? error.message : error}`,
       );
