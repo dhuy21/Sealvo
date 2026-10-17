@@ -31,7 +31,7 @@ function PackageModalContent({ editPkg, onClose, onSubmit, saving }: PackageModa
 
   return (
     <div
-      className={cx(styles, 'modal-overlay')}
+      className={cx(styles, 'modal-overlay', 'active')}
       style={{ display: 'flex' }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
