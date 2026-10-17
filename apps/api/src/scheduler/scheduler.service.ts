@@ -3,11 +3,12 @@ import cron from 'node-cron';
 import { schedulerConfig, type SchedulerConfig } from '../config/scheduler.config.js';
 import { RedisService } from '../redis/redis.service.js';
 import { REDIS_KEYS } from '../redis/cache-keys.constants.js';
-import { dailyCron, maxGapMs } from './daily-schedule.js';
+import { dailyCron, maxGapMs, msUntilNextRun } from './daily-schedule.js';
 import { errorMessage } from '../common/utils/error-message.js';
 
 export interface ScheduledTask {
   name: string;
+  hours: readonly number[];
   cron: string;
   endpoint: string;
   maxGapMs: number;
@@ -19,6 +20,7 @@ const REMINDER_HOURS = [6, 12, 18, 23];
 export const TASKS: ScheduledTask[] = [
   {
     name: 'reminder',
+    hours: REMINDER_HOURS,
     cron: dailyCron(REMINDER_HOURS),
     endpoint: '/api/reminder',
     maxGapMs: maxGapMs(REMINDER_HOURS),
@@ -28,6 +30,8 @@ export const TASKS: ScheduledTask[] = [
 
 const CRON_TIMEZONE = 'Europe/Paris';
 const REQUEST_TIMEOUT_MS = 120_000;
+/** Closer to the next scheduled run than this, a catch-up would only send the same batch twice */
+const CATCH_UP_MIN_LEAD_MS = 3_600_000;
 
 /** Triggers the API's task endpoints on cron; runs no business logic itself (Celery Beat pattern) */
 @Injectable()
@@ -51,6 +55,10 @@ export class SchedulerService implements OnModuleDestroy {
       }
       const elapsed = Date.now() - lastRun;
       if (elapsed > task.maxGapMs) {
+        if (msUntilNextRun(task.hours, new Date(), CRON_TIMEZONE) < CATCH_UP_MIN_LEAD_MS) {
+          this.logger.log(`"${task.name}": next scheduled run is under 1h away — no catch-up.`);
+          continue;
+        }
         const hoursAgo = (elapsed / 3_600_000).toFixed(1);
         this.logger.log(
           `"${task.name}": last run ${hoursAgo}h ago (max gap: ${task.maxGapMs / 3_600_000}h) — catching up now.`,

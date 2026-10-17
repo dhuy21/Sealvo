@@ -5,6 +5,7 @@ import type { SchedulerConfig } from '../config/scheduler.config.js';
 const HOUR = 3_600_000;
 const task: ScheduledTask = {
   name: 'reminder',
+  hours: [6],
   cron: '0 6 * * *',
   endpoint: '/api/reminder',
   maxGapMs: 7 * HOUR,
@@ -17,6 +18,8 @@ describe('SchedulerService', () => {
   let service: SchedulerService;
 
   beforeEach(() => {
+    // 12:00 in Paris: the next run (06:00) is 18 h away
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-17T10:00:00Z') });
     client = { get: vi.fn(), set: vi.fn() };
     fetchMock = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
     vi.stubGlobal('fetch', fetchMock);
@@ -27,7 +30,10 @@ describe('SchedulerService', () => {
     );
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
 
   it('catches up a task whose last run is older than its max gap, then records the run', async () => {
     client.get.mockResolvedValue(String(Date.now() - 8 * HOUR));
@@ -49,6 +55,15 @@ describe('SchedulerService', () => {
     client.get.mockResolvedValueOnce(String(Date.now() - HOUR)).mockResolvedValueOnce(null);
 
     await service.catchUp([task, task]);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('leaves a missed run to the next scheduled one when it is under 1 h away', async () => {
+    vi.setSystemTime(new Date('2026-10-17T03:30:00Z')); // 05:30 in Paris
+    client.get.mockResolvedValue(String(Date.now() - 8 * HOUR));
+
+    await service.catchUp([task]);
 
     expect(fetchMock).not.toHaveBeenCalled();
   });
