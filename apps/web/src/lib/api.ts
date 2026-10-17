@@ -84,10 +84,14 @@ async function refreshAcrossTabs(): Promise<RefreshResult> {
   return await navigator.locks.request('sealvo-refresh', refreshAccessToken);
 }
 
+/** Runs while holding the cross-tab lock: an API that never answers must not block every tab */
+const REFRESH_TIMEOUT_MS = 15_000;
+
 async function refreshAccessToken(): Promise<RefreshResult> {
   try {
     const { data } = await axios.post<{ accessToken: string }>(`${apiUrl()}/auth/refresh`, null, {
       withCredentials: true,
+      timeout: REFRESH_TIMEOUT_MS,
     });
     useAuthStore.getState().setAccessToken(data.accessToken);
     return { token: data.accessToken };

@@ -48,6 +48,7 @@ describe('renewAccessToken', () => {
     expect(request).toHaveBeenCalledWith('sealvo-refresh', expect.any(Function));
     expect(axios.post).toHaveBeenCalledWith('http://api.test/auth/refresh', null, {
       withCredentials: true,
+      timeout: 15_000,
     });
     expect(useAuthStore.getState().accessToken).toBe('new-token');
   });

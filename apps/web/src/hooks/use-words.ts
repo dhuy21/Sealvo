@@ -121,9 +121,11 @@ export function useDeleteAllWords(packageId: number) {
       const { data } = await api.delete(`/packages/${packageId}/words`);
       return data;
     },
-    // The words queries are invalidated by the caller once its exit animation has played
+    // The caller refetches the words once its exit animation has played; marked stale now, so a
+    // page left before that does not show the deleted words from the cache
     onSuccess: () => {
       invalidate(qc, queryKeys.games(), queryKeys.dashboard());
+      void qc.invalidateQueries({ queryKey: queryKeys.words(packageId), refetchType: 'none' });
     },
   });
 }

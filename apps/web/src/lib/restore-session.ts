@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { fetchMe } from '@/hooks/use-auth';
+import { fetchMe } from '@/lib/auth-api';
 import type { User } from '@/stores/auth.store';
 import { renewSession } from './api';
 

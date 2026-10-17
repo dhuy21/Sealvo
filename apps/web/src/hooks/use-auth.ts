@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
-import { useAuthStore, type User } from '@/stores/auth.store';
+import { fetchMe } from '@/lib/auth-api';
+import { useAuthStore } from '@/stores/auth.store';
 
 interface MessageResponse {
   message: string;
@@ -13,15 +14,6 @@ interface RegisterPayload {
   email: string;
   password: string;
   avatar: number;
-}
-
-/** GET /auth/me. Pass `accessToken` when the store does not hold it yet. */
-export async function fetchMe(accessToken?: string): Promise<User> {
-  const { data } = await api.get<User>(
-    '/auth/me',
-    accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : undefined,
-  );
-  return data;
 }
 
 /** Logs in, then stores the user and the access token. */
