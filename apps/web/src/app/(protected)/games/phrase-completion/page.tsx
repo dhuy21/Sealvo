@@ -9,6 +9,10 @@ import { GameDataStatus } from '@/components/games/GameDataStatus';
 import { GameStats } from '@/components/games/GameStats';
 import { GameFooter } from '@/components/games/GameFooter';
 import { StarryBackground } from '@/components/games/phrase-completion/StarryBackground';
+import {
+  createConstellationEffect,
+  createStarParticles,
+} from '@/components/games/phrase-completion/phrase-effects';
 import { PhraseCompletionRules } from '@/components/games/phrase-completion/PhraseCompletionRules';
 import { PhraseBoard } from '@/components/games/phrase-completion/PhraseBoard';
 import { PhraseCompletionSummary } from '@/components/games/phrase-completion/PhraseCompletionSummary';
@@ -139,6 +143,8 @@ function PhraseCompletionInner() {
       setFeedbackMessage(`Correct ! +${totalPoints} points`);
       setFeedbackType('correct');
       setDisplayPhrase(revealAnswers(currentPhrase, cx(styles, 'blank', 'correct')));
+      createStarParticles(true);
+      createConstellationEffect(true);
     } else {
       setStreak(0);
 
@@ -147,6 +153,8 @@ function PhraseCompletionInner() {
       );
       setFeedbackType('incorrect');
       setDisplayPhrase(revealAnswers(currentPhrase, cx(styles, 'blank', 'incorrect')));
+      createStarParticles(false);
+      createConstellationEffect(false);
     }
   }
 

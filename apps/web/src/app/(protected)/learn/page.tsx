@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useReviewWords } from '@/hooks/use-words';
 import { usePackageIdParam } from '@/hooks/use-package-id-param';
 import { LearnSession } from '@/components/learn/LearnSession';
+import { BrowserWarningModal } from '@/components/learn/BrowserWarningModal';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/learn.module.css';
@@ -108,6 +109,7 @@ export default function LearnPage() {
         </div>
       }
     >
+      <BrowserWarningModal />
       <LearnContent />
     </Suspense>
   );
