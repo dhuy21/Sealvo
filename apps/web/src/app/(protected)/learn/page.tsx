@@ -1,8 +1,9 @@
 'use client';
 
 import { Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useReviewWords } from '@/hooks/use-words';
+import { usePackageIdParam } from '@/hooks/use-package-id-param';
 import { LearnSession } from '@/components/learn/LearnSession';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { cx } from '@/lib/css-module';
@@ -12,10 +13,9 @@ import styles from '@/styles/learn.module.css';
 /* LEARN PAGE CONTENT          */
 /* ═══════════════════════════ */
 function LearnContent() {
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const packageId = Number(searchParams.get('package'));
-  const { data: words, isPending, error } = useReviewWords(packageId || null);
+  const packageId = usePackageIdParam();
+  const { data: words, isPending, error } = useReviewWords(packageId);
 
   if (!packageId) {
     return (

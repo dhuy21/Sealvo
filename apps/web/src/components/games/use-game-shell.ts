@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import type { GameType } from '@sealvo/shared';
 import { useGameData, useSaveScore } from '@/hooks/use-games';
+import { usePackageIdParam } from '@/hooks/use-package-id-param';
 import { useTimeouts } from '@/hooks/use-timeouts';
 import type { CancelConfetti } from './confetti';
 import type { LevelStatus } from './TrackLevelMessage';
@@ -30,8 +30,7 @@ export function useGameShell(
   gameType: GameType,
   { celebration = noCelebration, trackOnSummary = false }: GameShellOptions = {},
 ) {
-  const searchParams = useSearchParams();
-  const packageId = Number(searchParams.get('package')) || null;
+  const packageId = usePackageIdParam();
 
   const { data: gameData, isLoading, error } = useGameData(gameType, packageId);
   const saveScore = useSaveScore();

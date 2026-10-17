@@ -2,8 +2,8 @@
 
 import { Suspense, type ReactNode } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { usePackage } from '@/hooks/use-packages';
+import { usePackageIdParam } from '@/hooks/use-package-id-param';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { ImportForm } from '@/components/words/ImportForm';
 import { MultiWordForm } from '@/components/words/MultiWordForm';
@@ -27,9 +27,8 @@ function Notice({ children, backHref }: { children: ReactNode; backHref: string 
 }
 
 function AddWordsContent() {
-  const searchParams = useSearchParams();
-  const packageId = Number(searchParams.get('package'));
-  const pkgQuery = usePackage(packageId || null);
+  const packageId = usePackageIdParam();
+  const pkgQuery = usePackage(packageId);
   const wordsHref = `/words?package=${packageId}`;
 
   if (!packageId) {

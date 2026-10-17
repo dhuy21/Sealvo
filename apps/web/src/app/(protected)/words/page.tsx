@@ -1,8 +1,9 @@
 'use client';
 
 import { Suspense, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useWords } from '@/hooks/use-words';
+import { usePackageIdParam } from '@/hooks/use-package-id-param';
 import { usePackage } from '@/hooks/use-packages';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { DeleteAllModal } from '@/components/words/DeleteAllModal';
@@ -17,22 +18,8 @@ import styles from '@/styles/vocabs.module.css';
 import { cx } from '@/lib/css-module';
 
 function WordsContent() {
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const packageId = Number(searchParams.get('package'));
-
-  const pkgQuery = usePackage(packageId || null);
-  const wordsQuery = useWords(packageId || null);
-  const words = wordsQuery.data;
-  const isOwner = pkgQuery.data?.isOwner ?? false;
-
-  const [search, setSearch] = useState('');
-  const levelEntries = useWordsByLevel(words, search);
-  const wordActions = useWordActions(packageId);
-  const deleteAll = useDeleteAllFlow(
-    packageId,
-    levelEntries.map(([level]) => level),
-  );
+  const packageId = usePackageIdParam();
 
   if (!packageId) {
     return (
@@ -47,6 +34,24 @@ function WordsContent() {
       </div>
     );
   }
+
+  return <PackageWords packageId={packageId} />;
+}
+
+function PackageWords({ packageId }: { packageId: number }) {
+  const router = useRouter();
+  const pkgQuery = usePackage(packageId);
+  const wordsQuery = useWords(packageId);
+  const words = wordsQuery.data;
+  const isOwner = pkgQuery.data?.isOwner ?? false;
+
+  const [search, setSearch] = useState('');
+  const levelEntries = useWordsByLevel(words, search);
+  const wordActions = useWordActions(packageId);
+  const deleteAll = useDeleteAllFlow(
+    packageId,
+    levelEntries.map(([level]) => level),
+  );
 
   if (pkgQuery.isLoading || wordsQuery.isLoading) {
     return (
