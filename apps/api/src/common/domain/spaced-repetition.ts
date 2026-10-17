@@ -9,13 +9,17 @@ export function startOfToday(): Date {
 }
 
 /**
- * A word at `level` is due when `date_memorized < dueCutoff(level)`.
- * Same rule as the old SQL: DATE(date_memorized) + INTERVAL n DAY <= CURDATE().
+ * `date < daysCutoff(n)` is the old SQL rule DATE(date) + INTERVAL n DAY <= CURDATE().
  */
-export function dueCutoff(level: Level, today = startOfToday()): Date {
+export function daysCutoff(days: number, today = startOfToday()): Date {
   const cutoff = new Date(today);
-  cutoff.setDate(cutoff.getDate() + 1 - LEVEL_INTERVALS[level]);
+  cutoff.setDate(cutoff.getDate() + 1 - days);
   return cutoff;
+}
+
+/** A word at `level` is due when `date_memorized < dueCutoff(level)`. */
+export function dueCutoff(level: Level, today = startOfToday()): Date {
+  return daysCutoff(LEVEL_INTERVALS[level], today);
 }
 
 /** A null `date_memorized` is never due (the old SQL comparison with NULL was never true). */

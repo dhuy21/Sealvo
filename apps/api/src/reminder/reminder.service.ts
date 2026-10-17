@@ -7,14 +7,9 @@ import { EmailService } from '../email/email.service.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
 import { CacheService } from '../redis/cache.service.js';
 import { CACHE_KEYS, CACHE_TTL } from '../redis/cache-keys.constants.js';
-import { dueWhereConditions, startOfToday } from '../common/domain/spaced-repetition.js';
-import { errorMessage } from '../common/utils/error-message.js';
+import { dueWhereConditions } from '../common/domain/spaced-repetition.js';
 
 const PREVIEW_LIMIT = 5;
-const UNVERIFIED_USER_RETENTION_DAYS = 3;
-const VERIFICATION_RETENTION_DAYS = 15;
-/** Far longer than a queued import job can be redelivered */
-const APPLIED_JOB_RETENTION_DAYS = 7;
 
 interface DueSummary {
   total: number;
@@ -111,29 +106,6 @@ export class ReminderService {
     return { message: "L'email a été envoyé pour tester" };
   }
 
-  /** Delete stale verification tokens and never-verified accounts */
-  async cleanupExpired(): Promise<void> {
-    try {
-      await this.prisma.email_verification.deleteMany({
-        where: { created_at: { lt: this.retentionCutoff(VERIFICATION_RETENTION_DAYS) } },
-      });
-      await this.prisma.users.deleteMany({
-        where: {
-          is_verified: false,
-          created_at: { lt: this.retentionCutoff(UNVERIFIED_USER_RETENTION_DAYS) },
-        },
-      });
-      const now = new Date();
-      await this.prisma.refresh_sessions.deleteMany({ where: { expires_at: { lt: now } } });
-      await this.prisma.password_reset_tokens.deleteMany({ where: { expires_at: { lt: now } } });
-      await this.prisma.applied_jobs.deleteMany({
-        where: { created_at: { lt: this.retentionCutoff(APPLIED_JOB_RETENTION_DAYS) } },
-      });
-    } catch (err) {
-      this.logger.error(`Cleanup failed: ${errorMessage(err)}`);
-    }
-  }
-
   private enqueueReminder(
     user: ReminderUser,
     summary: DueSummary,
@@ -178,13 +150,6 @@ export class ReminderService {
       byUser.set(userId, summary);
     }
     return byUser;
-  }
-
-  /** Same rule as the old SQL: DATE(created_at) + INTERVAL n DAY <= CURDATE() */
-  private retentionCutoff(days: number): Date {
-    const cutoff = startOfToday();
-    cutoff.setDate(cutoff.getDate() + 1 - days);
-    return cutoff;
   }
 
   private toTemplateWord(
