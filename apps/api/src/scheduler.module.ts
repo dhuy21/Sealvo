@@ -6,6 +6,7 @@ import { buildConfig } from './config/build.config.js';
 import { redisConfig } from './config/redis.config.js';
 import { schedulerConfig } from './config/scheduler.config.js';
 import { RedisModule } from './redis/redis.module.js';
+import { SchedulerService } from './scheduler/scheduler.service.js';
 
 @Module({
   imports: [
@@ -18,5 +19,6 @@ import { RedisModule } from './redis/redis.module.js';
     }),
     RedisModule,
   ],
+  providers: [SchedulerService],
 })
 export class SchedulerModule {}
