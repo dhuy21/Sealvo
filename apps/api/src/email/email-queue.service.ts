@@ -40,7 +40,7 @@ export class EmailQueueService implements OnModuleInit {
   }
 
   /** Publish email job to queue; false unless the broker confirmed it */
-  publish(payload: EmailPayload): Promise<boolean> {
+  publish(payload: EmailPayload, messageId: string = randomUUID()): Promise<boolean> {
     return this.rabbitmq.publish(
       QUEUE.exchange,
       QUEUE.routingKey,
@@ -48,19 +48,23 @@ export class EmailQueueService implements OnModuleInit {
       {
         persistent: true,
         contentType: 'application/json',
-        messageId: randomUUID(),
+        messageId,
       },
     );
   }
 
   /** Enqueue via RabbitMQ, fallback to direct send if the queue is unavailable or rejects it */
   async enqueue(payload: EmailPayload): Promise<boolean> {
-    if (await this.publish(payload)) return true;
+    const messageId = randomUUID();
+    if (await this.publish(payload, messageId)) return true;
 
     // Fallback: send directly, without the queue's retries
-    return this.emailService.sendEmail(payload.to, payload.content, payload.subject, {
+    const sent = await this.emailService.sendEmail(payload.to, payload.content, payload.subject, {
       retries: DIRECT_SEND_RETRIES,
     });
+    // An unconfirmed publish may still reach the queue later (broker alarm): the worker skips it
+    if (sent) await this.cache.set(CACHE_KEYS.emailDedup(messageId), 1, CACHE_TTL.EMAIL_DEDUP);
+    return sent;
   }
 
   /** For emails the request depends on: answers 500 with `failureMessage` when neither path took it */

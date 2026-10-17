@@ -4,12 +4,14 @@ describe('EmailQueueService publishing', () => {
   const payload = { to: 'a@test.com', content: '<p>hi</p>', subject: 'S' };
   let rabbitmq: { publish: any; onChannelReady: any };
   let emailService: { sendEmail: any };
+  let cache: { set: any };
   let service: EmailQueueService;
 
   beforeEach(() => {
     rabbitmq = { publish: vi.fn(), onChannelReady: vi.fn() };
     emailService = { sendEmail: vi.fn().mockResolvedValue(true) };
-    service = new EmailQueueService(rabbitmq as any, {} as any, emailService as any);
+    cache = { set: vi.fn() };
+    service = new EmailQueueService(rabbitmq as any, cache as any, emailService as any);
   });
 
   it('asserts its topology on every channel the RabbitMQ service opens', async () => {
@@ -46,6 +48,24 @@ describe('EmailQueueService publishing', () => {
     expect(emailService.sendEmail).toHaveBeenCalledWith('a@test.com', '<p>hi</p>', 'S', {
       retries: 2,
     });
+  });
+
+  it('marks a directly sent email as sent, so a late copy from the queue is skipped', async () => {
+    rabbitmq.publish.mockResolvedValue(false);
+
+    await service.enqueue(payload);
+
+    const { messageId } = rabbitmq.publish.mock.calls[0][3];
+    expect(cache.set).toHaveBeenCalledWith(`email:dedup:${messageId}`, 1, 86_400);
+  });
+
+  it('does not mark an email the direct send could not deliver', async () => {
+    rabbitmq.publish.mockResolvedValue(false);
+    emailService.sendEmail.mockResolvedValue(false);
+
+    await expect(service.enqueue(payload)).resolves.toBe(false);
+
+    expect(cache.set).not.toHaveBeenCalled();
   });
 });
 
