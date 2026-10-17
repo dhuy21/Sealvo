@@ -1,4 +1,5 @@
-# Production Docker Compose — 7 services (+ backup, profile "backup")
+# Production images on one machine — 7 services (+ backup, profile "backup"), to try a change
+# before pushing it. Staging and production run on Railway (docs/railway-setup.md), not from this file.
 # Env file: .env (copy .env.example). Also required here: MYSQL_ROOT_PASSWORD (URL-safe characters,
 # it is put in DATABASE_URL) and MYSQL_DATABASE. DATABASE_URL, Redis, RabbitMQ and the scheduler
 # target are overridden below with the service names, so the localhost values of .env still work.
@@ -50,8 +51,8 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    environment:
+      API_URL: ${API_URL:?API_URL is required}
     ports:
       - '${WEB_PORT:-3000}:3000'
     restart: unless-stopped
@@ -119,7 +120,7 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -P 3306 -uroot -p${MYSQL_ROOT_PASSWORD}']
+      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -P 3306 -uroot -p$${MYSQL_ROOT_PASSWORD}']
       interval: 5s
       timeout: 5s
       retries: 15

@@ -25,35 +25,84 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version-file: .nvmrc
           cache: 'npm'
       - run: npm ci
       - name: NPM audit (production deps)
         run: npm audit --audit-level=critical --omit=dev
-      # Type-aware lint and tests need the generated Prisma client types
-      - run: npx prisma generate --schema=apps/api/prisma/schema.prisma
+      - uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
       - run: npx turbo lint
       - run: npx turbo test
       - run: npx turbo build
+
+  # ── 1b. MIGRATIONS ─────────────────────────────────────────
+  # Applies every migration to an empty MySQL, then fails if schema.prisma has changes
+  # that no migration contains
+  migrations-check:
+    name: Prisma migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/sealvo_ci
+      SHADOW_DATABASE_URL: mysql://root:root@127.0.0.1:3306/sealvo_shadow
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: 'npm'
+      - run: npm ci
+        working-directory: .
+      # Service containers take no command args (no --collation-server): set it per database.
+      # Prisma does not create a missing shadow database.
+      - name: Create databases
+        run: |
+          docker exec ${{ job.services.mysql.id }} mysql -uroot -proot -e "
+            CREATE DATABASE sealvo_ci CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+            CREATE DATABASE sealvo_shadow CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"
+      - run: npx prisma migrate deploy
+      - name: Schema matches migrations
+        run: |
+          npx prisma migrate diff \
+            --from-migrations prisma/migrations \
+            --to-schema-datamodel prisma/schema.prisma \
+            --shadow-database-url "$SHADOW_DATABASE_URL" \
+            --exit-code
 
   # ── 2. BUILD, SCAN & PUSH ──────────────────────────────────
   docker-build-push:
     name: Build & Push (${{ matrix.image }})
     runs-on: ubuntu-latest
-    needs: lint-and-test
+    needs: [lint-and-test, migrations-check]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')
     timeout-minutes: 20
-    # Environment-scoped variables: NEXT_PUBLIC_API_URL differs between staging and production
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
     permissions:
       contents: read
       packages: write
     strategy:
       matrix:
-        include:
-          - { image: api, dockerfile: apps/api/Dockerfile }
-          - { image: web, dockerfile: apps/web/Dockerfile }
-          - { image: backup, dockerfile: apps/api/Dockerfile.backup }
+        # The backup cron only runs in production: staging does not build its image
+        include: ${{ fromJSON(github.ref == 'refs/heads/main' && '[{"image":"api","dockerfile":"apps/api/Dockerfile"},{"image":"web","dockerfile":"apps/web/Dockerfile"},{"image":"backup","dockerfile":"apps/api/Dockerfile.backup"}]' || '[{"image":"api","dockerfile":"apps/api/Dockerfile"},{"image":"web","dockerfile":"apps/web/Dockerfile"}]') }}
     env:
       REGISTRY: ghcr.io
     steps:
@@ -63,25 +112,10 @@ jobs:
         id: image
         run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
-      - name: Resolve tags
+      # Only the immutable commit tag: deploy.yml moves :latest / :staging once the deploy is approved
+      - name: Resolve image
         id: meta
-        run: |
-          IMG="${{ env.REGISTRY }}/${{ steps.image.outputs.name }}/${{ matrix.image }}"
-          case "${{ github.ref }}" in
-            refs/heads/main)
-              TAGS="${IMG}:latest,${IMG}:sha-${{ github.sha }}" ;;
-            refs/heads/staging)
-              TAGS="${IMG}:staging,${IMG}:sha-${{ github.sha }}" ;;
-          esac
-          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
-
-      # An empty value would be baked into the bundle and the site would call the wrong API
-      - name: Check NEXT_PUBLIC_API_URL
-        if: matrix.image == 'web'
-        run: |
-          : "${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL is empty: set it as a variable of the GitHub environment}"
-        env:
-          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+        run: echo "ref=$REGISTRY/${{ steps.image.outputs.name }}/${{ matrix.image }}:sha-${{ github.sha }}" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-buildx-action@v3
 
@@ -91,196 +125,103 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # A commit tag is never overwritten: staging is fast-forwarded into main, so production gets the
+      # exact image built and scanned on staging (a hotfix later fast-forwarded into staging, or a re-run,
+      # reuses its image the same way). Only a commit with no image yet is built below.
+      - name: Reuse an existing build
+        id: existing
+        run: |
+          if docker buildx imagetools inspect "$IMAGE" >/dev/null 2>&1; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::$IMAGE already exists: reused, not rebuilt"
+          fi
+        env:
+          IMAGE: ${{ steps.meta.outputs.ref }}
+
+      # Built into the runner's Docker only: nothing reaches the registry before the scan passes
       - uses: docker/build-push-action@v6
-        id: build
+        if: steps.existing.outputs.found != 'true'
         with:
           context: .
           file: ./${{ matrix.dockerfile }}
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          load: true
+          tags: ${{ steps.meta.outputs.ref }}
           build-args: |
             ${{ matrix.image != 'backup' && format('GIT_SHA={0}', github.sha) || '' }}
-            ${{ matrix.image == 'web' && format('NEXT_PUBLIC_API_URL={0}', vars.NEXT_PUBLIC_API_URL) || '' }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,scope=${{ matrix.image }},mode=max
 
-      # Pinned by digest (aquasec/trivy:0.76.0). The container only gets the registry
-      # credentials, through the environment, to pull the image it scans.
-      # Lists CRITICAL and HIGH, then fails the job (and so blocks the deploy) on fixable CRITICAL only
+      # Pinned by digest (aquasec/trivy:0.76.0). The scanner reads an exported copy of the image
+      # (read-only mount): no Docker socket, no registry credentials.
+      # Lists CRITICAL and HIGH, then fails the job (and so blocks the push and the deploy) on fixable CRITICAL only
       - name: Trivy vulnerability scan
+        if: steps.existing.outputs.found != 'true'
         run: |
+          docker save -o "$RUNNER_TEMP/image.tar" "$IMAGE"
+          # Without capabilities the scanner's root cannot read a file owned by the runner user
+          chmod a+r "$RUNNER_TEMP/image.tar"
           trivy() {
             docker run --rm \
               --cap-drop ALL --security-opt no-new-privileges \
-              -e TRIVY_USERNAME -e TRIVY_PASSWORD \
+              -v "$RUNNER_TEMP/image.tar:/scan/image.tar:ro" \
               aquasec/trivy:0.76.0@sha256:2416d1f74045b57274df1a340eee6b510cacd73c66a6ccb8da092b117eb7d222 image \
-                --ignore-unfixed --format table "$@" "$IMAGE"
+                --input /scan/image.tar --ignore-unfixed --format table "$@"
           }
           trivy --severity CRITICAL,HIGH --exit-code 0
           trivy --severity CRITICAL --exit-code 1 --quiet
+          rm "$RUNNER_TEMP/image.tar"
         env:
-          IMAGE: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}/${{ matrix.image }}@${{ steps.build.outputs.digest }}
-          TRIVY_USERNAME: ${{ github.actor }}
-          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE: ${{ steps.meta.outputs.ref }}
+
+      # The scanned image itself
+      - name: Push
+        if: steps.existing.outputs.found != 'true'
+        run: docker push "$IMAGE"
+        env:
+          IMAGE: ${{ steps.meta.outputs.ref }}
 
       - name: Summary
         if: always()
         run: |
-          echo "### Docker Build — ${{ matrix.image }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Tags:** \`${{ steps.meta.outputs.tags }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Status:** ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "### Docker Build — ${{ matrix.image }}"
+            echo "- **Image:** \`${{ steps.meta.outputs.ref }}\`"
+            echo "- **Source:** ${{ steps.existing.outputs.found == 'true' && 'reused (already built)' || 'built' }}"
+            echo "- **Status:** ${{ job.status }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-  # ── 3a. DEPLOY PRODUCTION ──────────────────────────────────
+  # ── 3. DEPLOY ───────────────────────────────────────────
   deploy-production:
     name: Deploy Production
-    runs-on: ubuntu-latest
     needs: docker-build-push
+    permissions:
+      contents: read
+      packages: write
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    timeout-minutes: 20
-    environment:
-      name: production
-      url: https://www.sealvo.it.com
-    concurrency:
-      group: deploy-production
-      cancel-in-progress: false
-    steps:
-      - name: Redeploy API
-        run: |
-          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
-          npx -y @railway/cli redeploy --service "$RAILWAY_API_SERVICE_ID" --yes
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_API_SERVICE_ID: ${{ secrets.RAILWAY_API_SERVICE_ID }}
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: production
+      version: ${{ github.sha }}
+    secrets: inherit
 
-      # A 200 alone could come from the previous deployment: wait until /health reports this commit
-      - name: Health check (API)
-        run: |
-          if [ -z "$RAILWAY_TOKEN" ] || [ -z "$API_URL" ]; then
-            echo "RAILWAY_TOKEN or API_URL not set, skip." && exit 0
-          fi
-          for i in $(seq 1 30); do
-            VERSION=$(curl -fsS --max-time 10 "$API_URL/health" | jq -r '.version // empty' 2>/dev/null || true)
-            echo "Attempt $i: version=${VERSION:-none}"
-            [ "$VERSION" = "$EXPECTED_VERSION" ] && exit 0
-            sleep 20
-          done
-          echo "API did not report version $EXPECTED_VERSION within 10 minutes." && exit 1
-        env:
-          API_URL: ${{ vars.API_URL }}
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          EXPECTED_VERSION: ${{ github.sha }}
-
-      - name: Redeploy Web
-        run: |
-          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
-          npx -y @railway/cli redeploy --service "$RAILWAY_WEB_SERVICE_ID" --yes
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_WEB_SERVICE_ID: ${{ secrets.RAILWAY_WEB_SERVICE_ID }}
-
-      - name: Redeploy Worker
-        run: |
-          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
-          [ -z "$RAILWAY_WORKER_SERVICE_ID" ] && echo "Worker service not set, skip." && exit 0
-          npx -y @railway/cli redeploy --service "$RAILWAY_WORKER_SERVICE_ID" --yes
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_WORKER_SERVICE_ID: ${{ secrets.RAILWAY_WORKER_SERVICE_ID }}
-
-      - name: Redeploy Scheduler
-        run: |
-          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
-          [ -z "$RAILWAY_SCHEDULER_SERVICE_ID" ] && echo "Scheduler service not set, skip." && exit 0
-          npx -y @railway/cli redeploy --service "$RAILWAY_SCHEDULER_SERVICE_ID" --yes
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_SCHEDULER_SERVICE_ID: ${{ secrets.RAILWAY_SCHEDULER_SERVICE_ID }}
-
-      - name: Redeploy Backup (cron)
-        run: |
-          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
-          [ -z "$RAILWAY_BACKUP_SERVICE_ID" ] && echo "Backup service not set, skip." && exit 0
-          npx -y @railway/cli redeploy --service "$RAILWAY_BACKUP_SERVICE_ID" --yes
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_BACKUP_SERVICE_ID: ${{ secrets.RAILWAY_BACKUP_SERVICE_ID }}
-
-      - name: Summary
-        if: always()
-        run: |
-          echo "### Deploy Production" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Commit:** \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Status:** ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
-
-  # ── 3b. DEPLOY STAGING ─────────────────────────────────────
   deploy-staging:
     name: Deploy Staging
-    runs-on: ubuntu-latest
     needs: docker-build-push
+    permissions:
+      contents: read
+      packages: write
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    timeout-minutes: 20
-    environment:
-      name: staging
-      url: ${{ vars.STAGING_URL }}
-    concurrency:
-      group: deploy-staging
-      cancel-in-progress: false
-    steps:
-      - name: Redeploy API
-        run: |
-          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
-          npx -y @railway/cli redeploy --service "$RAILWAY_API_SERVICE_ID" --yes
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_API_SERVICE_ID: ${{ secrets.RAILWAY_API_SERVICE_ID }}
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: staging
+      version: ${{ github.sha }}
+    secrets: inherit
 
-      # A 200 alone could come from the previous deployment: wait until /health reports this commit
-      - name: Health check (API)
-        run: |
-          if [ -z "$RAILWAY_TOKEN" ] || [ -z "$API_URL" ]; then
-            echo "RAILWAY_TOKEN or API_URL not set, skip." && exit 0
-          fi
-          for i in $(seq 1 30); do
-            VERSION=$(curl -fsS --max-time 10 "$API_URL/health" | jq -r '.version // empty' 2>/dev/null || true)
-            echo "Attempt $i: version=${VERSION:-none}"
-            [ "$VERSION" = "$EXPECTED_VERSION" ] && exit 0
-            sleep 20
-          done
-          echo "API did not report version $EXPECTED_VERSION within 10 minutes." && exit 1
-        env:
-          API_URL: ${{ vars.API_URL }}
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          EXPECTED_VERSION: ${{ github.sha }}
-
-      - name: Redeploy Web
-        run: |
-          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
-          npx -y @railway/cli redeploy --service "$RAILWAY_WEB_SERVICE_ID" --yes
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_WEB_SERVICE_ID: ${{ secrets.RAILWAY_WEB_SERVICE_ID }}
-
-      - name: Redeploy Worker
-        run: |
-          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
-          [ -z "$RAILWAY_WORKER_SERVICE_ID" ] && echo "Worker service not set, skip." && exit 0
-          npx -y @railway/cli redeploy --service "$RAILWAY_WORKER_SERVICE_ID" --yes
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_WORKER_SERVICE_ID: ${{ secrets.RAILWAY_WORKER_SERVICE_ID }}
-
-      - name: Redeploy Scheduler
-        run: |
-          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
-          [ -z "$RAILWAY_SCHEDULER_SERVICE_ID" ] && echo "Scheduler service not set, skip." && exit 0
-          npx -y @railway/cli redeploy --service "$RAILWAY_SCHEDULER_SERVICE_ID" --yes
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_SCHEDULER_SERVICE_ID: ${{ secrets.RAILWAY_SCHEDULER_SERVICE_ID }}
-
-      - name: Summary
-        if: always()
-        run: |
-          echo "### Deploy Staging" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Commit:** \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Status:** ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
+  # ── 4. E2E ON STAGING ──────────────────────────────────────
+  e2e-staging:
+    name: E2E Staging
+    needs: deploy-staging
+    uses: ./.github/workflows/e2e.yml
+    with:
+      target: staging
+    secrets: inherit

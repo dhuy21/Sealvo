@@ -1,0 +1,141 @@
+# Releases the images of one commit to an environment: points the environment tag (:latest or :staging)
+# at them, redeploys the Railway services and waits until each one runs that commit.
+# Called by ci-cd.yml after a build and by rollback.yml; the commit's images (:sha-<commit>) must exist.
+name: Deploy
+
+permissions:
+  contents: read
+  packages: write
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'staging or production'
+        required: true
+        type: string
+      version:
+        description: 'Commit the images were built from (their GIT_SHA)'
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    name: Deploy (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    # Up to four 10-minute version waits
+    timeout-minutes: 50
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ inputs.environment == 'production' && (vars.PRODUCTION_URL || 'https://www.sealvo.it.com') || vars.STAGING_URL }}
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_CLI_VERSION: 5.70.0
+      API_URL: ${{ vars.API_URL }}
+      WEB_URL: ${{ inputs.environment == 'production' && (vars.PRODUCTION_URL || 'https://www.sealvo.it.com') || vars.STAGING_URL }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # After the approval and inside the environment's concurrency group: two deploys cannot interleave
+      - name: Point the environment tag at the commit's images
+        run: |
+          base="ghcr.io/${GITHUB_REPOSITORY,,}"
+          images="api web"
+          [ "$TAG" = latest ] && images="$images backup"
+          # Check every image first: a missing one must not leave the tags half moved
+          for image in $images; do
+            docker buildx imagetools inspect "$base/$image:sha-$VERSION" >/dev/null \
+              || { echo "No $image image for $VERSION" >&2; exit 1; }
+          done
+          for image in $images; do
+            docker buildx imagetools create --prefer-index=false -t "$base/$image:$TAG" "$base/$image:sha-$VERSION"
+          done
+        env:
+          TAG: ${{ inputs.environment == 'production' && 'latest' || 'staging' }}
+
+      - name: Install the Railway CLI
+        if: env.RAILWAY_TOKEN != ''
+        run: npm install --global "@railway/cli@$RAILWAY_CLI_VERSION"
+
+      - name: Redeploy API
+        run: |
+          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
+          railway redeploy --service "$SERVICE_ID" --yes
+        env:
+          SERVICE_ID: ${{ secrets.RAILWAY_API_SERVICE_ID }}
+
+      - name: Health check (API)
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ] || [ -z "$API_URL" ]; then
+            echo "RAILWAY_TOKEN or API_URL not set, skip." && exit 0
+          fi
+          .github/scripts/wait-for-version.sh "$API_URL/health" "$VERSION"
+
+      - name: Redeploy Web
+        run: |
+          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
+          railway redeploy --service "$SERVICE_ID" --yes
+        env:
+          SERVICE_ID: ${{ secrets.RAILWAY_WEB_SERVICE_ID }}
+
+      - name: Health check (Web)
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ] || [ -z "$WEB_URL" ]; then
+            echo "RAILWAY_TOKEN or the web URL not set, skip." && exit 0
+          fi
+          .github/scripts/wait-for-version.sh "$WEB_URL/health" "$VERSION"
+
+      # The worker and the scheduler have no HTTP server: they report their commit through Redis,
+      # and the API's /health lists it under `processes`
+      - name: Redeploy Worker
+        run: |
+          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
+          [ -z "$SERVICE_ID" ] && echo "Worker service not set, skip." && exit 0
+          railway redeploy --service "$SERVICE_ID" --yes
+          [ -z "$API_URL" ] && echo "API_URL not set, cannot check the worker." && exit 0
+          .github/scripts/wait-for-version.sh "$API_URL/health" "$VERSION" .processes.worker
+        env:
+          SERVICE_ID: ${{ secrets.RAILWAY_WORKER_SERVICE_ID }}
+
+      - name: Redeploy Scheduler
+        run: |
+          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
+          [ -z "$SERVICE_ID" ] && echo "Scheduler service not set, skip." && exit 0
+          railway redeploy --service "$SERVICE_ID" --yes
+          [ -z "$API_URL" ] && echo "API_URL not set, cannot check the scheduler." && exit 0
+          .github/scripts/wait-for-version.sh "$API_URL/health" "$VERSION" .processes.scheduler
+        env:
+          SERVICE_ID: ${{ secrets.RAILWAY_SCHEDULER_SERVICE_ID }}
+
+      # A cron job: it only runs at its schedule, so there is nothing to wait for here
+      - name: Redeploy Backup (cron)
+        if: inputs.environment == 'production'
+        run: |
+          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
+          [ -z "$SERVICE_ID" ] && echo "Backup service not set, skip." && exit 0
+          railway redeploy --service "$SERVICE_ID" --yes
+        env:
+          SERVICE_ID: ${{ secrets.RAILWAY_BACKUP_SERVICE_ID }}
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Deploy ${{ inputs.environment }}"
+            echo "- **Commit:** \`$VERSION\`"
+            echo "- **Status:** ${{ job.status }}"
+          } >> "$GITHUB_STEP_SUMMARY"

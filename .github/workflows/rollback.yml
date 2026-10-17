@@ -1,0 +1,54 @@
+# Puts an earlier build back in place: deploys the images of the given commit again (deploy.yml points
+# the environment tag at them, redeploys and waits until the services report that commit).
+# Nothing is rebuilt. The images read their configuration at runtime, so any environment can run them;
+# the commit must still be on the environment's branch (main for production, staging for staging).
+name: Rollback
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to roll back'
+        required: true
+        type: choice
+        options:
+          - production
+          - staging
+      sha:
+        description: 'Full commit SHA of an earlier deploy of this environment'
+        required: true
+        type: string
+
+jobs:
+  check:
+    name: Check the commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SHA: ${{ inputs.sha }}
+      BRANCH: ${{ inputs.environment == 'production' && 'main' || 'staging' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check the commit belongs to the environment's branch
+        run: |
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "sha must be a full 40-character commit SHA" >&2; exit 1; }
+          git merge-base --is-ancestor "$SHA" "origin/$BRANCH" \
+            || { echo "$SHA is not on $BRANCH: it was never released to $BRANCH" >&2; exit 1; }
+
+  deploy:
+    name: Deploy
+    needs: check
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: ${{ inputs.environment }}
+      version: ${{ inputs.sha }}
+    secrets: inherit
