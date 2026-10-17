@@ -115,7 +115,7 @@ function WordSearchInner() {
     );
 
     if (word !== undefined) {
-      setFoundWords([...foundWords, word]);
+      setFoundWords((found) => [...found, word]);
       letters.wordFound(word);
       setScore((s) => s + foundWordPoints(selectedWord));
       setFoundCells((fc) => {

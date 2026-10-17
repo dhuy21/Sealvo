@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTransientFlag } from '@/components/games/use-transient-flag';
+import { useTimeouts } from '@/hooks/use-timeouts';
 import {
   createGentleWaveEffect,
   createLovelyParticles,
@@ -17,6 +18,8 @@ export function useQuizEffects() {
   const [progressUpdating, triggerProgressUpdating] = useTransientFlag();
   const [scoreIncrease, triggerScoreIncrease] = useTransientFlag();
   const [completionGlow, triggerCompletionGlow] = useTransientFlag();
+  // Leaving the page right after the quiz must not add particles to the next one
+  const later = useTimeouts();
 
   const start = () => {
     setEnhancedMode(true);
@@ -42,7 +45,7 @@ export function useQuizEffects() {
     setEnhancedMode(false);
     if (accuracy >= 70) {
       triggerCompletionGlow(3000);
-      for (let i = 0; i < 3; i++) setTimeout(() => createLovelyParticles(true), i * 300);
+      for (let i = 0; i < 3; i++) later(() => createLovelyParticles(true), i * 300);
     }
   };
 

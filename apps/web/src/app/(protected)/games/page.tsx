@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { Suspense, type CSSProperties } from 'react';
 import { ALL_GAME_TYPES, GAME_LEVEL, levelLabel, type GameType } from '@sealvo/shared';
+import { usePackageIdParam } from '@/hooks/use-package-id-param';
+import styles from '@/styles/games/games-hub.module.css';
 
 const GAME_CARDS: Record<
   GameType,
@@ -60,74 +61,35 @@ const GAMES = ALL_GAME_TYPES.map((type) => ({
   level: levelLabel(GAME_LEVEL[type]),
 }));
 
+/** The game color, and with 20% / 13% alpha for the hover shadow and the level badge */
+const cardColors = (color: string) =>
+  ({
+    '--game-color': color,
+    '--game-shadow': `${color}33`,
+    '--game-tint': `${color}22`,
+  }) as CSSProperties;
+
 function GamesHub() {
-  const searchParams = useSearchParams();
-  const packageId = searchParams.get('package');
+  const packageId = usePackageIdParam();
 
   return (
-    <div style={{ minHeight: '100vh', padding: '2rem' }}>
-      <div style={{ maxWidth: 900, margin: '0 auto' }}>
-        <h1
-          style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem', textAlign: 'center' }}
-        >
-          🎮 Mini-Jeux
-        </h1>
-        <p style={{ textAlign: 'center', color: '#888', marginBottom: '2rem' }}>
-          Choisissez un jeu pour réviser votre vocabulaire
-        </p>
+    <div className={styles.hub}>
+      <div className={styles.content}>
+        <h1 className={styles.title}>🎮 Mini-Jeux</h1>
+        <p className={styles.subtitle}>Choisissez un jeu pour réviser votre vocabulaire</p>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-            gap: '1.5rem',
-          }}
-        >
+        <div className={styles.grid}>
           {GAMES.map((game) => (
             <Link
               key={game.slug}
               href={`/games/${game.slug}${packageId ? `?package=${packageId}` : ''}`}
-              style={{ textDecoration: 'none', color: 'inherit' }}
+              className={styles.link}
             >
-              <div
-                style={{
-                  borderRadius: 16,
-                  padding: '1.5rem',
-                  background: 'var(--card-bg, #fff)',
-                  border: '1px solid var(--border-color, #e5e7eb)',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.boxShadow = `0 8px 24px ${game.color}33`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = '';
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
-                }}
-              >
-                <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>{game.icon}</div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-                  {game.name}
-                </h3>
-                <p style={{ fontSize: '0.875rem', color: '#888', marginBottom: '0.75rem' }}>
-                  {game.description}
-                </p>
-                <span
-                  style={{
-                    display: 'inline-block',
-                    padding: '2px 10px',
-                    borderRadius: 999,
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    background: `${game.color}22`,
-                    color: game.color,
-                  }}
-                >
-                  Niveau {game.level}
-                </span>
+              <div className={styles.card} style={cardColors(game.color)}>
+                <div className={styles.icon}>{game.icon}</div>
+                <h3 className={styles.name}>{game.name}</h3>
+                <p className={styles.description}>{game.description}</p>
+                <span className={styles.level}>Niveau {game.level}</span>
               </div>
             </Link>
           ))}
