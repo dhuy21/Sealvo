@@ -1,11 +1,11 @@
 import { withTimeout } from '@sealvo/shared';
 import type { RedisService } from '../redis/redis.service.js';
+import { REDIS_KEYS } from '../redis/cache-keys.constants.js';
 
 /** Processes without an HTTP server: they report the commit they run through Redis */
 export const HEARTBEAT_PROCESSES = ['worker', 'scheduler'] as const;
 export type HeartbeatProcess = (typeof HEARTBEAT_PROCESSES)[number];
 
-const KEY_PREFIX = 'heartbeat:';
 const INTERVAL_MS = 15_000;
 /** A process that stops beating (crash loop, stopped) disappears after this */
 const TTL_SECONDS = 45;
@@ -17,7 +17,7 @@ export function startHeartbeat(redis: RedisService, name: HeartbeatProcess, vers
   const beat = async () => {
     if (!redis.isReady()) return;
     try {
-      await redis.getClient()!.set(KEY_PREFIX + name, version, { EX: TTL_SECONDS });
+      await redis.getClient()!.set(REDIS_KEYS.heartbeat(name), version, { EX: TTL_SECONDS });
     } catch {
       /* the next beat retries */
     }
@@ -47,7 +47,7 @@ async function read(redis: RedisService): Promise<Record<HeartbeatProcess, strin
     HEARTBEAT_PROCESSES.map(async (name) => {
       if (!redis.isReady()) return [name, null] as const;
       try {
-        return [name, await redis.getClient()!.get(KEY_PREFIX + name)] as const;
+        return [name, await redis.getClient()!.get(REDIS_KEYS.heartbeat(name))] as const;
       } catch {
         return [name, null] as const;
       }

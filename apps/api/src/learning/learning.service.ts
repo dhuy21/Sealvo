@@ -2,11 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { GAME_LEVEL, LEVEL_GAMES, type GameType, type Level } from '@sealvo/shared';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CacheService } from '../redis/cache.service.js';
-import { CACHE_KEYS } from '../redis/cache-keys.constants.js';
+import { CACHE_KEYS, CACHE_TTL } from '../redis/cache-keys.constants.js';
 import { NEXT_LEVEL } from './learning.constants.js';
 import { isDue, startOfToday } from '../common/domain/spaced-repetition.js';
-
-const LEVEL_PROGRESS_TTL = 3 * 60 * 60; // 3 hours
 
 /** Hash field of the level-progress key: one per completed game */
 const progressField = (level: string, gameType: string) => `${level}:${gameType}`;
@@ -50,7 +48,7 @@ export class LearningService {
       key,
       progressField(currentLevel, gameType),
       '1',
-      LEVEL_PROGRESS_TTL,
+      CACHE_TTL.LEVEL_PROGRESS,
     );
 
     const fields = await this.cache.hGetAll(key);

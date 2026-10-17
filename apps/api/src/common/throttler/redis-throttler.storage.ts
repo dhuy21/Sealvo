@@ -1,9 +1,8 @@
 import { Logger, OnApplicationShutdown } from '@nestjs/common';
 import { ThrottlerStorageService, type ThrottlerStorage } from '@nestjs/throttler';
 import { RedisService } from '../../redis/redis.service.js';
+import { REDIS_KEYS } from '../../redis/cache-keys.constants.js';
 import { errorMessage } from '../utils/error-message.js';
-
-const PREFIX = 'throttle:';
 
 // Fixed window per key; mirrors ThrottlerStorageService: once hits exceed the limit the key is
 // blocked for blockDuration and the window restarts after the block. Returns ms values.
@@ -51,7 +50,7 @@ export class RedisThrottlerStorage implements ThrottlerStorage, OnApplicationShu
       const [totalHits, timeToExpire, isBlocked, timeToBlockExpire] = (await client.eval(
         INCREMENT_SCRIPT,
         {
-          keys: [PREFIX + key, `${PREFIX}${key}:blocked`],
+          keys: [REDIS_KEYS.throttle(key), REDIS_KEYS.throttleBlocked(key)],
           arguments: [String(ttl), String(limit), String(blockDuration)],
         },
       )) as number[];

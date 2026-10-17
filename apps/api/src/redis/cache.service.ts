@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { RedisService } from './redis.service.js';
-
-const PREFIX = 'cache:';
+import { REDIS_KEYS } from './cache-keys.constants.js';
 
 @Injectable()
 export class CacheService {
@@ -10,7 +9,7 @@ export class CacheService {
   async get<T = unknown>(key: string): Promise<T | null> {
     if (!this.redis.isReady()) return null;
     try {
-      const raw = await this.redis.getClient()!.get(PREFIX + key);
+      const raw = await this.redis.getClient()!.get(REDIS_KEYS.cache(key));
       return raw ? (JSON.parse(raw) as T) : null;
     } catch {
       return null;
@@ -20,7 +19,7 @@ export class CacheService {
   async set(key: string, value: unknown, ttlSeconds: number): Promise<boolean> {
     if (!this.redis.isReady()) return false;
     try {
-      await this.redis.getClient()!.set(PREFIX + key, JSON.stringify(value), {
+      await this.redis.getClient()!.set(REDIS_KEYS.cache(key), JSON.stringify(value), {
         EX: ttlSeconds,
       });
       return true;
@@ -35,7 +34,7 @@ export class CacheService {
     try {
       const result = await this.redis
         .getClient()!
-        .set(PREFIX + key, JSON.stringify(value), { EX: ttlSeconds, NX: true });
+        .set(REDIS_KEYS.cache(key), JSON.stringify(value), { EX: ttlSeconds, NX: true });
       return result === 'OK';
     } catch {
       return null;
@@ -49,8 +48,8 @@ export class CacheService {
       await this.redis
         .getClient()!
         .multi()
-        .hSet(PREFIX + key, field, value)
-        .expire(PREFIX + key, ttlSeconds)
+        .hSet(REDIS_KEYS.cache(key), field, value)
+        .expire(REDIS_KEYS.cache(key), ttlSeconds)
         .exec();
       return true;
     } catch {
@@ -61,7 +60,7 @@ export class CacheService {
   async hGetAll(key: string): Promise<Record<string, string> | null> {
     if (!this.redis.isReady()) return null;
     try {
-      return await this.redis.getClient()!.hGetAll(PREFIX + key);
+      return await this.redis.getClient()!.hGetAll(REDIS_KEYS.cache(key));
     } catch {
       return null;
     }
@@ -71,7 +70,7 @@ export class CacheService {
   async hDel(key: string, fields: string[]): Promise<number | null> {
     if (!this.redis.isReady()) return null;
     try {
-      return await this.redis.getClient()!.hDel(PREFIX + key, fields);
+      return await this.redis.getClient()!.hDel(REDIS_KEYS.cache(key), fields);
     } catch {
       return null;
     }
@@ -81,7 +80,7 @@ export class CacheService {
     if (!this.redis.isReady()) return false;
     try {
       const list = Array.isArray(keys) ? keys : [keys];
-      const prefixed = list.map((k) => PREFIX + k);
+      const prefixed = list.map((k) => REDIS_KEYS.cache(k));
       await this.redis.getClient()!.del(prefixed);
       return true;
     } catch {

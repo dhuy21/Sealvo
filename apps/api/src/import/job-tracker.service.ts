@@ -9,10 +9,7 @@ import { randomUUID } from 'crypto';
 import { type RedisClientType } from 'redis';
 import { JOB_TTL_SECONDS } from '@sealvo/shared';
 import { RedisService } from '../redis/redis.service.js';
-
-const PREFIX = 'job:';
-const CHANNEL_PREFIX = 'job-events:';
-const USER_JOBS_PREFIX = 'user-jobs:';
+import { REDIS_KEYS } from '../redis/cache-keys.constants.js';
 
 export interface Job {
   id: string;
@@ -52,12 +49,12 @@ export class JobTrackerService implements OnModuleDestroy {
 
     try {
       const client = this.redis.getClient()!;
-      await client.set(PREFIX + id, JSON.stringify(job), { EX: JOB_TTL_SECONDS });
+      await client.set(REDIS_KEYS.job(id), JSON.stringify(job), { EX: JOB_TTL_SECONDS });
       if (meta.userId) {
-        await client.sAdd(USER_JOBS_PREFIX + String(meta.userId), id);
-        await client.expire(USER_JOBS_PREFIX + String(meta.userId), JOB_TTL_SECONDS);
+        await client.sAdd(REDIS_KEYS.userJobs(String(meta.userId)), id);
+        await client.expire(REDIS_KEYS.userJobs(String(meta.userId)), JOB_TTL_SECONDS);
       }
-      await client.publish(CHANNEL_PREFIX + id, JSON.stringify(job));
+      await client.publish(REDIS_KEYS.jobEvents(id), JSON.stringify(job));
       return job;
     } catch {
       return null;
@@ -67,7 +64,7 @@ export class JobTrackerService implements OnModuleDestroy {
   async get(id: string): Promise<Job | null> {
     if (!this.redis.isReady()) return null;
     try {
-      const raw = await this.redis.getClient()!.get(PREFIX + id);
+      const raw = await this.redis.getClient()!.get(REDIS_KEYS.job(id));
       return raw ? (JSON.parse(raw) as Job) : null;
     } catch {
       return null;
@@ -90,7 +87,7 @@ export class JobTrackerService implements OnModuleDestroy {
     const subscriber = await this.getSubscriber();
     if (!subscriber) return null;
 
-    const channel = CHANNEL_PREFIX + id;
+    const channel = REDIS_KEYS.jobEvents(id);
     let closed = false;
     const listener = (message: string) => {
       if (closed) return;
@@ -139,14 +136,14 @@ export class JobTrackerService implements OnModuleDestroy {
     if (!this.redis.isReady()) return false;
     try {
       const client = this.redis.getClient()!;
-      const raw = await client.get(PREFIX + id);
+      const raw = await client.get(REDIS_KEYS.job(id));
       if (!raw) return false;
       const job = JSON.parse(raw) as Job;
       Object.assign(job, fields, { updatedAt: Date.now() });
-      const ttl = await client.ttl(PREFIX + id);
+      const ttl = await client.ttl(REDIS_KEYS.job(id));
       const serialized = JSON.stringify(job);
-      await client.set(PREFIX + id, serialized, { EX: ttl > 0 ? ttl : JOB_TTL_SECONDS });
-      client.publish(CHANNEL_PREFIX + id, serialized).catch(() => {});
+      await client.set(REDIS_KEYS.job(id), serialized, { EX: ttl > 0 ? ttl : JOB_TTL_SECONDS });
+      client.publish(REDIS_KEYS.jobEvents(id), serialized).catch(() => {});
       return true;
     } catch {
       return false;
@@ -157,14 +154,14 @@ export class JobTrackerService implements OnModuleDestroy {
     if (!this.redis.isReady()) return false;
     try {
       const client = this.redis.getClient()!;
-      const raw = await client.get(PREFIX + id);
+      const raw = await client.get(REDIS_KEYS.job(id));
       if (raw) {
         const job = JSON.parse(raw) as Job;
         if (job.meta?.userId) {
-          await client.sRem(USER_JOBS_PREFIX + String(job.meta.userId), id);
+          await client.sRem(REDIS_KEYS.userJobs(String(job.meta.userId)), id);
         }
       }
-      await client.del(PREFIX + id);
+      await client.del(REDIS_KEYS.job(id));
       return true;
     } catch {
       return false;
@@ -175,7 +172,7 @@ export class JobTrackerService implements OnModuleDestroy {
     if (!this.redis.isReady() || !userId) return [];
     try {
       const client = this.redis.getClient()!;
-      const ids = await client.sMembers(USER_JOBS_PREFIX + userId);
+      const ids = await client.sMembers(REDIS_KEYS.userJobs(userId));
       if (!ids || ids.length === 0) return [];
       const jobs: Job[] = [];
       for (const id of ids) {
@@ -183,7 +180,7 @@ export class JobTrackerService implements OnModuleDestroy {
         if (job && !isFinished(job.status)) {
           jobs.push(job);
         } else {
-          client.sRem(USER_JOBS_PREFIX + userId, id).catch(() => {});
+          client.sRem(REDIS_KEYS.userJobs(userId), id).catch(() => {});
         }
       }
       return jobs;
