@@ -1,8 +1,8 @@
 /**
  * backup-db.mjs — MySQL dump (schema + data), auto-verify, retention.
  *
- * Connection: DATABASE_URL (mysql://user:pass@host:port/db), or the legacy
- * MYSQLHOST / MYSQLPORT / MYSQLUSER / MYSQL_ROOT_PASSWORD / MYSQL_DATABASE.
+ * Connection: DATABASE_URL (mysql://user:pass@host:port/db), or Railway's
+ * MYSQLHOST / MYSQLPORT / MYSQLUSER / MYSQLPASSWORD / MYSQLDATABASE.
  *
  * Modes:
  *   Docker — uses the dev container "sealvo_db" when DATABASE_URL points at its
@@ -13,9 +13,12 @@
  *   When S3-compatible bucket vars are present, the dump is uploaded then
  *   a retention policy is applied inside the bucket.
  *
- *   Supported variable naming (checked in order):
- *     Railway "AWS SDK Generic" → AWS_S3_BUCKET_NAME, AWS_ENDPOINT_URL, …
- *     Railway raw reference     → BUCKET_NAME, BUCKET_ENDPOINT, …
+ *   Supported variable naming (checked in order; the credentials always come from the same set
+ *   as the bucket name, so the SES AWS_* keys are never sent to a Railway bucket):
+ *     Railway "AWS SDK Generic" → AWS_S3_BUCKET_NAME, AWS_ENDPOINT_URL, AWS_ACCESS_KEY_ID,
+ *                                 AWS_SECRET_ACCESS_KEY, AWS_DEFAULT_REGION
+ *     Railway bucket variables  → BUCKET, ENDPOINT, ACCESS_KEY_ID, SECRET_ACCESS_KEY, REGION
+ *                                 (BUCKET_NAME / BUCKET_ENDPOINT also accepted)
  *
  * Usage: npm run backup:db -w @sealvo/api
  */
@@ -24,17 +27,26 @@ import path from 'node:path';
 import fs from 'node:fs';
 import net from 'node:net';
 import { execSync, spawnSync } from 'node:child_process';
+import { CONTAINER, getConnection, readDumpInfo, useContainer } from './db-connection.mjs';
 import { loadEnv } from './load-env.mjs';
 
 loadEnv();
 
 const BACKUPS_DIR = path.join(import.meta.dirname, '..', 'backups');
-const CONTAINER = 'sealvo_db';
 const RETENTION = parseInt(process.env.BACKUP_RETENTION, 10) || 7;
 const BUCKET_PREFIX = 'backups';
 
+/** This database's dumps only: "web" must not match the dumps of a "web_db" */
+const dumpPattern = (db) =>
+  new RegExp(`^${db.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}_\\d{8}_\\d{6}\\.sql$`);
+
 function getDumpFlags(useDocker) {
-  const flags = ['--single-transaction', '--routines', '--triggers'];
+  const flags = [
+    '--single-transaction',
+    '--routines',
+    '--triggers',
+    '--default-character-set=utf8mb4',
+  ];
   // --set-gtid-purged is MySQL-only; MariaDB's mysqldump (installed by
   // default-mysql-client on Debian) does not support it and will crash.
   try {
@@ -54,40 +66,11 @@ function getDumpFlags(useDocker) {
 
 /* ── helpers ─────────────────────────────────────────────── */
 
-function env(name) {
-  const v = process.env[name];
-  if (!v) {
-    console.error(`[backup] Missing env: ${name}`);
-    process.exit(1);
-  }
-  return v;
-}
-
 function pick(...names) {
   for (const n of names) {
     if (process.env[n]) return process.env[n];
   }
   return undefined;
-}
-
-function getConnection() {
-  if (!process.env.DATABASE_URL && process.env.MYSQLHOST) {
-    return {
-      host: env('MYSQLHOST'),
-      port: process.env.MYSQLPORT || '3306',
-      user: env('MYSQLUSER'),
-      password: env('MYSQL_ROOT_PASSWORD'),
-      database: env('MYSQL_DATABASE'),
-    };
-  }
-  const url = new URL(env('DATABASE_URL'));
-  return {
-    host: url.hostname,
-    port: url.port || '3306',
-    user: decodeURIComponent(url.username),
-    password: decodeURIComponent(url.password),
-    database: decodeURIComponent(url.pathname.slice(1)),
-  };
 }
 
 function timestamp() {
@@ -98,20 +81,41 @@ function timestamp() {
 
 /* ── S3 bucket config resolution ─────────────────────────── */
 
+const BUCKET_VARIABLES = [
+  {
+    bucket: ['AWS_S3_BUCKET_NAME'],
+    endpoint: ['AWS_ENDPOINT_URL'],
+    accessKeyId: ['AWS_ACCESS_KEY_ID'],
+    secretAccessKey: ['AWS_SECRET_ACCESS_KEY'],
+    region: ['AWS_DEFAULT_REGION'],
+  },
+  {
+    bucket: ['BUCKET', 'BUCKET_NAME'],
+    endpoint: ['ENDPOINT', 'BUCKET_ENDPOINT'],
+    accessKeyId: ['ACCESS_KEY_ID'],
+    secretAccessKey: ['SECRET_ACCESS_KEY'],
+    region: ['REGION'],
+  },
+];
+
 function getBucketConfig() {
-  const bucket = pick('AWS_S3_BUCKET_NAME', 'BUCKET_NAME', 'BUCKET');
-  const endpoint = pick('AWS_ENDPOINT_URL', 'BUCKET_ENDPOINT', 'ENDPOINT');
-  if (!bucket || !endpoint) return null;
+  const names = BUCKET_VARIABLES.find((set) => pick(...set.bucket));
+  if (!names) return null;
 
-  const accessKeyId = pick('AWS_ACCESS_KEY_ID', 'ACCESS_KEY_ID');
-  const secretAccessKey = pick('AWS_SECRET_ACCESS_KEY', 'SECRET_ACCESS_KEY');
-  if (!accessKeyId || !secretAccessKey) return null;
+  const endpoint = pick(...names.endpoint);
+  const accessKeyId = pick(...names.accessKeyId);
+  const secretAccessKey = pick(...names.secretAccessKey);
+  if (!endpoint || !accessKeyId || !secretAccessKey) {
+    console.error(
+      `[backup] ${names.bucket[0]} is set but not ${names.endpoint[0]}, ${names.accessKeyId[0]} and ${names.secretAccessKey[0]}.`,
+    );
+    process.exit(1);
+  }
 
-  const region = pick('AWS_DEFAULT_REGION', 'REGION') || 'auto';
   return {
-    bucket,
+    bucket: pick(...names.bucket),
     endpoint: endpoint.replace(/\/$/, ''),
-    region,
+    region: pick(...names.region) || 'auto',
     accessKeyId,
     secretAccessKey,
   };
@@ -171,22 +175,6 @@ function waitForMySQL(host, port) {
 
 /* ── dump ─────────────────────────────────────────────────── */
 
-// Only when DATABASE_URL targets the container's published port: otherwise a running
-// dev container would silently replace the server the URL points at.
-function useContainer({ host, port }) {
-  if (host !== 'localhost' && host !== '127.0.0.1') return false;
-  try {
-    return execSync(`docker port ${CONTAINER} 3306`, {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    })
-      .split('\n')
-      .some((line) => line.trim().endsWith(`:${port}`));
-  } catch {
-    return false;
-  }
-}
-
 function backup(conn, useDocker, outPath) {
   const flags = getDumpFlags(useDocker);
   // Stream straight to the file: no maxBuffer limit, no full dump held in memory.
@@ -233,10 +221,8 @@ function backup(conn, useDocker, outPath) {
 
 /* ── verify ───────────────────────────────────────────────── */
 
-function verify(filePath) {
-  const tables = [...fs.readFileSync(filePath, 'utf8').matchAll(/CREATE TABLE.*?`(\w+)`/gi)].map(
-    (m) => m[1],
-  );
+async function verify(filePath) {
+  const { tables } = await readDumpInfo(filePath);
   if (!tables.length) {
     console.error('[backup] FAILED: no CREATE TABLE in dump.');
     process.exit(1);
@@ -247,7 +233,7 @@ function verify(filePath) {
 /* ── local retention ──────────────────────────────────────── */
 
 function applyRetention(db) {
-  const pattern = new RegExp(`^${db}_\\d{8}_\\d{6}\\.sql$`);
+  const pattern = dumpPattern(db);
   const files = fs
     .readdirSync(BACKUPS_DIR)
     .filter((f) => pattern.test(f))
@@ -267,24 +253,26 @@ function applyRetention(db) {
 
 async function uploadToBucket(client, cfg, localPath, key) {
   const { PutObjectCommand } = await import('@aws-sdk/client-s3');
-  const body = fs.readFileSync(localPath);
+  const { size } = fs.statSync(localPath);
   await client.send(
     new PutObjectCommand({
       Bucket: cfg.bucket,
       Key: key,
-      Body: body,
+      Body: fs.createReadStream(localPath),
+      ContentLength: size,
       ContentType: 'application/sql',
     }),
   );
-  console.log(`[backup] Uploaded to bucket: ${key} (${(body.length / 1024).toFixed(1)} KB)`);
+  console.log(`[backup] Uploaded to bucket: ${key} (${(size / 1024).toFixed(1)} KB)`);
 }
 
 async function applyRetentionInBucket(client, cfg, db) {
   const { ListObjectsV2Command, DeleteObjectCommand } = await import('@aws-sdk/client-s3');
   const prefix = `${BUCKET_PREFIX}/${db}_`;
   const list = await client.send(new ListObjectsV2Command({ Bucket: cfg.bucket, Prefix: prefix }));
+  const pattern = dumpPattern(db);
   const objects = (list.Contents || [])
-    .filter((o) => o.Key && /\.sql$/.test(o.Key))
+    .filter((o) => o.Key && pattern.test(o.Key.slice(BUCKET_PREFIX.length + 1)))
     .sort((a, b) => (b.LastModified || 0) - (a.LastModified || 0));
 
   for (let i = RETENTION; i < objects.length; i++) {
@@ -299,7 +287,7 @@ async function applyRetentionInBucket(client, cfg, db) {
 /* ── main ─────────────────────────────────────────────────── */
 
 async function main() {
-  const conn = getConnection();
+  const conn = getConnection('backup');
   const outPath = path.join(BACKUPS_DIR, `${conn.database}_${timestamp()}.sql`);
 
   if (!fs.existsSync(BACKUPS_DIR)) fs.mkdirSync(BACKUPS_DIR, { recursive: true });
@@ -318,7 +306,7 @@ async function main() {
   const sizeKB = (fs.statSync(outPath).size / 1024).toFixed(1);
   console.log(`[backup] Written: ${outPath} (${sizeKB} KB)`);
 
-  verify(outPath);
+  await verify(outPath);
   applyRetention(conn.database);
 
   const bucketCfg = getBucketConfig();

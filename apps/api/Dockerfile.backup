@@ -1,5 +1,6 @@
 # Build context: repository root. Runs one MySQL backup and exits (Railway cron service).
-# Debian slim, not Alpine: default-mysql-client provides mysqldump.
+# Debian slim with Oracle's MySQL 8.0 client: Debian's default-mysql-client is MariaDB's mysqldump,
+# which does not know MySQL 8 features (utf8mb4_0900_* collations, GTIDs).
 
 FROM node:22-bookworm-slim AS deps
 WORKDIR /app
@@ -11,8 +12,16 @@ RUN node -e "const d = require('./package.json').dependencies; require('fs').wri
  && npm install --omit=dev --ignore-scripts --no-audit --no-fund
 
 FROM node:22-bookworm-slim
+# Oracle rotates the repository signing key (the 2023 one has expired): take the current
+# RPM-GPG-KEY-mysql-<year> from https://repo.mysql.com/ when apt reports EXPKEYSIG
 RUN apt-get update \
- && apt-get install -y --no-install-recommends default-mysql-client \
+ && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
+ && curl -fsSL https://repo.mysql.com/RPM-GPG-KEY-mysql-2025 | gpg --dearmor -o /usr/share/keyrings/mysql.gpg \
+ && echo "deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian bookworm mysql-8.0" > /etc/apt/sources.list.d/mysql.list \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends mysql-community-client \
+ && apt-get purge -y curl gnupg \
+ && apt-get autoremove -y \
  && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --gid 1001 appgroup && useradd --uid 1001 --gid appgroup --no-create-home appuser

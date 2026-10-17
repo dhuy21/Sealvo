@@ -1,46 +1,16 @@
 /**
  * restore-db.mjs — Restore MySQL dump. Dry-run by default, --confirm to execute.
- * Connection: same variables as backup-db.mjs (DATABASE_URL, or legacy MYSQL*).
+ * Connection: same variables as backup-db.mjs (DATABASE_URL, or Railway's MYSQL*).
  * Usage: node scripts/restore-db.mjs <dump.sql> [--confirm] [--target <db>]
  */
 
 import path from 'node:path';
 import fs from 'node:fs';
-import { execSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
+import { CONTAINER, getConnection, readDumpInfo, useContainer } from './db-connection.mjs';
 import { loadEnv } from './load-env.mjs';
 
 loadEnv();
-
-const CONTAINER = 'sealvo_db';
-
-function env(name) {
-  const v = process.env[name];
-  if (!v) {
-    console.error(`[restore] Missing env: ${name}`);
-    process.exit(1);
-  }
-  return v;
-}
-
-function getConnection() {
-  if (!process.env.DATABASE_URL && process.env.MYSQLHOST) {
-    return {
-      host: env('MYSQLHOST'),
-      port: process.env.MYSQLPORT || '3306',
-      user: env('MYSQLUSER'),
-      password: env('MYSQL_ROOT_PASSWORD'),
-      database: env('MYSQL_DATABASE'),
-    };
-  }
-  const url = new URL(env('DATABASE_URL'));
-  return {
-    host: url.hostname,
-    port: url.port || '3306',
-    user: decodeURIComponent(url.username),
-    password: decodeURIComponent(url.password),
-    database: decodeURIComponent(url.pathname.slice(1)),
-  };
-}
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -53,33 +23,13 @@ function parseArgs() {
   return result;
 }
 
-function analyzeDump(filePath) {
-  const content = fs.readFileSync(filePath, 'utf8');
+async function analyzeDump(filePath) {
   const stat = fs.statSync(filePath);
-  const tables = [...content.matchAll(/CREATE TABLE.*?`(\w+)`/gi)].map((m) => m[1]);
   return {
     sizeKB: (stat.size / 1024).toFixed(1),
     modified: stat.mtime.toISOString().replace('T', ' ').slice(0, 19),
-    tables,
-    inserts: (content.match(/INSERT INTO/gi) || []).length,
-    drops: (content.match(/DROP TABLE/gi) || []).length,
+    ...(await readDumpInfo(filePath)),
   };
-}
-
-// Only when DATABASE_URL targets the container's published port: otherwise a running
-// dev container would silently replace the server the URL points at.
-function useContainer({ host, port }) {
-  if (host !== 'localhost' && host !== '127.0.0.1') return false;
-  try {
-    return execSync(`docker port ${CONTAINER} 3306`, {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    })
-      .split('\n')
-      .some((line) => line.trim().endsWith(`:${port}`));
-  } catch {
-    return false;
-  }
 }
 
 function checkResult(result) {
@@ -95,11 +45,11 @@ function checkResult(result) {
 }
 
 // Runs the mysql client inside the dev container (Docker mode) or on this machine (direct).
-function mysql(conn, useDocker, args, input) {
+// stdin: a file descriptor, streamed to the client without loading the file in memory.
+function mysql(conn, useDocker, args, stdin = 'ignore') {
   const clientArgs = ['-u', conn.user, '--default-character-set=utf8mb4', ...args];
   const opts = {
-    input,
-    stdio: ['pipe', 'pipe', 'pipe'],
+    stdio: [stdin, 'pipe', 'pipe'],
     encoding: 'utf8',
     maxBuffer: 100 * 1024 * 1024,
   };
@@ -128,7 +78,12 @@ function restore(conn, useDocker, filePath, database) {
   console.log(
     `[restore] Mode: ${useDocker ? `Docker (${CONTAINER})` : `direct (${conn.host}:${conn.port})`}`,
   );
-  mysql(conn, useDocker, [database], fs.readFileSync(filePath, 'utf8'));
+  const dump = fs.openSync(filePath, 'r');
+  try {
+    mysql(conn, useDocker, [database], dump);
+  } finally {
+    fs.closeSync(dump);
+  }
 }
 
 function getTablesInDb(conn, useDocker, database) {
@@ -158,11 +113,11 @@ async function main() {
     process.exit(1);
   }
 
-  const conn = getConnection();
+  const conn = getConnection('restore');
   const useDocker = useContainer(conn);
   const defaultDb = conn.database;
   const database = target || defaultDb;
-  const info = analyzeDump(filePath);
+  const info = await analyzeDump(filePath);
   const mode = useDocker ? `Docker (${CONTAINER})` : `Direct (${conn.host}:${conn.port})`;
 
   console.log('\n=== Database Restore ===\n');
