@@ -7,6 +7,7 @@ import { json } from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module.js';
 import { appConfig, type AppConfig } from './config/app.config.js';
+import { VALIDATION_PIPE_OPTIONS } from './common/validation/validation-messages.js';
 
 /** POST words takes up to 500 words; at the longest allowed fields that is about 5.5 MB */
 const ADD_WORDS_BODY_LIMIT = '6mb';
@@ -34,13 +35,7 @@ async function bootstrap() {
     credentials: true,
   });
   app.use(cookieParser());
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
+  app.useGlobalPipes(new ValidationPipe(VALIDATION_PIPE_OPTIONS));
 
   // Swagger / OpenAPI
   // Off in staging too: it is publicly reachable

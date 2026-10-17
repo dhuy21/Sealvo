@@ -61,6 +61,9 @@ export type DbLevel = (typeof VALID_LEVELS)[number];
 /** Package visibility modes */
 export const PACKAGE_MODES: readonly PackageMode[] = ['private', 'public', 'protected'];
 
+/** Longest package name (old app rule, below the 255-char column) */
+export const PACKAGE_NAME_MAX = 100;
+
 /** Level as shown to users: its raw database value (`level_0` → `0`) */
 export function levelLabel(level: Level): DbLevel {
   return level.replace('level_', '') as DbLevel;

@@ -10,6 +10,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PackageOwnershipGuard } from '../auth/guards/package-ownership.guard.js';
 import { PackageReadGuard } from '../auth/guards/package-read.guard.js';
 import { MAX_IMPORT_ROWS } from '@sealvo/shared';
+import { VALIDATION_PIPE_OPTIONS } from '../common/validation/validation-messages.js';
 
 const word = {
   word: 'cat',
@@ -54,9 +55,7 @@ describe('WordsController POST /packages/:packageId/words', () => {
 
     app = module.createNestApplication();
     // Same global pipe as main.ts
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
-    );
+    app.useGlobalPipes(new ValidationPipe(VALIDATION_PIPE_OPTIONS));
     await app.init();
   });
 

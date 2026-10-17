@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, useState } from 'react';
+import { PACKAGE_NAME_MAX } from '@sealvo/shared';
 import { useDialog } from '@/hooks/use-dialog';
 import type { Package } from '@/hooks/use-packages';
 import styles from '@/styles/packages.module.css';
@@ -72,6 +73,7 @@ function PackageModalContent({ editPkg, onClose, onSubmit, saving }: PackageModa
                 placeholder="Ex: Vocabulaire Business"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                maxLength={PACKAGE_NAME_MAX}
                 required
               />
             </div>

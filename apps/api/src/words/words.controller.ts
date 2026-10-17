@@ -26,6 +26,7 @@ import { BulkWordsService } from '../import/bulk-words.service.js';
 import { WordsService } from './words.service.js';
 import { CreateWordDto } from './dto/create-word.dto.js';
 import { UpdateWordDto } from './dto/update-word.dto.js';
+import { validationExceptionFactory } from '../common/validation/validation-messages.js';
 
 @ApiTags('Words')
 @Controller('packages/:packageId/words')
@@ -63,7 +64,14 @@ export class WordsController {
   async addWords(
     @Param('packageId', ParseIntPipe) packageId: number,
     @CurrentUser('id') userId: string,
-    @Body(new ParseArrayPipe({ items: CreateWordDto, whitelist: true, forbidNonWhitelisted: true }))
+    @Body(
+      new ParseArrayPipe({
+        items: CreateWordDto,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        exceptionFactory: validationExceptionFactory,
+      }),
+    )
     dto: CreateWordDto[],
     @Res({ passthrough: true }) res: Response,
   ) {

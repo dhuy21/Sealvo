@@ -19,6 +19,15 @@ describe('UpdateProfileDto', () => {
     expect((await check({ username: '  ab  ' })).errors).toHaveLength(1);
   });
 
+  it('answers in French, like the old app', async () => {
+    const { errors } = await check({ username: 'ab', email: 'foo', ava: 99 });
+    expect(errors.flatMap((error) => [...new Set(Object.values(error.constraints!))])).toEqual([
+      "Le nom d'utilisateur doit contenir entre 3 et 50 caractères",
+      "Format d'email invalide",
+      "L'avatar doit être un nombre entre 1 et 11",
+    ]);
+  });
+
   it.each(['username', 'email', 'current_password', 'ava'])('rejects a null %s', async (field) => {
     const { errors } = await check({ [field]: null });
     expect(errors.map((error) => error.property)).toEqual([field]);

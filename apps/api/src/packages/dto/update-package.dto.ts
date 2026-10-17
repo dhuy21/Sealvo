@@ -1,20 +1,18 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
-import { PACKAGE_MODES, type PackageMode } from '@sealvo/shared';
+import { PACKAGE_MODES, PACKAGE_NAME_MAX, type PackageMode } from '@sealvo/shared';
 import { IsOptionalDefined } from '../../common/decorators/is-optional-defined.decorator.js';
 import { Trim } from '../../common/decorators/trim.decorator.js';
-import {
-  TEXT_MAX_LENGTH,
-  VARCHAR_MAX_LENGTH,
-} from '../../common/constants/field-lengths.constants.js';
+import { TEXT_MAX_LENGTH } from '../../common/constants/field-lengths.constants.js';
+import { PACKAGE_MODE_MESSAGE, PACKAGE_NAME_TOO_LONG_MESSAGE } from './create-package.dto.js';
 
 export class UpdatePackageDto {
-  @ApiProperty({ example: 'English Advanced', required: false })
+  @ApiProperty({ example: 'English Advanced', required: false, maxLength: PACKAGE_NAME_MAX })
   @IsOptionalDefined()
   @Trim()
   @IsString()
-  @MinLength(1)
-  @MaxLength(VARCHAR_MAX_LENGTH)
+  @MinLength(1, { message: 'Le nom du package est requis' })
+  @MaxLength(PACKAGE_NAME_MAX, { message: PACKAGE_NAME_TOO_LONG_MESSAGE })
   package_name?: string;
 
   // The column is nullable: `null` clears the description
@@ -27,6 +25,6 @@ export class UpdatePackageDto {
 
   @ApiProperty({ enum: PACKAGE_MODES, required: false })
   @IsOptionalDefined()
-  @IsEnum(PACKAGE_MODES)
+  @IsEnum(PACKAGE_MODES, { message: PACKAGE_MODE_MESSAGE })
   mode?: PackageMode;
 }
