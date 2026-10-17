@@ -1,10 +1,22 @@
-import { ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { API_ERROR_CODES } from '@sealvo/shared';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SessionService } from './session.service.js';
 import { TokenService } from './token.service.js';
-import { EmailVerificationService } from './email-verification.service.js';
+import { appConfig, type AppConfig } from '../config/app.config.js';
+import { EmailQueueService } from '../email/email-queue.service.js';
+import { EmailService } from '../email/email.service.js';
+import {
+  EmailVerificationService,
+  VERIFICATION_EMAIL_FAILED_MESSAGE,
+} from './email-verification.service.js';
 import { createUser } from './create-user.js';
 import { hashPassword } from './crypto.js';
 import { errorMessage } from '../common/utils/error-message.js';
@@ -25,6 +37,9 @@ export class AuthService {
     private readonly sessions: SessionService,
     private readonly tokens: TokenService,
     private readonly emailVerification: EmailVerificationService,
+    private readonly emailQueue: EmailQueueService,
+    private readonly emailService: EmailService,
+    @Inject(appConfig.KEY) private readonly app: AppConfig,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -48,7 +63,7 @@ export class AuthService {
       select: { username: true, email: true },
     });
     if (existing) {
-      await this.emailVerification.sendAccountExistsEmail(existing);
+      await this.sendAccountExistsEmail(existing);
       return REGISTER_RESPONSE;
     }
 
@@ -135,5 +150,22 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  /** Sent when someone registers with the email of an existing account, verified or not */
+  private async sendAccountExistsEmail(user: { username: string; email: string }) {
+    const baseUrl = this.app.frontendUrl;
+    await this.emailQueue.enqueueOrFail(
+      {
+        to: user.email,
+        content: this.emailService.compileTemplate('mailAccountExists.hbs', {
+          username: user.username,
+          loginLink: `${baseUrl}/login`,
+          forgotPasswordLink: `${baseUrl}/forgot-password`,
+        }),
+        subject: 'Votre compte SealVo existe déjà',
+      },
+      VERIFICATION_EMAIL_FAILED_MESSAGE,
+    );
   }
 }

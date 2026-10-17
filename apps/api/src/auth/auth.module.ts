@@ -9,6 +9,7 @@ import { JwtStrategy } from './strategies/jwt.strategy.js';
 import { SessionService } from './session.service.js';
 import { TokenService } from './token.service.js';
 import { EmailVerificationService } from './email-verification.service.js';
+import { EmailChangeService } from './email-change.service.js';
 import { PasswordResetService } from './password-reset.service.js';
 import { GoogleAuthService } from './google-auth.service.js';
 import { EmailModule } from '../email/email.module.js';
@@ -32,10 +33,11 @@ import { EmailModule } from '../email/email.module.js';
     SessionService,
     TokenService,
     EmailVerificationService,
+    EmailChangeService,
     PasswordResetService,
     GoogleAuthService,
     JwtStrategy,
   ],
-  exports: [EmailVerificationService],
+  exports: [EmailChangeService],
 })
 export class AuthModule {}

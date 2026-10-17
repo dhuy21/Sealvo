@@ -1,4 +1,4 @@
-import { Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { appConfig, type AppConfig } from '../config/app.config.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
 import { EmailService } from '../email/email.service.js';
@@ -21,17 +21,14 @@ export class FeedbackService {
       date: new Date().toISOString(),
     });
 
-    const sent = await this.emailQueue.enqueue({
-      to: this.app.feedbackRecipient,
-      content: htmlContent,
-      subject: 'Nouveau feedback pour votre site',
-    });
-
-    if (!sent) {
-      throw new InternalServerErrorException(
-        "Une erreur est survenue lors de l'envoi de votre feedback. Veuillez réessayer plus tard.",
-      );
-    }
+    await this.emailQueue.enqueueOrFail(
+      {
+        to: this.app.feedbackRecipient,
+        content: htmlContent,
+        subject: 'Nouveau feedback pour votre site',
+      },
+      "Une erreur est survenue lors de l'envoi de votre feedback. Veuillez réessayer plus tard.",
+    );
 
     return { message: "Merci pour votre feedback! Nous l'avons bien reçu." };
   }

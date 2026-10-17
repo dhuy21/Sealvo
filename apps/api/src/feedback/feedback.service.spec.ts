@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { appConfig } from '../config/app.config.js';
-import { testAppConfig, testMailConfig } from '../config/testing.js';
+import { testAppConfig, testEmailQueue, testMailConfig } from '../config/testing.js';
 import { InternalServerErrorException } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
@@ -14,7 +14,7 @@ describe('FeedbackService', () => {
   let emailQueue: { enqueue: any };
 
   beforeEach(async () => {
-    emailQueue = { enqueue: vi.fn() };
+    emailQueue = testEmailQueue();
 
     const module = await Test.createTestingModule({
       providers: [

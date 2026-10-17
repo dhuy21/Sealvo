@@ -1,11 +1,9 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type { Level } from '@sealvo/shared';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { EmailVerificationService } from '../auth/email-verification.service.js';
 import { CacheService } from '../redis/cache.service.js';
 import { CACHE_KEYS, CACHE_TTL } from '../redis/cache-keys.constants.js';
 import { dueWhereConditions } from '../common/domain/spaced-repetition.js';
-import { UpdateProfileDto } from './dto/update-profile.dto.js';
 
 export interface PackageToReview {
   package_id: number;
@@ -27,7 +25,6 @@ export class DashboardService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cache: CacheService,
-    private readonly emailVerification: EmailVerificationService,
   ) {}
 
   async getStats(userId: string): Promise<DashboardStats> {
@@ -54,39 +51,6 @@ export class DashboardService {
 
     await this.cache.set(CACHE_KEYS.dashboard(userId), stats, CACHE_TTL.DASHBOARD);
     return stats;
-  }
-
-  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<{ pendingEmail?: string }> {
-    // Check uniqueness if username changed (email uniqueness: EmailVerificationService.requestEmailChange)
-    if (dto.username) {
-      const existing = await this.prisma.users.findUnique({ where: { username: dto.username } });
-      if (existing && existing.id !== userId) {
-        throw new ConflictException("Ce nom d'utilisateur est déjà pris");
-      }
-    }
-
-    let pendingEmail: string | undefined;
-    if (dto.email) {
-      const user = await this.prisma.users.findUnique({
-        where: { id: userId },
-        select: { email: true },
-      });
-      if (dto.email !== user?.email) {
-        await this.emailVerification.requestEmailChange(userId, dto.email, dto.current_password);
-        pendingEmail = dto.email;
-      }
-    }
-
-    const data: Record<string, unknown> = {};
-    if (dto.username) data.username = dto.username;
-    if (dto.ava) data.ava = dto.ava;
-
-    if (Object.keys(data).length > 0) {
-      await this.prisma.users.update({ where: { id: userId }, data });
-      await this.cache.del(CACHE_KEYS.dashboard(userId));
-    }
-
-    return { pendingEmail };
   }
 
   private async countWordsByLevel(userId: string): Promise<Record<Level, number>> {

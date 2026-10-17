@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger, OnModuleInit } from '@nestjs/common';
 import type { ConfirmChannel, ConsumeMessage } from 'amqplib';
 import { randomUUID } from 'crypto';
 import { RabbitmqService } from '../rabbitmq/rabbitmq.service.js';
@@ -61,6 +61,11 @@ export class EmailQueueService implements OnModuleInit {
     return this.emailService.sendEmail(payload.to, payload.content, payload.subject, {
       retries: DIRECT_SEND_RETRIES,
     });
+  }
+
+  /** For emails the request depends on: answers 500 with `failureMessage` when neither path took it */
+  async enqueueOrFail(payload: EmailPayload, failureMessage: string): Promise<void> {
+    if (!(await this.enqueue(payload))) throw new InternalServerErrorException(failureMessage);
   }
 
   /** Start consuming email jobs (called in worker process) */

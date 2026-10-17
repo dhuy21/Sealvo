@@ -1,6 +1,7 @@
 import type { AppConfig } from './app.config.js';
 import type { AuthConfig } from './auth.config.js';
 import type { MailConfig } from './mail.config.js';
+import { EmailQueueService } from '../email/email-queue.service.js';
 
 /** Typed config values for specs, overridable per test. */
 export const testAppConfig = (overrides: Partial<AppConfig> = {}): AppConfig => ({
@@ -31,3 +32,11 @@ export const testMailConfig = (overrides: Partial<MailConfig> = {}): MailConfig 
   interceptTo: undefined,
   ...overrides,
 });
+
+/** EmailQueueService double: `enqueue` is a mock, `enqueueOrFail` keeps its real logic on top of it. */
+export const testEmailQueue = () => {
+  const queue = { enqueue: vi.fn() };
+  return Object.assign(queue, {
+    enqueueOrFail: EmailQueueService.prototype.enqueueOrFail.bind(queue),
+  });
+};

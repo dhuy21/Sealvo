@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 import { Test } from '@nestjs/testing';
 import { appConfig } from '../config/app.config.js';
-import { testAppConfig } from '../config/testing.js';
+import { testAppConfig, testEmailQueue } from '../config/testing.js';
 import {
   ConflictException,
   InternalServerErrorException,
@@ -46,7 +46,7 @@ describe('AuthService', () => {
       rotate: vi.fn(),
       revoke: vi.fn(),
     };
-    emailQueue = { enqueue: vi.fn() };
+    emailQueue = testEmailQueue();
     emailService = { compileTemplate: vi.fn() };
 
     const module = await Test.createTestingModule({

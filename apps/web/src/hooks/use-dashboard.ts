@@ -59,7 +59,7 @@ export function useUpdateProfile() {
 
   return useMutation({
     mutationFn: async (payload: UpdateProfilePayload) => {
-      const { data } = await api.patch<UpdateProfileResponse>('/dashboard/profile', payload);
+      const { data } = await api.patch<UpdateProfileResponse>('/account/profile', payload);
       return data;
     },
     onSuccess: () => {

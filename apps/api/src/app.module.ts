@@ -29,6 +29,7 @@ import { WordsModule } from './words/words.module.js';
 import { LearningModule } from './learning/learning.module.js';
 import { GamesModule } from './games/games.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
+import { AccountModule } from './account/account.module.js';
 import { TtsModule } from './tts/tts.module.js';
 import { FeedbackModule } from './feedback/feedback.module.js';
 import { ReminderModule } from './reminder/reminder.module.js';
@@ -73,6 +74,7 @@ import { ReminderModule } from './reminder/reminder.module.js';
     LearningModule,
     GamesModule,
     DashboardModule,
+    AccountModule,
     TtsModule,
     FeedbackModule,
     ReminderModule,
