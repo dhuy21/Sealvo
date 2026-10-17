@@ -22,7 +22,8 @@ disagree, the code wins: fix this file. File references are relative to `apps/ap
 | `2` | 10 days | Word Search | `v` |
 | `v` (memorized) | 20 days | — (no game, final level) | — |
 
-Source: `learning/constants.ts` (same values in `packages/shared/src/constants`).
+Source: `@sealvo/shared` (`packages/shared/src/constants`: `LEVELS`, `LEVEL_INTERVALS`, `GAME_LEVEL`,
+`LEVEL_GAMES`); `learning/learning.constants.ts` derives `NEXT_LEVEL` from `LEVELS`.
 
 - A word is **due** when `DATE(date_memorized) + interval <= today`, i.e.
   `date_memorized < today 00:00 + 1 day − interval` (`spaced-repetition.ts` `dueCutoff`). A word
@@ -40,11 +41,16 @@ Source: `learning/constants.ts` (same values in `packages/shared/src/constants`)
   for Flash Match, **5** for the other games, **and** at least that many are due today; otherwise
   the API returns a French `errorMessage` (`games/games.service.ts`). Vocab Quiz also needs
   **6** due words in the web app (6 options per question, `vocab-quiz/generate-questions.ts`).
-- A game counts as "completed" (client-side thresholds, `apps/web/src/app/(protected)/games/*`):
+- A game counts as "completed" (client-side: `PASS_RULES` in
+  `apps/web/src/components/games/level-progress.ts`, measured by each game's `scoring.ts`):
   Flash Match: the game only ends when every pair is found (max 15 pairs, no time limit), so a
   finished game always counts · Vocab Quiz: ≥ 70 % correct · Test Pronun: average
-  accuracy ≥ 70 % and ≥ 5 words · Word Scramble: ≥ 80 % · Phrase Completion: ≥ 80 % ·
-  Speed Vocab: ≥ 70 % · Word Search: ≥ 70 % of the words found (max 30 words).
+  accuracy ≥ 70 % and ≥ 5 words · Word Scramble: ≥ 80 % of the answers given · Phrase
+  Completion: ≥ 80 % of all questions · Speed Vocab: ≥ 70 % of
+  the words typed · Word Search: ≥ 70 % of the words found.
+- Word Search: the API keeps the due words of ≤ 13 bytes and sends a random subset of at most
+  **30**. The other games get every due word; the web builds and shuffles questions, cards and
+  phrases itself.
 - `POST /learning/level-progress/track` records completed games **per user and per level**
   (not per package), in a Redis hash (`cache:lvlprog:h:<userId>`, one field per game; 3 h TTL
   reset on each recorded game; lost if Redis restarts or expires — accepted). When every game of
@@ -78,7 +84,7 @@ Source: `learning/constants.ts` (same values in `packages/shared/src/constants`)
 - Enforced by `auth/guards/package-ownership.guard.ts` (owner only) and
   `package-read.guard.ts` (adds read for `public`/`protected`). The `Admin` role gives no extra
   rights (as in the old app; the specs assert it is rejected). Every package id sent (path,
-  query, body) must be the same, otherwise 403.
+  query, body) must be a positive integer (otherwise 400) and the same, otherwise 403.
 - Creating a package as `public`, or switching it to `public`, **deactivates** it
   (`is_active = false`). Inactive packages are excluded from reminders and the dashboard review
   list; the owner can re-activate them (toggle).
@@ -95,9 +101,12 @@ Source: `learning/constants.ts` (same values in `packages/shared/src/constants`)
   1–2000, other text fields ≤ 2000 (pronunciation ≤ 255); `language_code` one of the 18 codes
   of `VALID_LANGS` (en-US, en-GB, fr-FR, es-ES, de-DE, it-IT, ja-JP, zh-CN, zh-HK, zh-TW, pt-PT,
   ru-RU, vi-VN, ko-KR, id-ID, hi-IN, pl-PL, nl-NL); `type` one of noun, verb, adjective, adverb,
-  ph.v, idiom, collocation; optional `level`.
-- Adding **3 or more** words at once (`POST /packages/:id/words`) goes through the worker like an
-  import when RabbitMQ and Redis are up; fewer words, or no queue, are saved in the request
+  `ph_v` (stored and shown as `ph.v`), idiom, collocation; optional `level` one of `x`, `level_0`,
+  `level_1`, `level_2`, `v` (`null` rejected). `ph.v` and `0` / `1` / `2` are the spreadsheet
+  values (import).
+- `POST /packages/:id/words` takes at most **500** words and rejects unknown properties. Adding
+  **3 or more** words at once goes through the worker like an import when RabbitMQ and Redis are
+  up; fewer words, or no queue (or a publish the broker does not confirm), are saved in the request
   (`import/bulk-words.service.ts`).
 - With `GEMINI_API_KEY`, examples are rewritten so the target word is wrapped in `**word**`
   (needed by Phrase Completion) on add, import and edit. Failures never block saving.
@@ -106,14 +115,18 @@ Source: `learning/constants.ts` (same values in `packages/shared/src/constants`)
 
 `POST /packages/:id/import` (owner only; `import/import.service.ts`):
 
-- `.xlsx` or `.xls` only, ≤ 5 MB, ≤ **500** word rows.
+- `.xlsx` or `.xls` only, ≤ 5 MB, ≤ **500** word rows. An `.xlsx` whose zip entries declare more
+  than **20 MB** uncompressed is rejected before parsing ("Le fichier est trop volumineux une fois
+  décompressé.").
 - Columns in order: word, language, subject, type, pronunciation, meaning, example, synonyms,
-  antonyms, grammar, level. A first row starting with `Mot` or `Word` is a header and skipped;
+  antonyms, grammar, level. A first row whose first cell is exactly `Mot` or `Word` is a header and skipped;
   rows with an empty first cell are skipped; text in parentheses in the language cell is removed.
 - All-or-nothing: if any row lacks word / meaning / subject or has an invalid language, type or
   level, nothing is imported and the 400 message lists the rows per error.
-- Processed by the worker through RabbitMQ when RabbitMQ and Redis are available (job status
-  `GET /jobs/:id`, kept 1 h), otherwise synchronously in the request.
+- Processed by the worker through RabbitMQ when RabbitMQ and Redis are available and the broker
+  confirms the message (job status `GET /jobs/:id`, owner only, kept 1 h; the SSE stream
+  `GET /jobs/:id/stream` ends when the job finishes or after that hour), otherwise synchronously in
+  the request.
 - A worker job is applied at most once: a redelivered job (worker crash after the commit) saves
   nothing again and reports the words of the first delivery (`applied_jobs`, kept 7 days).
 
@@ -121,15 +134,16 @@ Source: `learning/constants.ts` (same values in `packages/shared/src/constants`)
 
 | Item | Rule |
 |---|---|
-| Registration | username 3–50 chars (same rule when changed later), unique; valid unique email (trimmed and normalized with validator.js `normalizeEmail` defaults, also on forgot-password and profile); password ≥ 6 chars (bcrypt cost 12); avatar 1–11 |
+| Registration | username trimmed, 3–50 chars (same rules when changed later; also trimmed on login and resend-verification), unique; valid unique email (trimmed and normalized with validator.js `normalizeEmail` defaults, also on forgot-password and profile); username and email checked case-insensitively (DB collation: `john` = `John`); a taken username → 409; a taken email gets the same 201 answer as a new registration (no user enumeration) and nothing is created: the owner is emailed instead — a "your account already exists" message with login and forgot-password links (`mailAccountExists.hbs`) if verified, a new verification link otherwise; password ≥ 6 chars (bcrypt cost 12); avatar 1–11 (`null` rejected) |
 | Email verification | required before login; link token valid **3 h**, stored hashed, previous tokens revoked |
+| Resend verification | `POST /auth/resend-verification` `{username}`: a new link is sent only if the account exists and is not verified; the answer is always the same 200 message |
 | Access token | JWT, **15 min**, payload `{sub, username, role}`, kept in memory by the web app |
-| Refresh session | httpOnly cookie (`SameSite=Strict`, path `/auth`, `Secure` in production/staging); expires **7 days** after the last refresh; rotated on every refresh, the previous token stays valid **30 s** (concurrent tabs), replaying it later revokes the session |
+| Refresh session | httpOnly cookie (`SameSite=Strict`, path `/auth`, `Secure` in production/staging); expires **7 days** after the last refresh; rotated on every refresh, the previous token stays valid **10 s** (a lost response; tabs refresh one at a time through Web Locks), replaying it later revokes the session; `POST /auth/login`, `register`, `refresh` and `logout` refuse a browser `Origin` other than the frontend's (403) |
 | Logout | revokes the current device's session only |
 | Password reset | link token valid **1 h**, stored hashed in DB; a new request replaces the previous token; new password ≥ 8 chars; revokes every session of the user; `forgot-password` always answers the same message |
 | Email change | needs the current password; the address changes only when the link sent to the new address (3 h) is opened |
-| Google login | creates a verified account; an existing **unverified** account with the same email is verified, its password replaced and its sessions revoked |
-| Feedback | type suggestion / bug / question / appreciation / other; subject and content required; reply email optional |
+| Google login | the Google email is normalized like on registration; an account matches on the normalized or the raw stored email, otherwise a verified account is created; an existing **unverified** account is verified, its password replaced and its sessions revoked |
+| Feedback | type suggestion / bug / question / appreciation / other; subject (≤ 255 chars) and content (≤ 5000) trimmed and required; reply email optional |
 
 ## Reminders and cleanup
 
@@ -149,7 +163,7 @@ after a restart it catches up if the last run is older than 7 h (`scheduler.ts`)
 
 ## Rate limits
 
-Per client IP, stored in Redis (in-memory per instance if Redis is down), `@nestjs/throttler`.
+Per client IP, stored in Redis (in-memory per instance if Redis is down), `@nestjs/throttler`; the limits below are the named policies of `common/throttler/throttle-policies.ts`, whose 429 message states the window computed from the limit itself.
 A 429 carries the route's French message (`@ThrottleMessage`, e.g. "Trop de tentatives de
 connexion. Réessayez dans 15 minutes."), default "Trop de requêtes. Réessayez dans 1 minute.":
 
@@ -159,9 +173,10 @@ connexion. Réessayez dans 15 minutes."), default "Trop de requêtes. Réessayez
 | `POST /auth/register` | 5 / 15 min |
 | `POST /auth/login` | 10 / 15 min |
 | `POST /auth/forgot-password` | 3 / h |
-| `POST /auth/reset-password` | 10 / 15 min |
+| `POST /auth/resend-verification` | 3 / h |
+| `POST /auth/reset-password` | 10 / 15 min (own message: "Trop de tentatives de réinitialisation. Réessayez dans 15 minutes.") |
 | `POST /feedback` | 5 / h |
 | `POST /api/reminder` (cron secret) | 3 / h |
 | `POST /reminder/test` | 3 / h |
-| `POST /tts/generate` | 30 / min (text ≤ 200 chars) |
+| `POST /tts/generate` | 30 / min (text 1–200 chars, `language` in `VALID_LANGS`) |
 | `GET /health`, `GET /health/deps`, `GET /jobs/:id` | not limited (`@SkipThrottle`) |
