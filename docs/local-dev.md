@@ -31,7 +31,7 @@ Then seed the E2E account if you need it (below). After
 
 ### Volumes created before the switch to Prisma migrations
 
-Older dev volumes were initialised from the old app's `src/migrations/001_initial.sql`. They are
+Older dev volumes were initialised from the previous application's `001_initial.sql` schema. They are
 kept as they are (MySQL only runs init scripts on an empty volume).
 
 - **Never baselined** (`migrate deploy` fails with `P3005`): mark the baseline as applied once,

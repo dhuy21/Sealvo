@@ -40,3 +40,8 @@ apps/api/backups/
 
 # Local Semgrep output
 .semgrep-out.json
+
+# Previous application and migration notes: kept locally, archived on the legacy/express-app branch
+/src/
+/MIGRATION_AUDIT.md
+/docs/legacy/

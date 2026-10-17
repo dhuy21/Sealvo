@@ -17,5 +17,3 @@
 docs/
 apps/api/backups/
 
-# Old Express app: kept in the repo until the migration is finished, never needed by the images
-src/

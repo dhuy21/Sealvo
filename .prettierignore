@@ -4,5 +4,3 @@ dist
 .next
 .turbo
 coverage
-/src/
-/docs/legacy/
