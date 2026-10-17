@@ -52,6 +52,10 @@ Source: `@sealvo/shared` (`packages/shared/src/constants`: `LEVELS`, `LEVEL_INTE
   (old app rules: checking the same word again scores again, and the attempt is counted when
   moving to the next word, so the accuracy can exceed 100 %) · Phrase Completion: ≥ 80 % of all
   questions · Speed Vocab: ≥ 70 % of the words typed · Word Search: ≥ 70 % of the words found.
+- Phrase Completion uses only the words whose example has a `**…**` blank (none left: "Aucun de
+  vos mots n'a d'exemple avec un mot en gras (**mot**) à compléter."). An answer with several
+  blanks is the words separated by `;`, in order; case is ignored (`Paris` = `paris`), accents are
+  not (`phrase-completion/phrases.ts`).
 - Rounding: Word Scramble, Phrase Completion and Speed Vocab compare the **rounded** percentage
   (79.5 % passes an 80 % rule, `percentage` in `level-progress.ts`); Vocab Quiz, Word Search and
   Flash Match round the **required count up** instead (`reachesShare`). The time limits of each
@@ -97,7 +101,8 @@ Source: `@sealvo/shared` (`packages/shared/src/constants`: `LEVELS`, `LEVEL_INTE
   rights (as in the old app; the specs assert it is rejected). Every package id sent (path,
   query, body) must be a positive integer (otherwise 400) and the same, otherwise 403; a package
   that does not exist is a 404.
-- Package name and description are trimmed.
+- Package name and description are trimmed; the name is required and ≤ **100** characters ("Le
+  nom du package ne doit pas dépasser 100 caractères", also capped in the form).
 - Creating a package as `public`, or switching it to `public`, **deactivates** it
   (`is_active = false`). Inactive packages are excluded from reminders and the dashboard review
   list; the owner can re-activate them (toggle).
@@ -129,7 +134,8 @@ Source: `@sealvo/shared` (`packages/shared/src/constants`: `LEVELS`, `LEVEL_INTE
 - With `GEMINI_API_KEY`, missing examples are generated and existing ones rewritten so the
   target word is wrapped in `**word**` (needed by Phrase Completion) on add, import and edit, in
   batches of 25. Failures never block saving.
-- Editing a word's level (`PATCH …/words/:detailId`) keeps its `date_memorized`.
+- Editing a word's level (`PATCH …/words/:detailId`) keeps its `date_memorized`. The word, its
+  language and its subject cannot be edited (they identify the shared word): delete and add it again.
 - Leaving the add-words form with unsaved words, or a learn session where a card has been
   answered (the progress is not saved), asks for confirmation: reload and tab close show the
   browser dialog, in-app links a `confirm`. The browser back button is not covered.
@@ -138,9 +144,11 @@ Source: `@sealvo/shared` (`packages/shared/src/constants`: `LEVELS`, `LEVEL_INTE
 
 `POST /packages/:id/import` (owner only; `import/import.service.ts`):
 
-- `.xlsx` or `.xls` only, ≤ 5 MB, ≤ **500** word rows. An `.xlsx` whose zip entries declare more
-  than **20 MB** uncompressed is rejected before parsing ("Le fichier est trop volumineux une fois
-  décompressé.").
+- `.xlsx` or `.xls` only, ≤ 5 MB, one file and no other form field, ≤ **500** word rows. An `.xlsx`
+  that inflates to more than **20 MB** is rejected before parsing ("Le fichier est trop volumineux
+  une fois décompressé."): the inflated bytes are counted, not the sizes the zip declares.
+- A failed import job reports "L'import a échoué. Réessayez." (the validation errors above keep
+  their own message).
 - Columns in order: word, language, subject, type, pronunciation, meaning, example, synonyms,
   antonyms, grammar, level. A first row whose first cell is exactly `Mot` or `Word` is a header and skipped;
   rows with an empty first cell are skipped; text in parentheses in the language cell is removed.
@@ -178,7 +186,8 @@ Source: `@sealvo/shared` (`packages/shared/src/constants`: `LEVELS`, `LEVEL_INTE
 ## Reminders and cleanup
 
 The scheduler calls `POST /api/reminder` at **06:00, 12:00, 18:00 and 23:00** (Europe/Paris);
-after a restart it catches up if the last run is older than 7 h (`scheduler/scheduler.service.ts`).
+after a restart it catches up if the last run is older than 7 h, unless the next scheduled run is
+less than 1 h away (`scheduler/scheduler.service.ts`).
 The last run is recorded only after a 2xx answer, and no catch-up happens when none is recorded
 (first boot, or no Redis). Each run:
 
@@ -222,3 +231,10 @@ connexion. Réessayez dans 15 minutes."), default "Trop de requêtes. Réessayez
 
 Limits outside the throttler (429 as well): **3 email-change requests per hour per account**, and
 at most **10 open job progress streams** (`GET /jobs/:id/stream`) per user.
+
+## Validation messages
+
+A rejected request body is a 400 whose `message` lists French messages. The fields a user fills in
+(username, email, password, avatar, package name and mode, feedback) keep the old app's texts; every
+other rule gets a generic French text (`common/validation/validation-messages.ts`, e.g. "Le champ
+« level » doit valoir : …"). An unknown property is rejected ("Le champ « x » n'est pas autorisé").
