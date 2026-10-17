@@ -80,7 +80,7 @@ export function ImportForm({ packageId }: { packageId: number }) {
             type="file"
             id="vocab-file"
             name="file"
-            accept=".xlsx,.xls,.csv,.pdf"
+            accept=".xlsx,.xls"
             className={cx(styles, 'file-input')}
             onChange={handleSelect}
           />
