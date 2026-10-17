@@ -62,6 +62,20 @@ describe('auth DTOs', () => {
     expect(messages).toEqual([]);
   });
 
+  it('LoginDto accepts what an old account can hold and rejects anything longer', async () => {
+    const longest = await check(LoginDto, { username: 'a'.repeat(255), password: 'é'.repeat(512) });
+    expect(longest.messages).toEqual([]);
+
+    const tooLong = await check(LoginDto, {
+      username: 'a'.repeat(256),
+      password: 'a'.repeat(1025),
+    });
+    expect(tooLong.messages).toEqual([
+      "Le nom d'utilisateur est trop long",
+      'Le mot de passe est trop long',
+    ]);
+  });
+
   describe('ResendVerificationDto', () => {
     it('trims the username', async () => {
       const { dto, messages } = await check(ResendVerificationDto, { username: ' john ' });
