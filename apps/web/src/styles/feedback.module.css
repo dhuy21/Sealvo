@@ -1,7 +1,43 @@
 /* Dark-mode rules for this module's classes (dark-mode.css loads first): keep them above the page rules */
 :global(.dark) .feedback-form-container {
-  background: #313131 !important;
+  background: #2a2a2e !important;
   color: #ffffff !important;
+  border-color: rgba(196, 181, 253, 0.22) !important;
+}
+
+:global(.dark) .feedback-description {
+  color: #d6d3d1 !important;
+}
+
+:global(.dark) .feedback-form-container label {
+  color: #e9d5ff !important;
+}
+
+:global(.dark) .feedback-form-container .form-control {
+  background: #1c1c20 !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+:global(.dark) .feedback-header h1 {
+  font-weight: 800 !important;
+}
+
+:global(.dark) .feedback-form-container .form-control:hover {
+  border-color: rgba(196, 181, 253, 0.45) !important;
+}
+
+:global(.dark) .feedback-form-container .form-control:focus {
+  border-color: #a78bfa !important;
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.25);
+}
+
+:global(.dark) .feedback-form-container .form-control::placeholder {
+  color: #a1a1aa;
+}
+
+:global(.dark) .field-error {
+  color: #fb7185 !important;
 }
 
 .feedback-container {
@@ -60,11 +96,24 @@
 
 .feedback-header h1 {
   font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   color: #333;
-  margin-bottom: 1rem;
-  background: linear-gradient(135deg, #4158d0, #c850c0);
+  margin-bottom: 0.75rem;
+  background: linear-gradient(135deg, #6d28d9, #c026d3);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.feedback-header h1::after {
+  content: '';
+  display: block;
+  width: 72px;
+  height: 4px;
+  margin: 0.85rem auto 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #7c3aed, #c084fc);
 }
 
 .feedback-description {
@@ -76,8 +125,10 @@
 
 .feedback-form-container {
   background: #fff;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 2rem;
+  border: 1px solid rgba(102, 1, 128, 0.12);
+  border-top: 4px solid #7c3aed;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
@@ -89,22 +140,40 @@
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 600;
-  color: #333;
+  color: #3f3f46;
+}
+
+.field-error {
+  margin: 0.4rem 0 0;
+  color: #e11d48;
+  font-size: 0.85rem;
 }
 
 .form-control {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
   font-size: 1rem;
-  transition: all 0.3s ease;
+  background: #fafafa;
+  color: #18181b;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.form-control:hover {
+  border-color: #c4b5fd;
 }
 
 .form-control:focus {
-  border-color: #4158d0;
-  box-shadow: 0 0 0 3px rgba(65, 88, 208, 0.2);
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
   outline: none;
+}
+
+select.form-control {
+  cursor: pointer;
 }
 
 textarea.form-control {
@@ -114,8 +183,8 @@ textarea.form-control {
 
 .feedback-actions {
   display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
+  justify-content: center;
+  margin-top: 0.75rem;
 }
 
 .btn {
@@ -132,23 +201,29 @@ textarea.form-control {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #4158d0, #c850c0);
+  min-width: 11rem;
+  justify-content: center;
+  padding: 0.9rem 1.75rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #7c3aed, #c084fc);
   color: white;
-}
-
-.btn-secondary {
-  background: #f3f4f6;
-  color: #4b5563;
+  box-shadow: 0 8px 18px rgba(124, 58, 237, 0.28);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(65, 88, 208, 0.3);
+  box-shadow: 0 12px 24px rgba(124, 58, 237, 0.4);
 }
 
-.btn-secondary:hover {
-  background: #e5e7eb;
-  transform: translateY(-2px);
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 10px rgba(124, 58, 237, 0.25);
+}
+
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: default;
+  transform: none;
 }
 
 .fade-in {
@@ -196,10 +271,6 @@ textarea.form-control {
 
   .feedback-form-container {
     padding: 1.5rem;
-  }
-
-  .feedback-actions {
-    flex-direction: column;
   }
 
   .btn {

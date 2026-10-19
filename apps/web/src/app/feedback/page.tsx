@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
@@ -8,9 +7,7 @@ import toast from 'react-hot-toast';
 import { FEEDBACK_TYPES, type FeedbackType } from '@sealvo/shared';
 import { useSendFeedback } from '@/hooks/use-feedback';
 import { getApiErrorMessage } from '@/lib/api-error';
-import { useAuthStore } from '@/stores/auth.store';
 import { cx } from '@/lib/css-module';
-import authStyles from '@/styles/auth.module.css';
 import feedbackStyles from '@/styles/feedback.module.css';
 
 const TYPE_LABELS: Record<FeedbackType, string> = {
@@ -33,7 +30,6 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function FeedbackPage() {
-  const user = useAuthStore((s) => s.user);
   const sendFeedback = useSendFeedback();
 
   const {
@@ -54,7 +50,7 @@ export default function FeedbackPage() {
   };
 
   return (
-    <div className={`${authStyles['page']} ${feedbackStyles['feedback-container']}`}>
+    <div className={feedbackStyles['feedback-container']}>
       <i className={cx(feedbackStyles, 'fas', 'fa-comment', 'floating-icons', 'float-icon-1')} />
       <i className={cx(feedbackStyles, 'fas', 'fa-lightbulb', 'floating-icons', 'float-icon-2')} />
       <i className={cx(feedbackStyles, 'fas', 'fa-star', 'floating-icons', 'float-icon-3')} />
@@ -70,7 +66,7 @@ export default function FeedbackPage() {
 
         <div className={cx(feedbackStyles, 'feedback-form-container', 'fade-in')}>
           <form className="feedback-form" onSubmit={handleSubmit(onSubmit)}>
-            <div className={`${authStyles['form-group']} ${feedbackStyles['form-group']}`}>
+            <div className={feedbackStyles['form-group']}>
               <label htmlFor="feedback-type">Type de feedback</label>
               <select
                 id="feedback-type"
@@ -87,10 +83,12 @@ export default function FeedbackPage() {
                   </option>
                 ))}
               </select>
-              {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>}
+              {errors.type && (
+                <p className={feedbackStyles['field-error']}>{errors.type.message}</p>
+              )}
             </div>
 
-            <div className={`${authStyles['form-group']} ${feedbackStyles['form-group']}`}>
+            <div className={feedbackStyles['form-group']}>
               <label htmlFor="feedback-subject">Sujet</label>
               <input
                 type="text"
@@ -100,11 +98,11 @@ export default function FeedbackPage() {
                 {...register('subject')}
               />
               {errors.subject && (
-                <p className="text-red-500 text-sm mt-1">{errors.subject.message}</p>
+                <p className={feedbackStyles['field-error']}>{errors.subject.message}</p>
               )}
             </div>
 
-            <div className={`${authStyles['form-group']} ${feedbackStyles['form-group']}`}>
+            <div className={feedbackStyles['form-group']}>
               <label htmlFor="feedback-content">Détails</label>
               <textarea
                 id="feedback-content"
@@ -114,11 +112,11 @@ export default function FeedbackPage() {
                 {...register('content')}
               />
               {errors.content && (
-                <p className="text-red-500 text-sm mt-1">{errors.content.message}</p>
+                <p className={feedbackStyles['field-error']}>{errors.content.message}</p>
               )}
             </div>
 
-            <div className={`${authStyles['form-group']} ${feedbackStyles['form-group']}`}>
+            <div className={feedbackStyles['form-group']}>
               <label htmlFor="feedback-email">Email (optionnel)</label>
               <input
                 type="email"
@@ -127,23 +125,19 @@ export default function FeedbackPage() {
                 className={feedbackStyles['form-control']}
                 {...register('email')}
               />
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
+              {errors.email && (
+                <p className={feedbackStyles['field-error']}>{errors.email.message}</p>
+              )}
             </div>
 
             <div className={feedbackStyles['feedback-actions']}>
               <button
                 type="submit"
-                className={`${cx(authStyles, 'btn', 'btn-primary')} ${cx(feedbackStyles, 'btn', 'btn-primary')}`}
+                className={cx(feedbackStyles, 'btn', 'btn-primary')}
                 disabled={isSubmitting}
               >
                 <i className="fas fa-paper-plane" /> {isSubmitting ? 'Envoi...' : 'Envoyer'}
               </button>
-              <Link
-                href={user ? '/dashboard' : '/'}
-                className={`${cx(authStyles, 'btn', 'btn-secondary', 'btn-info')} ${feedbackStyles['btn']} ${feedbackStyles['btn-secondary']}`}
-              >
-                <i className="fas fa-arrow-left" /> Sortie
-              </Link>
             </div>
           </form>
         </div>

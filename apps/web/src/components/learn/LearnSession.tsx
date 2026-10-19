@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatedCounter } from './AnimatedCounter';
 import { animateButtonPress } from './button-press';
@@ -11,6 +12,7 @@ import { LearnControls } from './LearnControls';
 import { LearnProgress } from './LearnProgress';
 import { LearnStats } from './LearnStats';
 import { RemainingWords } from './RemainingWords';
+import { ResetSessionModal } from './ResetSessionModal';
 import { useFlashcardSession } from './use-flashcard-session';
 import { useLearnShortcuts } from './use-learn-shortcuts';
 import { useRecordSessionStreak } from './use-record-session-streak';
@@ -22,6 +24,7 @@ import styles from '@/styles/learn.module.css';
 
 export function LearnSession({ words, packageId }: { words: ReviewWord[]; packageId: number }) {
   const router = useRouter();
+  const [resetOpen, setResetOpen] = useState(false);
   const sessionTime = useSessionTimer();
   const recordSessionStreak = useRecordSessionStreak();
   const session = useFlashcardSession(words, recordSessionStreak);
@@ -114,8 +117,17 @@ export function LearnSession({ words, packageId }: { words: ReviewWord[]; packag
 
       <LearnActions
         onShuffle={session.shuffle}
-        onReset={session.reset}
+        onReset={() => setResetOpen(true)}
         onPlay={() => router.push(`/games/flash-match?package=${packageId}`)}
+      />
+
+      <ResetSessionModal
+        open={resetOpen}
+        onClose={() => setResetOpen(false)}
+        onConfirm={() => {
+          setResetOpen(false);
+          session.reset();
+        }}
       />
     </>
   );

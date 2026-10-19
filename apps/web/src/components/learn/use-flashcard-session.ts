@@ -195,7 +195,6 @@ export function useFlashcardSession(
   };
 
   const reset = () => {
-    if (!confirm('Êtes-vous sûr de vouloir réinitialiser votre progression ?')) return;
     setProgressAnimation('reset-animation');
     schedule(() => {
       setProgressAnimation('');
