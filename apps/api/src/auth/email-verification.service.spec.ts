@@ -8,6 +8,7 @@ import { EmailVerificationService } from './email-verification.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
 import { EmailService } from '../email/email.service.js';
+import { ActivityLogService } from '../activity/activity-log.service.js';
 
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
 
@@ -16,6 +17,7 @@ describe('EmailVerificationService', () => {
   let prisma: {
     users: { findUnique: any; update: any };
     email_verification: { findFirst: any; create: any; updateMany: any };
+    user_activities: { create: any };
     $transaction: any;
   };
   let emailQueue: { enqueue: any };
@@ -29,6 +31,7 @@ describe('EmailVerificationService', () => {
         create: vi.fn(),
         updateMany: vi.fn(),
       },
+      user_activities: { create: vi.fn() },
       $transaction: vi.fn(),
     };
     prisma.email_verification.updateMany.mockResolvedValue({ count: 1 });
@@ -46,6 +49,7 @@ describe('EmailVerificationService', () => {
         { provide: appConfig.KEY, useValue: testAppConfig() },
         { provide: EmailQueueService, useValue: emailQueue },
         { provide: EmailService, useValue: emailService },
+        ActivityLogService,
       ],
     }).compile();
 
@@ -68,6 +72,7 @@ describe('EmailVerificationService', () => {
         data: { is_verified: true },
       });
       expect(prisma.$transaction).toHaveBeenCalled();
+      expect(prisma.user_activities.create).not.toHaveBeenCalled();
     });
 
     it('should switch the user email for an email-change token', async () => {
@@ -85,6 +90,11 @@ describe('EmailVerificationService', () => {
         where: { id: 'abc1234' },
         data: { is_verified: true, email: 'new@b.c' },
       });
+      expect(prisma.user_activities.create.mock.calls[0][0].data).toMatchObject({
+        user_id: 'abc1234',
+        type: 'email_change',
+      });
+      expect(prisma.user_activities.create.mock.calls[0][0].data.package_name).toBeUndefined();
     });
 
     it('should reject an email-change token whose address was taken meanwhile', async () => {

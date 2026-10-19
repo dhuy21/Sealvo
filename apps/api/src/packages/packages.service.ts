@@ -5,10 +5,14 @@ import { TX_OPTIONS } from '../prisma/tx-options.constants.js';
 import { deleteOrphanDetails } from '../words/orphan-details.js';
 import type { CreatePackageDto } from './dto/create-package.dto.js';
 import type { UpdatePackageDto } from './dto/update-package.dto.js';
+import { ActivityLogService } from '../activity/activity-log.service.js';
 
 @Injectable()
 export class PackagesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly activities: ActivityLogService,
+  ) {}
 
   async findByUserId(userId: string): Promise<PackageDto[]> {
     return this.prisma.packages.findMany({
@@ -51,22 +55,30 @@ export class PackagesService {
   async create(userId: string, dto: CreatePackageDto) {
     const isPublic = dto.mode === 'public';
 
-    const pkg = await this.prisma.packages.create({
-      data: {
-        user_id: userId,
-        package_name: dto.package_name,
-        package_description: dto.package_description ?? null,
-        mode: dto.mode ?? 'private',
-        is_active: !isPublic, // auto-deactivate public packages
-      },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      const pkg = await tx.packages.create({
+        data: {
+          user_id: userId,
+          package_name: dto.package_name,
+          package_description: dto.package_description ?? null,
+          mode: dto.mode ?? 'private',
+          is_active: !isPublic, // auto-deactivate public packages
+        },
+      });
+      await this.activities.succeeded(tx, {
+        userId,
+        type: 'package_create',
+        packageId: pkg.package_id,
+        packageName: pkg.package_name,
+      });
 
-    return {
-      packageId: pkg.package_id,
-      message: isPublic
-        ? 'Package créé avec succès. Il a été automatiquement désactivé car il est public.'
-        : 'Package créé avec succès',
-    };
+      return {
+        packageId: pkg.package_id,
+        message: isPublic
+          ? 'Package créé avec succès. Il a été automatiquement désactivé car il est public.'
+          : 'Package créé avec succès',
+      };
+    });
   }
 
   async update(packageId: number, dto: UpdatePackageDto) {
@@ -94,6 +106,12 @@ export class PackagesService {
 
   async delete(packageId: number) {
     await this.prisma.$transaction(async (tx) => {
+      const pkg = await tx.packages.findUnique({
+        where: { package_id: packageId },
+        select: { user_id: true, package_name: true },
+      });
+      if (!pkg) throw new NotFoundException('Package non trouvé');
+
       const entries = await tx.learning.findMany({
         where: { package_id: packageId },
         select: { detail_id: true },
@@ -106,6 +124,12 @@ export class PackagesService {
         tx,
         entries.map((e) => e.detail_id),
       );
+      await this.activities.succeeded(tx, {
+        userId: pkg.user_id,
+        type: 'package_delete',
+        packageId,
+        packageName: pkg.package_name,
+      });
     }, TX_OPTIONS);
 
     return { message: 'Package supprimé avec succès' };
@@ -195,6 +219,13 @@ export class PackagesService {
           },
         });
       }
+
+      await this.activities.succeeded(tx, {
+        userId,
+        type: 'package_create',
+        packageId: newPkg.package_id,
+        packageName: newPkg.package_name,
+      });
 
       return {
         packageId: newPkg.package_id,

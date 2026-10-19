@@ -18,5 +18,4 @@ export interface UserDto {
   is_verified: boolean;
   streak: number;
   created_at: string | null;
-  last_login: string | null;
 }

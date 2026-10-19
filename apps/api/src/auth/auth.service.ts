@@ -18,6 +18,7 @@ import {
   VERIFICATION_EMAIL_FAILED_MESSAGE,
 } from './email-verification.service.js';
 import { createUser } from './create-user.js';
+import { ActivityLogService } from '../activity/activity-log.service.js';
 import { hashPassword } from './crypto.js';
 import { errorMessage } from '../common/utils/error-message.js';
 import type { RegisterDto } from './dto/register.dto.js';
@@ -39,6 +40,7 @@ export class AuthService {
     private readonly emailVerification: EmailVerificationService,
     private readonly emailQueue: EmailQueueService,
     private readonly emailService: EmailService,
+    private readonly activities: ActivityLogService,
     @Inject(appConfig.KEY) private readonly app: AppConfig,
   ) {}
 
@@ -102,7 +104,13 @@ export class AuthService {
       });
     }
 
-    return this.tokens.issueTokens(user);
+    const tokens = await this.tokens.issueTokens(user);
+    try {
+      await this.activities.succeeded(this.prisma, { userId: user.id, type: 'login' });
+    } catch (error) {
+      this.logger.error(`Login journal failed for user ${user.id}: ${errorMessage(error)}`);
+    }
+    return tokens;
   }
 
   async refreshTokens(refreshToken: string | undefined) {
@@ -119,13 +127,7 @@ export class AuthService {
     return { accessToken: this.tokens.signAccessToken(user), refreshToken: rotated.token };
   }
 
-  /** `last_login` holds the time of the last logout, as in the old app */
   async logout(userId: string, refreshToken: string | undefined): Promise<void> {
-    try {
-      await this.prisma.users.update({ where: { id: userId }, data: { last_login: new Date() } });
-    } catch (error) {
-      this.logger.error(`Failed to update last login for user ${userId}: ${errorMessage(error)}`);
-    }
     await this.sessions.revoke(userId, refreshToken);
   }
 
@@ -141,7 +143,6 @@ export class AuthService {
         is_verified: true,
         streak: true,
         created_at: true,
-        last_login: true,
       },
     });
 

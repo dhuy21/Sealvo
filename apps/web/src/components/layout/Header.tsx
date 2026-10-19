@@ -3,37 +3,25 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { useAuthStore } from '@/stores/auth.store';
 import { useLogout } from '@/hooks/use-auth';
 
 interface NavItem {
+  id: string;
   href: string;
   label: string;
   icon: string;
   active: boolean;
 }
 
-export function Header() {
+export function Header({ signedInHint = false }: { signedInHint?: boolean }) {
   const pathname = usePathname();
   const { resolvedTheme, setTheme } = useTheme();
   const { user, isAuthenticated, isReady } = useAuthStore();
   const logout = useLogout();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLLIElement>(null);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
-    }
-    document.addEventListener('click', handleClick);
-    return () => document.removeEventListener('click', handleClick);
-  }, []);
 
   // Close mobile menu on resize
   useEffect(() => {
@@ -46,8 +34,11 @@ export function Header() {
 
   const closeMobile = () => setMobileOpen(false);
 
+  // Until refresh returns, trust the hint from the document so logout does not paint Dashboard then Home
+  const signedIn = isReady ? isAuthenticated : signedInHint;
+
   const renderNavItem = (item: NavItem) => (
-    <li key={item.href} className={`nav-item ${item.active ? 'active' : ''}`}>
+    <li key={item.id} className={`nav-item ${item.active ? 'active' : ''}`}>
       <Link href={item.href} className="nav-link" onClick={closeMobile}>
         <i className={item.icon} />
         <span>{item.label}</span>
@@ -57,20 +48,30 @@ export function Header() {
 
   const navItems: NavItem[] = [
     {
-      href: isAuthenticated ? '/dashboard' : '/login',
-      label: 'Home',
+      id: 'start',
+      href: signedIn ? '/dashboard' : '/login',
+      label: signedIn ? 'Dashboard' : 'Home',
       icon: 'fas fa-home',
-      active: pathname === '/dashboard' || pathname === '/',
+      active: signedIn ? pathname === '/dashboard' : pathname === '/',
     },
     {
+      id: 'feedback',
       href: '/feedback',
       label: 'Feedback',
       icon: 'fas fa-comments',
       active: pathname === '/feedback',
     },
+    {
+      id: 'packages',
+      href: '/packages',
+      label: 'My Packages',
+      icon: 'fas fa-book',
+      active: pathname === '/packages' || pathname.startsWith('/packages/'),
+    },
   ];
 
   const aboutItem: NavItem = {
+    id: 'about',
     href: '/about',
     label: 'About',
     icon: 'fas fa-user',
@@ -90,7 +91,6 @@ export function Header() {
                 height={40}
                 className="logo-img"
               />
-              <div className="logo-glow" />
             </div>
             <h1 className="brand-text">SEALVO</h1>
           </Link>
@@ -110,34 +110,6 @@ export function Header() {
           <nav className="main-nav">
             <ul className="nav-list">
               {navItems.map(renderNavItem)}
-
-              <li ref={dropdownRef} className={`nav-item dropdown ${dropdownOpen ? 'open' : ''}`}>
-                <button
-                  className="nav-link dropdown-toggle"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setDropdownOpen((v) => !v);
-                  }}
-                >
-                  <i className="fas fa-th-large" />
-                  <span>Services</span>
-                </button>
-                <ul className="dropdown-menu">
-                  <li>
-                    <Link
-                      href="/packages"
-                      className="dropdown-item"
-                      onClick={() => {
-                        setDropdownOpen(false);
-                        closeMobile();
-                      }}
-                    >
-                      <i className="fas fa-book" /> My Packages
-                    </Link>
-                  </li>
-                </ul>
-              </li>
-
               {renderNavItem(aboutItem)}
             </ul>
           </nav>
@@ -180,12 +152,12 @@ export function Header() {
                   <div className="text">Sign Out</div>
                 </button>
               </div>
-            ) : isReady ? (
+            ) : signedIn ? null : (
               <Link href="/login" className="login-btn" onClick={closeMobile}>
                 <i className="fas fa-sign-in-alt" />
                 <span>Sign In</span>
               </Link>
-            ) : null}
+            )}
           </div>
         </div>
       </div>

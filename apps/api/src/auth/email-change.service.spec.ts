@@ -6,6 +6,7 @@ import { appConfig } from '../config/app.config.js';
 import { testAppConfig, testEmailQueue } from '../config/testing.js';
 import { EmailChangeService } from './email-change.service.js';
 import { EmailVerificationService } from './email-verification.service.js';
+import { ActivityLogService } from '../activity/activity-log.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
 import { EmailService } from '../email/email.service.js';
@@ -45,6 +46,7 @@ describe('EmailChangeService', () => {
         { provide: appConfig.KEY, useValue: testAppConfig() },
         { provide: EmailQueueService, useValue: emailQueue },
         { provide: EmailService, useValue: emailService },
+        ActivityLogService,
       ],
     }).compile();
 

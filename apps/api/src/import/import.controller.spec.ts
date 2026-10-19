@@ -51,7 +51,7 @@ describe('ImportController POST /packages/:packageId/import', () => {
     const res = await upload();
 
     expect(res.status).toBe(200);
-    expect(bulkWords.add).toHaveBeenCalledWith('import', 7, 'u1', []);
+    expect(bulkWords.add).toHaveBeenCalledWith('import', 7, 'u1', [], 'words.xlsx');
   });
 
   it('rejects text fields sent along with the file', async () => {

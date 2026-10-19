@@ -6,6 +6,8 @@ import { useReviewWords } from '@/hooks/use-words';
 import { usePackageIdParam } from '@/hooks/use-package-id-param';
 import { LearnSession } from '@/components/learn/LearnSession';
 import { BrowserWarningModal } from '@/components/learn/BrowserWarningModal';
+import { WordsEmptyState } from '@/components/words/WordsEmptyState';
+import { usePackage } from '@/hooks/use-packages';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { cx } from '@/lib/css-module';
 import styles from '@/styles/learn.module.css';
@@ -17,6 +19,7 @@ function LearnContent() {
   const router = useRouter();
   const packageId = usePackageIdParam();
   const { data: words, isPending, error } = useReviewWords(packageId);
+  const pkg = usePackage(packageId);
 
   if (!packageId) {
     return (
@@ -75,17 +78,7 @@ function LearnContent() {
       {words && words.length > 0 ? (
         <LearnSession words={words} packageId={packageId} />
       ) : (
-        <div className={cx(styles, 'no-words')}>
-          <i className="fas fa-book"></i>
-          <h3>Aucun mot dans votre vocabulaire</h3>
-          <p>Commencez à ajouter des mots pour pouvoir les apprendre.</p>
-          <button
-            className={cx(styles, 'btn')}
-            onClick={() => router.push(`/words?package=${packageId}`)}
-          >
-            Ajouter votre premier mot
-          </button>
-        </div>
+        <WordsEmptyState packageId={packageId} isOwner={pkg.data?.isOwner ?? true} narrow />
       )}
 
       <div className={cx(styles, 'home-cta')}>

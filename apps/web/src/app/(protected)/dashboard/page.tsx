@@ -8,10 +8,10 @@ import { AvatarModal } from '@/components/dashboard/AvatarModal';
 import { TypingText } from '@/components/dashboard/TypingText';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { ProfileCard } from '@/components/dashboard/ProfileCard';
-import { PackagesActionCard } from '@/components/dashboard/PackagesActionCard';
 import { PackagesToReview } from '@/components/dashboard/PackagesToReview';
+import { ActivityJournal } from '@/components/dashboard/ActivityJournal';
+import { SparkleLink } from '@/components/dashboard/SparkleLink';
 import { StreakSection } from '@/components/dashboard/StreakSection';
-import { DashboardFooter } from '@/components/dashboard/DashboardFooter';
 import { useProfileActions } from '@/components/dashboard/use-profile-actions';
 import {
   useCardTilt,
@@ -75,17 +75,14 @@ export default function DashboardPage() {
             className="fas fa-hand-sparkles"
             style={{ color: '#FFCC70', marginRight: '0.5rem' }}
           ></i>
-          Bienvenue{' '}
-          <span style={{ fontWeight: 700, color: 'var(--primary-color)' }}>{user?.username}</span>,{' '}
+          Bienvenue <span style={{ fontWeight: 700 }}>{user?.username}</span>,{' '}
           <TypingText text="voici le résumé de votre progression en vocabulaire." />
         </div>
 
-        {/* Sidebar — Stats */}
         <div className={cx(styles, 'sidebar')}>
           <StatsCard stats={data} />
         </div>
 
-        {/* User Profile */}
         <div className={cx(styles, 'user-dashboard')}>
           <ProfileCard
             user={user}
@@ -95,27 +92,26 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Main Content */}
         <div className={cx(styles, 'main-content')}>
-          {/* Action Card — Mes Packages */}
-          <div className={cx(styles, 'dashboard-actions')}>
-            <PackagesActionCard />
-          </div>
+          <div className={cx(styles, 'main-scroll')}>
+            <StreakSection streak={data.streak} />
 
-          {/* Streak */}
-          <StreakSection streak={data.streak} />
-
-          {/* Packages to Review */}
-          <div className={cx(styles, 'tasks-activity', 'fade-in')}>
-            <div className={cx(styles, 'tasks-header')}>
-              <h5>🔖 Packages à Réviser</h5>
-              <span className={cx(styles, 'tasks-count')}>{data.packagesToReview.length}</span>
+            <div className={cx(styles, 'tasks-activity', 'fade-in')}>
+              <div className={cx(styles, 'tasks-header')}>
+                <div className={cx(styles, 'tasks-packages-link')}>
+                  <SparkleLink href="/packages">
+                    <i className="fas fa-bookmark"></i> Mes Packages
+                  </SparkleLink>
+                </div>
+                <h5>🔖 Packages à Réviser</h5>
+                <span className={cx(styles, 'tasks-count')}>{data.packagesToReview.length}</span>
+              </div>
+              <PackagesToReview packages={data.packagesToReview} />
             </div>
-            <PackagesToReview packages={data.packagesToReview} />
+
+            <ActivityJournal />
           </div>
         </div>
-
-        <DashboardFooter />
       </div>
 
       {/* Avatar Modal */}

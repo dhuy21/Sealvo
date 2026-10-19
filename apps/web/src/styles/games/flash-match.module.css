@@ -452,6 +452,8 @@
 }
 
 .error-box i {
+  /* Font Awesome 7 fixes the icon width, which pins this block icon to the left */
+  width: auto;
   font-size: 3rem;
   color: #ef4444;
   margin-bottom: 1.5rem;

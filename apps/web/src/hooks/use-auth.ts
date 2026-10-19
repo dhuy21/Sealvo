@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import { fetchMe } from '@/lib/auth-api';
+import { setSignedInHint } from '@/lib/signed-in-hint';
 import { useAuthStore } from '@/stores/auth.store';
 
 interface MessageResponse {
@@ -111,7 +112,11 @@ export function useLogout() {
     // Full reload instead of logout() + router.push: clearing the store while a protected page
     // is mounted makes AuthGuard redirect to /login?redirect=… before the push lands.
     // The reload also drops all in-memory auth and query state.
-    onSuccess: () => window.location.assign('/'),
+    onSuccess: () => {
+      // Cleared before the reload, so the next document's header is already the logged-out one
+      setSignedInHint(false);
+      window.location.assign('/');
+    },
     // The refresh cookie may still be valid: reloading would silently sign the user back in
     onError: () => toast.error('La déconnexion a échoué. Réessayez.'),
   });

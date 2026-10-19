@@ -16,6 +16,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
 import { EmailService } from '../email/email.service.js';
 import { SessionService } from './session.service.js';
+import { ActivityLogService } from '../activity/activity-log.service.js';
 
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
 
@@ -24,6 +25,7 @@ describe('AuthService', () => {
   let prisma: {
     users: { findUnique: any; create: any; update: any };
     email_verification: { findFirst: any; create: any; updateMany: any };
+    user_activities: { create: any };
     $transaction: any;
   };
   let sessions: { create: any; rotate: any; revoke: any };
@@ -38,6 +40,7 @@ describe('AuthService', () => {
         update: vi.fn(),
       },
       email_verification: { findFirst: vi.fn(), create: vi.fn(), updateMany: vi.fn() },
+      user_activities: { create: vi.fn() },
       $transaction: vi.fn(),
     };
 
@@ -59,6 +62,7 @@ describe('AuthService', () => {
         { provide: SessionService, useValue: sessions },
         { provide: EmailQueueService, useValue: emailQueue },
         { provide: EmailService, useValue: emailService },
+        ActivityLogService,
         { provide: appConfig.KEY, useValue: testAppConfig() },
       ],
     }).compile();
@@ -96,7 +100,7 @@ describe('AuthService', () => {
       });
     });
 
-    it('should return tokens on valid login without touching last_login', async () => {
+    it('should return tokens on valid login without updating the user row', async () => {
       const hashed = await bcrypt.hash('pass', 12);
       prisma.users.findUnique.mockResolvedValue({
         id: '1',
@@ -110,25 +114,19 @@ describe('AuthService', () => {
       expect(result).toEqual({ accessToken: 'token', refreshToken: 'session.token' });
       expect(sessions.create).toHaveBeenCalledWith('1');
       expect(prisma.users.update).not.toHaveBeenCalled();
+      expect(prisma.user_activities.create.mock.calls[0][0].data).toMatchObject({
+        user_id: '1',
+        type: 'login',
+        status: 'succeeded',
+      });
     });
   });
 
   describe('logout', () => {
-    it('should record last_login and revoke the device session', async () => {
+    it('should revoke the device session', async () => {
       await service.logout('1', 'sid.secret');
 
-      expect(prisma.users.update).toHaveBeenCalledWith({
-        where: { id: '1' },
-        data: { last_login: expect.any(Date) },
-      });
-      expect(sessions.revoke).toHaveBeenCalledWith('1', 'sid.secret');
-    });
-
-    it('should still revoke the session when last_login cannot be updated', async () => {
-      prisma.users.update.mockRejectedValue(new Error('db down'));
-
-      await service.logout('1', 'sid.secret');
-
+      expect(prisma.users.update).not.toHaveBeenCalled();
       expect(sessions.revoke).toHaveBeenCalledWith('1', 'sid.secret');
     });
   });

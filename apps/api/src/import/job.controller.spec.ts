@@ -37,7 +37,12 @@ describe('JobController stream', () => {
       }),
     };
     res = new FakeResponse();
-    controller = new JobController(tracker as unknown as JobTrackerService);
+    controller = new JobController(
+      tracker as unknown as JobTrackerService,
+      {
+        findOwned: vi.fn().mockResolvedValue(null),
+      } as any,
+    );
   });
 
   afterEach(() => {

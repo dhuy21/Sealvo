@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
+import { SIGNED_IN_HINT } from '@/lib/signed-in-hint';
 import Script from 'next/script';
 import { AppProviders } from '@/providers/app-providers';
 import { Header } from '@/components/layout/Header';
@@ -33,6 +34,7 @@ export const instant = false;
 
 export default async function RootLayout({ children }: LayoutProps<'/'>) {
   const nonce = (await headers()).get('x-nonce') ?? undefined;
+  const signedInHint = (await cookies()).get(SIGNED_IN_HINT)?.value === '1';
   return (
     <html
       lang="en"
@@ -43,7 +45,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
         <Script src="/env.js" strategy="beforeInteractive" nonce={nonce} />
         <AppProviders nonce={nonce}>
           <div className="app flex-1">
-            <Header />
+            <Header signedInHint={signedInHint} />
             <main className="content flex-1">{children}</main>
             <Footer />
           </div>

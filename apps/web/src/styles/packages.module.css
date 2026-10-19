@@ -840,12 +840,12 @@
   padding: 1.5rem 2rem;
   border-top: 1px solid var(--border-color);
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   gap: 1rem;
 }
 
 .modal-footer .btn {
-  flex: 1;
+  justify-content: center;
 }
 
 .modal-danger .modal-header {

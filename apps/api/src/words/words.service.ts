@@ -140,7 +140,10 @@ export class WordsService {
     }
 
     await onProgress?.('gemini', 0);
-    await this.enrichment.enrichWithGemini(wordsData);
+    await this.enrichment.enrichWithGemini(
+      wordsData,
+      (current) => onProgress?.('gemini', current) ?? Promise.resolve(),
+    );
     await onProgress?.('saving', 0);
 
     let successCount = 0;

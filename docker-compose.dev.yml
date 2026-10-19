@@ -1,14 +1,149 @@
-# Dev infrastructure only — MySQL + Redis + RabbitMQ
-# NestJS and Next.js run natively (turbo dev)
-# Usage: docker compose -f docker-compose.dev.yml up -d (from the repo root: credentials come from .env)
-# Ports bound to 127.0.0.1: the default credentials must not be reachable from the local network
+# Full local stack. Same processes as production: api, web, worker, scheduler,
+# plus MySQL, Redis and RabbitMQ. Source is mounted, so saving a file reloads
+# that process. Rebuild the image only after a dependency change.
+# Usage: npm run infra:up
+# Stop the host `npm run dev` first: it binds the same ports.
+# Ports bound to 127.0.0.1: the default credentials must not be reachable from the local network.
+
+x-dev-image: &dev-image
+  build:
+    context: .
+    dockerfile: docker/Dockerfile.dev
+  image: sealvo-dev
+  env_file: .env
+
+# Inside the compose network. Empty URL variables fall through to the HOST ones below.
+# NODE_ENV stays development: this stack is for local work, not a production boot.
+x-dev-env: &dev-env
+  DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:-example}@db:3306/${MYSQL_DATABASE:-web_db}
+  REDIS_URL: ''
+  REDIS_HOST: redis
+  REDIS_PORT: '6379'
+  RABBITMQ_URL: ''
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: '5672'
+  SCHEDULER_API_URL: http://api:3000
+  PORT: '3000'
+  NODE_ENV: development
+
+x-dev-source: &dev-source
+  - ./apps/api/src:/app/apps/api/src
+  - ./apps/api/prisma:/app/apps/api/prisma
+  - ./apps/api/templates:/app/apps/api/templates
+  - ./packages/shared/src:/app/packages/shared/src
+  - api_dist:/app/apps/api/dist
+  - shared_dist:/app/packages/shared/dist
+  - ./docker:/app/docker:ro
 
 services:
+  api:
+    <<: *dev-image
+    environment: *dev-env
+    command: ['sh', '/app/docker/dev-api.sh']
+    ports:
+      - '127.0.0.1:${API_PORT:-3001}:3000'
+    volumes: *dev-source
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(''http://127.0.0.1:3000/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 120s
+
+  web:
+    <<: *dev-image
+    environment:
+      <<: *dev-env
+      # The browser on the host calls the published API port, not the compose hostname.
+      API_URL: http://localhost:${API_PORT:-3001}
+    command: ['sh', '/app/docker/dev-web.sh']
+    ports:
+      - '127.0.0.1:${WEB_PORT:-3000}:3000'
+    volumes:
+      - ./apps/web/src:/app/apps/web/src
+      - ./apps/web/public:/app/apps/web/public
+      - ./apps/web/next.config.ts:/app/apps/web/next.config.ts
+      - shared_dist:/app/packages/shared/dist
+      - ./docker:/app/docker:ro
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(''http://127.0.0.1:3000/'').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 120s
+
+  # Three copies of worker.js, same as the deployed scale. RabbitMQ gives each message to
+  # one of them. The outbox claim decides which copy publishes a stored import.
+  worker:
+    <<: *dev-image
+    environment:
+      <<: *dev-env
+      # Four connections each: three copies stay well under MySQL's connection cap.
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:-example}@db:3306/${MYSQL_DATABASE:-web_db}?connection_limit=4
+    command: ['sh', '/app/docker/dev-worker.sh']
+    deploy:
+      replicas: 3
+    volumes: *dev-source
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'test -f /tmp/ready']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+    depends_on:
+      api:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  scheduler:
+    <<: *dev-image
+    environment: *dev-env
+    command: ['sh', '/app/docker/dev-scheduler.sh']
+    volumes: *dev-source
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'test -f /tmp/ready']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   db:
     image: mysql:8.0
     container_name: sealvo_db
     restart: unless-stopped
-    # Empty database: the schema comes from the Prisma migrations (docs/local-dev.md)
+    # Empty database: the API container applies the Prisma migrations on startup.
     command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_general_ci']
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-example}
@@ -62,3 +197,5 @@ volumes:
   db_data:
   redis_data:
   rabbitmq_data:
+  api_dist:
+  shared_dist:

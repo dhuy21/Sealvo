@@ -21,6 +21,9 @@ export const REDIS_KEYS = {
   jobEvents: (jobId: string) => `job-events:${jobId}`,
   userJobs: (userId: string) => `user-jobs:${userId}`,
   heartbeat: (process: string) => `heartbeat:${process}`,
+  /** One key per worker copy. A rolling deploy must not let an old copy hide behind a new one. */
+  heartbeatReplica: (id: string) => `heartbeat:worker:${id}`,
+  heartbeatReplicas: () => `heartbeat:worker:ids`,
   schedulerLastRun: (task: string) => `scheduler:${task}:last_run`,
 } as const;
 

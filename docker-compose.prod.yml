@@ -65,12 +65,17 @@ services:
       api:
         condition: service_healthy
 
-  # Worker and scheduler: no HTTP server, the image HEALTHCHECK (GET /health) does not apply
+  # Worker and scheduler: no HTTP server, the image HEALTHCHECK (GET /health) does not apply.
+  # Three copies, same as dev and the Railway worker scale.
   worker:
     <<: *api-image
     command: ['node', 'dist/worker.js']
     env_file: .env
-    environment: *service-network
+    environment:
+      <<: *service-network
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}@db:3306/${MYSQL_DATABASE:?set MYSQL_DATABASE in .env}?connection_limit=4
+    deploy:
+      replicas: 3
     restart: unless-stopped
     healthcheck:
       disable: true

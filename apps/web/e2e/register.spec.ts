@@ -17,7 +17,6 @@ test.describe('Registration page', () => {
     await expect(page.locator('input[name="email"]')).toBeVisible();
     await expect(page.locator('input[name="password"]')).toBeVisible();
     await expect(page.locator('input[name="password2"]')).toBeVisible();
-    await expect(page.locator('input[name="terms"]')).toBeVisible();
     await expect(page.getByAltText(/^Avatar \d+$/).first()).toBeVisible();
     await expect(page.locator('button[type="submit"]')).toBeVisible();
   });
@@ -43,11 +42,7 @@ test.describe('Registration page', () => {
     await expect(page).toHaveURL(/\/register$/);
   });
 
-  test('page shows heading and terms link', async ({ page }) => {
+  test('page shows the registration heading', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Inscription' })).toBeVisible();
-    await expect(page.getByRole('link', { name: /conditions d'utilisation/i })).toHaveAttribute(
-      'href',
-      '/terms',
-    );
   });
 });

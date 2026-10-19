@@ -1,7 +1,7 @@
 /** @type {import('dependency-cruiser').IConfiguration} */
 const INFRA = '^src/(common|config|prisma|redis|rabbitmq|gemini)/';
 const FEATURES =
-  '^src/(account|auth|dashboard|email|feedback|games|health|import|learning|maintenance|packages|reminder|scheduler|tts|words)/';
+  '^src/(account|activity|auth|dashboard|email|feedback|games|health|import|learning|maintenance|packages|reminder|scheduler|tts|words)/';
 const SDK_OWNERS = {
   amqplib: 'rabbitmq',
   redis: 'redis',

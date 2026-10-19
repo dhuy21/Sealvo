@@ -47,7 +47,6 @@ export function ProfileCard({
             <i className="fas fa-edit"></i>
           </button>
         </div>
-        <span className={cx(styles, 'notification-badge')}>🏅 Beginner</span>
       </div>
       <div className={cx(styles, 'user-info')}>
         <EditableField
@@ -76,13 +75,6 @@ export function ProfileCard({
             Membre depuis:
           </div>
           <div className={cx(styles, 'info-value')}>{formatDate(user?.created_at ?? null)}</div>
-        </div>
-        <div className={cx(styles, 'info-row')}>
-          <div className={cx(styles, 'info-label')}>
-            <i className="fas fa-clock" style={{ color: '#ba7d13', width: 30, marginRight: 8 }}></i>
-            Dernière connexion:
-          </div>
-          <div className={cx(styles, 'info-value')}>{formatDate(user?.last_login ?? null)}</div>
         </div>
         <div className={cx(styles, 'info-row')}>
           <div className={cx(styles, 'info-label')}>

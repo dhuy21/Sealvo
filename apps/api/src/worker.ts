@@ -12,6 +12,7 @@ import { WorkerModule } from './worker.module.js';
 import { RabbitmqService } from './rabbitmq/rabbitmq.service.js';
 import { EmailQueueService } from './email/email-queue.service.js';
 import { ImportQueueService } from './import/import-queue.service.js';
+import { ImportOutboxService } from './import/import-outbox.service.js';
 import { RedisService } from './redis/redis.service.js';
 import { buildConfig, type BuildConfig } from './config/build.config.js';
 import { startHeartbeat } from './health/heartbeat.js';
@@ -32,6 +33,8 @@ async function bootstrap() {
   // Topologies are asserted by the queue services whenever the channel opens
   await emailQueue.startConsumer();
   await importQueue.startConsumer();
+  const outbox = app.get(ImportOutboxService);
+  outbox.startRelay((payload) => importQueue.publish(payload));
 
   // Exit so the platform restarts the worker: a fresh process re-subscribes the consumers
   rabbitmq.onConnectionLost(() => {
@@ -50,6 +53,7 @@ async function bootstrap() {
 
   const shutdown = async (signal: string) => {
     console.log(`[worker] ${signal} received, shutting down...`);
+    outbox.stopRelay();
     stopHeartbeat();
     // Before app.close(): the jobs in progress still need Prisma and Redis
     await rabbitmq.stopConsumers();

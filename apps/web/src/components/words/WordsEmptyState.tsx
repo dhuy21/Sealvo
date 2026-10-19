@@ -2,9 +2,17 @@ import Link from 'next/link';
 import styles from '@/styles/vocabs.module.css';
 import { cx } from '@/lib/css-module';
 
-export function WordsEmptyState({ packageId, isOwner }: { packageId: number; isOwner: boolean }) {
+export function WordsEmptyState({
+  packageId,
+  isOwner,
+  narrow = false,
+}: {
+  packageId: number;
+  isOwner: boolean;
+  narrow?: boolean;
+}) {
   return (
-    <div className={cx(styles, 'no-words')}>
+    <div className={cx(styles, 'no-words', narrow && 'no-words-narrow')}>
       <i className="fas fa-book"></i>
       {isOwner ? (
         <>

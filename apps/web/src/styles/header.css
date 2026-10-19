@@ -50,11 +50,6 @@
   display: flex;
   align-items: center;
   text-decoration: none;
-  transition: var(--transition);
-}
-
-.brand-link:hover {
-  transform: translateY(-2px);
 }
 
 .logo-wrapper {
@@ -64,46 +59,12 @@
   margin-right: 12px;
   border-radius: 12px;
   overflow: hidden;
-  transition: var(--transition);
-}
-
-.logo-wrapper:hover {
-  transform: rotate(5deg);
 }
 
 .logo-img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transition: var(--transition);
-}
-
-.logo-glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, rgba(106, 17, 203, 0.3), transparent 70%);
-  opacity: 0;
-  transition: var(--transition);
-}
-
-.brand-link:hover .logo-glow {
-  opacity: 1;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(0.95);
-    opacity: 0.5;
-  }
-  50% {
-    transform: scale(1.05);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(0.95);
-    opacity: 0.5;
-  }
 }
 
 .brand-text {
@@ -116,12 +77,6 @@
   color: transparent;
   position: relative;
   margin: 0;
-  transition: var(--transition);
-}
-
-.brand-link:hover .brand-text {
-  letter-spacing: 1.5px;
-  background-position: right;
 }
 
 /* Navigation Styling */

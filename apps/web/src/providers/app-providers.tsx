@@ -16,6 +16,7 @@ export function AppProviders({ children, nonce }: { children: ReactNode; nonce?:
         <JobWatcher />
         <Toaster
           position="top-right"
+          containerStyle={{ top: 'calc(var(--header-height) + 12px)' }}
           toastOptions={{
             duration: 3000,
             style: { borderRadius: '8px', background: '#333', color: '#fff' },

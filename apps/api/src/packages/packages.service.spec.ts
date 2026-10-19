@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { PackagesService } from './packages.service.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
+import { ActivityLogService } from '../activity/activity-log.service.js';
 
 describe('PackagesService', () => {
   let service: PackagesService;
@@ -8,6 +9,7 @@ describe('PackagesService', () => {
     packages: { findUnique: any; findMany: any; delete: any };
     learning: { findMany: any };
     word_details: { deleteMany: any };
+    user_activities: { create: any };
     $transaction: any;
     $executeRaw: any;
   };
@@ -17,10 +19,14 @@ describe('PackagesService', () => {
       packages: { findUnique: vi.fn(), findMany: vi.fn(), delete: vi.fn() },
       learning: { findMany: vi.fn() },
       word_details: { deleteMany: vi.fn() },
+      user_activities: { create: vi.fn() },
       $transaction: vi.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
       $executeRaw: vi.fn(),
     };
-    service = new PackagesService(prisma as unknown as PrismaService);
+    service = new PackagesService(
+      prisma as unknown as PrismaService,
+      new ActivityLogService(undefined as never),
+    );
   });
 
   it('findOne returns the package with a flat username and isOwner', async () => {
@@ -62,6 +68,10 @@ describe('PackagesService', () => {
   });
 
   it('delete removes word_details no longer referenced, in the same transaction', async () => {
+    prisma.packages.findUnique.mockResolvedValue({
+      user_id: 'owner01',
+      package_name: 'Animals',
+    });
     prisma.learning.findMany.mockResolvedValue([{ detail_id: 3 }, { detail_id: 4 }]);
 
     await service.delete(9);
@@ -74,6 +84,12 @@ describe('PackagesService', () => {
       expect.any(Function),
       expect.objectContaining({ timeout: expect.any(Number) }),
     );
+    expect(prisma.user_activities.create.mock.calls[0][0].data).toMatchObject({
+      user_id: 'owner01',
+      type: 'package_delete',
+      package_id: 9,
+      package_name: 'Animals',
+    });
   });
 
   describe('toggleActivation', () => {

@@ -1,11 +1,11 @@
 import toast from 'react-hot-toast';
 import type { WordsSubmitResponse } from '@/hooks/use-words';
 import { addJob } from '@/lib/job-watcher';
-import { notifyInfo, notifyLongError } from '@/lib/notify';
+import { notifyLongError } from '@/lib/notify';
 
 /**
  * Notifies the outcome of an add/import request. A queued job is handed to the global
- * JobWatcher (which shows its progress and result) and awaited.
+ * JobWatcher and awaited. Progress stays in the journal. A toast appears only when the job ends.
  * Resolves true when the form can be reset.
  */
 export async function settleWordsResponse(
@@ -22,7 +22,6 @@ export async function settleWordsResponse(
   }
 
   const outcome = addJob(result.jobId);
-  notifyInfo('Traitement en cours...');
   switch (await outcome) {
     case 'lost':
       notifyLongError('Connexion au serveur perdue');

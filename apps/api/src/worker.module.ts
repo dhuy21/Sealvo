@@ -14,6 +14,8 @@ import { EmailModule } from './email/email.module.js';
 import { WordsCoreModule } from './words/words-core.module.js';
 import { ImportQueueService } from './import/import-queue.service.js';
 import { JobTrackerService } from './import/job-tracker.service.js';
+import { ActivityLogService } from './activity/activity-log.service.js';
+import { ImportOutboxService } from './import/import-outbox.service.js';
 
 /** Queue consumers only: ImportModule would also bring its HTTP controllers and upload services. */
 @Module({
@@ -31,6 +33,6 @@ import { JobTrackerService } from './import/job-tracker.service.js';
     EmailModule,
     WordsCoreModule,
   ],
-  providers: [ImportQueueService, JobTrackerService],
+  providers: [ImportQueueService, JobTrackerService, ActivityLogService, ImportOutboxService],
 })
 export class WorkerModule {}

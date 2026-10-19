@@ -120,6 +120,7 @@ describe('WordsService', () => {
 
       expect(onProgress.mock.calls).toEqual([
         ['gemini', 0],
+        ['gemini', 2],
         ['saving', 0],
         ['saving', 1],
         ['saving', 2],

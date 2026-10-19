@@ -72,7 +72,7 @@ export class ImportController {
     }
 
     const words = this.importService.parseWords(file.buffer);
-    const result = await this.bulkWords.add('import', packageId, userId, words);
+    const result = await this.bulkWords.add('import', packageId, userId, words, file.originalname);
     res.status(result.async ? HttpStatus.ACCEPTED : HttpStatus.OK);
     return result;
   }

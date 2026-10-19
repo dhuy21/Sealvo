@@ -8,6 +8,7 @@ import { GoogleAuthService } from './google-auth.service.js';
 import { TokenService } from './token.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SessionService } from './session.service.js';
+import { ActivityLogService } from '../activity/activity-log.service.js';
 
 describe('GoogleAuthService', () => {
   let service: GoogleAuthService;
@@ -15,6 +16,7 @@ describe('GoogleAuthService', () => {
     users: { findUnique: any; findMany: any; create: any; update: any };
     email_verification: { updateMany: any };
     refresh_sessions: { deleteMany: any };
+    user_activities: { create: any };
     $transaction: any;
   };
 
@@ -31,6 +33,7 @@ describe('GoogleAuthService', () => {
       },
       email_verification: { updateMany: vi.fn() },
       refresh_sessions: { deleteMany: vi.fn() },
+      user_activities: { create: vi.fn() },
       $transaction: vi.fn(),
     };
 
@@ -42,6 +45,7 @@ describe('GoogleAuthService', () => {
         { provide: JwtService, useValue: { sign: vi.fn().mockReturnValue('token') } },
         { provide: authConfig.KEY, useValue: testAuthConfig() },
         { provide: SessionService, useValue: sessions },
+        ActivityLogService,
       ],
     }).compile();
 
@@ -175,6 +179,10 @@ describe('GoogleAuthService', () => {
 
       expect(prisma.users.create).not.toHaveBeenCalled();
       expect(sessions.create).toHaveBeenCalledWith('nor1234');
+      expect(prisma.user_activities.create.mock.calls[0][0].data).toMatchObject({
+        user_id: 'nor1234',
+        type: 'login',
+      });
     });
 
     it('should still log in an account stored with the raw Google email', async () => {

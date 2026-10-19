@@ -2,8 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { RabbitmqService } from '../rabbitmq/rabbitmq.service.js';
 import { WordsService } from '../words/words.service.js';
 import type { CreateWordDto } from '../words/dto/create-word.dto.js';
-import { ImportQueueService } from './import-queue.service.js';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { ActivityLogService } from '../activity/activity-log.service.js';
+import { IMPORT_FAILED_MESSAGE, ImportQueueService } from './import-queue.service.js';
+import { ImportOutboxService } from './import-outbox.service.js';
 import { JobTrackerService } from './job-tracker.service.js';
+import { randomUUID } from 'crypto';
 
 export type BulkJobType = 'import' | 'addWords';
 
@@ -26,8 +30,8 @@ export type BulkWordsResult =
   | { success: true; async: false; message: string };
 
 /**
- * Queues words for the worker when RabbitMQ and Redis are available, otherwise saves them
- * synchronously. The result is the response body: HTTP 202 when async, 200 otherwise.
+ * Queues words for the worker. If the broker does not confirm, the words wait in MySQL
+ * until the worker can publish them. Fewer than 3 added words are saved in the request.
  */
 @Injectable()
 export class BulkWordsService {
@@ -36,6 +40,9 @@ export class BulkWordsService {
     private readonly jobTracker: JobTrackerService,
     private readonly importQueue: ImportQueueService,
     private readonly wordsService: WordsService,
+    private readonly prisma: PrismaService,
+    private readonly activities: ActivityLogService,
+    private readonly outbox: ImportOutboxService,
   ) {}
 
   async add(
@@ -43,39 +50,133 @@ export class BulkWordsService {
     packageId: number,
     userId: string,
     words: CreateWordDto[],
+    fileName?: string,
   ): Promise<BulkWordsResult> {
-    let jobId: string | undefined;
+    const pkg = await this.prisma.packages.findUnique({
+      where: { package_id: packageId },
+      select: { package_name: true },
+    });
+    const packageName = pkg?.package_name ?? null;
+
     if (words.length >= QUEUE_THRESHOLD[type]) {
-      const job = await this.enqueue(type, packageId, userId, words);
-      if (job?.queued)
-        return { success: true, jobId: job.id, async: true, message: MESSAGES[type].queued };
-      jobId = job?.id;
+      return this.enqueue(type, packageId, userId, packageName, words, fileName);
     }
 
-    // An unconfirmed publish may still reach the worker: the job id keeps the words from being saved twice
-    const { successCount } = await this.wordsService.addWords(packageId, words, { jobId });
-    return { success: true, async: false, message: MESSAGES[type].saved(successCount) };
+    try {
+      const { successCount } = await this.wordsService.addWords(packageId, words);
+      // The words are already committed. A failed journal line must not make the client retry them.
+      await this.activities
+        .recordFinished({
+          userId,
+          type: type === 'import' ? 'import' : 'add_words',
+          packageId,
+          packageName,
+          fileName,
+          wordCount: successCount,
+        })
+        .catch(() => undefined);
+      return { success: true, async: false, message: MESSAGES[type].saved(successCount) };
+    } catch (err) {
+      if (type === 'import') {
+        await this.activities
+          .recordImportFailed({
+            userId,
+            packageId,
+            packageName,
+            fileName,
+            wordCount: words.length,
+            errorMessage: IMPORT_FAILED_MESSAGE,
+          })
+          .catch(() => undefined);
+      }
+      throw err;
+    }
   }
 
+  /**
+   * Accepts the job now. Words are saved by the worker after RabbitMQ confirms the message.
+   * Until then they sit in `import_outbox`.
+   */
   private async enqueue(
     type: BulkJobType,
     packageId: number,
     userId: string,
+    packageName: string | null,
     words: CreateWordDto[],
-  ): Promise<{ id: string; queued: boolean } | null> {
-    if (!this.rabbitmq.getChannel()) return null;
+    fileName?: string,
+  ): Promise<BulkWordsResult> {
+    const opened = await this.openJob(type, packageId, userId, words);
+    const activityType = type === 'import' ? 'import' : 'add_words';
+    // Journal and outbox commit together. A crash before publish still leaves a row the worker can send.
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await this.activities.start(
+          {
+            userId,
+            type: activityType,
+            packageId,
+            packageName,
+            fileName,
+            wordCount: words.length,
+            jobId: opened.id,
+          },
+          tx,
+        );
+        await this.outbox.add(
+          {
+            jobId: opened.id,
+            userId,
+            packageId,
+            type,
+            fileName,
+            wordCount: words.length,
+            words,
+          },
+          tx,
+        );
+      });
+    } catch (err) {
+      if (opened.inRedis) await this.jobTracker.remove(opened.id);
+      throw err;
+    }
 
+    const published = await this.tryPublish({
+      jobId: opened.id,
+      wordsData: words,
+      packageId,
+      userId,
+    });
+    if (published) await this.outbox.remove(opened.id).catch(() => undefined);
+
+    return { success: true, jobId: opened.id, async: true, message: MESSAGES[type].queued };
+  }
+
+  private async tryPublish(payload: {
+    jobId: string;
+    wordsData: CreateWordDto[];
+    packageId: number;
+    userId: string;
+  }): Promise<boolean> {
+    if (!this.rabbitmq.getChannel()) return false;
+    try {
+      return await this.importQueue.publish(payload);
+    } catch {
+      return false;
+    }
+  }
+
+  /** A Redis job when possible, so the browser can follow it. Otherwise a durable id. */
+  private async openJob(
+    type: BulkJobType,
+    packageId: number,
+    userId: string,
+    words: CreateWordDto[],
+  ): Promise<{ id: string; inRedis: boolean }> {
     const job = await this.jobTracker.create(type, {
       packageId: String(packageId),
       userId,
       ...(type === 'addWords' ? { wordCount: words.length } : {}),
     });
-    if (!job) return null;
-
-    if (await this.importQueue.publish({ jobId: job.id, wordsData: words, packageId, userId })) {
-      return { id: job.id, queued: true };
-    }
-    await this.jobTracker.remove(job.id);
-    return { id: job.id, queued: false };
+    return job ? { id: job.id, inRedis: true } : { id: randomUUID(), inRedis: false };
   }
 }

@@ -5,6 +5,7 @@ import { RetryQueue } from '../rabbitmq/retry-queue.js';
 import { CacheService } from '../redis/cache.service.js';
 import { WordsService } from '../words/words.service.js';
 import { JobTrackerService } from './job-tracker.service.js';
+import { ActivityLogService } from '../activity/activity-log.service.js';
 import { CACHE_KEYS } from '../redis/cache-keys.constants.js';
 import type { CreateWordDto } from '../words/dto/create-word.dto.js';
 import { errorMessage } from '../common/utils/error-message.js';
@@ -45,6 +46,7 @@ export class ImportQueueService implements OnModuleInit {
     private readonly cache: CacheService,
     private readonly wordsService: WordsService,
     private readonly jobTracker: JobTrackerService,
+    private readonly activities: ActivityLogService,
   ) {}
 
   onModuleInit() {
@@ -105,7 +107,23 @@ export class ImportQueueService implements OnModuleInit {
     // update() rewrites the whole job: one at a time, so a late progress never overwrites the final status
     let progress = Promise.resolve();
     const report = (fields: Parameters<JobTrackerService['update']>[1]) => {
-      progress = progress.then(() => this.jobTracker.update(jobId, fields)).then(() => undefined);
+      progress = progress.then(async () => {
+        await this.jobTracker.update(jobId, fields);
+        const snapshot = fields.progress;
+        const phase = snapshot?.phase;
+        if (
+          snapshot &&
+          (phase === 'parsing' || phase === 'gemini' || phase === 'saving' || phase === 'done')
+        ) {
+          await this.note(jobId, () =>
+            this.activities.advance(jobId, {
+              phase,
+              current: snapshot.current,
+              total: snapshot.total,
+            }),
+          );
+        }
+      });
       return progress;
     };
 
@@ -116,7 +134,8 @@ export class ImportQueueService implements OnModuleInit {
       const result = await this.wordsService.addWords(packageId, wordsData, {
         jobId,
         onProgress: (phase, current) =>
-          current % step === 0 || current === total
+          // Gemini reports once per batch of 25, which rarely lands on a saving step.
+          phase === 'gemini' || current % step === 0 || current === total
             ? report({ progress: { current, total, phase } })
             : Promise.resolve(),
       });
@@ -143,6 +162,14 @@ export class ImportQueueService implements OnModuleInit {
       progress: { current: total, total, phase: 'done' },
       result: { imported, errors: total - imported, total },
     });
+    await this.note(jobId, () =>
+      this.activities.finishJob(jobId, {
+        status: 'succeeded',
+        current: total,
+        total,
+        errorCount: total - imported,
+      }),
+    );
     await this.cache.del(CACHE_KEYS.dashboard(userId));
   }
 
@@ -156,6 +183,20 @@ export class ImportQueueService implements OnModuleInit {
     const status = QUEUE.exhausted(msg) ? 'failed' : 'retrying';
     const error = err instanceof HttpException ? err.message : IMPORT_FAILED_MESSAGE;
     await this.jobTracker.update(jobId, { status, error });
+    if (status === 'failed') {
+      await this.note(jobId, () =>
+        this.activities.finishJob(jobId, { status: 'failed', errorMessage: error }),
+      );
+    }
     await QUEUE.reject(msg, ch);
+  }
+
+  /** The journal is a side record. A failed write must not fail or retry the import. */
+  private async note(jobId: string, write: () => Promise<void>): Promise<void> {
+    try {
+      await write();
+    } catch (err) {
+      this.logger.warn(`Journal was not updated for job ${jobId}: ${errorMessage(err)}`);
+    }
   }
 }

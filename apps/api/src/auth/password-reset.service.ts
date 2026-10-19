@@ -6,6 +6,7 @@ import { formatDuration } from '../common/utils/format-duration.js';
 import { hashPassword, hashToken, newToken } from './crypto.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
 import { EmailService } from '../email/email.service.js';
+import { ActivityLogService } from '../activity/activity-log.service.js';
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 // nosemgrep: ajinabraham.njsscan.generic.hardcoded_secrets.node_password (a message, not a password)
@@ -23,6 +24,7 @@ export class PasswordResetService {
     @Inject(appConfig.KEY) private readonly app: AppConfig,
     private readonly emailQueue: EmailQueueService,
     private readonly emailService: EmailService,
+    private readonly activities: ActivityLogService,
   ) {}
 
   async forgotPassword(email: string): Promise<{ message: string }> {
@@ -101,6 +103,7 @@ export class PasswordResetService {
         where: { user_id: userId, status: 'pending' },
         data: { status: 'revoked' },
       });
+      await this.activities.succeeded(tx, { userId, type: 'password_change' });
     });
 
     return { message: 'Votre mot de passe a été réinitialisé avec succès' };

@@ -30,7 +30,6 @@ const registerSchema = z
       .min(AUTH_LIMITS.PASSWORD_MIN, `Minimum ${AUTH_LIMITS.PASSWORD_MIN} caractères`),
     password2: z.string(),
     avatar: z.number().int().min(1).max(AVATAR_COUNT),
-    terms: z.literal(true, { message: 'Vous devez accepter les conditions' }),
   })
   .refine((data) => data.password === data.password2, {
     message: 'Les mots de passe ne correspondent pas',
@@ -55,7 +54,7 @@ export default function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { avatar: 1, terms: false as unknown as true },
+    defaultValues: { avatar: 1 },
   });
 
   const selectedAvatar = watch('avatar');
@@ -172,20 +171,7 @@ export default function RegisterPage() {
             {errors.password2 && <span className="form-error">{errors.password2.message}</span>}
           </div>
 
-          <div className={styles['form-options']} data-delay="500">
-            <div className={styles['terms-check']}>
-              <input type="checkbox" id="terms" {...register('terms')} />
-              <label htmlFor="terms">
-                J&apos;accepte les{' '}
-                <a href="/terms" className={styles['terms-link']}>
-                  conditions d&apos;utilisation
-                </a>
-              </label>
-            </div>
-            {errors.terms && <span className="form-error">{errors.terms.message}</span>}
-          </div>
-
-          <div className={cx(styles, 'form-group', 'avatar-selection')} data-delay="550">
+          <div className={cx(styles, 'form-group', 'avatar-selection')} data-delay="500">
             <label className={styles['avatar-label']}>Choisissez votre avatar</label>
             <div className={styles['avatars-container']}>
               {AVATARS.map((num) => (

@@ -28,9 +28,7 @@ Node 22 (`nvm use`) and Docker:
 ```bash
 cp .env.example .env      # fill the secrets, see the comments in the file
 npm ci
-npm run infra:up          # MySQL, Redis, RabbitMQ
-npm run db:migrate
-npm run dev               # API :3001, web :3000
+npm run infra:up          # MySQL, Redis, RabbitMQ, API, web, worker, scheduler
 ```
 
 ## Tests

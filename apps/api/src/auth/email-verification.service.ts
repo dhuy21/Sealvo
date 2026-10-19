@@ -15,6 +15,7 @@ import { formatDuration } from '../common/utils/format-duration.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
 import { EmailService } from '../email/email.service.js';
 import { hashToken, newToken } from './crypto.js';
+import { ActivityLogService } from '../activity/activity-log.service.js';
 
 const VERIFICATION_TOKEN_TTL_MS = 3 * 60 * 60 * 1000;
 const VERIFICATION_TOKEN_MAX_ATTEMPTS = 5;
@@ -35,6 +36,7 @@ export class EmailVerificationService {
     @Inject(appConfig.KEY) private readonly app: AppConfig,
     private readonly emailQueue: EmailQueueService,
     private readonly emailService: EmailService,
+    private readonly activities: ActivityLogService,
   ) {}
 
   async verifyEmail(token: string): Promise<{ message: string }> {
@@ -77,6 +79,12 @@ export class EmailVerificationService {
           where: { id: verification.user_id },
           data: { is_verified: true, ...(newEmail ? { email: newEmail } : {}) },
         });
+        if (newEmail) {
+          await this.activities.succeeded(tx, {
+            userId: verification.user_id,
+            type: 'email_change',
+          });
+        }
       });
     } catch (error) {
       // Another account took the address after the check above

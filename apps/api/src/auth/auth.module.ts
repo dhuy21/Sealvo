@@ -13,11 +13,13 @@ import { EmailChangeService } from './email-change.service.js';
 import { PasswordResetService } from './password-reset.service.js';
 import { GoogleAuthService } from './google-auth.service.js';
 import { EmailModule } from '../email/email.module.js';
+import { ActivityModule } from '../activity/activity.module.js';
 
 @Module({
   imports: [
     PassportModule,
     EmailModule,
+    ActivityModule,
     JwtModule.registerAsync({
       inject: [authConfig.KEY],
       useFactory: (config: AuthConfig) => ({

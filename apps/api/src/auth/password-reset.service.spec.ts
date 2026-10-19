@@ -7,6 +7,7 @@ import { PasswordResetService } from './password-reset.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
 import { EmailService } from '../email/email.service.js';
+import { ActivityLogService } from '../activity/activity-log.service.js';
 
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
 
@@ -17,6 +18,7 @@ describe('PasswordResetService', () => {
     password_reset_tokens: { findFirst: any; create: any; deleteMany: any };
     refresh_sessions: { deleteMany: any };
     email_verification: { updateMany: any };
+    user_activities: { create: any };
     $transaction: any;
   };
   let emailQueue: { enqueue: any };
@@ -28,6 +30,7 @@ describe('PasswordResetService', () => {
       password_reset_tokens: { findFirst: vi.fn(), create: vi.fn(), deleteMany: vi.fn() },
       refresh_sessions: { deleteMany: vi.fn() },
       email_verification: { updateMany: vi.fn() },
+      user_activities: { create: vi.fn() },
       $transaction: vi.fn((arg: unknown) => (typeof arg === 'function' ? arg(prisma) : arg)),
     };
 
@@ -41,6 +44,7 @@ describe('PasswordResetService', () => {
         { provide: appConfig.KEY, useValue: testAppConfig() },
         { provide: EmailQueueService, useValue: emailQueue },
         { provide: EmailService, useValue: emailService },
+        ActivityLogService,
       ],
     }).compile();
 
@@ -119,6 +123,11 @@ describe('PasswordResetService', () => {
       expect(prisma.email_verification.updateMany).toHaveBeenCalledWith({
         where: { user_id: 'u1', status: 'pending' },
         data: { status: 'revoked' },
+      });
+      expect(prisma.user_activities.create.mock.calls[0][0].data).toMatchObject({
+        user_id: 'u1',
+        type: 'password_change',
+        status: 'succeeded',
       });
     });
 

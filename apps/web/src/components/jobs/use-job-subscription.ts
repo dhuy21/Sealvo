@@ -2,28 +2,24 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { streamJob } from '@/lib/job-stream';
-import { finishJob, type JobOutcome } from '@/lib/job-watcher';
+import { finishJob, jobToastId, type JobOutcome } from '@/lib/job-watcher';
 import { notifyInfo } from '@/lib/notify';
 import { invalidate, queryKeys } from '@/lib/query-keys';
-import {
-  STREAM_UNAVAILABLE_MESSAGE,
-  completedMessage,
-  failedMessage,
-  progressMessage,
-} from './job-messages';
+import { STREAM_UNAVAILABLE_MESSAGE, completedMessage, failedMessage } from './job-messages';
 
-/** Streams one job: a single toast per job updated in place, data refetched when it ends. */
+/** Streams one job. Progress refreshes the journal. A toast appears only when the job ends. */
 export function useJobSubscription(jobId: string): void {
   const qc = useQueryClient();
 
   useEffect(() => {
     const controller = new AbortController();
-    const toastId = `job-${jobId}`;
+    const toastId = jobToastId(jobId);
     let ended = false;
 
     const end = (outcome: JobOutcome, keepStored = false) => {
       ended = true;
       controller.abort();
+      invalidate(qc, queryKeys.activities());
       if (outcome !== 'lost') {
         invalidate(
           qc,
@@ -40,8 +36,9 @@ export function useJobSubscription(jobId: string): void {
       jobId,
       (job) => {
         if (ended) return;
-        const progress = progressMessage(job);
-        if (progress) toast.loading(progress, { id: toastId });
+        if (job.status === 'processing' || job.status === 'retrying') {
+          invalidate(qc, queryKeys.activities());
+        }
 
         if (job.status === 'completed') {
           toast.success(completedMessage(job), { id: toastId });

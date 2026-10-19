@@ -33,7 +33,10 @@ export class WordsEnrichmentService {
    * Generate missing examples / correct existing ones so the target word is wrapped in **...**
    * (required by the phrase_completion game). Mutates `words` in place; never throws.
    */
-  async enrichWithGemini(words: (CreateWordDto | UpdateWordDto)[]) {
+  async enrichWithGemini(
+    words: (CreateWordDto | UpdateWordDto)[],
+    onProcessed?: (count: number) => Promise<unknown>,
+  ) {
     const wordsNoExample: ExamplePayload[] = [];
     const wordsWithExample: ExamplePayload[] = [];
 
@@ -50,11 +53,16 @@ export class WordsEnrichmentService {
       else wordsWithExample.push({ ...payload, example: w.example });
     });
 
+    let processed = 0;
     for (const batch of chunk(wordsNoExample, GEMINI_BATCH_SIZE)) {
       replaceExample(words, await this.gemini.generateExample(batch));
+      processed += batch.length;
+      await onProcessed?.(processed);
     }
     for (const batch of chunk(wordsWithExample, GEMINI_BATCH_SIZE)) {
       replaceExample(words, await this.gemini.modifyExample(batch));
+      processed += batch.length;
+      await onProcessed?.(processed);
     }
   }
 }

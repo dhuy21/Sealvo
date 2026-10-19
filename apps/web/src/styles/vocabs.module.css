@@ -294,12 +294,19 @@
 
 .no-words {
   text-align: center;
+  width: 100%;
+  max-width: 88%;
+  margin: 0 auto 40px;
+  box-sizing: border-box;
   padding: 60px 30px;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  margin-bottom: 40px;
   border: 1px solid rgba(230, 236, 245, 0.8);
+}
+
+.no-words-narrow {
+  max-width: 60rem;
 }
 
 .no-words i {
@@ -631,6 +638,8 @@
 .btn-danger:active::before,
 .home-cta .btn:active::before,
 .no-words .btn:active::before {
+  /* The face moves down 0.75em. Cancel that on the base so the base stays put. */
+  transform: translate3d(0, 0, -1em);
   box-shadow:
     0 0 0 2px,
     0 0;
@@ -695,7 +704,6 @@
 
 .btn-danger:hover {
   background: #e82282;
-  transform: translate(0, 0.25em);
 }
 
 .btn-danger:hover::before {

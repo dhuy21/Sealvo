@@ -3,6 +3,7 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { AUTH_LIMITS } from '@sealvo/shared';
@@ -11,7 +12,9 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { TokenService } from './token.service.js';
 import { hashPassword, newToken } from './crypto.js';
 import { createUser } from './create-user.js';
+import { errorMessage } from '../common/utils/error-message.js';
 import { authConfig, type AuthConfig } from '../config/auth.config.js';
+import { ActivityLogService } from '../activity/activity-log.service.js';
 
 const USERNAME_MAX_ATTEMPTS = 5;
 
@@ -20,10 +23,13 @@ const GOOGLE_REQUEST_TIMEOUT_MS = 10_000;
 
 @Injectable()
 export class GoogleAuthService {
+  private readonly logger = new Logger(GoogleAuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     @Inject(authConfig.KEY) private readonly config: AuthConfig,
     private readonly tokens: TokenService,
+    private readonly activities: ActivityLogService,
   ) {}
 
   getGoogleAuthUrl(state: string): string {
@@ -108,7 +114,13 @@ export class GoogleAuthService {
       ]);
     }
 
-    return this.tokens.issueTokens(user);
+    const tokens = await this.tokens.issueTokens(user);
+    try {
+      await this.activities.succeeded(this.prisma, { userId: user.id, type: 'login' });
+    } catch (error) {
+      this.logger.error(`Login journal failed for user ${user.id}: ${errorMessage(error)}`);
+    }
+    return tokens;
   }
 
   private async generateUsername(name: string | undefined, email: string) {

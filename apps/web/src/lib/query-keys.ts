@@ -14,6 +14,7 @@ export const queryKeys = {
   publicPackages: () => ['packages', 'public'] as const,
   package: (packageId: number | null) => ['packages', 'detail', packageId] as const,
   dashboard: () => ['dashboard'] as const,
+  activities: () => ['activities'] as const,
 };
 
 /** Mark the queries stale without waiting for their refetch */

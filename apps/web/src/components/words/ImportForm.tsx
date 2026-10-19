@@ -6,7 +6,7 @@ import { IMPORT_MAX_FILE_BYTES } from '@sealvo/shared';
 import { useImportFile } from '@/hooks/use-import';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { notifyLongError } from '@/lib/notify';
-import { BookLoader } from './BookLoader';
+import { SealAnimation } from '@/components/SealAnimation';
 import { ImportFormatInfo } from './ImportFormatInfo';
 import { settleWordsResponse } from './settle-words-response';
 import styles from '@/styles/add-word.module.css';
@@ -86,7 +86,7 @@ export function ImportForm({ packageId }: { packageId: number }) {
           />
           <label htmlFor="vocab-file" className={cx(styles, 'file-label')}>
             {busy ? (
-              <BookLoader />
+              <SealAnimation size={120} />
             ) : (
               <>
                 <span className={cx(styles, 'file-icon')}>📄</span>

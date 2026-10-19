@@ -41,6 +41,7 @@ describe('ImportQueueService consumer', () => {
   let channel: { ack: any; nack: any; sendToQueue: any };
   let jobTracker: { update: any };
   let wordsService: { addWords: any; isJobApplied: any };
+  let activities: { advance: any; finishJob: any };
 
   const message = (count: number, { redelivered = false, deaths = 0 } = {}) => ({
     content: Buffer.from(
@@ -76,6 +77,7 @@ describe('ImportQueueService consumer', () => {
       sendToQueue: vi.fn((_q, _c, _o, cb: (err: null) => void) => cb(null)),
     };
     jobTracker = { update: vi.fn().mockResolvedValue(true) };
+    activities = { advance: vi.fn(), finishJob: vi.fn() };
     wordsService = {
       addWords: vi.fn(async (_packageId: number, data: unknown[], { onProgress }) => {
         await onProgress('gemini', 0);
@@ -94,6 +96,7 @@ describe('ImportQueueService consumer', () => {
       { del: vi.fn() } as any,
       wordsService as any,
       jobTracker as any,
+      activities as any,
     );
     await service.startConsumer();
   });
@@ -114,10 +117,44 @@ describe('ImportQueueService consumer', () => {
     });
   });
 
+  it('publishes a Gemini batch that does not land on a saving step', async () => {
+    wordsService.addWords.mockImplementation(
+      async (
+        _packageId: number,
+        data: unknown[],
+        { onProgress }: { onProgress: (phase: string, n: number) => Promise<unknown> },
+      ) => {
+        await onProgress('gemini', 25);
+        await onProgress('saving', 0);
+        return { successCount: data.length, alreadyApplied: false };
+      },
+    );
+
+    await run(message(40));
+
+    expect(jobTracker.update).toHaveBeenCalledWith('job-1', {
+      progress: { current: 25, total: 40, phase: 'gemini' },
+    });
+  });
+
   it('publishes every word of a small import', async () => {
     await run(message(3));
 
     expect(savingUpdates()).toEqual([0, 1, 2, 3]);
+  });
+
+  it('acks a completed import when the journal cannot be written', async () => {
+    activities.advance.mockRejectedValue(new Error('journal down'));
+    const msg = message(3);
+
+    await run(msg);
+
+    expect(channel.ack).toHaveBeenCalledWith(msg);
+    expect(channel.nack).not.toHaveBeenCalled();
+    expect(activities.finishJob).toHaveBeenCalledWith(
+      'job-1',
+      expect.objectContaining({ status: 'succeeded' }),
+    );
   });
 
   it('completes and acks a redelivered job already applied, without failing it', async () => {

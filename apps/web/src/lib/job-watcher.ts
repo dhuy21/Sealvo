@@ -9,6 +9,11 @@ export const useWatchedJobs = create<{ jobIds: string[] }>(() => ({ jobIds: [] }
 
 const waiters = new Map<string, Array<(outcome: JobOutcome) => void>>();
 
+/** One toast per job. Callers and the watcher update this id in place. */
+export function jobToastId(jobId: string): string {
+  return `job-${jobId}`;
+}
+
 /** Hands a server job (`{ async: true, jobId }`) to the global watcher. Resolves when it ends. */
 export function addJob(jobId: string): Promise<JobOutcome> {
   addStoredJob(jobId);

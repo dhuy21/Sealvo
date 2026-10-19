@@ -76,7 +76,6 @@ model users {
   password              String                  @db.VarChar(255)
   streak                Int                     @default(0)
   streak_updated_at     DateTime?               @db.Timestamp(0)
-  last_login            DateTime?               @db.Timestamp(0)
   created_at            DateTime?               @default(now()) @db.Timestamp(0)
   updated_at            DateTime?               @db.Timestamp(0)
   is_verified           Boolean                 @default(false)
@@ -86,6 +85,8 @@ model users {
   user_best_scores      user_best_scores[]
   refresh_sessions      refresh_sessions[]
   password_reset_tokens password_reset_tokens[]
+  user_activities       user_activities[]
+  import_outbox         import_outbox[]
 
   @@index([is_verified, created_at], map: "idx_users_verified_created")
 }
@@ -114,6 +115,47 @@ model password_reset_tokens {
   users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id])
+}
+
+/// One row per journal entry. Import and bulk add-word rows are updated in place while they run.
+model user_activities {
+  id               String          @id @db.Char(36)
+  user_id          String          @db.Char(7)
+  type             activity_type
+  status           activity_status
+  occurred_at      DateTime        @db.DateTime(0)
+  updated_at       DateTime        @db.DateTime(0)
+  /// Kept after the package row is gone, so a deletion still has a name
+  package_id       Int?
+  package_name     String?         @db.VarChar(255)
+  file_name        String?         @db.VarChar(255)
+  word_count       Int?
+  error_count      Int?
+  phase            activity_phase?
+  progress_current Int?
+  job_id           String?         @unique(map: "user_activities_job_id_key") @db.Char(36)
+  /// Set when an import fails before it can count word errors
+  error_message    String?         @db.VarChar(255)
+  users            users           @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "user_activities_user_id_fkey")
+
+  @@index([user_id, occurred_at, id], map: "idx_user_activities_user_time")
+}
+
+/// Words waiting for RabbitMQ. The row is removed once the broker confirms the message.
+model import_outbox {
+  job_id     String             @id @db.Char(36)
+  user_id    String             @db.Char(7)
+  package_id Int
+  type       import_outbox_type
+  file_name  String?            @db.VarChar(255)
+  word_count Int
+  payload    Json
+  created_at DateTime           @db.DateTime(0)
+  /// Set by the worker that is publishing this row. Others skip it until the claim expires.
+  claimed_at DateTime?          @db.DateTime(0)
+  users      users              @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "import_outbox_user_id_fkey")
+
+  @@index([created_at], map: "import_outbox_created_at_idx")
 }
 
 /// Import jobs already saved, written in the same transaction as their words so a redelivered job is skipped
@@ -195,4 +237,32 @@ enum packages_mode {
   protected
   private
   public
+}
+
+enum activity_type {
+  login
+  password_change
+  email_change
+  package_create
+  package_delete
+  import
+  add_words
+}
+
+enum activity_status {
+  running
+  succeeded
+  failed
+}
+
+enum activity_phase {
+  parsing
+  gemini
+  saving
+  done
+}
+
+enum import_outbox_type {
+  import
+  addWords
 }

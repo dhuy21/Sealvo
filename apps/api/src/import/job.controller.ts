@@ -1,11 +1,21 @@
-import { Controller, Get, HttpException, HttpStatus, Param, Res, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  NotFoundException,
+  Param,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import { type Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { JOB_TTL_SECONDS } from '@sealvo/shared';
-import { JobTrackerService, isFinished } from './job-tracker.service.js';
+import { JobTrackerService, isFinished, type Job } from './job-tracker.service.js';
+import { ImportOutboxService } from './import-outbox.service.js';
 
 /** A user follows one stream per active job: more means a leak or abuse */
 const MAX_STREAMS_PER_USER = 10;
@@ -18,7 +28,32 @@ export class JobController {
   /** Open streams per user (single API instance): each one holds an HTTP connection for up to the job TTL */
   private readonly openStreams = new Map<string, number>();
 
-  constructor(private readonly jobTracker: JobTrackerService) {}
+  constructor(
+    private readonly jobTracker: JobTrackerService,
+    private readonly outbox: ImportOutboxService,
+  ) {}
+
+  /** Redis while the job is live. The outbox row covers the wait before RabbitMQ accepts it. */
+  private async visibleJob(id: string, userId: string): Promise<Job> {
+    try {
+      return await this.jobTracker.getOwned(id, userId);
+    } catch (err) {
+      if (!(err instanceof NotFoundException)) throw err;
+      const pending = await this.outbox.findOwned(id, userId);
+      if (!pending) throw err;
+      return {
+        id: pending.job_id,
+        type: pending.type,
+        status: 'pending',
+        progress: { current: 0, total: pending.word_count, phase: 'parsing' },
+        result: null,
+        error: null,
+        meta: { userId: pending.user_id, packageId: String(pending.package_id) },
+        createdAt: pending.created_at.getTime(),
+        updatedAt: pending.created_at.getTime(),
+      };
+    }
+  }
 
   @Get()
   @ApiOperation({ summary: "Get current user's active jobs" })
@@ -34,7 +69,7 @@ export class JobController {
   @ApiResponse({ status: 200, description: 'Job details' })
   @ApiResponse({ status: 404, description: 'Job not found' })
   async getJob(@Param('id') id: string, @CurrentUser('id') userId: string) {
-    const job = await this.jobTracker.getOwned(id, userId);
+    const job = await this.visibleJob(id, userId);
     return { success: true, job };
   }
 
@@ -46,7 +81,7 @@ export class JobController {
     @CurrentUser('id') userId: string,
     @Res() res: Response,
   ) {
-    const job = await this.jobTracker.getOwned(id, userId);
+    const job = await this.visibleJob(id, userId);
     const open = this.openStreams.get(userId) ?? 0;
     if (open >= MAX_STREAMS_PER_USER) {
       throw new HttpException('Trop de suivis de tâches ouverts.', HttpStatus.TOO_MANY_REQUESTS);
