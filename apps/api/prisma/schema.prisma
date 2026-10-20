@@ -1,0 +1,268 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model email_verification {
+  id         String                    @id @db.Char(64)
+  user_id    String                    @db.Char(7)
+  token_hash String                    @db.Char(64)
+  expires_at DateTime                  @db.DateTime(0)
+  status     email_verification_status @default(pending)
+  created_at DateTime                  @default(now()) @db.DateTime(0)
+  used_at    DateTime?                 @db.DateTime(0)
+  /// Set for an email change: the address that replaces users.email once this token is used
+  new_email  String?                   @db.VarChar(255)
+  users      users                     @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "email_verification_ibfk_1")
+
+  @@index([user_id], map: "idx_user_id")
+  @@index([token_hash], map: "ux_token_hash")
+}
+
+model learning {
+  detail_id      Int
+  package_id     Int
+  level          learning_level
+  date_memorized DateTime?      @default(now()) @db.Timestamp(0)
+  date_stocked   DateTime?      @default(now()) @db.Timestamp(0)
+  word_details   word_details   @relation(fields: [detail_id], references: [detail_id], onDelete: Cascade, map: "learning_ibfk_1")
+  packages       packages       @relation(fields: [package_id], references: [package_id], onDelete: Cascade, map: "learning_ibfk_2")
+
+  @@id([detail_id, package_id])
+  @@index([package_id, level, date_memorized], map: "idx_learning_pkg_lvl_date")
+}
+
+model packages {
+  package_id          Int           @id @default(autoincrement())
+  user_id             String        @db.Char(7)
+  package_name        String        @db.VarChar(255)
+  package_description String?       @db.Text
+  created_at          DateTime?     @default(now()) @db.Timestamp(0)
+  mode                packages_mode @default(private)
+  is_active           Boolean       @default(true)
+  learning            learning[]
+  users               users         @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "packages_ibfk_1")
+
+  @@index([mode, created_at], map: "idx_packages_mode_created")
+  @@index([user_id], map: "user_id")
+}
+
+model schema_migrations {
+  name       String   @id @db.VarChar(255)
+  applied_at DateTime @default(now()) @db.Timestamp(0)
+}
+
+model user_best_scores {
+  user_id        String                     @db.Char(7)
+  game_type      user_best_scores_game_type
+  best_score     Int                        @default(0)
+  play_count     Int                        @default(0)
+  last_played_at DateTime                   @default(now()) @db.DateTime(0)
+  users          users                      @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "user_best_scores_ibfk_1")
+
+  @@id([user_id, game_type])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  id                    String                  @id @db.Char(7)
+  username              String                  @unique(map: "username") @db.VarChar(255)
+  email                 String                  @unique(map: "email") @db.VarChar(255)
+  role                  users_role              @default(User)
+  password              String                  @db.VarChar(255)
+  streak                Int                     @default(0)
+  streak_updated_at     DateTime?               @db.Timestamp(0)
+  created_at            DateTime?               @default(now()) @db.Timestamp(0)
+  updated_at            DateTime?               @db.Timestamp(0)
+  is_verified           Boolean                 @default(false)
+  ava                   Int                     @default(1)
+  email_verification    email_verification[]
+  packages              packages[]
+  user_best_scores      user_best_scores[]
+  refresh_sessions      refresh_sessions[]
+  password_reset_tokens password_reset_tokens[]
+  user_activities       user_activities[]
+  import_outbox         import_outbox[]
+
+  @@index([is_verified, created_at], map: "idx_users_verified_created")
+}
+
+/// One row per logged-in device. Only SHA-256 hashes of the refresh token secret are stored.
+model refresh_sessions {
+  id            String    @id @db.Char(36)
+  user_id       String    @db.Char(7)
+  token_hash    String    @db.Char(64)
+  /// Hash of the token replaced by the last rotation, still accepted for a short leeway
+  previous_hash String?   @db.Char(64)
+  rotated_at    DateTime? @db.DateTime(0)
+  expires_at    DateTime  @db.DateTime(0)
+  created_at    DateTime  @default(now()) @db.DateTime(0)
+  users         users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([expires_at])
+}
+
+model password_reset_tokens {
+  token_hash String   @id @db.Char(64)
+  user_id    String   @db.Char(7)
+  expires_at DateTime @db.DateTime(0)
+  created_at DateTime @default(now()) @db.DateTime(0)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+/// One row per journal entry. Import and bulk add-word rows are updated in place while they run.
+model user_activities {
+  id               String          @id @db.Char(36)
+  user_id          String          @db.Char(7)
+  type             activity_type
+  status           activity_status
+  occurred_at      DateTime        @db.DateTime(0)
+  updated_at       DateTime        @db.DateTime(0)
+  /// Kept after the package row is gone, so a deletion still has a name
+  package_id       Int?
+  package_name     String?         @db.VarChar(255)
+  file_name        String?         @db.VarChar(255)
+  word_count       Int?
+  error_count      Int?
+  phase            activity_phase?
+  progress_current Int?
+  job_id           String?         @unique(map: "user_activities_job_id_key") @db.Char(36)
+  /// Set when an import fails before it can count word errors
+  error_message    String?         @db.VarChar(255)
+  users            users           @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "user_activities_user_id_fkey")
+
+  @@index([user_id, occurred_at, id], map: "idx_user_activities_user_time")
+}
+
+/// Words waiting for RabbitMQ. The row is removed once the broker confirms the message.
+model import_outbox {
+  job_id     String             @id @db.Char(36)
+  user_id    String             @db.Char(7)
+  package_id Int
+  type       import_outbox_type
+  file_name  String?            @db.VarChar(255)
+  word_count Int
+  payload    Json
+  created_at DateTime           @db.DateTime(0)
+  /// Set by the worker that is publishing this row. Others skip it until the claim expires.
+  claimed_at DateTime?          @db.DateTime(0)
+  users      users              @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "import_outbox_user_id_fkey")
+
+  @@index([created_at], map: "import_outbox_created_at_idx")
+}
+
+/// Import jobs already saved, written in the same transaction as their words so a redelivered job is skipped
+model applied_jobs {
+  job_id     String   @id @db.Char(36)
+  created_at DateTime @default(now()) @db.DateTime(0)
+
+  @@index([created_at])
+}
+
+model word_details {
+  detail_id     Int               @id @default(autoincrement())
+  word_id       Int
+  type          word_details_type
+  meaning       String            @db.Text
+  pronunciation String?           @db.VarChar(255)
+  synonyms      String?           @db.Text
+  antonyms      String?           @db.Text
+  example       String?           @db.Text
+  grammar       String?           @db.Text
+  learning      learning[]
+  words         words             @relation(fields: [word_id], references: [word_id], onDelete: Cascade, map: "word_details_ibfk_1")
+
+  @@index([word_id], map: "word_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model words {
+  word_id       Int            @id @default(autoincrement())
+  word          String         @db.VarChar(255)
+  subject       String         @db.VarChar(255)
+  language_code String         @db.VarChar(10)
+  created_at    DateTime       @default(now()) @db.Timestamp(0)
+  word_details  word_details[]
+
+  @@unique([word, subject, language_code], map: "uq_words_word_subject_lang")
+}
+
+enum user_best_scores_game_type {
+  word_scramble
+  flash_match
+  speed_vocab
+  vocab_quiz
+  phrase_completion
+  word_search
+  test_pronun
+}
+
+enum word_details_type {
+  noun
+  verb
+  adjective
+  adverb
+  ph_v        @map("ph.v")
+  idiom
+  collocation
+}
+
+enum learning_level {
+  x
+  level_0 @map("0")
+  level_1 @map("1")
+  level_2 @map("2")
+  v
+}
+
+enum users_role {
+  Admin
+  User
+}
+
+enum email_verification_status {
+  pending
+  used
+  revoked
+}
+
+enum packages_mode {
+  protected
+  private
+  public
+}
+
+enum activity_type {
+  login
+  password_change
+  email_change
+  package_create
+  package_delete
+  import
+  add_words
+}
+
+enum activity_status {
+  running
+  succeeded
+  failed
+}
+
+enum activity_phase {
+  parsing
+  gemini
+  saving
+  done
+}
+
+enum import_outbox_type {
+  import
+  addWords
+}

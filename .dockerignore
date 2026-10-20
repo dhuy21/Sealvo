@@ -1,44 +1,19 @@
-# Dependencies (reinstalled in image)
-node_modules
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Git and IDE
+# Patterns are anchored to the repo root: use **/ to match inside apps/* and packages/*
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/playwright-report
+**/*.tsbuildinfo
+**/*.md
 .git
-.gitignore
-.husky
-
-# Tests and E2E (not needed in production image)
-__tests__
-e2e
-*.test.js
-*.spec.js
-playwright.config.js
-playwright-report
-test-results
-
-# Docs and examples
-docs
-*.md
-!README.md
-
-# Env and secrets (injected at runtime, not baked into image)
-.env
-.env.*
-!.env.example
-
-# Database backups (dump files never belong in any image)
-backups
-
-# CI/CD (not needed inside image)
 .github
-
-# Local and OS
-.DS_Store
-Thumbs.db
-*.log
-
-# Optional: keep image smaller
+.husky
 .cursor
-.vscode
+.changeset
+**/.env*
+!.env.example
+docs/
+apps/api/backups/
+

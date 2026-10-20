@@ -1,0 +1,154 @@
+/* Landing page. The page styles themselves live in auth.css (port of the old style.css, which
+   the old home page loaded). Every stylesheet is global here, so generic rules from other pages
+   (.btn in feedback/packages/learn.css, .subtitle in learn.css, h1 in aboutme.css) also match
+   the landing page: the old values are restated under .home-page to win on specificity. */
+
+.home-page .animated-title {
+  text-align: inherit;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentColor;
+}
+
+.home-page .subtitle {
+  font-size: 20px;
+  color: #666;
+  margin: 15px 0 30px;
+  font-weight: 400;
+  animation: fadeIn 1s ease-out 0.3s forwards;
+  opacity: 0;
+}
+
+.home-page .btn {
+  display: inline-block;
+  padding: 12px 25px;
+  border: none;
+  border-radius: 50px;
+  font-size: inherit;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  text-decoration: none;
+  min-width: 140px;
+  width: auto;
+  position: relative;
+  overflow: hidden;
+  gap: normal;
+  align-items: normal;
+  justify-content: normal;
+}
+
+.home-page .btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.5s ease;
+}
+
+.home-page .btn:hover::before {
+  left: 100%;
+}
+
+.home-page .btn i {
+  margin-right: 8px;
+  transition: all 0.3s ease;
+}
+
+.home-page .btn:hover i {
+  transform: translateX(-3px) rotate(-10deg);
+}
+
+.home-page .btn-primary {
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  color: white;
+  box-shadow: 0 8px 15px rgba(106, 17, 203, 0.2);
+}
+
+.home-page .btn-secondary {
+  background: linear-gradient(135deg, #fc466b, #3f5efb);
+  color: white;
+  box-shadow: 0 8px 15px rgba(252, 70, 107, 0.2);
+}
+
+.home-page .btn-primary:hover,
+.home-page .btn-secondary:hover {
+  transform: translateY(-7px) scale(1.05);
+  box-shadow: 0 15px 25px rgba(0, 0, 0, 0.3);
+}
+
+.home-page .btn:active {
+  transform: translateY(-2px) scale(0.98);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+}
+
+.home-page .btn-large {
+  padding: 15px 35px;
+  font-size: 1rem;
+  border-radius: 50px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  min-width: 180px;
+}
+
+.home-page .btn-outline {
+  background: transparent;
+  color: #2575fc;
+  border: 2px solid #2575fc;
+  padding: 13px 33px;
+  transition: all 0.3s ease;
+}
+
+.home-page .btn-outline:hover {
+  background: rgba(37, 117, 252, 0.1);
+  color: #6a11cb;
+  border-color: #6a11cb;
+  transform: translateY(-5px);
+}
+
+@media (max-width: 576px) {
+  .home-page .btn-large {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-page .subtitle {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 375px) {
+  .home-page .subtitle {
+    font-size: 0.95rem;
+    margin-bottom: 20px;
+  }
+
+  .home-page .btn-large {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    min-width: 140px;
+  }
+}
+
+@media only screen and (max-width: 896px) and (orientation: landscape) {
+  .home-page .subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+  }
+
+  .home-page .btn-large {
+    font-size: 0.85rem;
+    min-width: 120px;
+  }
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

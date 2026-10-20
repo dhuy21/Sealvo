@@ -1,0 +1,203 @@
+# Releases the images of one commit to an environment: points the environment tag (:latest or :staging)
+# at them, redeploys the Railway services and waits until each one runs that commit.
+# Called by ci-cd.yml after a build and by rollback.yml; the commit's images (:sha-<commit>) must exist.
+name: Deploy
+
+permissions:
+  contents: read
+  packages: write
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'staging or production'
+        required: true
+        type: string
+      version:
+        description: 'Commit the images were built from (their GIT_SHA)'
+        required: true
+        type: string
+      skip-if-superseded:
+        description: "Skip when the environment's branch has moved past this commit (CI deploys, not rollbacks)"
+        required: false
+        type: boolean
+        default: false
+      restore-tag-on-failure:
+        description: 'Put the environment tag back on its previous images when the deploy fails (false for rollbacks: the previous images are the release being rolled back)'
+        required: false
+        type: boolean
+        default: true
+    outputs:
+      deployed:
+        description: "'true' unless skipped as superseded"
+        value: ${{ jobs.deploy.outputs.deployed }}
+
+jobs:
+  deploy:
+    name: Deploy (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    outputs:
+      deployed: ${{ steps.head.outputs.superseded != 'true' }}
+    # Up to four 10-minute version waits
+    timeout-minutes: 50
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ inputs.environment == 'production' && (vars.PRODUCTION_URL || 'https://www.sealvo.it.com') || vars.STAGING_URL }}
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    env:
+      RAILWAY_CLI_VERSION: 5.70.0
+      DEPLOY_ENV: ${{ inputs.environment }}
+      API_URL: ${{ vars.API_URL }}
+      WEB_URL: ${{ inputs.environment == 'production' && (vars.PRODUCTION_URL || 'https://www.sealvo.it.com') || vars.STAGING_URL }}
+      VERSION: ${{ inputs.version }}
+      TAG: ${{ inputs.environment == 'production' && 'latest' || 'staging' }}
+      BRANCH: ${{ inputs.environment == 'production' && 'main' || 'staging' }}
+    steps:
+      # Before anything moves: a missing setting must fail the deploy, not skip its checks and end green
+      - name: Check the deploy settings
+        run: |
+          missing=
+          for name in RAILWAY_TOKEN API_URL WEB_URL API_SERVICE_ID WEB_SERVICE_ID WORKER_SERVICE_ID SCHEDULER_SERVICE_ID; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ "$TAG" = latest ] && [ -z "$BACKUP_SERVICE_ID" ]; then missing="$missing BACKUP_SERVICE_ID"; fi
+          [ -z "$missing" ] || { echo "::error::Not set for $DEPLOY_ENV:$missing (docs/railway-setup.md)"; exit 1; }
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          API_SERVICE_ID: ${{ secrets.RAILWAY_API_SERVICE_ID }}
+          WEB_SERVICE_ID: ${{ secrets.RAILWAY_WEB_SERVICE_ID }}
+          WORKER_SERVICE_ID: ${{ secrets.RAILWAY_WORKER_SERVICE_ID }}
+          SCHEDULER_SERVICE_ID: ${{ secrets.RAILWAY_SCHEDULER_SERVICE_ID }}
+          BACKUP_SERVICE_ID: ${{ secrets.RAILWAY_BACKUP_SERVICE_ID }}
+
+      # Inside the environment's concurrency group: a newer push's deploy may already have run, or be
+      # running its build. Deploying this older commit after it would put production back in time.
+      - name: Check the commit is still the branch head
+        id: head
+        if: inputs.skip-if-superseded
+        run: |
+          head=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$BRANCH" --jq .object.sha)
+          if [ "$head" != "$VERSION" ]; then
+            echo "::notice::$BRANCH has moved to $head: $VERSION is not deployed"
+            echo "superseded=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        if: steps.head.outputs.superseded != 'true'
+        with:
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+        if: steps.head.outputs.superseded != 'true'
+
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        if: steps.head.outputs.superseded != 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # After the approval and inside the environment's concurrency group: two deploys cannot interleave
+      - name: Point the environment tag at the commit's images
+        id: tag
+        if: steps.head.outputs.superseded != 'true'
+        run: |
+          base="ghcr.io/${GITHUB_REPOSITORY,,}"
+          images="api web"
+          [ "$TAG" = latest ] && images="$images backup"
+          # Check every image first: a missing one must not leave the tags half moved
+          for image in $images; do
+            docker buildx imagetools inspect "$base/$image:sha-$VERSION" >/dev/null \
+              || { echo "No $image image for $VERSION" >&2; exit 1; }
+          done
+          # Where each tag points now, so a failed deploy can put it back
+          : > "$RUNNER_TEMP/previous-tags"
+          for image in $images; do
+            digest=$(docker buildx imagetools inspect "$base/$image:$TAG" --format '{{json .Manifest}}' 2>/dev/null | jq -r '.digest // empty' || true)
+            [ -n "$digest" ] && echo "$image $digest" >> "$RUNNER_TEMP/previous-tags"
+          done
+          for image in $images; do
+            docker buildx imagetools create --prefer-index=false -t "$base/$image:$TAG" "$base/$image:sha-$VERSION"
+          done
+
+      - name: Install the Railway CLI
+        if: steps.head.outputs.superseded != 'true'
+        run: npm install --global "@railway/cli@$RAILWAY_CLI_VERSION"
+
+      - name: Redeploy API
+        if: steps.head.outputs.superseded != 'true'
+        run: railway redeploy --service "$SERVICE_ID" --yes
+        env:
+          SERVICE_ID: ${{ secrets.RAILWAY_API_SERVICE_ID }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Health check (API)
+        if: steps.head.outputs.superseded != 'true'
+        run: .github/scripts/wait-for-version.sh "$API_URL/health" "$VERSION"
+
+      - name: Redeploy Web
+        if: steps.head.outputs.superseded != 'true'
+        run: railway redeploy --service "$SERVICE_ID" --yes
+        env:
+          SERVICE_ID: ${{ secrets.RAILWAY_WEB_SERVICE_ID }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Health check (Web)
+        if: steps.head.outputs.superseded != 'true'
+        run: .github/scripts/wait-for-version.sh "$WEB_URL/health" "$VERSION"
+
+      # The worker and the scheduler have no HTTP server: they report their commit through Redis,
+      # and the API's /health lists it under `processes`. The heartbeat outlives a crashed process by
+      # its 45 s TTL, so the commit must keep being reported for 60 s.
+      - name: Redeploy Worker
+        if: steps.head.outputs.superseded != 'true'
+        run: |
+          railway redeploy --service "$SERVICE_ID" --yes
+          .github/scripts/wait-for-version.sh "$API_URL/health" "$VERSION" .processes.worker 60
+        env:
+          SERVICE_ID: ${{ secrets.RAILWAY_WORKER_SERVICE_ID }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Redeploy Scheduler
+        if: steps.head.outputs.superseded != 'true'
+        run: |
+          railway redeploy --service "$SERVICE_ID" --yes
+          .github/scripts/wait-for-version.sh "$API_URL/health" "$VERSION" .processes.scheduler 60
+        env:
+          SERVICE_ID: ${{ secrets.RAILWAY_SCHEDULER_SERVICE_ID }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      # A cron job: it only runs at its schedule, so there is nothing to wait for here
+      - name: Redeploy Backup (cron)
+        if: steps.head.outputs.superseded != 'true' && inputs.environment == 'production'
+        run: railway redeploy --service "$SERVICE_ID" --yes
+        env:
+          SERVICE_ID: ${{ secrets.RAILWAY_BACKUP_SERVICE_ID }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      # Otherwise the next redeploy for any reason (a variable change, a restart from the dashboard)
+      # would pull the commit that just failed. Also after a cancel or the job timeout.
+      - name: Put the environment tag back
+        if: (failure() || cancelled()) && inputs.restore-tag-on-failure && steps.tag.outcome != 'skipped'
+        run: |
+          base="ghcr.io/${GITHUB_REPOSITORY,,}"
+          [ -s "$RUNNER_TEMP/previous-tags" ] || { echo "::warning::No previous $TAG tag to put back"; exit 0; }
+          while read -r image digest; do
+            docker buildx imagetools create --prefer-index=false -t "$base/$image:$TAG" "$base/$image@$digest"
+          done < "$RUNNER_TEMP/previous-tags"
+          echo "::warning:::$TAG points back at the previous images. Services already redeployed may run $VERSION: run the Rollback workflow with the previous commit to redeploy them."
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Deploy $DEPLOY_ENV"
+            echo "- **Commit:** \`$VERSION\`"
+            echo "- **Status:** ${{ steps.head.outputs.superseded == 'true' && 'skipped (superseded by a newer commit)' || job.status }}"
+          } >> "$GITHUB_STEP_SUMMARY"
