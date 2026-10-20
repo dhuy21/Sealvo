@@ -1,0 +1,43 @@
+# Build context: repository root. Runs one MySQL backup and exits (Railway cron service).
+# Debian slim with Oracle's MySQL 8.0 client: Debian's default-mysql-client is MariaDB's mysqldump,
+# which does not know MySQL 8 features (utf8mb4_0900_* collations, GTIDs).
+
+# Both stages pinned to the same digest (Dependabot updates them)
+FROM node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392 AS deps
+WORKDIR /app
+COPY package-lock.json apps/api/package.json ./
+# The scripts only need @aws-sdk/client-s3: install it alone (version range taken from the
+# API manifest). npm keeps the monorepo lockfile's versions and integrity for every package
+# it does not prune, so this stays lockfile-reproducible without the full API dependency tree.
+RUN node -e "const d = require('./package.json').dependencies; require('fs').writeFileSync('package.json', JSON.stringify({ private: true, dependencies: { '@aws-sdk/client-s3': d['@aws-sdk/client-s3'] } }))" \
+ && npm install --omit=dev --ignore-scripts --no-audit --no-fund
+
+FROM node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
+# Oracle rotates the repository signing key (the 2023 one has expired): take the current
+# RPM-GPG-KEY-mysql-<year> from https://repo.mysql.com/ when apt reports EXPKEYSIG, and its
+# fingerprint from the MySQL manual ("Signature Checking Using GnuPG"). A key served by a
+# compromised download must not become the key apt trusts.
+ARG MYSQL_KEY_FINGERPRINT=BCA43417C3B485DD128EC6D4B7B3B788A8D3785C
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
+ && curl -fsSL https://repo.mysql.com/RPM-GPG-KEY-mysql-2025 -o /tmp/mysql.asc \
+ && [ "$(gpg --show-keys --with-colons /tmp/mysql.asc | awk -F: '$1 == "fpr" { print $10; exit }')" = "$MYSQL_KEY_FINGERPRINT" ] \
+ && gpg --dearmor -o /usr/share/keyrings/mysql.gpg /tmp/mysql.asc \
+ && rm /tmp/mysql.asc \
+ && echo "deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian bookworm mysql-8.0" > /etc/apt/sources.list.d/mysql.list \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends mysql-community-client \
+ && apt-get purge -y curl gnupg \
+ && apt-get autoremove -y \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd --gid 1001 appgroup && useradd --uid 1001 --gid appgroup --no-create-home appuser
+
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY apps/api/scripts/ scripts/
+
+RUN mkdir -p /app/backups && chown appuser:appgroup /app/backups
+USER appuser
+
+CMD ["node", "scripts/backup-db.mjs"]

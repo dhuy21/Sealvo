@@ -1,0 +1,40 @@
+# Actions and Docker base images are pinned by SHA/digest: Dependabot proposes the updates.
+# Opened against develop (the integration branch), grouped to keep the PR count low.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+    # Let a release age a week before proposing it (time for a compromised version to be pulled)
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ['*']
+
+  - package-ecosystem: docker
+    directories: [/apps/api, /apps/web]
+    target-branch: develop
+    schedule:
+      interval: weekly
+    # Let a release age a week before proposing it (time for a compromised version to be pulled)
+    cooldown:
+      default-days: 7
+    groups:
+      base-images:
+        patterns: ['*']
+
+  - package-ecosystem: npm
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+    # Let a release age a week before proposing it (time for a compromised version to be pulled)
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
