@@ -7,7 +7,7 @@ describe('ImportQueueService publishing', () => {
 
   beforeEach(() => {
     rabbitmq = { publish: vi.fn(), onChannelReady: vi.fn() };
-    service = new ImportQueueService(rabbitmq as any, {} as any, {} as any, {} as any);
+    service = new ImportQueueService(rabbitmq as any, {} as any, {} as any, {} as any, {} as any);
   });
 
   it('asserts its topology on every channel the RabbitMQ service opens', async () => {

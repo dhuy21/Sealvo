@@ -117,5 +117,7 @@ const relay = ({
   };
 };
 
-const flush = (service: ImportOutboxService, publish: (payload: unknown) => Promise<boolean>) =>
-  (service as unknown as { flush(publish: typeof publish): Promise<void> }).flush(publish);
+type Publish = (payload: unknown) => Promise<boolean>;
+
+const flush = (service: ImportOutboxService, publish: Publish) =>
+  (service as unknown as { flush(send: Publish): Promise<void> }).flush(publish);
