@@ -40,10 +40,10 @@ export function useQuizEffects() {
     if (isCorrect) triggerScoreIncrease(1000);
   };
 
-  const finish = (accuracy: number) => {
+  const finish = (passed: boolean) => {
     setQuizActive(false);
     setEnhancedMode(false);
-    if (accuracy >= 70) {
+    if (passed) {
       triggerCompletionGlow(3000);
       for (let i = 0; i < 3; i++) later(() => createLovelyParticles(true), i * 300);
     }

@@ -10,6 +10,7 @@ describe('timeLimit', () => {
 describe('accuracy', () => {
   it('is the rounded percentage of correct answers, 0 before the first answer', () => {
     expect(accuracy(2, 3)).toBe(67);
+    expect(accuracy(2, 1)).toBe(100);
     expect(accuracy(0, 0)).toBe(0);
   });
 });

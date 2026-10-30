@@ -107,6 +107,8 @@ function TestPronunInner() {
 
   function showWord(index: number) {
     stopPlayback();
+    recordedWordRef.current = null;
+    speech.cancelListen();
     scoredRef.current = false;
     setCurrentIndex(index);
     setMeterWidth(0);
@@ -150,8 +152,8 @@ function TestPronunInner() {
   }
 
   function endGame() {
-    const avgAccuracy = averageAccuracy(totalAccuracy, completedWords);
-    if (!shell.finish(Math.round(avgAccuracy), isPassed(avgAccuracy, completedWords))) return;
+    const avgAccuracy = Math.round(averageAccuracy(totalAccuracy, completedWords));
+    if (!shell.finish(avgAccuracy, isPassed(avgAccuracy, completedWords))) return;
     clearInterval(timerRef.current);
     setElapsed(Date.now() - startTime);
   }

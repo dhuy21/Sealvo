@@ -9,8 +9,8 @@ export function FlashMatchRules({ onStart }: { onStart: () => void }) {
       </h2>
       <ul className={cx(styles, 'rules-list')}>
         <li>Associez chaque mot avec sa définition</li>
-        <li>Moins vous faites de tentatives, plus votre score sera élevé</li>
-        <li>Le temps est également pris en compte dans le calcul du score</li>
+        <li>Le score est le nombre de paires trouvées</li>
+        <li>Le temps et le nombre de coups s&apos;affichent à la fin, sans changer le score</li>
         <li>Trouvez toutes les paires pour terminer le jeu</li>
       </ul>
       <button className={cx(styles, 'start-btn')} onClick={onStart}>

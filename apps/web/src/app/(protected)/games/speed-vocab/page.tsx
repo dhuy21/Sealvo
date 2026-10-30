@@ -13,7 +13,13 @@ import { SpeedVocabBoard } from '@/components/games/speed-vocab/SpeedVocabBoard'
 import { SpeedVocabSummary } from '@/components/games/speed-vocab/SpeedVocabSummary';
 import { playErrorSound, playSuccessSound } from '@/components/games/speed-vocab/speed-sounds';
 import { useSpeedBackground } from '@/components/games/speed-vocab/use-speed-background';
-import { isPassed, timeLimit, wordPoints } from '@/components/games/speed-vocab/scoring';
+import {
+  isPassed,
+  scoreAfterMiss,
+  timeLimit,
+  wordPoints,
+  wordsPerMinute,
+} from '@/components/games/speed-vocab/scoring';
 import { useTransientFlag } from '@/components/games/use-transient-flag';
 import { cx } from '@/lib/css-module';
 import { formatTypeMeaning } from '@/lib/word-type';
@@ -138,6 +144,7 @@ function SpeedVocabInner() {
       showWord(nextIndex());
     } else if (userInput.length >= correctWord.length) {
       setWordsTyped((p) => p + 1);
+      setScore(scoreAfterMiss);
       setStreak(0);
       playErrorSound();
       triggerShake(500);
@@ -208,7 +215,7 @@ function SpeedVocabInner() {
             <SpeedVocabSummary
               score={score}
               bestStreak={bestStreak}
-              wpm={correctWords}
+              wpm={wordsPerMinute(correctWords, timeLimit(words.length))}
               levelMessage={shell.levelMessage}
               levelStatus={shell.levelStatus}
               levelFinished={shell.levelFinished}
