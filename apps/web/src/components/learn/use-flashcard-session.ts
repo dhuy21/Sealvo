@@ -62,7 +62,16 @@ export function useFlashcardSession(
   const indexRef = useRef(0);
   const modeRef = useRef<LearnMode>('word-to-meaning');
   const streakRecordedRef = useRef(false);
+  /** Each move replaces the previous one, so two clicks do not skip a card. */
+  const moveRef = useRef(0);
   const schedule = useTimeouts();
+
+  const beginMove = () => {
+    moveRef.current += 1;
+    // A cancelled slide stays at opacity 0 until its own timeout clears the class.
+    setCardAnimation('');
+    return moveRef.current;
+  };
 
   useEffect(() => {
     saveProgress(deck, progress);
@@ -105,6 +114,8 @@ export function useFlashcardSession(
   };
 
   const startDeck = (next: ReviewWord[]) => {
+    beginMove();
+    streakRecordedRef.current = false;
     setDeck(next);
     setIndex(0);
     setProgress(freshProgress(next.length));
@@ -126,6 +137,7 @@ export function useFlashcardSession(
   };
 
   const changeMode = (next: LearnMode) => {
+    beginMove();
     modeRef.current = next;
     setModeState(next);
     setContainerAnimation('mode-change');
@@ -137,8 +149,10 @@ export function useFlashcardSession(
 
   const goPrev = () => {
     if (indexRef.current <= 0) return;
+    const move = beginMove();
     setCardAnimation('slide-right');
     schedule(() => {
+      if (moveRef.current !== move) return;
       setIndex(Math.max(0, indexRef.current - 1));
       redrawCard();
       setCardAnimation('');
@@ -153,12 +167,17 @@ export function useFlashcardSession(
 
   const goNext = () => {
     if (indexRef.current >= deckRef.current.length - 1) return;
+    const move = beginMove();
     setCardAnimation('slide-left');
-    schedule(advance, 200);
+    schedule(() => {
+      if (moveRef.current !== move) return;
+      advance();
+    }, 200);
   };
 
   const markCard = (level: 0 | 2) => {
     if (deckRef.current.length === 0) return;
+    const move = beginMove();
     const next = [...progressRef.current];
     next[indexRef.current] = level;
     setProgress(next);
@@ -170,10 +189,14 @@ export function useFlashcardSession(
 
     setCardAnimation(level === 0 ? 'wrong-answer' : 'correct-answer');
     schedule(() => {
+      if (moveRef.current !== move) return;
       setCardAnimation('');
       if (indexRef.current < deckRef.current.length - 1) {
         setCardAnimation('slide-left');
-        schedule(advance, 200);
+        schedule(() => {
+          if (moveRef.current !== move) return;
+          advance();
+        }, 200);
       }
     }, 500);
   };
@@ -184,6 +207,8 @@ export function useFlashcardSession(
   };
 
   const shuffle = () => {
+    beginMove();
+    streakRecordedRef.current = false;
     setDeck(shuffleArray(deckRef.current));
     setIndex(0);
     setProgress(freshProgress(deckRef.current.length));
@@ -195,8 +220,10 @@ export function useFlashcardSession(
   };
 
   const reset = () => {
+    const move = beginMove();
     setProgressAnimation('reset-animation');
     schedule(() => {
+      if (moveRef.current !== move) return;
       setProgressAnimation('');
       setIndex(0);
       setProgress(freshProgress(deckRef.current.length));
@@ -205,6 +232,7 @@ export function useFlashcardSession(
   };
 
   const jumpTo = (index: number) => {
+    beginMove();
     setIndex(index);
     redrawCard();
   };

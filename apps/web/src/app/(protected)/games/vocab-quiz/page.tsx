@@ -101,7 +101,7 @@ function VocabQuizContent() {
       const total = questions.length;
       if (!shell.finish(score, isPassed(correctCount, total))) return;
       clearInterval(timerRef.current);
-      effects.finish(Math.round((correctCount / total) * 100));
+      effects.finish(isPassed(correctCount, total));
     }
   }, [currentIdx, questions, correctCount, score, shell, effects]);
 

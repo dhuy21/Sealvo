@@ -12,11 +12,13 @@ import { settleWordsResponse } from './settle-words-response';
 import styles from '@/styles/add-word.module.css';
 import { cx } from '@/lib/css-module';
 
-const EXCEL_MIME_TYPES = [
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-excel',
-];
 const IMPORT_ERROR = 'Une erreur est survenue. Veuillez réessayer plus tard.';
+
+/** Same rule as the API: the browser often leaves the MIME type empty. */
+function isExcelFile(name: string): boolean {
+  const ext = name.toLowerCase();
+  return ext.endsWith('.xlsx') || ext.endsWith('.xls');
+}
 
 export function ImportForm({ packageId }: { packageId: number }) {
   const importFile = useImportFile(packageId);
@@ -40,7 +42,7 @@ export function ImportForm({ packageId }: { packageId: number }) {
       resetFile();
       return;
     }
-    if (!EXCEL_MIME_TYPES.includes(file.type)) {
+    if (!isExcelFile(file.name)) {
       toast.error('Format de fichier non supporté. Utilisez Excel');
       resetFile();
       return;

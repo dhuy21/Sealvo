@@ -227,7 +227,7 @@ function WordSearchInner() {
 
               {screen === 'post' && (
                 <WordSearchSummary
-                  finalScore={score}
+                  finalScore={finalScore(score, foundWords.length, wordsToFind.length)}
                   foundCount={foundWords.length}
                   accuracy={accuracy}
                   levelMessage={shell.levelMessage}

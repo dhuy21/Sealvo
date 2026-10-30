@@ -41,6 +41,9 @@ export function useSpeechRecognition({
   const micGrantedRef = useRef(false);
   const gotResultRef = useRef(false);
   const languageRef = useRef(language);
+  /** Passer and the next word bump this so a retry cannot start a recording. */
+  const sessionRef = useRef(0);
+  const activeSessionRef = useRef(0);
   const later = useTimeouts();
 
   useEffect(() => {
@@ -109,10 +112,15 @@ export function useSpeechRecognition({
       stop();
       return;
     }
+    const session = sessionRef.current;
     if (isIOS()) {
       if (!micGrantedRef.current) {
         checkMicrophonePermissions().then((granted) => {
-          if (granted) later(start, 500);
+          if (!granted || sessionRef.current !== session) return;
+          later(() => {
+            if (sessionRef.current !== session) return;
+            start();
+          }, 500);
         });
         return;
       }
@@ -130,6 +138,8 @@ export function useSpeechRecognition({
     const { delay, maxRetries } = browserOptimizations(navigator.userAgent);
     maxRetriesRef.current = maxRetries;
     later(() => {
+      if (sessionRef.current !== session) return;
+      activeSessionRef.current = session;
       try {
         recognition.start();
       } catch (error) {
@@ -140,6 +150,16 @@ export function useSpeechRecognition({
   };
 
   const handleStart = useEffectEvent(() => {
+    if (sessionRef.current !== activeSessionRef.current) {
+      if (activeSessionRef.current === -1) {
+        try {
+          recognitionRef.current?.abort();
+        } catch {
+          /* already stopped */
+        }
+      }
+      return;
+    }
     setListening(true);
     setHasListened(true);
     setFeedback('Écoute en cours... Parlez maintenant.', 'info');
@@ -150,6 +170,7 @@ export function useSpeechRecognition({
 
   const handleResult = useEffectEvent((event: SpeechRecognitionEvent) => {
     clearTimeout(timeoutRef.current);
+    if (sessionRef.current !== activeSessionRef.current) return;
     if (event.results.length === 0) return;
     const results = event.results[0];
     if (results && results.length > 0) {
@@ -163,8 +184,10 @@ export function useSpeechRecognition({
 
   const handleError = useEffectEvent((event: SpeechRecognitionErrorEvent) => {
     clearTimeout(timeoutRef.current);
-    console.error('Erreur de reconnaissance vocale:', event.error);
+    const session = activeSessionRef.current;
     setListening(false);
+    if (sessionRef.current !== session) return;
+    console.error('Erreur de reconnaissance vocale:', event.error);
 
     const maxRetries = maxRetriesRef.current;
     const { message, retry } = errorInfo(event.error, retryCountRef.current < maxRetries);
@@ -172,7 +195,9 @@ export function useSpeechRecognition({
 
     if (retry) {
       const attempt = ++retryCountRef.current;
+      const session = activeSessionRef.current;
       later(() => {
+        if (sessionRef.current !== session) return;
         setFeedback(`Nouvelle tentative (${attempt}/${maxRetries})...`, 'info');
         start();
       }, 1000);
@@ -184,17 +209,13 @@ export function useSpeechRecognition({
 
   const handleEnd = useEffectEvent(() => {
     clearTimeout(timeoutRef.current);
+    const session = activeSessionRef.current;
     setListening(false);
-    if (isIOS()) {
-      later(() => {
-        if (!gotResultRef.current) {
-          setFeedback(
-            'Reconnaissance terminée. Appuyez sur le microphone pour réessayer.',
-            'neutral',
-          );
-        }
-      }, 1000);
-    }
+    if (sessionRef.current !== session || !isIOS()) return;
+    later(() => {
+      if (sessionRef.current !== session || gotResultRef.current) return;
+      setFeedback('Reconnaissance terminée. Appuyez sur le microphone pour réessayer.', 'neutral');
+    }, 1000);
   });
 
   useEffect(() => {
@@ -231,12 +252,34 @@ export function useSpeechRecognition({
     if (isIOS() && !micGrantedRef.current) {
       setFeedback('Vérification des permissions microphone...', 'info');
       if (!(await checkMicrophonePermissions())) return;
-      later(() => (listeningRef.current ? stop() : start()), 300);
+      const session = sessionRef.current;
+      later(() => {
+        if (sessionRef.current !== session) return;
+        if (listeningRef.current) stop();
+        else start();
+      }, 300);
       return;
     }
     if (listeningRef.current) stop();
     else start();
   };
 
-  return { supported, isListening, hasListened, toggle };
+  /** Drops a recording or a retry that belongs to the word just left. */
+  const cancelListen = () => {
+    sessionRef.current += 1;
+    activeSessionRef.current = -1;
+    retryCountRef.current = 0;
+    clearTimeout(timeoutRef.current);
+    const recognition = recognitionRef.current;
+    if (recognition) {
+      try {
+        recognition.abort();
+      } catch {
+        /* not started yet */
+      }
+    }
+    setListening(false);
+  };
+
+  return { supported, isListening, hasListened, toggle, cancelListen };
 }

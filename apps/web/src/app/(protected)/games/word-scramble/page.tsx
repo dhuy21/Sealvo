@@ -39,7 +39,8 @@ function WordScrambleInner() {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const currentWord = words[currentIndex] ?? null;
-  const accuracy = scrambleAccuracy(correctAnswers, totalAttempts);
+  // Next closes an attempt. Time running out leaves a checked word, so that word counts too.
+  const accuracy = scrambleAccuracy(correctAnswers, totalAttempts + (canSkip ? 1 : 0));
 
   function endGame() {
     shell.finish(score, isPassed(accuracy));
