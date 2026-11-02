@@ -1,45 +1,52 @@
 # Dependencies
-node_modules
-npm-debug.log
-yarn-debug.log
-yarn-error.log
+node_modules/
 
-# Environment variables
-.env
+# Environment
+.env*
+!.env.example
 
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Build outputs
+dist/
+.next/
+.turbo/
+# turbo prune
+out/
 
-# Build files
-/build
-/dist
-
-# Logs
-logs
-*.log
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Editor directories and files
-.idea
-.vscode
+# IDE
+.vscode/
+.idea/
 *.swp
 *.swo
 
-# Debug files
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-# Playwright
-test-results/
+# Test
+coverage/
 playwright-report/
-blob-report/
-.playwright/
+test-results/
 
-# Database backups (Phase 2 — contain sensitive data, do not commit)
-backups/
+# Docker volumes
+db_data/
+redis_data/
+rabbitmq_data/
+*.tsbuildinfo
+apps/api/backups/
+
+# Local Semgrep output
+.semgrep-out.json
+
+# Previous application and migration notes: kept locally, archived on the legacy/express-app branch
+/src/
+/MIGRATION_AUDIT.md
+/docs/legacy/
+
+# Project documentation: kept locally, only the READMEs are published
+/BUSINESS_RULES.md
+/docs/
+AGENTS.md

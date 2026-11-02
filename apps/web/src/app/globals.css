@@ -1,0 +1,10 @@
+@import 'tailwindcss';
+@import '../styles/dark-mode.css';
+@import '../styles/main.css';
+@import '../styles/header.css';
+@import '../styles/footer.css';
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}

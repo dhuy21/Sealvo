@@ -1,79 +1,44 @@
 {
-  "main": "app.js",
-  "engines": {
-    "node": ">=20"
-  },
+  "name": "sealvo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon --inspect app.js",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "test": "NODE_ENV=test jest",
-    "test:watch": "NODE_ENV=test jest --watch",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:report": "playwright show-report",
-    "migrate": "node scripts/run-migrations.js",
-    "migrate:safe": "node scripts/backup-db.js && node scripts/run-migrations.js",
-    "backup:db": "node scripts/backup-db.js",
-    "restore:db": "node scripts/restore-db.js",
-    "build": "node scripts/build.js",
-    "scheduler": "node scheduler.js",
-    "prepare": "node -e \"require('fs').existsSync('.git')&&require('child_process').execSync('npx husky',{stdio:'inherit'})\""
-  },
-  "lint-staged": {
-    "*.js": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md,css,yml,yaml}": [
-      "prettier --write"
-    ]
-  },
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.0.0",
-    "@aws-sdk/client-sesv2": "^3.0.0",
-    "@google-cloud/text-to-speech": "^6.2.0",
-    "@google/generative-ai": "^0.24.1",
-    "amqplib": "^0.10.9",
-    "axios": "^1.12.0",
-    "bcryptjs": "^3.0.2",
-    "compression": "^1.8.1",
-    "connect-redis": "^9.0.0",
-    "dompurify": "^3.2.6",
-    "dotenv": "^16.5.0",
-    "express": "^5.1.0",
-    "express-handlebars": "^8.0.1",
-    "express-rate-limit": "^8.2.1",
-    "express-session": "^1.18.1",
-    "express-validator": "^7.3.1",
-    "helmet": "^8.1.0",
-    "html-entities": "^2.6.0",
-    "jsdom": "^26.1.0",
-    "morgan": "^1.10.0",
-    "multer": "^2.0.1",
-    "mysql2": "^3.14.0",
-    "node-cron": "^4.2.1",
-    "nodemailer": "^8.0.1",
-    "rate-limit-redis": "^4.3.1",
-    "redis": "^5.11.0",
-    "validator": "^13.15.15",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+    "dev": "turbo run dev",
+    "infra:up": "docker compose -f docker-compose.dev.yml up -d --wait",
+    "infra:down": "docker compose -f docker-compose.dev.yml down",
+    "db:migrate": "prisma migrate deploy --schema=apps/api/prisma/schema.prisma",
+    "db:status": "prisma migrate status --schema=apps/api/prisma/schema.prisma",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "lint:deps": "npm run lint:deps -w @sealvo/api -w @sealvo/web",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "turbo run build && changeset publish",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.58.2",
-    "esbuild": "^0.27.4",
-    "eslint": "^10.0.2",
+    "@changesets/changelog-github": "^1.0.1",
+    "@changesets/cli": "^3.0.3",
+    "dependency-cruiser": "^18.6.0",
     "eslint-config-prettier": "^10.1.8",
-    "globals": "^17.3.0",
     "husky": "^9.1.7",
-    "jest": "^30.2.0",
-    "lint-staged": "^16.2.7",
-    "nodemon": "^3.1.9",
-    "prettier": "^3.8.1",
-    "supertest": "^7.2.2"
-  }
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10",
+    "turbo": "^2.11.7"
+  },
+  "lint-staged": {
+    "packages/**/*.ts": [
+      "prettier --write",
+      "bash -c 'npm run lint -w @sealvo/shared'"
+    ]
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "npm@10.9.9"
 }

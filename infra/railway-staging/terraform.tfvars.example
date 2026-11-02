@@ -1,0 +1,12 @@
+# Copy to terraform.tfvars. That file is gitignored.
+# railway_token can be omitted when RAILWAY_TOKEN is set in the shell.
+
+ghcr_token               = "github-token-with-read-packages"
+aws_region               = "eu-north-1"
+aws_access_key_id        = "replace"
+aws_secret_access_key    = "replace"
+aws_ses_from             = "no-reply@sealvo.it.com"
+google_client_id         = "replace"
+google_client_secret     = "replace"
+feedback_recipient_email = "you@example.com"
+staging_email_intercept  = "you@example.com"

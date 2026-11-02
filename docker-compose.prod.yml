@@ -1,0 +1,171 @@
+# Production images on one machine — 7 services (+ backup, profile "backup"), to try a change
+# before pushing it. Staging and production run on Railway (docs/railway-setup.md), not from this file.
+# Env file: .env (copy .env.example). Also required here: MYSQL_ROOT_PASSWORD (URL-safe characters,
+# it is put in DATABASE_URL) and MYSQL_DATABASE. DATABASE_URL, Redis, RabbitMQ and the scheduler
+# target are overridden below with the service names, so the localhost values of .env still work.
+# Usage: docker compose -f docker-compose.prod.yml up -d
+# Backup: docker compose -f docker-compose.prod.yml --profile backup run --rm backup
+
+name: sealvo-prod
+
+x-service-network: &service-network
+  DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}@db:3306/${MYSQL_DATABASE:?set MYSQL_DATABASE in .env}
+  REDIS_URL: ''
+  REDIS_HOST: redis
+  RABBITMQ_URL: ''
+  RABBITMQ_HOST: rabbitmq
+  SCHEDULER_API_URL: http://api:3000
+  # Wins over the NODE_ENV of .env, which is often the development one
+  NODE_ENV: production
+
+# api, worker and scheduler run the same image: each needs `build`, or Compose tries to pull it
+x-api-image: &api-image
+  build:
+    context: .
+    dockerfile: apps/api/Dockerfile
+  image: sealvo-api
+
+services:
+  api:
+    <<: *api-image
+    # This machine only, like the database: open the port to the network on purpose, not by default
+    ports:
+      - '127.0.0.1:${API_PORT:-3001}:3000'
+    env_file: .env
+    environment: *service-network
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "import(\"http\").then(h=>h.default.get(\"http://127.0.0.1:3000/health\",r=>process.exit(r.statusCode===200?0:1)).on(\"error\",()=>process.exit(1)))"',
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      API_URL: ${API_URL:?API_URL is required}
+    ports:
+      - '127.0.0.1:${WEB_PORT:-3000}:3000'
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # Worker and scheduler: no HTTP server, the image HEALTHCHECK (GET /health) does not apply.
+  # Three copies, same as dev and the Railway worker scale.
+  worker:
+    <<: *api-image
+    command: ['node', 'dist/worker.js']
+    env_file: .env
+    environment:
+      <<: *service-network
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}@db:3306/${MYSQL_DATABASE:?set MYSQL_DATABASE in .env}?connection_limit=4
+    deploy:
+      replicas: 3
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+    depends_on:
+      # The API runs the migrations
+      api:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  scheduler:
+    <<: *api-image
+    command: ['node', 'dist/scheduler.js']
+    env_file: .env
+    environment: *service-network
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  backup:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.backup
+    image: sealvo-backup
+    profiles: ['backup']
+    env_file: .env
+    environment: *service-network
+    volumes:
+      - backups_data:/app/backups
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?set MYSQL_DATABASE in .env}
+    # Host access for administration only (never exposed publicly)
+    ports:
+      - '127.0.0.1:${MYSQL_PORT:-3306}:3306'
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -P 3306 -uroot -p$${MYSQL_ROOT_PASSWORD}']
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 45s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --maxmemory-policy volatile-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Management UI not published: docker compose -f docker-compose.prod.yml exec rabbitmq rabbitmqctl ...
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'check_port_connectivity']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  db_data:
+  redis_data:
+  rabbitmq_data:
+  backups_data:

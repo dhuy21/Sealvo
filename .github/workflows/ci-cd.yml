@@ -1,5 +1,5 @@
-# CI/CD pipeline: feature → dev → staging → main
-# See docs/BRANCHING-STRATEGY.md for secrets/variables layout.
+# CI/CD pipeline for Sealvo monorepo (Turborepo)
+# Triggers: PR → lint+test, staging push → deploy staging, main push → deploy prod
 name: CI/CD
 
 permissions:
@@ -7,13 +7,16 @@ permissions:
 
 on:
   push:
-    branches: [main, master, staging, dev, 'feature/**']
+    branches: [main, staging, develop]
   pull_request:
-    branches: [main, master, staging, dev]
+    branches: [main, staging, develop]
 
+# PRs and develop: a new push cancels the previous run. main and staging: every run goes through, so
+# each commit gets its images (a rollback target) and lint/test feedback even while a deploy waits for
+# approval; the deploy job serializes the releases (deploy.yml) and skips superseded commits.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' && github.ref != 'refs/heads/staging' }}
+  group: ${{ github.workflow }}-${{ github.ref }}${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging') && format('-{0}', github.run_id) || '' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/staging' }}
 
 jobs:
   # ── 1. LINT & TEST ──────────────────────────────────────────
@@ -21,266 +24,284 @@ jobs:
     name: Lint & Test
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      NODE_ENV: test
-      SESSION_SECRET: ci-test-session-secret
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'npm' }
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: 'npm'
       - run: npm ci
       - name: NPM audit (production deps)
         run: npm audit --audit-level=critical --omit=dev
-      - run: npm run lint
-      - run: npm run format:check
-      - run: npm test
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: .turbo/cache
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+      - run: npx turbo lint
+      - name: Architecture rules (dependency-cruiser)
+        run: npm run lint:deps
+      - run: npx turbo test
+      - run: npx turbo build
+
+  # ── 1a. SAST ───────────────────────────────────────────────
+  # Semgrep OSS rulesets: an ERROR finding fails the run. A triaged false positive carries a
+  # `nosemgrep: <rule id> (reason)` comment on the line it reports.
+  semgrep:
+    name: Semgrep
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: semgrep/semgrep@sha256:529ee8a277ec8adc5b534d7c74eea0a47e9de21d62852b6ba7ac6ba9566845c3 # 1.180.0
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - run: >-
+          semgrep scan --metrics off --error --severity ERROR
+          --config p/default --config p/nodejsscan --config p/typescript --config p/react
+          --config p/nextjs --config p/jwt --config p/github-actions --config p/dockerfile
+          --config p/secrets
+          apps packages .github docker-compose.dev.yml docker-compose.prod.yml
+
+  # ── 1b. MIGRATIONS ─────────────────────────────────────────
+  # Applies every migration to an empty MySQL, then fails if schema.prisma has changes
+  # that no migration contains
+  migrations-check:
+    name: Prisma migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      mysql:
+        image: mysql:8.0@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/sealvo_ci
+      SHADOW_DATABASE_URL: mysql://root:root@127.0.0.1:3306/sealvo_shadow
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: 'npm'
+      - run: npm ci
+        working-directory: .
+      # Service containers take no command args (no --collation-server): set it per database.
+      # Prisma does not create a missing shadow database.
+      - name: Create databases
+        run: |
+          docker exec ${{ job.services.mysql.id }} mysql -uroot -proot -e "
+            CREATE DATABASE sealvo_ci CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+            CREATE DATABASE sealvo_shadow CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"
+      - run: npx prisma migrate deploy
+      - name: Schema matches migrations
+        run: |
+          npx prisma migrate diff \
+            --from-migrations prisma/migrations \
+            --to-schema-datamodel prisma/schema.prisma \
+            --shadow-database-url "$SHADOW_DATABASE_URL" \
+            --exit-code
 
   # ── 2. BUILD, SCAN & PUSH ──────────────────────────────────
+  # Pull requests build and scan every image without pushing: a Dockerfile or dependency change
+  # (Dependabot) that breaks the build or brings a critical CVE fails the PR, not the next release
   docker-build-push:
-    name: Build, Scan & Push
+    name: Build & ${{ github.event_name == 'push' && 'Push' || 'Scan' }} (${{ matrix.image }})
     runs-on: ubuntu-latest
-    needs: lint-and-test
+    needs: [lint-and-test, migrations-check, semgrep]
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'))
     timeout-minutes: 20
+    # staging and main fast-forwarded to the same commit build it once: the second run waits, then
+    # finds the image and reuses it instead of pushing a different digest under the same tag
+    concurrency:
+      group: build-${{ github.sha }}-${{ matrix.image }}
+      cancel-in-progress: false
     permissions:
       contents: read
       packages: write
+      # Staging's E2E result for a reused image
+      actions: read
+    strategy:
+      matrix:
+        # The backup cron only runs in production: staging does not build its image
+        include: ${{ fromJSON(github.ref == 'refs/heads/staging' && '[{"image":"api","dockerfile":"apps/api/Dockerfile"},{"image":"web","dockerfile":"apps/web/Dockerfile"}]' || '[{"image":"api","dockerfile":"apps/api/Dockerfile"},{"image":"web","dockerfile":"apps/web/Dockerfile"},{"image":"backup","dockerfile":"apps/api/Dockerfile.backup"}]') }}
     env:
       REGISTRY: ghcr.io
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Set image name
         id: image
-        run: echo "name=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
-      - name: Resolve tags
+      # Only the immutable commit tag: deploy.yml moves :latest / :staging once the deploy is approved
+      - name: Resolve image
         id: meta
-        run: |
-          PUSH="false"; TAG="ci"
-          IMG="${{ env.REGISTRY }}/${{ steps.image.outputs.name }}"
-          TAGS="${IMG}:ci-${{ github.sha }}"
+        run: echo "ref=$REGISTRY/${{ steps.image.outputs.name }}/${{ matrix.image }}:sha-${{ github.sha }}" >> "$GITHUB_OUTPUT"
 
-          if [ "${{ github.event_name }}" = "push" ]; then
-            case "${{ github.ref }}" in
-              refs/heads/main|refs/heads/master)
-                PUSH="true"; TAG="latest"
-                TAGS="${IMG}:latest,${IMG}:sha-${{ github.sha }}" ;;
-              refs/heads/staging)
-                PUSH="true"; TAG="staging"
-                TAGS="${IMG}:staging,${IMG}:sha-${{ github.sha }}" ;;
-            esac
-          fi
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
-          echo "push=$PUSH"  >> $GITHUB_OUTPUT
-          echo "tags=$TAGS"  >> $GITHUB_OUTPUT
-          echo "env_tag=$TAG" >> $GITHUB_OUTPUT
-
-      - uses: docker/setup-buildx-action@v3
-
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        if: github.event_name == 'push'
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: docker/build-push-action@v6
+      # A commit tag is never overwritten: staging is fast-forwarded into main, so production gets the
+      # exact image built and scanned on staging (a hotfix later fast-forwarded into staging, or a re-run,
+      # reuses its image the same way). Only a commit with no image yet is built below.
+      # Only "not found" means build: a registry error must not rebuild and overwrite an existing tag
+      - name: Reuse an existing build
+        id: existing
+        if: github.event_name == 'push'
+        run: |
+          if error=$(docker buildx imagetools inspect "$IMAGE" 2>&1 >/dev/null); then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::$IMAGE already exists: reused, not rebuilt"
+          elif ! grep -qiE 'not found|manifest unknown' <<< "$error"; then
+            echo "::error::Cannot tell whether $IMAGE exists: $error"
+            exit 1
+          fi
+        env:
+          IMAGE: ${{ steps.meta.outputs.ref }}
+
+      # Promotion: a commit that is on staging reaches production only once it passed E2E on staging,
+      # whether or not its image exists yet. A commit pushed to main directly (not on staging) is
+      # built here and gated by the production approver.
+      - name: Check staging passed
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          status=$(gh api "repos/$GITHUB_REPOSITORY/compare/$GITHUB_SHA...staging" --jq .status)
+          if [ "$status" != identical ] && [ "$status" != ahead ]; then
+            echo "::notice::$GITHUB_SHA is not on staging ($status): no staging E2E to require"
+            exit 0
+          fi
+          run_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$GITHUB_SHA&branch=staging&event=push" \
+            --jq '[.workflow_runs[] | select(.path == ".github/workflows/ci-cd.yml")] | sort_by(.run_number) | last | .id // empty')
+          [ -n "$run_id" ] || { echo "::error::No staging CI/CD run for $GITHUB_SHA yet: re-run once E2E Staging passed"; exit 1; }
+          e2e=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" \
+            --jq '[.jobs[] | select(.name | startswith("E2E Staging"))] | first | .conclusion // "missing"')
+          [ "$e2e" = success ] || { echo "::error::E2E Staging is '${e2e:-pending}' for $GITHUB_SHA (run $run_id): not promoted (re-run once it passed)"; exit 1; }
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      # The scan below also covers a reused image: it was scanned when built, maybe weeks ago
+      - name: Pull the existing image
+        if: steps.existing.outputs.found == 'true'
+        run: docker pull "$IMAGE"
+        env:
+          IMAGE: ${{ steps.meta.outputs.ref }}
+
+      # Built into the runner's Docker only: nothing reaches the registry before the scan passes
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        if: steps.existing.outputs.found != 'true'
         with:
           context: .
-          file: ./Dockerfile
-          push: ${{ steps.meta.outputs.push }}
-          tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          file: ./${{ matrix.dockerfile }}
+          load: true
+          tags: ${{ steps.meta.outputs.ref }}
+          build-args: |
+            ${{ matrix.image != 'backup' && format('GIT_SHA={0}', github.sha) || '' }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: ${{ github.event_name == 'push' && format('type=gha,scope={0},mode=max', matrix.image) || '' }}
 
+      # Pinned by digest (aquasec/trivy:0.76.0). The scanner reads an exported copy of the image
+      # (read-only mount): no Docker socket, no registry credentials.
+      # Lists CRITICAL and HIGH, then fails the job (and so blocks the push and the deploy) on fixable CRITICAL only
       - name: Trivy vulnerability scan
-        if: steps.meta.outputs.push == 'true'
-        continue-on-error: true
         run: |
-          docker run --rm \
-            -e TRIVY_USERNAME="${{ github.actor }}" \
-            -e TRIVY_PASSWORD="${{ secrets.GITHUB_TOKEN }}" \
-            aquasec/trivy:latest image \
-              --severity CRITICAL,HIGH --ignore-unfixed --exit-code 0 --format table \
-              "${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.meta.outputs.env_tag }}"
+          docker save -o "$RUNNER_TEMP/image.tar" "$IMAGE"
+          # Without capabilities the scanner's root cannot read a file owned by the runner user
+          chmod a+r "$RUNNER_TEMP/image.tar"
+          trivy() {
+            docker run --rm \
+              --cap-drop ALL --security-opt no-new-privileges \
+              -v "$RUNNER_TEMP/image.tar:/scan/image.tar:ro" \
+              aquasec/trivy:0.76.0@sha256:2416d1f74045b57274df1a340eee6b510cacd73c66a6ccb8da092b117eb7d222 image \
+                --input /scan/image.tar --ignore-unfixed --format table "$@"
+          }
+          trivy --severity CRITICAL,HIGH --exit-code 0
+          trivy --severity CRITICAL --exit-code 1 --quiet
+          rm "$RUNNER_TEMP/image.tar"
+        env:
+          IMAGE: ${{ steps.meta.outputs.ref }}
+
+      # The scanned image itself
+      - name: Push
+        if: github.event_name == 'push' && steps.existing.outputs.found != 'true'
+        run: docker push "$IMAGE"
+        env:
+          IMAGE: ${{ steps.meta.outputs.ref }}
 
       - name: Summary
         if: always()
         run: |
-          echo "### Docker Build" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Pushed:** ${{ steps.meta.outputs.push }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tags:** \`${{ steps.meta.outputs.tags }}\`" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "### Docker Build — ${{ matrix.image }}"
+            echo "- **Image:** \`${{ steps.meta.outputs.ref }}\`"
+            echo "- **Source:** ${{ steps.existing.outputs.found == 'true' && 'reused (already built)' || 'built' }}"
+            echo "- **Status:** ${{ job.status }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-  # ── 3a. DEPLOY PRODUCTION ──────────────────────────────────
+  # ── 3. DEPLOY ───────────────────────────────────────────
   deploy-production:
     name: Deploy Production
-    runs-on: ubuntu-latest
-    needs: [lint-and-test, docker-build-push]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    timeout-minutes: 15
-    environment:
-      name: production
-      url: https://www.sealvo.it.com
-    concurrency:
-      group: deploy-production
-      cancel-in-progress: false
-    steps:
-      - name: Redeploy Web
-        run: |
-          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
-          npx -y @railway/cli redeploy --service "$RAILWAY_SERVICE_ID" --yes
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+    needs: docker-build-push
+    permissions:
+      contents: read
+      packages: write
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: production
+      version: ${{ github.sha }}
+      skip-if-superseded: true
+    # Same-repo workflows that need the environment's Railway and E2E secrets
+    secrets: inherit # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
 
-      - name: Health check (Web)
-        run: |
-          sleep 30
-          for i in 1 2 3 4 5; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://www.sealvo.it.com/health || true)
-            echo "Attempt $i: $STATUS"
-            [ "$STATUS" = "200" ] && exit 0
-            sleep 15
-          done
-          echo "Health check failed." && exit 1
-
-      - name: Redeploy Worker
-        run: |
-          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
-          [ -z "$RAILWAY_WORKER_SERVICE_ID" ] && echo "RAILWAY_WORKER_SERVICE_ID not set, skip." && exit 0
-          npx -y @railway/cli redeploy --service "$RAILWAY_WORKER_SERVICE_ID" --yes
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_WORKER_SERVICE_ID: ${{ secrets.RAILWAY_WORKER_SERVICE_ID }}
-
-      - name: Redeploy Scheduler
-        run: |
-          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
-          [ -z "$RAILWAY_SCHEDULER_SERVICE_ID" ] && echo "RAILWAY_SCHEDULER_SERVICE_ID not set, skip." && exit 0
-          npx -y @railway/cli redeploy --service "$RAILWAY_SCHEDULER_SERVICE_ID" --yes
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_SCHEDULER_SERVICE_ID: ${{ secrets.RAILWAY_SCHEDULER_SERVICE_ID }}
-
-      - name: Summary
-        if: always()
-        run: |
-          echo "### Deploy Production" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image:** \`:latest\` (sha-${{ github.sha }})" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-
-  # ── 3b. DEPLOY STAGING ─────────────────────────────────────
   deploy-staging:
     name: Deploy Staging
-    runs-on: ubuntu-latest
-    needs: [lint-and-test, docker-build-push]
+    needs: docker-build-push
+    permissions:
+      contents: read
+      packages: write
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    timeout-minutes: 15
-    environment:
-      name: staging
-      url: ${{ vars.STAGING_URL }}
-    concurrency:
-      group: deploy-staging
-      cancel-in-progress: false
-    steps:
-      - name: Redeploy Web
-        run: |
-          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
-          npx -y @railway/cli redeploy --service "$RAILWAY_SERVICE_ID" --yes
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: staging
+      version: ${{ github.sha }}
+      skip-if-superseded: true
+    # Same-repo workflows that need the environment's Railway and E2E secrets
+    secrets: inherit # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
 
-      - name: Health check (Web)
-        run: |
-          sleep 30
-          for i in 1 2 3 4 5; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ vars.STAGING_URL }}/health" || true)
-            echo "Attempt $i: $STATUS"
-            [ "$STATUS" = "200" ] && exit 0
-            sleep 15
-          done
-          echo "Health check failed." && exit 1
-
-      - name: Redeploy Worker
-        run: |
-          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
-          [ -z "$RAILWAY_WORKER_SERVICE_ID" ] && echo "RAILWAY_WORKER_SERVICE_ID not set, skip." && exit 0
-          npx -y @railway/cli redeploy --service "$RAILWAY_WORKER_SERVICE_ID" --yes
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_WORKER_SERVICE_ID: ${{ secrets.RAILWAY_WORKER_SERVICE_ID }}
-
-      - name: Redeploy Scheduler
-        run: |
-          [ -z "$RAILWAY_TOKEN" ] && echo "RAILWAY_TOKEN not set, skip." && exit 0
-          [ -z "$RAILWAY_SCHEDULER_SERVICE_ID" ] && echo "RAILWAY_SCHEDULER_SERVICE_ID not set, skip." && exit 0
-          npx -y @railway/cli redeploy --service "$RAILWAY_SCHEDULER_SERVICE_ID" --yes
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_SCHEDULER_SERVICE_ID: ${{ secrets.RAILWAY_SCHEDULER_SERVICE_ID }}
-
-      - name: Summary
-        if: always()
-        run: |
-          echo "### Deploy Staging" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image:** \`:staging\` (sha-${{ github.sha }})" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-
-  # ── 4a. E2E PRODUCTION ─────────────────────────────────────
-  e2e-production:
-    name: E2E (Production)
-    runs-on: ubuntu-latest
-    needs: deploy-production
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'npm' }
-      - run: npm ci
-      - run: npx playwright install chromium --with-deps
-      - name: Run E2E
-        run: npm run test:e2e
-        env:
-          BASE_URL: https://www.sealvo.it.com
-      - name: Upload report
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report-production
-          path: playwright-report/
-          retention-days: 7
-      - name: Summary
-        if: always()
-        run: |
-          echo "### E2E Production — ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-
-  # ── 4b. E2E STAGING ────────────────────────────────────────
+  # ── 4. E2E ON STAGING ──────────────────────────────────────
   e2e-staging:
-    name: E2E (Staging)
-    runs-on: ubuntu-latest
+    name: E2E Staging
     needs: deploy-staging
-    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'npm' }
-      - run: npm ci
-      - run: npx playwright install chromium --with-deps
-      - name: Run E2E
-        run: npm run test:e2e
-        env:
-          BASE_URL: ${{ vars.STAGING_URL }}
-      - name: Upload report
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report-staging
-          path: playwright-report/
-          retention-days: 7
-      - name: Summary
-        if: always()
-        run: |
-          echo "### E2E Staging — ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+    # A superseded deploy left staging on a newer commit: testing it would vouch for the wrong commit
+    if: needs.deploy-staging.outputs.deployed == 'true'
+    uses: ./.github/workflows/e2e.yml
+    with:
+      target: staging
+      version: ${{ github.sha }}
+    # Same-repo workflows that need the environment's Railway and E2E secrets
+    secrets: inherit # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
