@@ -173,10 +173,12 @@ jobs:
           SERVICE_ID: ${{ secrets.RAILWAY_SCHEDULER_SERVICE_ID }}
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
-      # A cron job: it only runs at its schedule, so there is nothing to wait for here
+      # A cron job: it only runs at its schedule, so there is nothing to wait for here.
+      # --from-source pulls the tag just moved. A plain redeploy repeats the last
+      # deployment, and Railway refuses when that deployment failed.
       - name: Redeploy Backup (cron)
         if: steps.head.outputs.superseded != 'true' && inputs.environment == 'production'
-        run: railway redeploy --service "$SERVICE_ID" --yes
+        run: railway redeploy --service "$SERVICE_ID" --from-source --yes
         env:
           SERVICE_ID: ${{ secrets.RAILWAY_BACKUP_SERVICE_ID }}
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
