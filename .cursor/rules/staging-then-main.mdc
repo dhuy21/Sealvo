@@ -1,0 +1,13 @@
+---
+description: Promote Sealvo through staging before main
+alwaysApply: true
+---
+
+# Staging before main
+
+Sealvo promotes through environment branches. `staging` comes first. `main` comes after.
+
+- Put a change on `staging` with a pull request. Do not push to `staging` or `main` directly.
+- Wait until that staging deploy is green before opening a pull request from `staging` to `main`.
+- Do not merge `main` back into `staging` in order to ship production.
+- Do not change `www.sealvo.it.com` DNS as part of a code promotion. That cutover is a separate decision.
