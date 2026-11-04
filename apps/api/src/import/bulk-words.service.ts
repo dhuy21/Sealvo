@@ -45,6 +45,29 @@ export class BulkWordsService {
     private readonly outbox: ImportOutboxService,
   ) {}
 
+  /** Excel was rejected before a job existed. The journal still keeps the failure. */
+  async noteRejectedImport(
+    packageId: number,
+    userId: string,
+    fileName: string | undefined,
+    errorMessageText: string,
+  ): Promise<void> {
+    const pkg = await this.prisma.packages.findUnique({
+      where: { package_id: packageId },
+      select: { package_name: true },
+    });
+    await this.activities
+      .recordImportFailed({
+        userId,
+        packageId,
+        packageName: pkg?.package_name ?? null,
+        fileName,
+        wordCount: 0,
+        errorMessage: errorMessageText,
+      })
+      .catch(() => undefined);
+  }
+
   async add(
     type: BulkJobType,
     packageId: number,

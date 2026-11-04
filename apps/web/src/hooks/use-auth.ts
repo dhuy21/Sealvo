@@ -97,6 +97,7 @@ export function useVerifyEmail(token: string | null) {
     if (!isSuccess || !isReady || !isAuthenticated || userRefreshed.current) return;
     userRefreshed.current = true;
     fetchMe()
+      .catch(() => fetchMe())
       .then(setUser)
       .catch(() => {});
   }, [isSuccess, isReady, isAuthenticated, setUser]);

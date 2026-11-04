@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { replaceFlashcardDetailId } from '@/lib/flashcard-progress';
 import { loadProgress, saveProgress } from './progress-storage';
 import type { ReviewWord } from '@/hooks/use-words';
 
@@ -81,6 +82,16 @@ describe('loadProgress', () => {
     expect(loadProgress(1, [reviewWord(1)])?.progress).toEqual([2]);
     expect(store.has('flashcards_progress')).toBe(false);
     expect(loadProgress(2, [reviewWord(1)])).toBeNull();
+  });
+
+  it('keeps the saved session when a shared word receives a new id', () => {
+    saveProgress(PACKAGE_ID, [reviewWord(1), reviewWord(2)], [2, 0]);
+    replaceFlashcardDetailId(PACKAGE_ID, 1, 9);
+
+    const restored = loadProgress(PACKAGE_ID, [reviewWord(2), reviewWord(9)]);
+
+    expect(restored?.deck.map((word) => word.detail_id)).toEqual([9, 2]);
+    expect(restored?.progress).toEqual([2, 0]);
   });
 
   it('returns null when the set of words changed', () => {

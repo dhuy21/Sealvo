@@ -1,7 +1,8 @@
 import type { CardProgress } from './deck';
 import type { ReviewWord } from '@/hooks/use-words';
+import { flashcardProgressKey } from '@/lib/flashcard-progress';
 
-const storageKey = (packageId: number) => `flashcards_progress_${packageId}`;
+const storageKey = flashcardProgressKey;
 const LEGACY_KEY = 'flashcards_progress';
 
 interface SavedProgress {

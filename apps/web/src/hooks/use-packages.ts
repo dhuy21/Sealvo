@@ -83,7 +83,11 @@ export function useDeletePackage() {
       const { data } = await api.delete(`/packages/${id}`);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_data, id: number) => {
+      // Drop this package's cached detail and words. A 404 refetch would otherwise
+      // keep the old list on screen for the stale window.
+      qc.removeQueries({ queryKey: queryKeys.package(id) });
+      qc.removeQueries({ queryKey: queryKeys.words(id) });
       invalidate(qc, queryKeys.packages(), queryKeys.games(), queryKeys.dashboard());
     },
   });
