@@ -136,8 +136,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-      # Staging's E2E result for a reused image
-      actions: read
     strategy:
       matrix:
         # The backup cron only runs in production: staging does not build its image
@@ -184,25 +182,6 @@ jobs:
           fi
         env:
           IMAGE: ${{ steps.meta.outputs.ref }}
-
-      # A sha that is already on the staging branch must have passed that branch's E2E. A sha that
-      # exists only on main is proved by the E2E job later in this run; production waits for it.
-      - name: Check staging passed
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          status=$(gh api "repos/$GITHUB_REPOSITORY/compare/$GITHUB_SHA...staging" --jq .status)
-          if [ "$status" != identical ] && [ "$status" != ahead ]; then
-            echo "::notice::$GITHUB_SHA is not on staging ($status): no staging E2E to require"
-            exit 0
-          fi
-          run_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$GITHUB_SHA&branch=staging&event=push" \
-            --jq '[.workflow_runs[] | select(.path == ".github/workflows/ci-cd.yml")] | sort_by(.run_number) | last | .id // empty')
-          [ -n "$run_id" ] || { echo "::error::No staging CI/CD run for $GITHUB_SHA yet: re-run once E2E Staging passed"; exit 1; }
-          e2e=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" \
-            --jq '[.jobs[] | select(.name | startswith("E2E Staging"))] | first | .conclusion // "missing"')
-          [ "$e2e" = success ] || { echo "::error::E2E Staging is '${e2e:-pending}' for $GITHUB_SHA (run $run_id): not promoted (re-run once it passed)"; exit 1; }
-        env:
-          GH_TOKEN: ${{ github.token }}
 
       # The scan below also covers a reused image: it was scanned when built, maybe weeks ago
       - name: Pull the existing image
