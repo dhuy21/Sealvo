@@ -16,6 +16,7 @@ beforeEach(() => {
   vi.stubGlobal('localStorage', {
     getItem: (key: string) => store.get(key) ?? null,
     setItem: (key: string, value: string) => void store.set(key, value),
+    removeItem: (key: string) => void store.delete(key),
   });
 });
 
@@ -66,6 +67,20 @@ describe('loadProgress', () => {
 
     expect(loadProgress(1, [reviewWord(1)])?.progress).toEqual([2]);
     expect(loadProgress(2, [reviewWord(9)])?.progress).toEqual([0]);
+  });
+
+  it('gives the old shared session to the first matching package only', () => {
+    store.set(
+      'flashcards_progress',
+      JSON.stringify({ date: '2026-10-17T08:00:00.000Z', progress: [2], words: [1] }),
+    );
+
+    expect(loadProgress(2, [reviewWord(9)])).toBeNull();
+    expect(store.has('flashcards_progress')).toBe(true);
+
+    expect(loadProgress(1, [reviewWord(1)])?.progress).toEqual([2]);
+    expect(store.has('flashcards_progress')).toBe(false);
+    expect(loadProgress(2, [reviewWord(1)])).toBeNull();
   });
 
   it('returns null when the set of words changed', () => {

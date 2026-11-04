@@ -42,7 +42,8 @@ export function loadProgress(
   deck: ReviewWord[],
 ): { deck: ReviewWord[]; progress: CardProgress[] } | null {
   try {
-    const data = readSaved(storageKey(packageId)) ?? readSaved(LEGACY_KEY);
+    const own = readSaved(storageKey(packageId));
+    const data = own ?? readSaved(LEGACY_KEY);
     if (!data) return null;
     const currentIds = deck.map((w) => w.detail_id);
 
@@ -51,7 +52,20 @@ export function loadProgress(
       data.words.every((id) => currentIds.includes(id))
     ) {
       const byId = new Map(deck.map((w) => [w.detail_id, w]));
-      return { deck: data.words.map((id) => byId.get(id)!), progress: data.progress };
+      const restored = {
+        deck: data.words.map((id) => byId.get(id)!),
+        progress: data.progress,
+      };
+      // The old key is one session. The first package it matches keeps it.
+      if (!own) {
+        saveProgress(packageId, restored.deck, restored.progress);
+        try {
+          localStorage.removeItem(LEGACY_KEY);
+        } catch (e) {
+          console.error('Load progress error:', e);
+        }
+      }
+      return restored;
     }
   } catch (e) {
     console.error('Load progress error:', e);
