@@ -23,6 +23,11 @@ on:
         required: false
         type: boolean
         default: false
+      branch:
+        description: "Branch whose tip this commit must still be. Empty uses main for production and staging for the staging environment."
+        required: false
+        type: string
+        default: ""
       restore-tag-on-failure:
         description: 'Put the environment tag back on its previous images when the deploy fails (false for rollbacks: the previous images are the release being rolled back)'
         required: false
@@ -54,7 +59,7 @@ jobs:
       WEB_URL: ${{ inputs.environment == 'production' && (vars.PRODUCTION_URL || 'https://www.sealvo.it.com') || vars.STAGING_URL }}
       VERSION: ${{ inputs.version }}
       TAG: ${{ inputs.environment == 'production' && 'latest' || 'staging' }}
-      BRANCH: ${{ inputs.environment == 'production' && 'main' || 'staging' }}
+      BRANCH: ${{ inputs.branch != '' && inputs.branch || (inputs.environment == 'production' && 'main' || 'staging') }}
     steps:
       # Before anything moves: a missing setting must fail the deploy, not skip its checks and end green
       - name: Check the deploy settings
