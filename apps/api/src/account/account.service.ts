@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { EmailChangeService } from '../auth/email-change.service.js';
 import { CacheService } from '../redis/cache.service.js';
 import { CACHE_KEYS } from '../redis/cache-keys.constants.js';
+import { normalizeEmail } from '../common/utils/normalize-email.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 
 @Injectable()
@@ -28,7 +29,7 @@ export class AccountService {
         where: { id: userId },
         select: { email: true },
       });
-      if (dto.email !== user?.email) {
+      if (!user?.email || normalizeEmail(user.email) !== dto.email) {
         await this.emailChange.requestEmailChange(userId, dto.email, dto.current_password);
         pendingEmail = dto.email;
       }

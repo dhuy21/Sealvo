@@ -11,6 +11,7 @@ import {
   cellKey,
   findWordInGrid,
   generateGrid,
+  matchSelectedWord,
   normalizeWord,
   type CellRef,
 } from '@/components/games/word-search/grid';
@@ -110,9 +111,7 @@ function WordSearchInner() {
 
   function checkSelection(cells: CellRef[]) {
     const selectedWord = cells.map((c) => gridRef.current[c.row][c.col]).join('');
-    const word = wordsToFind.find(
-      (w) => normalizeWord(w) === selectedWord && !foundWords.includes(w),
-    );
+    const word = matchSelectedWord(wordsToFind, selectedWord, foundWords);
 
     if (word !== undefined) {
       setFoundWords((found) => [...found, word]);

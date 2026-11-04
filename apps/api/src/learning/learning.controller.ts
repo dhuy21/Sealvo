@@ -4,7 +4,9 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  ParseIntPipe,
   Post,
+  Query,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -49,17 +51,22 @@ export class LearningController {
   }
 
   @Get('level-progress')
+  @UseGuards(PackageOwnershipGuard)
   @ApiOperation({ summary: 'Get current level progress' })
   @ApiResponse({ status: 200, description: 'Level progress' })
-  async getProgress(@CurrentUser('id') userId: string) {
-    return this.learningService.getLevelProgress(userId);
+  async getProgress(
+    @CurrentUser('id') userId: string,
+    @Query('packageId', ParseIntPipe) packageId: number,
+  ) {
+    return this.learningService.getLevelProgress(userId, packageId);
   }
 
   @Post('level-progress/reset')
+  @UseGuards(PackageOwnershipGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset level progress for a specific level' })
   @ApiResponse({ status: 200, description: 'Progress reset' })
   async resetProgress(@CurrentUser('id') userId: string, @Body() dto: ResetLevelDto) {
-    return this.learningService.resetLevelProgress(userId, dto.level);
+    return this.learningService.resetLevelProgress(userId, dto.packageId, dto.level);
   }
 }

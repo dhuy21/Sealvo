@@ -23,7 +23,7 @@ const sha256 = (value: string) => createHash('sha256').update(value).digest('hex
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: {
-    users: { findUnique: any; create: any; update: any };
+    users: { findUnique: any; findMany: any; create: any; update: any };
     email_verification: { findFirst: any; create: any; updateMany: any };
     user_activities: { create: any };
     $transaction: any;
@@ -36,6 +36,7 @@ describe('AuthService', () => {
     prisma = {
       users: {
         findUnique: vi.fn(),
+        findMany: vi.fn().mockResolvedValue([]),
         create: vi.fn(),
         update: vi.fn(),
       },
@@ -155,10 +156,10 @@ describe('AuthService', () => {
         success: true,
         message: 'Un email de vérification a été envoyé à votre adresse email',
       };
-      const ownerExists = (is_verified: boolean) =>
-        prisma.users.findUnique.mockImplementation(({ where }: { where: object }) =>
-          Promise.resolve('email' in where ? { ...owner, is_verified } : null),
-        );
+      const ownerExists = (is_verified: boolean) => {
+        prisma.users.findUnique.mockResolvedValue(null);
+        prisma.users.findMany.mockResolvedValue([{ ...owner, is_verified }]);
+      };
 
       beforeEach(() => {
         emailService.compileTemplate.mockReturnValue('<html />');
@@ -202,6 +203,24 @@ describe('AuthService', () => {
         await expect(
           service.register({ username: 'new', email: 'a@b.c', password: '123456' }),
         ).rejects.toThrow("Une erreur est survenue lors de l'envoi de l'email de vérification.");
+      });
+    });
+
+    it('treats a raw Gmail address as the account already stored in either form', async () => {
+      prisma.users.findMany.mockResolvedValue([{ username: 'owner', email: 'Jane.Doe@gmail.com' }]);
+      emailService.compileTemplate.mockReturnValue('<html />');
+      emailQueue.enqueue.mockResolvedValue(true);
+
+      await service.register({
+        username: 'new',
+        email: 'Jane.Doe@gmail.com',
+        password: '123456',
+      });
+
+      expect(prisma.users.create).not.toHaveBeenCalled();
+      expect(prisma.users.findMany).toHaveBeenCalledWith({
+        where: { email: { in: ['Jane.Doe@gmail.com', 'janedoe@gmail.com'] } },
+        select: { username: true, email: true },
       });
     });
 

@@ -21,6 +21,11 @@ import { createUser } from './create-user.js';
 import { ActivityLogService } from '../activity/activity-log.service.js';
 import { hashPassword } from './crypto.js';
 import { errorMessage } from '../common/utils/error-message.js';
+import {
+  emailLookupForms,
+  normalizeEmail,
+  preferredStoredEmail,
+} from '../common/utils/normalize-email.js';
 import type { RegisterDto } from './dto/register.dto.js';
 import type { LoginDto } from './dto/login.dto.js';
 
@@ -60,10 +65,12 @@ export class AuthService {
     // No user enumeration: a taken email gets the same response, its owner is emailed instead.
     // Never a verification link, even for an unverified account: whoever registered it first knows
     // its password, so the owner must go through the password reset.
-    const existing = await this.prisma.users.findUnique({
-      where: { email: dto.email },
+    const email = normalizeEmail(dto.email);
+    const matches = await this.prisma.users.findMany({
+      where: { email: { in: emailLookupForms(dto.email) } },
       select: { username: true, email: true },
     });
+    const existing = preferredStoredEmail(dto.email, matches);
     if (existing) {
       await this.sendAccountExistsEmail(existing);
       return REGISTER_RESPONSE;
@@ -71,7 +78,7 @@ export class AuthService {
 
     const user = await createUser(this.prisma, {
       username: dto.username,
-      email: dto.email,
+      email,
       password,
       ava: dto.avatar ?? 1,
     });

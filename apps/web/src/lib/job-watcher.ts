@@ -8,6 +8,8 @@ export type JobOutcome = 'completed' | 'failed' | 'unavailable' | 'lost';
 export const useWatchedJobs = create<{ jobIds: string[] }>(() => ({ jobIds: [] }));
 
 const waiters = new Map<string, Array<(outcome: JobOutcome) => void>>();
+/** Jobs already settled on this page. A late GET /jobs must not subscribe to them again. */
+const settled = new Set<string>();
 
 /** One toast per job. Callers and the watcher update this id in place. */
 export function jobToastId(jobId: string): string {
@@ -28,10 +30,11 @@ export function addJob(jobId: string): Promise<JobOutcome> {
  * Jobs a page is still awaiting are kept.
  */
 export function setWatchedJobs(jobs: StoredJob[]): void {
+  const open = jobs.filter((job) => !settled.has(job.id));
   const awaited = [...waiters.keys()]
-    .filter((id) => !jobs.some((j) => j.id === id))
+    .filter((id) => !open.some((job) => job.id === id))
     .map((id) => ({ id, ts: Date.now() }));
-  const all = [...jobs, ...awaited];
+  const all = [...open, ...awaited];
   saveStoredJobs(all);
   useWatchedJobs.setState({ jobIds: all.map((j) => j.id) });
 }
@@ -41,6 +44,8 @@ export function setWatchedJobs(jobs: StoredJob[]): void {
  * `keepStored` leaves it in localStorage so the next page load tries again.
  */
 export function finishJob(jobId: string, outcome: JobOutcome, keepStored = false): void {
+  if (keepStored) settled.delete(jobId);
+  else settled.add(jobId);
   if (!keepStored) removeStoredJob(jobId);
   useWatchedJobs.setState((s) => ({ jobIds: s.jobIds.filter((id) => id !== jobId) }));
   waiters.get(jobId)?.forEach((resolve) => resolve(outcome));

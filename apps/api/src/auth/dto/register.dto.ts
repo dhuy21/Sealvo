@@ -3,7 +3,6 @@ import { IsByteLength, IsInt, IsString, Max, MaxLength, Min, MinLength } from 'c
 import { AUTH_LIMITS, AVATAR_COUNT } from '@sealvo/shared';
 import { IsAccountEmail } from '../../common/decorators/is-account-email.decorator.js';
 import { IsOptionalDefined } from '../../common/decorators/is-optional-defined.decorator.js';
-import { NormalizeEmail } from '../../common/decorators/normalize-email.decorator.js';
 import { Trim } from '../../common/decorators/trim.decorator.js';
 
 // nosemgrep: ajinabraham.njsscan.generic.hardcoded_secrets.node_password (a message, not a password)
@@ -25,7 +24,7 @@ export class RegisterDto {
   username!: string;
 
   @ApiProperty({ example: 'john@example.com' })
-  @NormalizeEmail()
+  @Trim()
   @IsAccountEmail()
   email!: string;
 

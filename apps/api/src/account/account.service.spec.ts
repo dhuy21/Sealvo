@@ -58,6 +58,15 @@ describe('AccountService.updateProfile', () => {
     expect(prisma.users.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { ava: 3 } });
   });
 
+  it('should ignore the same inbox when the stored address still has its raw form', async () => {
+    prisma.users.findUnique.mockResolvedValue({ email: 'Jane.Doe@gmail.com' });
+
+    await expect(service.updateProfile('u1', { email: 'janedoe@gmail.com' })).resolves.toEqual({
+      pendingEmail: undefined,
+    });
+    expect(auth.requestEmailChange).not.toHaveBeenCalled();
+  });
+
   it('should ignore an unchanged email', async () => {
     await expect(service.updateProfile('u1', { email: 'old@b.c' })).resolves.toEqual({
       pendingEmail: undefined,

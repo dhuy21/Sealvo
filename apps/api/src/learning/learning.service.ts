@@ -43,7 +43,7 @@ export class LearningService {
       };
     }
 
-    const key = CACHE_KEYS.levelProgress(userId);
+    const key = CACHE_KEYS.levelProgress(userId, packageId);
     const stored = await this.cache.hSet(
       key,
       progressField(currentLevel, gameType),
@@ -63,6 +63,19 @@ export class LearningService {
     const allCompleted = requiredGames.every((g) => progress[currentLevel]?.[g]);
 
     if (allCompleted) {
+      const dueWords = await this.findWordsDueByLevel(packageId, currentLevel);
+      const detailIds = dueWords.map((w) => w.detail_id);
+      // Nothing is due: keep the played games. Clearing them would make the user start over
+      // with no promotion and no toast.
+      if (detailIds.length === 0) {
+        return {
+          success: true,
+          level_completed: false,
+          game_tracked: gameType,
+          missing_games: [],
+        };
+      }
+
       // Concurrent completions can all see the level complete: only the request whose HDEL
       // removed the whole set promotes (null = no Redis, nothing to race on)
       const removed = await this.cache.hDel(
@@ -72,12 +85,7 @@ export class LearningService {
 
       let updatedCount = 0;
       if (removed === null || removed === requiredGames.length) {
-        const dueWords = await this.findWordsDueByLevel(packageId, currentLevel);
-        const detailIds = dueWords.map((w) => w.detail_id);
-
-        if (detailIds.length > 0) {
-          updatedCount = await this.batchUpdateLevel(packageId, detailIds, currentLevel);
-        }
+        updatedCount = await this.batchUpdateLevel(packageId, detailIds, currentLevel);
       }
 
       return {
@@ -100,16 +108,18 @@ export class LearningService {
   /**
    * Get current level progress for a user
    */
-  async getLevelProgress(userId: string) {
-    return toProgress((await this.cache.hGetAll(CACHE_KEYS.levelProgress(userId))) ?? {});
+  async getLevelProgress(userId: string, packageId: number) {
+    return toProgress(
+      (await this.cache.hGetAll(CACHE_KEYS.levelProgress(userId, packageId))) ?? {},
+    );
   }
 
   /**
    * Reset level progress for a specific level
    */
-  async resetLevelProgress(userId: string, level: Exclude<Level, 'v'>) {
+  async resetLevelProgress(userId: string, packageId: number, level: Exclude<Level, 'v'>) {
     await this.cache.hDel(
-      CACHE_KEYS.levelProgress(userId),
+      CACHE_KEYS.levelProgress(userId, packageId),
       LEVEL_GAMES[level].map((g) => progressField(level, g)),
     );
     return { message: `Progression du niveau ${level} réinitialisée` };

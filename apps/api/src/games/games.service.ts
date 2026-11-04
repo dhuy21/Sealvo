@@ -6,6 +6,8 @@ import { isDue, startOfToday } from '../common/domain/spaced-repetition.js';
 /** Minimum words required per game */
 const MIN_WORDS: Partial<Record<GameType, number>> = {
   flash_match: 6,
+  // Six choices per question, so five due words cannot start a round.
+  vocab_quiz: 6,
 };
 const DEFAULT_MIN_WORDS = 5;
 

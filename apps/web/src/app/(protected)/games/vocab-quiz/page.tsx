@@ -49,9 +49,12 @@ function VocabQuizContent() {
       shell.showRules();
       return;
     }
-    const enough = hasEnoughWords(gameData.words);
-    setQuizError(enough ? '' : NOT_ENOUGH_WORDS_MESSAGE);
-    setQuestions(enough ? generateQuestions(gameData.words) : []);
+    if (!hasEnoughWords(gameData.words)) {
+      setQuizError(NOT_ENOUGH_WORDS_MESSAGE);
+      return;
+    }
+    setQuizError('');
+    setQuestions(generateQuestions(gameData.words));
     setCurrentIdx(0);
     setScore(0);
     setCorrectCount(0);
@@ -62,7 +65,7 @@ function VocabQuizContent() {
     setCurrentTime(0);
     shell.start();
     effects.start();
-    if (enough) effects.showQuestion();
+    effects.showQuestion();
   }, [gameData, shell, effects]);
 
   const handleAnswer = useCallback(
@@ -144,13 +147,11 @@ function VocabQuizContent() {
 
           <div className={cx(styles, 'game-area')}>
             <div className={cx(styles, 'game-screen')}>
-              {screen === 'pre' && <VocabQuizRules onStart={startGame} />}
-
-              {screen === 'active' && quizError && (
-                <div className={cx(styles, 'active-game-screen', 'active')}>
-                  <div className={cx(styles, 'result-message', 'incorrect')}>{quizError}</div>
-                </div>
+              {screen === 'pre' && quizError && (
+                <div className={cx(styles, 'result-message', 'incorrect')}>{quizError}</div>
               )}
+
+              {screen === 'pre' && <VocabQuizRules onStart={startGame} />}
 
               {screen === 'active' && currentQ && (
                 <QuizQuestion

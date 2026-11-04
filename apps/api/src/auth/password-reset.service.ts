@@ -2,6 +2,7 @@ import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service.js';
 import { appConfig, type AppConfig } from '../config/app.config.js';
 import { errorMessage } from '../common/utils/error-message.js';
+import { emailLookupForms, preferredStoredEmail } from '../common/utils/normalize-email.js';
 import { formatDuration } from '../common/utils/format-duration.js';
 import { hashPassword, hashToken, newToken } from './crypto.js';
 import { EmailQueueService } from '../email/email-queue.service.js';
@@ -29,7 +30,10 @@ export class PasswordResetService {
 
   async forgotPassword(email: string): Promise<{ message: string }> {
     // Same response whether or not the account exists (OWASP: no user enumeration)
-    const user = await this.prisma.users.findUnique({ where: { email } });
+    const matches = await this.prisma.users.findMany({
+      where: { email: { in: emailLookupForms(email) } },
+    });
+    const user = preferredStoredEmail(email, matches);
     // Not awaited: the response time must not tell whether the account exists
     if (user) {
       void this.sendResetLink(user).catch((error: unknown) =>

@@ -25,6 +25,24 @@ export const normalizeWord = (word: string) =>
     .toUpperCase()
     .replace(/[^A-Z]/g, '');
 
+/**
+ * The list word the player selected. An exact letter sequence wins, so GOD is not
+ * recorded as DOG when both are on the list. A reversed drag counts only when the
+ * forward sequence is not itself a remaining word.
+ */
+export function matchSelectedWord(
+  words: string[],
+  selected: string,
+  found: readonly string[],
+): string | undefined {
+  const remaining = words.filter((word) => !found.includes(word));
+  const reversed = selected.split('').reverse().join('');
+  return (
+    remaining.find((word) => normalizeWord(word) === selected) ??
+    remaining.find((word) => normalizeWord(word) === reversed)
+  );
+}
+
 /** Cells of the first occurrence of `word` (already normalized) in the grid, scanning row by row. */
 export function findWordInGrid(grid: string[][], word: string): CellRef[] | null {
   const size = grid.length;
