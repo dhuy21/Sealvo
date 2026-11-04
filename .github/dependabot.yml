@@ -25,6 +25,11 @@ updates:
     groups:
       base-images:
         patterns: ['*']
+    ignore:
+      # The app and CI run Node 22. A Node 25 base image is a different runtime.
+      - dependency-name: node
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: npm
     directory: /
@@ -38,3 +43,8 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # Vitest 5 fails typecheck (TS2742 on a test helper). Stay on 4 until that is fixed.
+      - dependency-name: vitest
+        update-types:
+          - version-update:semver-major
