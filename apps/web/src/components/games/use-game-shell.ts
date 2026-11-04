@@ -18,8 +18,6 @@ const noCelebration = (): CancelConfetti => () => {};
 interface GameShellOptions {
   /** Confetti launched with the summary; none when omitted. */
   celebration?: () => CancelConfetti;
-  /** Report level progress when the summary appears rather than when the game ends. */
-  trackOnSummary?: boolean;
 }
 
 /**
@@ -28,7 +26,7 @@ interface GameShellOptions {
  */
 export function useGameShell(
   gameType: GameType,
-  { celebration = noCelebration, trackOnSummary = false }: GameShellOptions = {},
+  { celebration = noCelebration }: GameShellOptions = {},
 ) {
   const packageId = usePackageIdParam();
 
@@ -62,11 +60,12 @@ export function useGameShell(
     setLevelMessage(success ? SUCCESS_MESSAGE : FAILURE_MESSAGE);
     setLevelStatus(success ? 'completed' : 'failed');
     saveScore.mutate({ game_type: gameType, score });
-    if (!trackOnSummary) level.track(success, packageId!);
+    // Recorded at the end, not when the summary appears: leaving during that second
+    // would cancel the delayed call.
+    level.track(success, packageId!);
 
     later(() => {
       setScreen('post');
-      if (trackOnSummary) level.track(success, packageId!);
       celebrate();
     }, 1000);
     return true;

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { IMPORT_MAX_FILE_BYTES } from '@sealvo/shared';
 import { useImportFile } from '@/hooks/use-import';
@@ -22,6 +23,7 @@ function isExcelFile(name: string): boolean {
 
 export function ImportForm({ packageId }: { packageId: number }) {
   const importFile = useImportFile(packageId);
+  const qc = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -61,10 +63,14 @@ export function ImportForm({ packageId }: { packageId: number }) {
     setBusy(true);
     try {
       const result = await importFile.mutateAsync(file);
-      const done = await settleWordsResponse(result, {
-        success: 'Import terminé avec succès',
-        error: IMPORT_ERROR,
-      });
+      const done = await settleWordsResponse(
+        result,
+        {
+          success: 'Import terminé avec succès',
+          error: IMPORT_ERROR,
+        },
+        qc,
+      );
       if (done) resetFile();
     } catch (err) {
       notifyLongError(getApiErrorMessage(err, IMPORT_ERROR));

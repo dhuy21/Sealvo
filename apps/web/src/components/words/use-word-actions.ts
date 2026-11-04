@@ -40,8 +40,15 @@ export function useWordActions(packageId: number) {
         return false;
       }
       toast.success('Mot supprimé');
-      // Not cancelled on unmount: the cached list must lose the word even if the page is left
-      setTimeout(() => invalidate(qc, queryKeys.words(packageId)), ROW_DELETED_ANIMATION_MS);
+      // Not cancelled on unmount: the cached list must lose the word even if the page is left.
+      // Drop it before the refetch, so a failed reload cannot show the deleted row again.
+      setTimeout(() => {
+        const without = (words: { detail_id: number }[] | undefined) =>
+          words?.filter((word) => word.detail_id !== detailId);
+        qc.setQueryData(queryKeys.words(packageId), without);
+        qc.setQueryData(queryKeys.reviewWords(packageId), without);
+        invalidate(qc, queryKeys.words(packageId));
+      }, ROW_DELETED_ANIMATION_MS);
       return true;
     },
     [deleteWord, qc, packageId],

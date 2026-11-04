@@ -76,7 +76,11 @@ function LearnContent() {
       <h1 className={cx(styles, 'learn-title')}>Apprendre mon vocabulaire</h1>
 
       {words && words.length > 0 ? (
-        <LearnSession key={packageId} words={words} packageId={packageId} />
+        <LearnSession
+          key={[packageId, ...words.map((word) => word.detail_id).sort((a, b) => a - b)].join(':')}
+          words={words}
+          packageId={packageId}
+        />
       ) : (
         <WordsEmptyState packageId={packageId} isOwner={pkg.data?.isOwner ?? true} narrow />
       )}

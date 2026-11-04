@@ -33,6 +33,9 @@ export function useDeleteAllFlow(packageId: number, levels: string[]) {
           });
           later(
             () => {
+              // The delete already succeeded. An empty cache stays empty if the refetch fails.
+              queryClient.setQueryData(queryKeys.words(packageId), []);
+              queryClient.setQueryData(queryKeys.reviewWords(packageId), []);
               // Prefix match: also refreshes the Learn review list and other per-package word queries
               void queryClient
                 .invalidateQueries({ queryKey: queryKeys.words(packageId) })

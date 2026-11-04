@@ -28,6 +28,27 @@ const GOOGLE_ERRORS = new Map([
   ['google_failed', 'Authentication failed'],
 ]);
 
+const LOGIN_REDIRECT_KEY = 'sealvo_login_redirect';
+
+function rememberLoginRedirect(value: string | null) {
+  try {
+    const safe = safeRedirect(value, '');
+    if (safe.startsWith('/')) sessionStorage.setItem(LOGIN_REDIRECT_KEY, safe);
+    else sessionStorage.removeItem(LOGIN_REDIRECT_KEY);
+  } catch {
+    // Private mode can block storage. Login still works.
+  }
+}
+
+function peekLoginRedirect(): string | null {
+  try {
+    const safe = safeRedirect(sessionStorage.getItem(LOGIN_REDIRECT_KEY), '');
+    return safe.startsWith('/') ? safe : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function LoginPage() {
   return (
     <Suspense>
@@ -46,6 +67,20 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [unverifiedMessage, setUnverifiedMessage] = useState<string | null>(null);
   const googleError = GOOGLE_ERRORS.get(searchParams.get('error') ?? '');
+
+  useEffect(() => {
+    if (!googleError || searchParams.get('redirect')) return;
+    const saved = peekLoginRedirect();
+    if (!saved) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('redirect', saved);
+    try {
+      sessionStorage.removeItem(LOGIN_REDIRECT_KEY);
+    } catch {
+      // The query param is enough if storage cannot be cleared.
+    }
+    router.replace(`/login?${params.toString()}`);
+  }, [googleError, router, searchParams]);
 
   useEffect(() => {
     if (isReady && isAuthenticated) {
@@ -186,7 +221,11 @@ function LoginForm() {
         </div>
 
         <div className={styles['social-login']} data-delay="600">
-          <a href="/auth/google" className={cx(styles, 'social-btn', 'google-btn')}>
+          <a
+            href="/auth/google"
+            className={cx(styles, 'social-btn', 'google-btn')}
+            onClick={() => rememberLoginRedirect(searchParams.get('redirect'))}
+          >
             <i className="fa-brands fa-google" /> Continuer avec Google
           </a>
         </div>

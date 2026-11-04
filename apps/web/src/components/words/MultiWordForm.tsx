@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { flushSync } from 'react-dom';
 import toast from 'react-hot-toast';
 import { useLeaveConfirmation } from '@/hooks/use-leave-confirmation';
@@ -22,6 +23,7 @@ const UNSAVED_CHANGES_MESSAGE =
 
 /** Several word cards sent in one request. */
 export function MultiWordForm({ packageId }: { packageId: number }) {
+  const qc = useQueryClient();
   const { cards, patchCard, changeValue, addCard, duplicateCard, removeCard, clearValues } =
     useWordCards();
   const addWords = useAddWords(packageId);
@@ -83,10 +85,14 @@ export function MultiWordForm({ packageId }: { packageId: number }) {
       const result = await addWords.mutateAsync(
         cards.filter((c) => !c.removing).map((c) => c.values),
       );
-      const done = await settleWordsResponse(result, {
-        success: 'Mots enregistrés avec succès !',
-        error: SAVE_ERROR,
-      });
+      const done = await settleWordsResponse(
+        result,
+        {
+          success: 'Mots enregistrés avec succès !',
+          error: SAVE_ERROR,
+        },
+        qc,
+      );
       if (done) clearValues();
     } catch (err) {
       notifyLongError(getApiErrorMessage(err, SAVE_ERROR));

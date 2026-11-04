@@ -19,6 +19,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PackageOwnershipGuard } from '../auth/guards/package-ownership.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { InvalidateDashboardInterceptor } from '../common/interceptors/invalidate-dashboard.interceptor.js';
+import { errorMessage } from '../common/utils/error-message.js';
 import { BulkWordsService } from './bulk-words.service.js';
 import { ImportService } from './import.service.js';
 
@@ -71,7 +72,18 @@ export class ImportController {
       throw new BadRequestException("Aucun fichier n'a été téléchargé");
     }
 
-    const words = this.importService.parseWords(file.buffer);
+    let words;
+    try {
+      words = this.importService.parseWords(file.buffer);
+    } catch (err) {
+      await this.bulkWords.noteRejectedImport(
+        packageId,
+        userId,
+        file.originalname,
+        errorMessage(err),
+      );
+      throw err;
+    }
     const result = await this.bulkWords.add('import', packageId, userId, words, file.originalname);
     res.status(result.async ? HttpStatus.ACCEPTED : HttpStatus.OK);
     return result;

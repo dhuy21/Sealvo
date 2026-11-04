@@ -26,7 +26,7 @@ import { formatTypeMeaning } from '@/lib/word-type';
 import styles from '@/styles/games/speed-vocab.module.css';
 
 function SpeedVocabInner() {
-  const shell = useGameShell('speed_vocab', { celebration: launchEmbers, trackOnSummary: true });
+  const shell = useGameShell('speed_vocab', { celebration: launchEmbers });
   const { packageId, gameData, screen } = shell;
   const [words, setWords] = useState<{ word: string; meaning: string }[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);

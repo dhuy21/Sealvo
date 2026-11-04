@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ReviewWordDto, WordDto } from '@sealvo/shared';
 import api from '@/lib/api';
 import { stripBoldMarkup } from '@/lib/bold-markup';
+import { replaceFlashcardDetailId } from '@/lib/flashcard-progress';
 import { invalidate, invalidateWords, queryKeys } from '@/lib/query-keys';
 
 export type Word = WordDto;
@@ -75,7 +76,17 @@ export function useUpdateWord(packageId: number) {
       const { data } = await api.patch(`/packages/${packageId}/words/${detailId}`, dto);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data: { detailId?: number }, { detailId }) => {
+      // A shared word row is cloned. The list must use the new id before the refetch returns.
+      if (typeof data?.detailId === 'number' && data.detailId !== detailId) {
+        const nextId = data.detailId;
+        replaceFlashcardDetailId(packageId, detailId, nextId);
+        qc.setQueryData<Word[]>(queryKeys.words(packageId), (words) =>
+          words?.map((word) =>
+            word.detail_id === detailId ? { ...word, detail_id: nextId } : word,
+          ),
+        );
+      }
       // The dashboard counts words per level
       invalidateWords(qc, packageId);
     },

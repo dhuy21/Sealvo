@@ -63,6 +63,9 @@ export function useFlashcardSession(
   const indexRef = useRef(0);
   const modeRef = useRef<LearnMode>('word-to-meaning');
   const streakRecordedRef = useRef(false);
+  /** The visible card lags the index while it redraws. Marks in that window would hit the next word. */
+  const settlingRef = useRef(false);
+  const redrawGeneration = useRef(0);
   /** Each move replaces the previous one, so two clicks do not skip a card. */
   const moveRef = useRef(0);
   const schedule = useTimeouts();
@@ -75,8 +78,21 @@ export function useFlashcardSession(
   };
 
   useEffect(() => {
+    deckRef.current = deck;
     saveProgress(packageId, deck, progress);
   }, [deck, progress, packageId]);
+
+  // Same card ids: take the new meaning and example without restarting the session.
+  const incoming = new Map(words.map((word) => [word.detail_id, word]));
+  const refreshed = deck.map((item) => {
+    const fresh = incoming.get(item.detail_id);
+    return fresh && fresh !== item ? fresh : item;
+  });
+  if (refreshed.some((item, index) => item !== deck[index])) {
+    setDeckState(refreshed);
+    const shown = card.word ? incoming.get(card.word.detail_id) : undefined;
+    if (shown && shown !== card.word) setCard({ ...card, word: shown });
+  }
 
   useLeaveConfirmation(
     progress.some((p) => p !== -1),
@@ -107,10 +123,17 @@ export function useFlashcardSession(
       return;
     }
 
+    const generation = ++redrawGeneration.current;
+    settlingRef.current = true;
     setUpdating(true);
     schedule(() => {
+      if (generation !== redrawGeneration.current) return;
       setCard((c) => ({ word: d[index], index, total: d.length, mode: m, version: c.version + 1 }));
-      schedule(() => setUpdating(false), 50);
+      schedule(() => {
+        if (generation !== redrawGeneration.current) return;
+        settlingRef.current = false;
+        setUpdating(false);
+      }, 50);
     }, 150);
   };
 
@@ -177,7 +200,7 @@ export function useFlashcardSession(
   };
 
   const markCard = (level: 0 | 2) => {
-    if (deckRef.current.length === 0) return;
+    if (settlingRef.current || deckRef.current.length === 0) return;
     const move = beginMove();
     const next = [...progressRef.current];
     next[indexRef.current] = level;
@@ -221,6 +244,8 @@ export function useFlashcardSession(
   };
 
   const reset = () => {
+    // A failed streak call must be allowed again. The server ignores a second success today.
+    streakRecordedRef.current = false;
     const move = beginMove();
     setProgressAnimation('reset-animation');
     schedule(() => {
