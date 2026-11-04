@@ -1,7 +1,6 @@
 # CI/CD pipeline for Sealvo monorepo (Turborepo)
 # Triggers: PR → lint+test. A main push builds once, deploys the staging environment,
-# runs E2E, then deploys production with that same commit. A staging-branch push still
-# deploys only the staging environment.
+# runs E2E, then deploys production with that same commit. The staging branch does not deploy.
 name: CI/CD
 
 permissions:
@@ -286,13 +285,13 @@ jobs:
     permissions:
       contents: read
       packages: write
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/deploy.yml
     with:
       environment: staging
       version: ${{ github.sha }}
       skip-if-superseded: true
-      branch: ${{ github.ref == 'refs/heads/main' && 'main' || 'staging' }}
+      branch: main
     # Same-repo workflows that need the environment's Railway and E2E secrets
     secrets: inherit # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
 
