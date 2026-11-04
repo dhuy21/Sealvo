@@ -2,6 +2,7 @@
 # These records are the ones this hosted zone serves. Dynadot already
 # delegates to the four name servers in the name_servers output.
 # www points at the Sealvo Production web service.
+# api is the production API, same site as www so the refresh cookie is sent.
 
 resource "aws_route53_zone" "sealvo" {
   name    = "sealvo.it.com"
@@ -22,6 +23,22 @@ resource "aws_route53_record" "www" {
   type    = "CNAME"
   ttl     = 600
   records = ["emob4ie6.up.railway.app"]
+}
+
+resource "aws_route53_record" "api" {
+  zone_id = aws_route53_zone.sealvo.zone_id
+  name    = "api.sealvo.it.com"
+  type    = "CNAME"
+  ttl     = 600
+  records = ["cznnxn1u.up.railway.app"]
+}
+
+resource "aws_route53_record" "api_verify" {
+  zone_id = aws_route53_zone.sealvo.zone_id
+  name    = "_railway-verify.api.sealvo.it.com"
+  type    = "TXT"
+  ttl     = 600
+  records = ["railway-verify=c5a161eceea95b3a70e4d106064c2218d46fdca52cea5558ba0bed02a5d46500"]
 }
 
 resource "aws_route53_record" "www_verify" {
