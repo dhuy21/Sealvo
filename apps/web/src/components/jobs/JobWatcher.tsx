@@ -11,9 +11,10 @@ function JobSubscription({ jobId }: { jobId: string }) {
 }
 
 function ActiveJobs() {
-  const resumed = useResumeActiveJobs();
+  useResumeActiveJobs();
   const jobIds = useWatchedJobs((s) => s.jobIds);
-  if (!resumed) return null;
+  // A job added while GET /jobs is still open must stream at once. The form waits
+  // on that stream. The server list still replaces stored jobs when it arrives.
   return jobIds.map((id) => <JobSubscription key={id} jobId={id} />);
 }
 

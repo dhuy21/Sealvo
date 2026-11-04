@@ -1,6 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { seedRandom } from '@/test-utils/random';
-import { GRID_SIZE, cellKey, findWordInGrid, generateGrid, normalizeWord } from './grid';
+import {
+  GRID_SIZE,
+  cellKey,
+  findWordInGrid,
+  generateGrid,
+  matchSelectedWord,
+  normalizeWord,
+} from './grid';
 
 describe('normalizeWord', () => {
   it('upper-cases and keeps only A–Z', () => {
@@ -16,6 +23,20 @@ describe('normalizeWord', () => {
 describe('cellKey', () => {
   it('joins row and column', () => {
     expect(cellKey(3, 12)).toBe('3,12');
+  });
+});
+
+describe('matchSelectedWord', () => {
+  it('keeps GOD when the selection spells GOD and DOG is also on the list', () => {
+    expect(matchSelectedWord(['dog', 'god'], 'GOD', [])).toBe('god');
+  });
+
+  it('accepts a backward drag when that letter sequence is not itself a word', () => {
+    expect(matchSelectedWord(['god'], 'DOG', [])).toBe('god');
+  });
+
+  it('ignores a word already found', () => {
+    expect(matchSelectedWord(['god'], 'GOD', ['god'])).toBeUndefined();
   });
 });
 

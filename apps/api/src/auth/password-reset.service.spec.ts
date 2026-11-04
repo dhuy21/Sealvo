@@ -14,7 +14,7 @@ const sha256 = (value: string) => createHash('sha256').update(value).digest('hex
 describe('PasswordResetService', () => {
   let service: PasswordResetService;
   let prisma: {
-    users: { findUnique: any; update: any };
+    users: { findMany: any; update: any };
     password_reset_tokens: { findFirst: any; create: any; deleteMany: any };
     refresh_sessions: { deleteMany: any };
     email_verification: { updateMany: any };
@@ -26,7 +26,7 @@ describe('PasswordResetService', () => {
 
   beforeEach(async () => {
     prisma = {
-      users: { findUnique: vi.fn(), update: vi.fn() },
+      users: { findMany: vi.fn(), update: vi.fn() },
       password_reset_tokens: { findFirst: vi.fn(), create: vi.fn(), deleteMany: vi.fn() },
       refresh_sessions: { deleteMany: vi.fn() },
       email_verification: { updateMany: vi.fn() },
@@ -53,10 +53,10 @@ describe('PasswordResetService', () => {
 
   describe('forgotPassword', () => {
     it('should return the same generic message for an unknown email without sending anything', async () => {
-      prisma.users.findUnique.mockResolvedValue(null);
+      prisma.users.findMany.mockResolvedValue([]);
       const unknown = await service.forgotPassword('no@exist.com');
 
-      prisma.users.findUnique.mockResolvedValue({ id: 'u1', username: 'ann', email: 'a@b.c' });
+      prisma.users.findMany.mockResolvedValue([{ id: 'u1', username: 'ann', email: 'a@b.c' }]);
       emailQueue.enqueue.mockResolvedValue(true);
       const known = await service.forgotPassword('a@b.c');
 
@@ -65,7 +65,7 @@ describe('PasswordResetService', () => {
     });
 
     it('should answer before the token and email work finishes, as fast as for an unknown email', async () => {
-      prisma.users.findUnique.mockResolvedValue({ id: 'u1', username: 'ann', email: 'a@b.c' });
+      prisma.users.findMany.mockResolvedValue([{ id: 'u1', username: 'ann', email: 'a@b.c' }]);
       emailQueue.enqueue.mockReturnValue(new Promise(() => {}));
 
       await expect(service.forgotPassword('a@b.c')).resolves.toEqual({
@@ -76,8 +76,20 @@ describe('PasswordResetService', () => {
   });
 
   describe('forgotPassword (DB tokens, #103)', () => {
+    it('should look up both the typed address and its normalized form', async () => {
+      prisma.users.findMany.mockResolvedValue([{ id: 'u1', username: 'ann', email: 'a@b.c' }]);
+      emailQueue.enqueue.mockResolvedValue(true);
+
+      await service.forgotPassword('Jane.Doe@gmail.com');
+      await vi.waitFor(() => expect(emailQueue.enqueue).toHaveBeenCalled());
+
+      expect(prisma.users.findMany).toHaveBeenCalledWith({
+        where: { email: { in: ['Jane.Doe@gmail.com', 'janedoe@gmail.com'] } },
+      });
+    });
+
     it('should replace previous tokens with a hashed one and email the raw token', async () => {
-      prisma.users.findUnique.mockResolvedValue({ id: 'u1', username: 'ann', email: 'a@b.c' });
+      prisma.users.findMany.mockResolvedValue([{ id: 'u1', username: 'ann', email: 'a@b.c' }]);
       emailQueue.enqueue.mockResolvedValue(true);
 
       await service.forgotPassword('a@b.c');

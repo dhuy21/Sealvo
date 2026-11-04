@@ -34,10 +34,11 @@ interface DisplayedCard {
 export function useFlashcardSession(
   words: ReviewWord[],
   onComplete: (known: number, total: number) => void,
+  packageId: number,
 ) {
   const [initial] = useState(() => {
     const deck = buildDeck(words, INITIAL_LEVELS, 'today-words');
-    return loadProgress(deck) ?? { deck, progress: freshProgress(deck.length) };
+    return loadProgress(packageId, deck) ?? { deck, progress: freshProgress(deck.length) };
   });
   const [levels, setLevels] = useState<ReadonlySet<string>>(INITIAL_LEVELS);
   const [vocabMode, setVocabMode] = useState<VocabMode>('today-words');
@@ -74,8 +75,8 @@ export function useFlashcardSession(
   };
 
   useEffect(() => {
-    saveProgress(deck, progress);
-  }, [deck, progress]);
+    saveProgress(packageId, deck, progress);
+  }, [deck, progress, packageId]);
 
   useLeaveConfirmation(
     progress.some((p) => p !== -1),

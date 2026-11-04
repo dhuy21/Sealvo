@@ -4,7 +4,7 @@
 export const CACHE_KEYS = {
   dashboard: (userId: string) => `dashboard:${userId}`,
   // Redis hash: must not reuse `lvlprog:` where older code stored a JSON string (WRONGTYPE)
-  levelProgress: (userId: string) => `lvlprog:h:${userId}`,
+  levelProgress: (userId: string, packageId: number) => `lvlprog:h:${userId}:${packageId}`,
   emailDedup: (messageId: string) => `email:dedup:${messageId}`,
   /** hour: `2026-10-17T12` (UTC) */
   reminderRun: (hour: string) => `reminder:run:${hour}`,

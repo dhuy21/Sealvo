@@ -290,6 +290,26 @@ describe('WordsService', () => {
       expect(result.detailId).toBe(7);
     });
 
+    it('corrects an example sent without the word, meaning or type', async () => {
+      tx.learning.count.mockResolvedValue(1);
+      vi.spyOn(gemini, 'modifyExample').mockResolvedValue([{ id: 0, example: 'A **cat**.' }]);
+
+      await service.updateWord(2, 7, { example: 'A cat.' });
+
+      expect(gemini.modifyExample).toHaveBeenCalledWith([
+        expect.objectContaining({
+          word: 'cat',
+          meaning: 'chat',
+          type: 'noun',
+          example: 'A cat.',
+        }),
+      ]);
+      expect(tx.word_details.update).toHaveBeenCalledWith({
+        where: { detail_id: 7 },
+        data: { example: 'A **cat**.' },
+      });
+    });
+
     it('should not clone when only the level changes', async () => {
       await service.updateWord(2, 7, { level: 'v' });
 

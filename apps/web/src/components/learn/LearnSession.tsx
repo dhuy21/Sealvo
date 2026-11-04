@@ -27,7 +27,7 @@ export function LearnSession({ words, packageId }: { words: ReviewWord[]; packag
   const [resetOpen, setResetOpen] = useState(false);
   const sessionTime = useSessionTimer();
   const recordSessionStreak = useRecordSessionStreak();
-  const session = useFlashcardSession(words, recordSessionStreak);
+  const session = useFlashcardSession(words, recordSessionStreak, packageId);
   const { deck, progress, card } = session;
 
   useStaggeredEntrance();

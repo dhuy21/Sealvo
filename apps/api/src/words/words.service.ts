@@ -216,7 +216,18 @@ export class WordsService {
       throw new NotFoundException('Mot introuvable');
     }
 
-    if (dto.example !== undefined) await this.enrichment.enrichWithGemini([dto]);
+    if (dto.example) {
+      const details = entry.word_details;
+      const payload = {
+        word: dto.word ?? details.words.word,
+        language_code: dto.language_code ?? details.words.language_code,
+        meaning: dto.meaning ?? details.meaning,
+        type: dto.type ?? details.type,
+        example: dto.example,
+      };
+      await this.enrichment.enrichWithGemini([payload]);
+      dto.example = payload.example;
+    }
 
     const targetId = await retryOnDeadlock(() =>
       this.prisma.$transaction(async (tx) => {

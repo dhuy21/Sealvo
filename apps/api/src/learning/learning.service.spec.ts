@@ -11,7 +11,7 @@ describe('LearningService', () => {
     learning: { findMany: any; updateMany: any };
     users: { findUnique: any; updateMany: any };
   };
-  const key = CACHE_KEYS.levelProgress('u1');
+  const key = CACHE_KEYS.levelProgress('u1', 7);
 
   beforeEach(() => {
     store = new Map();
@@ -83,7 +83,7 @@ describe('LearningService', () => {
         where: { package_id: 7, detail_id: { in: [1] }, level: 'x' },
         data: { level: 'level_0', date_memorized: expect.any(Date) },
       });
-      await expect(service.getLevelProgress('u1')).resolves.toEqual({
+      await expect(service.getLevelProgress('u1', 7)).resolves.toEqual({
         level_0: { word_scramble: true },
       });
     });
@@ -114,7 +114,7 @@ describe('LearningService', () => {
       });
       expect(cache.hDel).not.toHaveBeenCalled();
       expect(prisma.learning.updateMany).not.toHaveBeenCalled();
-      await expect(service.getLevelProgress('u1')).resolves.toEqual({
+      await expect(service.getLevelProgress('u1', 7)).resolves.toEqual({
         x: { flash_match: true, vocab_quiz: true },
       });
     });
@@ -139,11 +139,11 @@ describe('LearningService', () => {
     await service.trackGameCompletion('u1', 'flash_match', true, 7);
     await service.trackGameCompletion('u1', 'word_scramble', true, 7);
 
-    await expect(service.getLevelProgress('u1')).resolves.toEqual({
+    await expect(service.getLevelProgress('u1', 7)).resolves.toEqual({
       x: { flash_match: true },
       level_0: { word_scramble: true },
     });
-    await expect(service.getLevelProgress('nobody')).resolves.toEqual({});
+    await expect(service.getLevelProgress('nobody', 7)).resolves.toEqual({});
   });
 
   it('resetLevelProgress clears only the given level', async () => {
@@ -151,11 +151,43 @@ describe('LearningService', () => {
     await service.trackGameCompletion('u1', 'vocab_quiz', true, 7);
     await service.trackGameCompletion('u1', 'word_scramble', true, 7);
 
-    await expect(service.resetLevelProgress('u1', 'x')).resolves.toEqual({
+    await expect(service.resetLevelProgress('u1', 7, 'x')).resolves.toEqual({
       message: 'Progression du niveau x réinitialisée',
     });
-    await expect(service.getLevelProgress('u1')).resolves.toEqual({
+    await expect(service.getLevelProgress('u1', 7)).resolves.toEqual({
       level_0: { word_scramble: true },
+    });
+  });
+
+  it('does not finish one package with games played on another', async () => {
+    await service.trackGameCompletion('u1', 'flash_match', true, 7);
+    await service.trackGameCompletion('u1', 'vocab_quiz', true, 8);
+
+    await expect(service.trackGameCompletion('u1', 'test_pronun', true, 8)).resolves.toMatchObject({
+      level_completed: false,
+      missing_games: ['flash_match'],
+    });
+    expect(prisma.learning.updateMany).not.toHaveBeenCalled();
+    await expect(service.getLevelProgress('u1', 7)).resolves.toEqual({
+      x: { flash_match: true },
+    });
+  });
+
+  it('keeps the played games when every game is done but no word is due', async () => {
+    prisma.learning.findMany.mockResolvedValue([{ detail_id: 1, date_memorized: null }]);
+    await service.trackGameCompletion('u1', 'flash_match', true, 7);
+    await service.trackGameCompletion('u1', 'vocab_quiz', true, 7);
+
+    await expect(service.trackGameCompletion('u1', 'test_pronun', true, 7)).resolves.toEqual({
+      success: true,
+      level_completed: false,
+      game_tracked: 'test_pronun',
+      missing_games: [],
+    });
+    expect(cache.hDel).not.toHaveBeenCalled();
+    expect(prisma.learning.updateMany).not.toHaveBeenCalled();
+    await expect(service.getLevelProgress('u1', 7)).resolves.toEqual({
+      x: { flash_match: true, vocab_quiz: true, test_pronun: true },
     });
   });
 
