@@ -210,6 +210,13 @@ resource "railway_custom_domain" "web" {
   target_port    = 3000
 }
 
+resource "railway_custom_domain" "api" {
+  domain         = "api.sealvo.it.com"
+  environment_id = local.environment_id
+  service_id     = railway_service.api.id
+  target_port    = 3000
+}
+
 resource "railway_variable" "mysql" {
   for_each = {
     MYSQL_ROOT_PASSWORD = random_password.mysql_root.result
@@ -257,7 +264,7 @@ resource "railway_variable" "api" {
     FRONTEND_URL                        = "https://www.sealvo.it.com"
     GOOGLE_CLIENT_ID                    = var.google_client_id
     GOOGLE_CLIENT_SECRET                = var.google_client_secret
-    GOOGLE_REDIRECT_URI                 = "https://${railway_service_domain.api.domain}/auth/google/callback"
+    GOOGLE_REDIRECT_URI                 = "https://api.sealvo.it.com/auth/google/callback"
     FEEDBACK_RECIPIENT_EMAIL            = var.feedback_recipient_email
     AWS_REGION                          = var.aws_region
     AWS_ACCESS_KEY_ID                   = var.aws_access_key_id
@@ -298,7 +305,7 @@ resource "railway_variable" "api_tts_key" {
 
 resource "railway_variable" "web" {
   name           = "API_URL"
-  value          = "https://${railway_service_domain.api.domain}"
+  value          = "https://api.sealvo.it.com"
   environment_id = local.environment_id
   service_id     = railway_service.web.id
 }

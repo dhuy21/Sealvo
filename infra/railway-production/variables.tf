@@ -85,9 +85,9 @@ variable "gemini_api_key" {
 }
 
 variable "attach_www" {
-  description = "Attach www.sealvo.it.com. Leave false until the railway.app health check is green and the domain is removed from the old project."
+  description = "Attach www.sealvo.it.com to the production web service."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "enable_tts" {

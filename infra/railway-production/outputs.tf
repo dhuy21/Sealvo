@@ -21,7 +21,7 @@ output "web_url" {
 
 output "google_redirect_uri" {
   description = "Add this exact URI on the Google OAuth client before login works."
-  value       = "https://${railway_service_domain.api.domain}/auth/google/callback"
+  value       = "https://api.sealvo.it.com/auth/google/callback"
 }
 
 output "web_dns_record" {
