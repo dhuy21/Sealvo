@@ -1,5 +1,7 @@
 # CI/CD pipeline for Sealvo monorepo (Turborepo)
-# Triggers: PR → lint+test, staging push → deploy staging, main push → deploy prod
+# Triggers: PR → lint+test. A main push builds once, deploys the staging environment,
+# runs E2E, then deploys production with that same commit. A staging-branch push still
+# deploys only the staging environment.
 name: CI/CD
 
 permissions:
@@ -166,9 +168,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # A commit tag is never overwritten: staging is fast-forwarded into main, so production gets the
-      # exact image built and scanned on staging (a hotfix later fast-forwarded into staging, or a re-run,
-      # reuses its image the same way). Only a commit with no image yet is built below.
+      # A commit tag is never overwritten. Production later deploys this same sha after E2E on
+      # the staging environment, so it reuses the image built here. Only a commit with no image
+      # yet is built below.
       # Only "not found" means build: a registry error must not rebuild and overwrite an existing tag
       - name: Reuse an existing build
         id: existing
@@ -184,9 +186,8 @@ jobs:
         env:
           IMAGE: ${{ steps.meta.outputs.ref }}
 
-      # Promotion: a commit that is on staging reaches production only once it passed E2E on staging,
-      # whether or not its image exists yet. A commit pushed to main directly (not on staging) is
-      # built here and gated by the production approver.
+      # A sha that is already on the staging branch must have passed that branch's E2E. A sha that
+      # exists only on main is proved by the E2E job later in this run; production waits for it.
       - name: Check staging passed
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
@@ -265,16 +266,17 @@ jobs:
   # ── 3. DEPLOY ───────────────────────────────────────────
   deploy-production:
     name: Deploy Production
-    needs: docker-build-push
+    needs: [docker-build-push, e2e-staging]
     permissions:
       contents: read
       packages: write
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.e2e-staging.result == 'success'
     uses: ./.github/workflows/deploy.yml
     with:
       environment: production
       version: ${{ github.sha }}
       skip-if-superseded: true
+      branch: main
     # Same-repo workflows that need the environment's Railway and E2E secrets
     secrets: inherit # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
 
@@ -284,12 +286,13 @@ jobs:
     permissions:
       contents: read
       packages: write
-    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main')
     uses: ./.github/workflows/deploy.yml
     with:
       environment: staging
       version: ${{ github.sha }}
       skip-if-superseded: true
+      branch: ${{ github.ref == 'refs/heads/main' && 'main' || 'staging' }}
     # Same-repo workflows that need the environment's Railway and E2E secrets
     secrets: inherit # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
 
