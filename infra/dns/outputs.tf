@@ -1,5 +1,5 @@
 output "name_servers" {
-  description = "Enter these four at Dynadot under Name Servers, after this zone exists. Do not change them before the records above are applied."
+  description = "The four Route 53 name servers saved at Dynadot."
   value       = aws_route53_zone.sealvo.name_servers
 }
 

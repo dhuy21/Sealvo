@@ -1,6 +1,7 @@
 # DNS only. The domain stays registered at Dynadot.
-# These records match the live Dynadot zone. Applying this does not move
-# the domain until Dynadot's name servers are changed to the outputs below.
+# These records are the ones this hosted zone serves. Dynadot already
+# delegates to the four name servers in the name_servers output.
+# www stays on the current Railway host until the production cutover.
 
 resource "aws_route53_zone" "sealvo" {
   name    = "sealvo.it.com"
