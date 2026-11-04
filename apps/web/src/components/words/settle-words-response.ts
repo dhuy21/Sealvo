@@ -28,6 +28,9 @@ export async function settleWordsResponse(
       return false;
     case 'failed':
       return false;
+    case 'unavailable':
+      // The watcher already asked for a refresh. The job may still be running.
+      return false;
     default:
       return true;
   }
