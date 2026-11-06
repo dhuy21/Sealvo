@@ -52,7 +52,9 @@ The web is on [http://localhost:3000](http://localhost:3000). The API is on
 [http://localhost:3001](http://localhost:3001). Stop a host `npm run dev` first if it
 is using those ports.
 
-`npm run infra:down` stops the stack.
+`npm run infra:down` stops the stack. Ports, migrations and the E2E seed are in
+[docs/local-dev.md](docs/local-dev.md). Product rules are in
+[BUSINESS_RULES.md](BUSINESS_RULES.md).
 
 ## Tests
 
@@ -80,4 +82,5 @@ Staging and production are environments, not branches. Deploys wait for approval
 `rollback.yml` redeploys an earlier commit that is still on `main`.
 
 Railway and DNS are applied from Terraform on your machine. CI does not run
-`terraform apply`.
+`terraform apply`. Service commands, variables and rollback are in
+[docs/railway-setup.md](docs/railway-setup.md).
