@@ -46,7 +46,8 @@ apps/api/backups/
 /MIGRATION_AUDIT.md
 /docs/legacy/
 
-# Project documentation: kept locally, only the READMEs are published
-/BUSINESS_RULES.md
-/docs/
+# Living guides are published. Legacy notes and agent files stay local.
+/docs/*
+!/docs/local-dev.md
+!/docs/railway-setup.md
 AGENTS.md
